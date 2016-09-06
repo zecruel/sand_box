@@ -145,12 +145,13 @@ def dxf_proc_fixo(objeto_dxf, fixo, recur = 0):
 	Pode ser passada a flag de recursividade, onde ira buscar o valor dentro dos subobjetos.'''
 	
 	lista = []
-	for i in objeto_dxf.conteudo: #varre o conteudo do obj
-		if isinstance(i, list):
-			if i[0] == fixo: #procura o fixo
-				lista += [i[2]] #acrescenta o valor a lista de retorno (pode ser recursivo)
-		elif (isinstance(i, obj_dxf)) and recur: #caso recursivo
-			lista += dxf_proc_fixo(i, fixo, recur) #procura nos filhos
+	if isinstance(objeto_dxf, obj_dxf):
+		for i in objeto_dxf.conteudo: #varre o conteudo do obj
+			if isinstance(i, list):
+				if i[0] == fixo: #procura o fixo
+					lista += [i[2]] #acrescenta o valor a lista de retorno (pode ser recursivo)
+			elif (isinstance(i, obj_dxf)) and recur: #caso recursivo
+				lista += dxf_proc_fixo(i, fixo, recur) #procura nos filhos
 	return lista
 		
 def dxf_proc_grupo(objeto_dxf, grupo, recur = 0):
@@ -158,12 +159,13 @@ def dxf_proc_grupo(objeto_dxf, grupo, recur = 0):
 	Pode ser passada a flag de recursividade, onde ira buscar o valor dentro dos subobjetos.'''
 	
 	lista = []
-	for i in objeto_dxf.conteudo: #varre o conteudo do obj
-		if isinstance(i, list):
-			if i[1] == grupo: #procura o grupo
-				lista += [i[2]] #acrescenta o valor a lista de retorno (pode ser recursivo)
-		elif (isinstance(i, obj_dxf)) and recur: #caso recursivo
-			lista += dxf_proc_grupo(i, grupo, recur) #procura nos filhos
+	if isinstance(objeto_dxf, obj_dxf):
+		for i in objeto_dxf.conteudo: #varre o conteudo do obj
+			if isinstance(i, list):
+				if i[1] == grupo: #procura o grupo
+					lista += [i[2]] #acrescenta o valor a lista de retorno (pode ser recursivo)
+			elif (isinstance(i, obj_dxf)) and recur: #caso recursivo
+				lista += dxf_proc_grupo(i, grupo, recur) #procura nos filhos
 	return lista
 
 def dxf_item(mestre, tipo, item):
@@ -223,7 +225,7 @@ def dxf_tabs(tabs):
 	t_appid = dxf_item(tabs, 'TABLE', 'APPID')
 	return t_vport, t_layer, t_style, t_view, t_ucs, t_vport, t_dimstyle, t_appid
 	
-def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
+def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, layers=None, ltypes=None, offset = [0,0,0]):
 	
 	if isinstance(mestre, obj_dxf):
 		pt_ant = None #ponto anterior -> para polylines
@@ -231,13 +233,56 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 		for idx, i in enumerate(mestre.conteudo): #varre o conteudo do obj em busca de entidades
 			tipo = ''
 			entidade = None
+			
+			#verifica se eh uma entidade DXF
 			if isinstance(i, obj_dxf):
 				tipo =  i.nome
 				entidade = i
+				ltype_n = ''
+				cor = 1 #define a cor 1 (vermelho) como padrao
+				pattern = [1] #linha solida
+				
+				#busca o layer da entidade
+				valor = dxf_proc_fixo(entidade, 'layer')
+				if len(valor)>0: 
+					n_layer = valor[0] #nome do layer
+					layer = dxf_item(layers, 'LAYER', n_layer) #objeto layer
+					
+					#busca a cor padrao do layer
+					valor = dxf_proc_fixo(layer, 'color')
+					if len(valor)>0: cor = valor[0]
+						
+					#busca o tipo de linha padrao do layer
+					valor = dxf_proc_fixo(layer, 'l_type')
+					if len(valor)>0:
+						ltype_n = valor[0] #nome do tipo de linha
+				
+				#cor do objeto, se houver, sobrepoe a do layer
+				valor = dxf_proc_fixo(entidade, 'color')
+				if len(valor)>0: 
+					if valor[0] < 256: cor = valor[0]
+				
+				#tipo de linha do objeto, se houver, sobrepoe o do layer
+				valor = dxf_proc_fixo(entidade, 'l_type')
+				if len(valor)>0:
+					if valor[0].upper() != 'BYLAYER': ltype_n = valor[0] #nome do tipo de linha	
+				
+				#busca o patern da linha
+				ltype = dxf_item(ltypes, 'LTYPE', ltype_n) #objeto ltype
+				valor = dxf_proc_grupo(ltype, 49)
+				if len(valor)>0:
+					#escalona o pattern (minimo 4 pixels)
+					minimo = min([abs(x) for x in valor])
+					pattern = [4*x/minimo for x in valor]
+				
+				#muda o pattern do desenho
+				if desenho:
+					desenho.pattern = pattern
+					desenho.patt_a = 0
+				
 			if tipo == 'LINE':
 				pt1 = [0,0,0]
 				pt2 = [0,0,0]
-				cor = 1
 				
 				valor = dxf_proc_grupo(entidade, 10)
 				if len(valor)>0: pt1[0] = valor[0] + offset[0]
@@ -257,10 +302,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 31)
 				if len(valor)>0: pt2[2] = valor[0] + offset[2]
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					desenho.linha(pt1[:2], pt2[:2], t_cor[cor])
 				
@@ -268,7 +309,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				pass
 			elif tipo == 'CIRCLE':
 				pt1 = [0,0,0]
-				cor = 1
 				raio = 0
 				
 				valor = dxf_proc_grupo(entidade, 10)
@@ -283,16 +323,11 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 40)
 				if len(valor)>0: raio = valor[0] 
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					desenho.circulo(pt1[:2], raio, t_cor[cor])
 				
 			elif tipo == 'ARC':
 				pt1 = [0,0,0]
-				cor = 1
 				raio = 0
 				ang_ini = 0
 				ang_fim = 0
@@ -315,10 +350,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 51)
 				if len(valor)>0: ang_fim = valor[0]
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					desenho.arco(pt1[:2], raio, ang_ini, ang_fim, t_cor[cor])
 					
@@ -327,7 +358,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				pt2 = [0,0,0]
 				pt3 = [0,0,0]
 				pt4 = [0,0,0]
-				cor = 1
 				
 				valor = dxf_proc_grupo(entidade, 10)
 				if len(valor)>0: pt1[0] = valor[0] + offset[0]
@@ -365,10 +395,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 33)
 				if len(valor)>0: pt4[2] = valor[0] + offset[2]
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					desenho.linha(pt1[:2], pt2[:2], t_cor[cor])
 					desenho.linha(pt1[:2], pt3[:2], t_cor[cor])
@@ -381,7 +407,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				pt3 = [0,0,0]
 				pt4 = [0,0,0]
 				quarto_ponto = 0
-				cor = 1
 				
 				valor = dxf_proc_grupo(entidade, 10)
 				if len(valor)>0: pt1[0] = valor[0] + offset[0]
@@ -425,10 +450,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 					pt4[2] = valor[0] + offset[2]
 					quarto_ponto = 1
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					desenho.linha(pt1[:2], pt2[:2], t_cor[cor])
 					desenho.linha(pt1[:2], pt3[:2], t_cor[cor])
@@ -441,7 +462,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				pt1 = [0,0,0]
 				pt2 = [0,0,0]
 				segundo_ponto = 0
-				cor = 1
 				tam = 0
 				rot = 0
 				alin = [0,1]
@@ -485,10 +505,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 73)
 				if len(valor)>0: alin[1] = valor[0]
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					if segundo_ponto:
 						desenho.texto(texto, pt1[:2], pt2[:2], tam, rot, t_cor[cor], alin)
@@ -502,7 +518,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 			elif tipo == 'INSERT':
 				if blocos:
 					pt1 = [0,0,0]
-					cor = 1
 					rot = 0
 					nome_blk = ''
 					
@@ -521,22 +536,17 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 					valor = dxf_proc_grupo(entidade, 50)
 					if len(valor)>0: rot = valor[0]
 					
-					valor = dxf_proc_fixo(entidade, 'color')
-					if len(valor)>0: cor = valor[0]
-					if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-					
 					blk = dxf_item(blocos, 'BLOCK', nome_blk)
-					dxf_desenha(blk, t_cor, desenho, None, pt1) #faz recursivamente os blocos
+					dxf_desenha(blk, t_cor, desenho, None, layers, ltypes, pt1) #faz recursivamente os blocos
 					#print pt1
 					#print entidade.imprime()
 				#faz recursivamente para os atributos fora da definicao do bloco
-				dxf_desenha(entidade, t_cor, desenho, None)
+				dxf_desenha(entidade, t_cor, desenho, None, layers, ltypes)
 					
 			elif tipo == 'ATTRIB':
 				pt1 = [0,0,0]
 				pt2 = [0,0,0]
 				segundo_ponto = 0
-				cor = 1
 				tam = 0
 				rot = 0
 				alin = [0,1]
@@ -580,24 +590,19 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				valor = dxf_proc_grupo(entidade, 74)
 				if len(valor)>0: alin[1] = valor[0]
 				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
-				
 				if desenho:
 					if segundo_ponto:
 						desenho.texto(texto, pt1[:2], pt2[:2], tam, rot, t_cor[cor], alin)
 					else:
 						desenho.texto(texto, pt1[:2], pt1[:2], tam, rot, t_cor[cor], alin)
 			elif tipo == 'POLYLINE':
-				dxf_desenha(entidade, t_cor, desenho, None, offset) #faz recursivamente
+				dxf_desenha(entidade, t_cor, desenho, None, layers, ltypes, offset) #faz recursivamente
 				pt_ant = None
 				pt_final = None
 				
 			elif tipo == 'VERTEX':
 				
 				pt1 = [0,0,0]
-				cor = 1
 				
 				valor = dxf_proc_grupo(entidade, 10)
 				if len(valor)>0: pt1[0] = valor[0] + offset[0]
@@ -607,10 +612,6 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, offset = [0,0,0]):
 				
 				valor = dxf_proc_grupo(entidade, 30)
 				if len(valor)>0: pt1[2] = valor[0] + offset[2]
-				
-				valor = dxf_proc_fixo(entidade, 'color')
-				if len(valor)>0: cor = valor[0]
-				if cor > 255 : cor = 1 #cor por layer -> ainda nao implementado
 				
 				#verifica se nao eh o primeiro ponto
 				if pt_ant != None and desenho:
@@ -908,8 +909,8 @@ def init_color():
 if __name__ == "__main__":
 	import tkFileDialog
 	
-	import sdl
-	jan = sdl.viewer(args=(1,2,3),
+	import window
+	jan = window.viewer(args=(1,2,3),
 		kwargs = {
 		'largura': 800,
 		'altura': 600,
@@ -933,6 +934,9 @@ if __name__ == "__main__":
 		
 		#obtem os Layers cadastrados
 		layers = dxf_item(tabs, 'TABLE', 'LAYER')
+		
+		#obtem os tipos de linha cadastrados
+		ltypes = dxf_item(tabs, 'TABLE', 'LTYPE')
 		
 		#procura um layer chamado FRAME
 		l_frame = dxf_item(layers, 'LAYER', 'FRAME')
@@ -985,18 +989,20 @@ if __name__ == "__main__":
 		
 		
 		class desenho:
-			def __init__(self, ents, color_t, jan, blks):
+			def __init__(self, ents, color_t, jan, blks, layers, ltypes):
 				self.ents = ents
 				self.color_t = color_t
 				self.jan = jan
 				self.blks = blks
+				self.layers = layers
+				self.ltypes = ltypes
 			def redesenha(self):
 				self.jan.limpa()
 				#self.jan.screen.fill((0, 0, 0))
-				dxf_desenha(self.ents, self.color_t, self.jan, self.blks)
+				dxf_desenha(self.ents, self.color_t, self.jan, self.blks, self.layers, self.ltypes)
 				#print jan.zoom, jan.offset
 				self.jan.exibe()
 		
-		des = desenho(ents, color_t, jan, blks)
+		des = desenho(ents, color_t, jan, blks, layers, ltypes)
 		des.redesenha()
 		jan.redesenha = des.redesenha
