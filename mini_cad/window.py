@@ -290,6 +290,7 @@ class viewer(threading.Thread):
 		
 		self.arco([200,300], 50, 30, 60, cor=(0,255,0), esp=1)
 		self.arco([200,300], 70, 0, 240, cor=(0,0,255), esp=2)
+		self.arco([200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
 		self.circulo([200,300], 30, cor=(0,0,0), esp=3)
 		
 		self.exibe()
@@ -503,11 +504,11 @@ class viewer(threading.Thread):
 	def circulo(self, pt1, raio, cor=(0,0,0), esp=1):
 		self.arco(pt1, raio, 0, 0, cor, esp)
 	
-	def arco(self, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1):
+	def arco(self, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1, sentido=1):
 		
 		n = 32 #numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 
-		sentido = 1#o sentido padrão do algoritmo eh contra relógio
+		#sentido = 1#o sentido padrão do algoritmo eh contra relógio
 		#sentido = -1 # para sentido do relógio sentido eh negativo
 		
 		centro_x = pt1[0]
@@ -541,6 +542,33 @@ class viewer(threading.Thread):
 		px = centro_x + raio * math.cos(ang_fim)
 		py = centro_y + raio * math.sin(ang_fim)
 		self.linha([pre_x,pre_y], [px,py], cor, esp)
+		
+	def arco_bulge(self, pt1, pt2, bulge, cor=(0,0,0), esp=1):
+		
+		theta = 2 * math.atan(bulge)
+		alfa = math.atan2(pt2[1]-pt1[1], pt2[0]-pt1[0])
+		d = math.sqrt((pt2[1]-pt1[1])**2 + (pt2[0]-pt1[0])**2) / 2
+		raio = d*(bulge**2 + 1)/(2*bulge)
+		
+		ang_c = math.pi+(alfa - math.pi/2 - theta)
+		centro = [raio*math.cos(ang_c) + pt1[0],raio*math.sin(ang_c) + pt1[1]]
+		
+		#angulo inicial e final obtidos das coordenadas iniciais
+		ang_ini = math.atan2(pt1[1]-centro[1],pt1[0]-centro[0])
+		ang_final = math.atan2(pt2[1]-centro[1],pt2[0]-centro[0])
+		
+		sentido = 1
+		if bulge < 0:
+			ang_ini += math.pi
+			ang_final += math.pi
+			sentido = -1
+		
+		#converte para garus
+		ang_ini *= 180/math.pi
+		ang_final *= 180/math.pi
+		
+		self.arco(centro, raio, ang_ini, ang_final, cor, esp, sentido)
+		
 		
 	def circular(self, pt1=None, pt2=None, centro=None, raio=None):
 		#-------------------------------------------------------------------------------------------

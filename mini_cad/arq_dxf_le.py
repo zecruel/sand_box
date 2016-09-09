@@ -230,6 +230,8 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, layers=None, ltypes=No
 	if isinstance(mestre, obj_dxf):
 		pt_ant = None #ponto anterior -> para polylines
 		pt_final = None #ponto final -> para polylines fechadas
+		bulge_ant = 0 #para arcos em polylines
+		
 		for idx, i in enumerate(mestre.conteudo): #varre o conteudo do obj em busca de entidades
 			tipo = ''
 			entidade = None
@@ -613,9 +615,18 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, layers=None, ltypes=No
 				valor = dxf_proc_grupo(entidade, 30)
 				if len(valor)>0: pt1[2] = valor[0] + offset[2]
 				
+				valor = dxf_proc_grupo(entidade, 42)
+				if len(valor)>0:
+					bulge = valor[0]
+				else:
+					bulge = 0
+				
 				#verifica se nao eh o primeiro ponto
 				if pt_ant != None and desenho:
-					desenho.linha(pt_ant[:2], pt1[:2], t_cor[cor])
+					if bulge_ant == 0:
+						desenho.linha(pt_ant[:2], pt1[:2], t_cor[cor])
+					else:
+						desenho.arco_bulge(pt_ant[:2], pt1[:2], bulge_ant, t_cor[cor])
 				else: 
 					pt_ant = [0,0,0]
 					#verifica se a a polyline eh fechada
@@ -627,6 +638,7 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, layers=None, ltypes=No
 							pt_final[0], pt_final[1], pt_final [2] = pt1[0], pt1[1], pt1[2]
 				#prepara para o proximo ponto
 				pt_ant[0], pt_ant[1], pt_ant[2] = pt1[0], pt1[1], pt1[2]
+				bulge_ant = bulge
 				#print entidade.imprime() #---------------debug
 				
 			elif tipo == '3DFACE':
@@ -641,7 +653,12 @@ def dxf_desenha(mestre, t_cor, desenho=None, blocos=None, layers=None, ltypes=No
 			#print offset
 		else: #apos o fechamento do loop, verifica se ha pontos pendentes de desenho (polylines fechadas)
 			if pt_final != None and desenho:
-				desenho.linha(pt_ant[:2], pt_final[:2], t_cor[cor])
+				#desenho.linha(pt_ant[:2], pt_final[:2], t_cor[cor])
+				if bulge_ant == 0:
+					desenho.linha(pt_ant[:2], pt_final[:2], t_cor[cor])
+				else:
+					desenho.arco_bulge(pt_ant[:2], pt_final[:2], bulge_ant, t_cor[cor])
+				
 
 def init_color():
 	'''Gera a tabela de cores padrao Autocad em uma lista,
