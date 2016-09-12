@@ -119,123 +119,7 @@ class viewer(threading.Thread):
 		self.lib.SDL_SetRenderTarget(self.renderer, None)
 		self.lib.SDL_RenderCopy(self.renderer, self.t_fundo, None, None)
 		self.lib.SDL_RenderPresent(self.renderer)
-		
-	def line(self, x0, y0, x1, y1, color = (0,0,0)):
-		cor = [0,0,0]
-		cor[0] = color[0]
-		cor[1] = color[1]
-		cor[2] = color[2]
-		
-		#verifica se eh a mesma cor do fundo de tela
-		if (cor[0] == self.fundo[0]) and (
-		cor[1] == self.fundo[1]) and (
-		cor[2] == self.fundo[2]):
-			cor[0] ^= 255 #faz um XOR na cor
-			cor[1] ^= 255 #faz um XOR na cor
-			cor[2] ^= 255 #faz um XOR na cor
-		
-		pt1 = [0,0]
-		pt2 = [0,0]
-		pt1[0] = x0
-		pt1[1] = y0
-		pt2[0] = x1
-		pt2[1] = y1
-		
-		#aplica zoom e offset aos pontos
-		pt1[0] *= self.zoom
-		pt1[1] *= self.zoom
-		pt2[0] *= self.zoom
-		pt2[1] *= self.zoom
-		pt1[0] -= self.offset[0]
-		pt1[1] -= self.offset[1]
-		pt2[0] -= self.offset[0]
-		pt2[1] -= self.offset[1]
-		
-		pt1[0] = int(round(pt1[0]))
-		pt1[1] = int(round(pt1[1]))
-		pt2[0] = int(round(pt2[0]))
-		pt2[1] = int(round(pt2[1]))
-		
-		#desenha uma linha SDL na cor determinada
-		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
-		self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
-		self.lib.SDL_RenderDrawLine(self.renderer, pt1[0], self.altura-pt1[1], pt2[0], self.altura-pt2[1])
-		
-	def texto(self, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
-		cor = [0,0,0]
-		cor[0] = color[0]
-		cor[1] = color[1]
-		cor[2] = color[2]
-		
-		#verifica se eh a mesma cor do fundo de tela
-		if (cor[0] == self.fundo[0]) and (
-		cor[1] == self.fundo[1]) and (
-		cor[2] == self.fundo[2]):
-			cor[0] ^= 255 #faz um XOR na cor
-			cor[1] ^= 255 #faz um XOR na cor
-			cor[2] ^= 255 #faz um XOR na cor
-		
-		
-		cor_sdl = sdl.SDL_Color()
-		cor_sdl.r = cor[0]
-		cor_sdl.g = cor[1]
-		cor_sdl.b = cor[2]
-		cor_sdl.a = 255
-		pos = [0, 0]
-		
-		#renderiza o texto em uma nova camada (textura)
-		s_texto =self.lib_ttf.TTF_RenderText_Solid(self.fonte, str(txt), cor_sdl)
-		t_texto = self.lib.SDL_CreateTextureFromSurface(self.renderer, s_texto)
-		self.lib.SDL_SetTextureBlendMode(t_texto, 1)
-		self.lib.SDL_FreeSurface(s_texto)
-		
-		#descobre as dimensoes da textura
-		largura = c_int(0)
-		altura = c_int(0)
-		self.lib.SDL_QueryTexture(t_texto, None, None, byref(largura), byref(altura))
-		
-		#print altura. value, largura.value, txt
-		if altura.value<=0: altura.value = 1 #evita divisao por zero
-		
-		#determina a posicao de insercao do texto em funcao de seu alinhamento
-		centro_x = alin[0] * (float(largura.value)/altura.value * tam/2)
-		centro_y = (alin[1]-3)* (float(tam)/ 2)
-		base_x =  alin[0] * (float(pt2[0]) - pt1[0])/2
-		base_y =  alin[0] * (float(pt2[1]) - pt1[1])/2
-		pos[0] += float(pt1[0]) + base_x - centro_x
-		pos[1] += float(pt1[1]) + base_y - centro_y
-		#print pos, [base_x, base_y], [centro_x, centro_y]
-		
-		#aplica zoom e offset aos pontos
-		pos[0] *= self.zoom
-		pos[1] *= self.zoom
-		pos[0] -= self.offset[0]
-		pos[1] -= self.offset[1]
-		tam *= self.zoom
-		
-		#corrige a origem em y para emular um plano cartesiano
-		pos[1] = float(self.altura) - pos[1]
-		
-		#determina o retangulo SDL de destino do texto
-		r_destino = sdl.SDL_Rect()
-		r_destino.x = int(round(pos[0]))
-		r_destino.y = int(round(pos[1]))
-		r_destino.h = int(round(tam))
-		r_destino.w = int(round(float(largura.value)/altura.value * tam))
-		
-		#determina o pivo de rotacao (ponto SDL)
-		pivo = sdl.SDL_Point()
-		pivo.x = int(round(alin[0] * r_destino.w/2))
-		pivo.y = int(round((3-alin[1])* r_destino.h/2))
-		
-		#copia o texto na camada de fundo na tela com a rotacao
-		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
-		#self.lib.SDL_RenderCopy(self.renderer, t_texto, None, byref(r_destino))
-		self.lib.SDL_RenderCopyEx(self.renderer, t_texto, None, byref(r_destino), rot, byref(pivo), 0)
-		
-		#exclui a camada temporaria
-		self.lib.SDL_DestroyTexture(t_texto)
-	
+
 	def ver_mouse(self):
 		x = c_int(0)
 		y = c_int(0)
@@ -250,50 +134,6 @@ class viewer(threading.Thread):
 		self.lib_ttf.TTF_CloseFont(self.fonte)
 		self.lib_ttf.TTF_Quit()
 		self.lib.SDL_Quit()
-	
-	def des_teste(self):
-		texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\
-		'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +\
-		'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' +\
-		'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in ' +\
-		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
-		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
-		'culpa qui officia deserunt mollit anim id est laborum.'
-		
-		self.limpa()
-		
-		self.line(100,90,100,110) #--------teste
-		self.line(90,100,110,100) #--------teste
-		self.texto(texto_teste[:15],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
-		
-		self.texto('teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
-		
-		self.line(200,180,200,220) #--------teste
-		self.line(180,200,220,200) #--------teste
-		self.texto('teste',(200,200),(200,200), 30, 0, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -30, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -60, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -90, (0,0,0))
-		
-		self.line(250,80,250,120) #--------teste
-		self.line(230,100,270,100) #--------teste
-		self.texto('BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
-		self.texto('MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
-		self.texto('TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
-		self.linha([100, 400], [200, 100], (255,0,0),1)
-		self.linha([100, 400], [100, 200], (0,0,0),2)
-		self.linha([100, 400], [200, 200], (0,0,255),3)
-		
-		self.arco([200,300], 50, 30, 60, cor=(0,255,0), esp=1)
-		self.arco([200,300], 70, 0, 240, cor=(0,0,255), esp=2)
-		self.arco([200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
-		self.circulo([200,300], 30, cor=(0,0,0), esp=3)
-		
-		self.exibe()
 		
 	def set_pt(self, x, y, esp=4):
 		'''desenha um pixel na camada SDL'''
@@ -308,41 +148,6 @@ class viewer(threading.Thread):
 				rect.y = int(round(y-esp/2))
 				self.lib.SDL_RenderFillRect(self.renderer, byref(rect))
 	
-	def intersect(self, lin_pt1, lin_pt2, rect_pt1, rect_pt2):
-		'''testa se uma linha intercepta um retangulo'''
-		#ordena os cantos do retangulo
-		r_bl_x = min(rect_pt1[0], rect_pt2[0])
-		r_bl_y = min(rect_pt1[1], rect_pt2[1])
-		r_tr_x = max(rect_pt1[0], rect_pt2[0])
-		r_tr_y = max(rect_pt1[1], rect_pt2[1])
-		
-		#ordena os cantos do retangulo da linha
-		l_bl_x = min(lin_pt1[0], lin_pt2[0])
-		l_bl_y = min(lin_pt1[1], lin_pt2[1])
-		l_tr_x = max(lin_pt1[0], lin_pt2[0])
-		l_tr_y = max(lin_pt1[1], lin_pt2[1])
-		
-		#verifica se a linha esta fora de alcance do retangulo
-		if ((lin_pt1[0] > r_tr_x) and (lin_pt2[0] > r_tr_x)) or ( #linha a direita
-		(lin_pt1[1] > r_tr_y) and (lin_pt2[1] > r_tr_y)) or (  #linha acima
-		(lin_pt1[0] < r_bl_x) and (lin_pt2[0] < r_bl_x)) or ( #linha a esquerda
-		(lin_pt1[1] < r_bl_y) and (lin_pt2[1] < r_bl_y)): #linha abaixo
-			return 0
-		else: #verifica se a linha cruza o retangulo
-			#calcula as polarizacoes dos quatro cantos do retangulo
-			a = lin_pt2[1]-lin_pt1[1]
-			b = lin_pt1[0]-lin_pt2[0]
-			c = lin_pt2[0]*lin_pt1[1] - lin_pt1[0]*lin_pt2[1]
-			
-			pol1 = a*rect_pt1[0] + b*rect_pt1[1] + c
-			pol2 = a*rect_pt1[0] + b*rect_pt2[1] + c
-			pol3 = a*rect_pt2[0] + b*rect_pt1[1] + c
-			pol4 = a*rect_pt2[0] + b*rect_pt2[1] + c
-			if ((pol1>=0) and (pol2>=0) and (pol3>=0) and (pol4>=0)) or(
-			(pol1<0) and (pol2<0) and (pol3<0) and (pol4<0)):
-				return 0
-			return 1
-		
 	def linha(self, ponto1, ponto2, color=(0,0,0), esp=1):
 		cor = [0,0,0]
 		cor[0] = color[0]
@@ -568,179 +373,204 @@ class viewer(threading.Thread):
 		ang_final *= 180/math.pi
 		
 		self.arco(centro, raio, ang_ini, ang_final, cor, esp, sentido)
-		
-		
-	def circular(self, pt1=None, pt2=None, centro=None, raio=None):
-		#-------------------------------------------------------------------------------------------
-		#---- transforma o arco em segmentos de reta, criando um polígono regular inscrito
-		#----------------------------------------------------------------------------------------------
-		n = 32 #numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 
-		sentido = 1#o sentido padrão do algoritmo eh contra relógio
-		#sentido = -1 # para sentido do relógio sentido eh negativo
-		'''
-		if (self.plano == 'xz'):
-			pre_x = pt1[0]
-			pre_y = pt1[2]
-			pre_z = pt1[1]
-			
-			atual_x = pt2[0]
-			atual_y = pt2[2]
-			atual_z = pt2[1]
-			
-			offset_x = i
-			offset_y = k
-			corr_sent = -1  # o sentido de rotação do plano xz (G18) eh inverso aos outros
-			
-		elif (self.plano == 'yz'):
-			pre_x = pt1[1]
-			pre_y = pt1[2]
-			pre_z = pt1[0]
-			
-			atual_x = pt2[1]
-			atual_y = pt2[2]
-			atual_z = pt2[0]
-			
-			offset_x = j
-			offset_y = k
-			corr_sent = 1
-			
-		else:
-			pre_x = pt1[0]
-			pre_y = pt1[1]
-			pre_z = pt1[2]
-			
-			atual_x = pt2[0]
-			atual_y = pt2[1]
-			atual_z = pt2[2]
-			
-			offset_x = i
-			offset_y = j
-			corr_sent = 1
+				
+	def line(self, x0, y0, x1, y1, color = (0,0,0)):
+		cor = [0,0,0]
+		cor[0] = color[0]
+		cor[1] = color[1]
+		cor[2] = color[2]
 		
-		centro_x = pre_x + offset_x		#encontra o centro via offsets
-		centro_y = pre_y + offset_y
-		angulo = 0.0
+		#verifica se eh a mesma cor do fundo de tela
+		if (cor[0] == self.fundo[0]) and (
+		cor[1] == self.fundo[1]) and (
+		cor[2] == self.fundo[2]):
+			cor[0] ^= 255 #faz um XOR na cor
+			cor[1] ^= 255 #faz um XOR na cor
+			cor[2] ^= 255 #faz um XOR na cor
 		
-		#---------encontra o centro via raio do arco---------------
-		if (raio):			#pega o valor via parametro passado no codigo
+		pt1 = [0,0]
+		pt2 = [0,0]
+		pt1[0] = x0
+		pt1[1] = y0
+		pt2[0] = x1
+		pt2[1] = y1
+		
+		#aplica zoom e offset aos pontos
+		pt1[0] *= self.zoom
+		pt1[1] *= self.zoom
+		pt2[0] *= self.zoom
+		pt2[1] *= self.zoom
+		pt1[0] -= self.offset[0]
+		pt1[1] -= self.offset[1]
+		pt2[0] -= self.offset[0]
+		pt2[1] -= self.offset[1]
+		
+		pt1[0] = int(round(pt1[0]))
+		pt1[1] = int(round(pt1[1]))
+		pt2[0] = int(round(pt2[0]))
+		pt2[1] = int(round(pt2[1]))
+		
+		#desenha uma linha SDL na cor determinada
+		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
+		self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
+		self.lib.SDL_RenderDrawLine(self.renderer, pt1[0], self.altura-pt1[1], pt2[0], self.altura-pt2[1])
+		
+	def texto(self, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
+		cor = [0,0,0]
+		cor[0] = color[0]
+		cor[1] = color[1]
+		cor[2] = color[2]
+		
+		#verifica se eh a mesma cor do fundo de tela
+		if (cor[0] == self.fundo[0]) and (
+		cor[1] == self.fundo[1]) and (
+		cor[2] == self.fundo[2]):
+			cor[0] ^= 255 #faz um XOR na cor
+			cor[1] ^= 255 #faz um XOR na cor
+			cor[2] ^= 255 #faz um XOR na cor
+		
+		
+		cor_sdl = sdl.SDL_Color()
+		cor_sdl.r = cor[0]
+		cor_sdl.g = cor[1]
+		cor_sdl.b = cor[2]
+		cor_sdl.a = 255
+		pos = [0, 0]
+		
+		#renderiza o texto em uma nova camada (textura)
+		s_texto =self.lib_ttf.TTF_RenderUTF8_Solid(self.fonte, str(txt), cor_sdl)
+		t_texto = self.lib.SDL_CreateTextureFromSurface(self.renderer, s_texto)
+		self.lib.SDL_SetTextureBlendMode(t_texto, 1)
+		self.lib.SDL_FreeSurface(s_texto)
+		
+		#descobre as dimensoes da textura
+		largura = c_int(0)
+		altura = c_int(0)
+		self.lib.SDL_QueryTexture(t_texto, None, None, byref(largura), byref(altura))
+		
+		#print altura. value, largura.value, txt
+		if altura.value<=0: altura.value = 1 #evita divisao por zero
+		
+		#determina a posicao de insercao do texto em funcao de seu alinhamento
+		centro_x = alin[0] * (float(largura.value)/altura.value * tam/2)
+		centro_y = (alin[1]-3)* (float(tam)/ 2)
+		base_x =  alin[0] * (float(pt2[0]) - pt1[0])/2
+		base_y =  alin[0] * (float(pt2[1]) - pt1[1])/2
+		pos[0] += float(pt1[0]) + base_x - centro_x
+		pos[1] += float(pt1[1]) + base_y - centro_y
+		#print pos, [base_x, base_y], [centro_x, centro_y]
+		
+		#aplica zoom e offset aos pontos
+		pos[0] *= self.zoom
+		pos[1] *= self.zoom
+		pos[0] -= self.offset[0]
+		pos[1] -= self.offset[1]
+		tam *= self.zoom
+		
+		#corrige a origem em y para emular um plano cartesiano
+		pos[1] = float(self.altura) - pos[1]
+		
+		#determina o retangulo SDL de destino do texto
+		r_destino = sdl.SDL_Rect()
+		r_destino.x = int(round(pos[0]))
+		r_destino.y = int(round(pos[1]))
+		r_destino.h = int(round(tam))
+		r_destino.w = int(round(float(largura.value)/altura.value * tam))
+		
+		#determina o pivo de rotacao (ponto SDL)
+		pivo = sdl.SDL_Point()
+		pivo.x = int(round(alin[0] * r_destino.w/2))
+		pivo.y = int(round((3-alin[1])* r_destino.h/2))
+		
+		#copia o texto na camada de fundo na tela com a rotacao
+		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
+		#self.lib.SDL_RenderCopy(self.renderer, t_texto, None, byref(r_destino))
+		self.lib.SDL_RenderCopyEx(self.renderer, t_texto, None, byref(r_destino), rot, byref(pivo), 0)
+		
+		#exclui a camada temporaria
+		self.lib.SDL_DestroyTexture(t_texto)
+	
+	def des_teste(self):
+		texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\
+		'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +\
+		'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' +\
+		'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in ' +\
+		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
+		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
+		'culpa qui officia deserunt mollit anim id est laborum.'
+		
+		self.limpa()
+		
+		self.line(100,90,100,110) #--------teste
+		self.line(90,100,110,100) #--------teste
+		self.texto(texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
+		
+		self.texto('teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
+		self.texto('teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
+		self.texto('teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
+		self.texto('teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
+		self.texto('teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
+		
+		self.line(200,180,200,220) #--------teste
+		self.line(180,200,220,200) #--------teste
+		self.texto('testezão',(200,200),(200,200), 30, 0, (0,0,0))
+		self.texto('teste',(200,200),(200,200), 30, -30, (0,0,0))
+		self.texto('teste',(200,200),(200,200), 30, -60, (0,0,0))
+		self.texto('teste',(200,200),(200,200), 30, -90, (0,0,0))
+		
+		self.line(250,80,250,120) #--------teste
+		self.line(230,100,270,100) #--------teste
+		self.texto('BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
+		self.texto('MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
+		self.texto('TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
+		self.linha([100, 400], [200, 100], (255,0,0),1)
+		self.linha([100, 400], [100, 200], (0,0,0),2)
+		self.linha([100, 400], [200, 200], (0,0,255),3)
+		
+		self.arco([200,300], 50, 30, 60, cor=(0,255,0), esp=1)
+		self.arco([200,300], 70, 0, 240, cor=(0,0,255), esp=2)
+		self.arco([200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
+		self.circulo([200,300], 30, cor=(0,0,0), esp=3)
+		
+		self.exibe()
+		
 
-			if ((pre_x - atual_x) == 0) and ((pre_y - atual_y) != 0):
-				centro_y = pre_y + (atual_y - pre_y)/2
-				centro_x = atual_x
-				angulo = math.pi
-				ang_ini = math.atan2((pre_y - centro_y),(pre_x - centro_x))
-				if ((ang_ini < 0) & (sentido>inf)): ang_ini = (2*math.pi) + ang_ini
-			
-			elif ((pre_y - atual_y) == 0) and ((pre_x - atual_x) != 0):
-				centro_x = pre_x + (atual_x - pre_x)/2
-				centro_y = atual_y
-				angulo = math.pi
-				ang_ini = math.atan2((pre_y - centro_y),(pre_x - centro_x))
-				if ((ang_ini < 0) & (sentido>inf)): ang_ini = (2*math.pi) + ang_ini
-			
-			else:				
-				#solução do sistema de equações quadraticas para encontrar o centro do arco
-				C = 2*atual_x - 2*pre_x
-				D = 2*atual_y - 2*pre_y
-				E = (pre_y)**2+(pre_x)**2-(atual_x)**2-(atual_y)**2
-				
-				alfa = (D/C)**2 + 1
-				beta = 2*pre_x*D/C+2*D*E/(C**2)-2*pre_y
-				gama = pre_x**2+2*pre_x*E/C+(E/C)**2+pre_y**2-r**2
-
-				delta = math.sqrt(beta**2-(4*alfa*gama))
-				
-				ang=[]
-				ang_i=[]
-				cx=[]
-				cy=[]
-				#são encontradas duas soluções
-				# usa um laço para processar as duas soluções
-				for iter in [-1.0, 1.0]: 
-					c_y = (-beta + iter*delta)/(2*alfa)
-					c_x = (-E-D*c_y)/C
-					cx.append(c_x)
-					cy.append(c_y)
-					#---------angulo inicial obtido das coordenadas iniciais
-					ang_ini = math.atan2((pre_y - c_y),(pre_x - c_x))
-					if ((ang_ini < 0) & (sentido>inf)): ang_ini = (2*math.pi) + ang_ini
-					ang_i.append(ang_ini)
-			
-					#--------angulo final obtido das coordenadas
-					ang_final = math.atan2((atual_y - c_y),(atual_x -c_x))
-					if ((ang_final < 0) & (sentido>0)): ang_final = (2*math.pi) + ang_final
-			
-					angulo = (ang_final-ang_ini) * sentido #angulo do arco
-					if angulo <= 0: angulo = angulo + 2*math.pi
-					ang.append(angulo)
-				
-				# escolhe uma solução, conforme a polaridade do parametro r
-				if r>0: 
-					angulo = min(ang) # se r for positivo, então fica com o menor arco
-					
-				else:
-					angulo = max(ang)  # se r for negativo, então fica com o maior arco
-				
-				# retorna as coordenadas do centro e o angulo inicial,
-				# correnspondentes ao angulo escolhido
-				centro_x = cx[ang.index(angulo)]
-				centro_y = cy[ang.index(angulo)]
-				ang_ini = ang_i[ang.index(angulo)]
-				
-		else:
-			#---------encontra o raio via offsets---------------
-			r = math.sqrt(offset_x**2+offset_y**2) #calcula a partir os offsets, ou
-			
-			#---------angulo inicial obtido das coordenadas iniciais
-			ang_ini = math.atan2(-offset_y,-offset_x)
-			if (ang_ini < 0): ang_ini = (2*math.pi) + ang_ini
+	def intersect(self, lin_pt1, lin_pt2, rect_pt1, rect_pt2):
+		'''testa se uma linha intercepta um retangulo'''
+		#ordena os cantos do retangulo
+		r_bl_x = min(rect_pt1[0], rect_pt2[0])
+		r_bl_y = min(rect_pt1[1], rect_pt2[1])
+		r_tr_x = max(rect_pt1[0], rect_pt2[0])
+		r_tr_y = max(rect_pt1[1], rect_pt2[1])
 		
-			#--------angulo final obtido das coordenadas
-			ang_final = math.atan2((atual_y - centro_y),(atual_x -centro_x ))
-			if (ang_final < 0): ang_final = (2*math.pi) + ang_final
+		#ordena os cantos do retangulo da linha
+		l_bl_x = min(lin_pt1[0], lin_pt2[0])
+		l_bl_y = min(lin_pt1[1], lin_pt2[1])
+		l_tr_x = max(lin_pt1[0], lin_pt2[0])
+		l_tr_y = max(lin_pt1[1], lin_pt2[1])
 		
-			angulo = (ang_final-ang_ini) * sentido * corr_sent #angulo do arco
-			if angulo <= 0: angulo = angulo + 2*math.pi
-		
-		
-		passo = angulo*n/(2*math.pi)	#descobre quantos passos para o laço a seguir
-
-		passos = abs(int(passo)) #numero de vertices do arco
-
-		passo_z = (atual_z - pre_z)/abs(passo) #se houver cood. Z, faz interpolação helicoidal
-		
-		pre_x = pt1[0]
-		pre_y = pt1[1]
-		pre_z = pt1[2]
-		
-		atual_x = pt2[0]
-		atual_y = pt2[1]
-		atual_z = pt2[2]
-		#já começa do segundo vértice
-		for i in range(1,passos):
+		#verifica se a linha esta fora de alcance do retangulo
+		if ((lin_pt1[0] > r_tr_x) and (lin_pt2[0] > r_tr_x)) or ( #linha a direita
+		(lin_pt1[1] > r_tr_y) and (lin_pt2[1] > r_tr_y)) or (  #linha acima
+		(lin_pt1[0] < r_bl_x) and (lin_pt2[0] < r_bl_x)) or ( #linha a esquerda
+		(lin_pt1[1] < r_bl_y) and (lin_pt2[1] < r_bl_y)): #linha abaixo
+			return 0
+		else: #verifica se a linha cruza o retangulo
+			#calcula as polarizacoes dos quatro cantos do retangulo
+			a = lin_pt2[1]-lin_pt1[1]
+			b = lin_pt1[0]-lin_pt2[0]
+			c = lin_pt2[0]*lin_pt1[1] - lin_pt1[0]*lin_pt2[1]
 			
-			if (self.plano == 'xz'):
-				px = centro_x + r * math.cos(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				pz = centro_y + r * math.sin(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				py = pre_y + passo_z
-			elif (self.plano == 'yz'):
-				py = centro_x + r * math.cos(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				pz = centro_y + r * math.sin(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				px = pre_x + passo_z
-			else:
-				px = centro_x + r * math.cos(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				py = centro_y + r * math.sin(2 * math.pi * i * sentido * corr_sent/ n + ang_ini)
-				pz = pre_z + passo_z
-			
-			self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(px,py,pz), self.velocidade))
-			pre_x=px
-			pre_y=py
-			pre_z=pz
-			
-		# o ultimo vertice do arco eh o ponto final, nao calculado no laço
-		self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(atual_x,atual_y,atual_z), self.velocidade))
-		'''
+			pol1 = a*rect_pt1[0] + b*rect_pt1[1] + c
+			pol2 = a*rect_pt1[0] + b*rect_pt2[1] + c
+			pol3 = a*rect_pt2[0] + b*rect_pt1[1] + c
+			pol4 = a*rect_pt2[0] + b*rect_pt2[1] + c
+			if ((pol1>=0) and (pol2>=0) and (pol3>=0) and (pol4>=0)) or(
+			(pol1<0) and (pol2<0) and (pol3<0) and (pol4<0)):
+				return 0
+			return 1
+		
 		
 if __name__ == "__main__":
 	print 'Modulo de interface ao SDL2.'

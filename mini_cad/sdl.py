@@ -195,6 +195,10 @@ class sdl_dll:
 		self.lib_ttf.TTF_RenderText_Solid.restypes = [c_void_p]
 		self.lib_ttf.TTF_RenderText_Solid.argtypes = [c_void_p, c_char_p, SDL_Color]
 		
+		'''SDL_Surface *TTF_RenderUTF8_Solid(TTF_Font *font, const char *text, SDL_Color fg)'''
+		self.lib_ttf.TTF_RenderUTF8_Solid.restypes = [c_void_p]
+		self.lib_ttf.TTF_RenderUTF8_Solid.argtypes = [c_void_p, c_char_p, SDL_Color]
+		
 		'''def floodfill(x, y, oldColor, newColor):
 		    # assume surface is a 2D image and surface[x][y] is the color at x, y.
 		    if surface[x][y] != oldColor: # the base case

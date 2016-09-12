@@ -1,5 +1,6 @@
 from dxf import *
 import dxf_color
+import math
 
 
 class dxf_render:
@@ -24,8 +25,16 @@ class dxf_render:
 	def desenha_ents(self):
 		if self.tela:
 			self.tela.limpa()
-			self.desenha(self.ents)
+			#self.desenha(self.ents, [0,0,0], 30) #teste
+			self.desenha(self.ents, [0,0,0], 0)
 			self.tela.exibe()
+	
+	def rotaciona(self, pt1, pivo, ang):
+		pt_rot = [0, 0, 0]
+		pt_rot[0] = math.cos(ang)*(pt1[0]-pivo[0]) - math.sin(ang)*(pt1[1]-pivo[1]) + pivo[0]
+		pt_rot[1] = math.sin(ang)*(pt1[0]-pivo[0]) + math.cos(ang)*(pt1[1]-pivo[1]) + pivo[1]
+		pt_rot[2] = pt1[2]
+		return pt_rot
 	
 	def desenha(self, mestre, offset=[0,0,0], rotacao=0):
 		if isinstance(mestre, obj_dxf):
@@ -87,50 +96,60 @@ class dxf_render:
 					if self.tela:
 						self.tela.pattern = pattern
 						self.tela.patt_a = 0
-					
+				
 				if tipo == 'LINE':
 					pt1 = [0,0,0]
 					pt2 = [0,0,0]
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#procura o primeiro ponto
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 11)
+					#procura o segundo ponto
+					valor = dxf_proc_grupo(entidade, 11) #x
 					if len(valor)>0: pt2[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 21)
+					valor = dxf_proc_grupo(entidade, 21) #y
 					if len(valor)>0: pt2[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 31)
+					valor = dxf_proc_grupo(entidade, 31) #z
 					if len(valor)>0: pt2[2] = valor[0] + offset[2]
 					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
+					
+					#desenha, se houver onde
 					if self.tela:
 						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
 					
 				elif tipo == 'POINT':
 					pass
+					
 				elif tipo == 'CIRCLE':
 					pt1 = [0,0,0]
 					raio = 0
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#procura o centro
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
+					#procura o raio
 					valor = dxf_proc_grupo(entidade, 40)
-					if len(valor)>0: raio = valor[0] 
+					if len(valor)>0: raio = valor[0]
 					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+					
+					#desenha, se houver onde
 					if self.tela:
 						self.tela.circulo(pt1[:2], raio, self.t_cor[cor])
 					
@@ -140,24 +159,31 @@ class dxf_render:
 					ang_ini = 0
 					ang_fim = 0
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#procura o centro
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
+					#procura o raio
 					valor = dxf_proc_grupo(entidade, 40)
 					if len(valor)>0: raio = valor[0]
 					
+					#angulos de inicio e fim
 					valor = dxf_proc_grupo(entidade, 50)
 					if len(valor)>0: ang_ini = valor[0]
-					
 					valor = dxf_proc_grupo(entidade, 51)
 					if len(valor)>0: ang_fim = valor[0]
 					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						ang_ini += rotacao
+						ang_fim += rotacao
+					
+					#desenha, se houver onde
 					if self.tela:
 						self.tela.arco(pt1[:2], raio, ang_ini, ang_fim, self.t_cor[cor])
 						
@@ -167,41 +193,44 @@ class dxf_render:
 					pt3 = [0,0,0]
 					pt4 = [0,0,0]
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#primeiro ponto
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 11)
+					#segundo ponto
+					valor = dxf_proc_grupo(entidade, 11) #x
 					if len(valor)>0: pt2[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 21)
+					valor = dxf_proc_grupo(entidade, 21) #y
 					if len(valor)>0: pt2[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 31)
+					valor = dxf_proc_grupo(entidade, 31) #z
 					if len(valor)>0: pt2[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 12)
+					#terceiro ponto
+					valor = dxf_proc_grupo(entidade, 12) #x
 					if len(valor)>0: pt3[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 22)
+					valor = dxf_proc_grupo(entidade, 22) #y
 					if len(valor)>0: pt3[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 32)
+					valor = dxf_proc_grupo(entidade, 32) #z
 					if len(valor)>0: pt3[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 13)
+					#quarto ponto
+					valor = dxf_proc_grupo(entidade, 13) #x
 					if len(valor)>0: pt4[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 23)
+					valor = dxf_proc_grupo(entidade, 23) #y
 					if len(valor)>0: pt4[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 33)
+					valor = dxf_proc_grupo(entidade, 33) #z
 					if len(valor)>0: pt4[2] = valor[0] + offset[2]
+					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
+						pt3 = self.rotaciona(pt3, offset, rotacao*math.pi/180)
+						pt4 = self.rotaciona(pt4, offset, rotacao*math.pi/180)
 					
 					if self.tela:
 						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
@@ -216,56 +245,60 @@ class dxf_render:
 					pt4 = [0,0,0]
 					quarto_ponto = 0
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#primeiro ponto
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 11)
+					#segundo ponto
+					valor = dxf_proc_grupo(entidade, 11) #x
 					if len(valor)>0: pt2[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 21)
+					valor = dxf_proc_grupo(entidade, 21) #y
 					if len(valor)>0: pt2[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 31)
+					valor = dxf_proc_grupo(entidade, 31) #z
 					if len(valor)>0: pt2[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 12)
+					#terceiro ponto
+					valor = dxf_proc_grupo(entidade, 12) #x
 					if len(valor)>0: pt3[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 22)
+					valor = dxf_proc_grupo(entidade, 22) #y
 					if len(valor)>0: pt3[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 32)
+					valor = dxf_proc_grupo(entidade, 32) #z
 					if len(valor)>0: pt3[2] = valor[0] + offset[2]
 					
-					valor = dxf_proc_grupo(entidade, 13)
+					#quarto ponto -> opcional
+					valor = dxf_proc_grupo(entidade, 13) #x
 					if len(valor)>0:
 						pt4[0] = valor[0] + offset[0]
 						quarto_ponto = 1
-					
-					valor = dxf_proc_grupo(entidade, 23)
+					valor = dxf_proc_grupo(entidade, 23) #y
 					if len(valor)>0:
 						pt4[1] = valor[0] + offset[1]
 						quarto_ponto = 1
-					
-					valor = dxf_proc_grupo(entidade, 33)
+					valor = dxf_proc_grupo(entidade, 33) #z
 					if len(valor)>0:
 						pt4[2] = valor[0] + offset[2]
 						quarto_ponto = 1
+						
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
+						pt3 = self.rotaciona(pt3, offset, rotacao*math.pi/180)
+						pt4 = self.rotaciona(pt4, offset, rotacao*math.pi/180)
 					
 					if self.tela:
 						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
 						self.tela.linha(pt1[:2], pt3[:2], self.t_cor[cor])
-						if quarto_ponto:
+						if quarto_ponto: #se houver quarto ponto
 							self.tela.linha(pt2[:2], pt4[:2], self.t_cor[cor])
 							self.tela.linha(pt3[:2], pt4[:2], self.t_cor[cor])
 						else:
 							self.tela.linha(pt2[:2], pt3[:2], self.t_cor[cor])
+				
 				elif tipo == 'TEXT':
 					pt1 = [0,0,0]
 					pt2 = [0,0,0]
@@ -274,44 +307,53 @@ class dxf_render:
 					rot = 0
 					alin = [0,1]
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#primeiro ponto
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
+					#segundo ponto -> opcional
 					valor = dxf_proc_grupo(entidade, 11)
 					if len(valor)>0: 
 						pt2[0] = valor[0] + offset[0]
 						segundo_ponto = 1
-					
 					valor = dxf_proc_grupo(entidade, 21)
 					if len(valor)>0: 
 						pt2[1] = valor[0] + offset[1]
 						segundo_ponto = 1
-					
 					valor = dxf_proc_grupo(entidade, 31)
 					if len(valor)>0: 
 						pt2[2] = valor[0] + offset[2]
 						segundo_ponto = 1
 					
+					#tamanho do texto
 					valor = dxf_proc_grupo(entidade, 40)
 					if len(valor)>0: tam = valor[0]
 					
+					#rotacao do texto
 					valor = dxf_proc_grupo(entidade, 50)
 					if len(valor)>0: rot = valor[0]
 					
+					#string do texto
 					valor = dxf_proc_grupo(entidade, 1)
 					if len(valor)>0: texto = valor[0]
 					
+					#alinhamento horizontal
 					valor = dxf_proc_grupo(entidade, 72)
 					if len(valor)>0: alin[0] = valor[0]
 					
+					#alinhamento vertical
 					valor = dxf_proc_grupo(entidade, 73)
 					if len(valor)>0: alin[1] = valor[0]
+					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
+						rot -= rotacao
 					
 					if self.tela:
 						if segundo_ponto:
@@ -329,27 +371,32 @@ class dxf_render:
 						rot = 0
 						nome_blk = ''
 						
+						#ponto de insercao do bloco
 						valor = dxf_proc_grupo(entidade, 10)
 						if len(valor)>0: pt1[0] = valor[0] + offset[0]
-						
 						valor = dxf_proc_grupo(entidade, 20)
 						if len(valor)>0: pt1[1] = valor[0] + offset[1]
-						
 						valor = dxf_proc_grupo(entidade, 30)
 						if len(valor)>0: pt1[2] = valor[0] + offset[2]
 						
+						# nome do bloco
 						valor = dxf_proc_grupo(entidade, 2)
 						if len(valor)>0: nome_blk = valor[0]
 						
+						#rotacao
 						valor = dxf_proc_grupo(entidade, 50)
 						if len(valor)>0: rot = valor[0]
 						
+						#aplica rotacao
+						if rotacao != 0:
+							pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						
+						#busca o bloco na biblioteca
 						blk = dxf_item(self.blocos, 'BLOCK', nome_blk)
-						self.desenha(blk, pt1, rot) #faz recursivamente os blocos
-						#print pt1
-						#print entidade.imprime()
+						self.desenha(blk, pt1, rotacao+rot) #faz recursivamente os blocos
+						
 					#faz recursivamente para os atributos fora da definicao do bloco
-					self.desenha(entidade, offset)
+					self.desenha(entidade, offset, rotacao)
 						
 				elif tipo == 'ATTRIB':
 					pt1 = [0,0,0]
@@ -359,44 +406,53 @@ class dxf_render:
 					rot = 0
 					alin = [0,1]
 					
-					valor = dxf_proc_grupo(entidade, 10)
+					#primeiro ponto
+					valor = dxf_proc_grupo(entidade, 10) #x
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
-					valor = dxf_proc_grupo(entidade, 20)
+					valor = dxf_proc_grupo(entidade, 20) #y
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
-					valor = dxf_proc_grupo(entidade, 30)
+					valor = dxf_proc_grupo(entidade, 30) #z
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
+					#segundo ponto -> opcional
 					valor = dxf_proc_grupo(entidade, 11)
 					if len(valor)>0: 
 						pt2[0] = valor[0] + offset[0]
 						segundo_ponto = 1
-					
 					valor = dxf_proc_grupo(entidade, 21)
 					if len(valor)>0: 
 						pt2[1] = valor[0] + offset[1]
 						segundo_ponto = 1
-					
 					valor = dxf_proc_grupo(entidade, 31)
 					if len(valor)>0: 
 						pt2[2] = valor[0] + offset[2]
 						segundo_ponto = 1
 					
+					#tamanho do texto
 					valor = dxf_proc_grupo(entidade, 40)
 					if len(valor)>0: tam = valor[0]
 					
+					#rotacao do texto
 					valor = dxf_proc_grupo(entidade, 50)
 					if len(valor)>0: rot = valor[0]
 					
+					#string do texto
 					valor = dxf_proc_grupo(entidade, 1)
 					if len(valor)>0: texto = valor[0]
 					
+					#alinhamento horizontal
 					valor = dxf_proc_grupo(entidade, 72)
 					if len(valor)>0: alin[0] = valor[0]
 					
+					#alinhamento vertical
 					valor = dxf_proc_grupo(entidade, 74)
 					if len(valor)>0: alin[1] = valor[0]
+					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
+						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
+						rot -= rotacao
 					
 					if self.tela:
 						if segundo_ponto:
@@ -404,7 +460,7 @@ class dxf_render:
 						else:
 							self.tela.texto(texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
 				elif tipo == 'POLYLINE':
-					self.desenha(entidade, offset) #faz recursivamente
+					self.desenha(entidade, offset, rotacao) #faz recursivamente
 					pt_ant = None
 					pt_final = None
 					
@@ -412,20 +468,24 @@ class dxf_render:
 					
 					pt1 = [0,0,0]
 					
+					#ponto do vertice
 					valor = dxf_proc_grupo(entidade, 10)
 					if len(valor)>0: pt1[0] = valor[0] + offset[0]
-					
 					valor = dxf_proc_grupo(entidade, 20)
 					if len(valor)>0: pt1[1] = valor[0] + offset[1]
-					
 					valor = dxf_proc_grupo(entidade, 30)
 					if len(valor)>0: pt1[2] = valor[0] + offset[2]
 					
+					#valor do bulge -> usado em segmentos circulares
 					valor = dxf_proc_grupo(entidade, 42)
 					if len(valor)>0:
 						bulge = valor[0]
 					else:
 						bulge = 0
+					
+					#aplica rotacao
+					if rotacao != 0:
+						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
 					
 					#verifica se nao eh o primeiro ponto
 					if pt_ant != None and self.tela:
@@ -445,7 +505,6 @@ class dxf_render:
 					#prepara para o proximo ponto
 					pt_ant[0], pt_ant[1], pt_ant[2] = pt1[0], pt1[1], pt1[2]
 					bulge_ant = bulge
-					#print entidade.imprime() #---------------debug
 					
 				elif tipo == '3DFACE':
 					pass
@@ -455,8 +514,6 @@ class dxf_render:
 					pass
 				else:
 					pass
-				#print tipo #-----------debug
-				#print offset
 			else: #apos o fechamento do loop, verifica se ha pontos pendentes de desenho (polylines fechadas)
 				if pt_final != None and self.tela:
 					if bulge_ant == 0:

@@ -9,7 +9,7 @@ class teste:
 	drawing = None
 
 	def abrir(self):
-		arquivo = tkFileDialog.askopenfilename(title='Abrir')
+		arquivo = tkFileDialog.askopenfilename(title='Abrir', filetypes=[("DXF","*.dxf")])
 		if arquivo:
 			dir = os.path.dirname(os.path.abspath(arquivo))
 			os.chdir(dir)
