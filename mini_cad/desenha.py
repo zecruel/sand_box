@@ -124,7 +124,7 @@ class dxf_render:
 					
 					#desenha, se houver onde
 					if self.tela:
-						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt1[:2], pt2[:2], self.t_cor[cor])
 					
 				elif tipo == 'POINT':
 					pass
@@ -151,7 +151,7 @@ class dxf_render:
 					
 					#desenha, se houver onde
 					if self.tela:
-						self.tela.circulo(pt1[:2], raio, self.t_cor[cor])
+						self.tela.circulo(entidade, pt1[:2], raio, self.t_cor[cor])
 					
 				elif tipo == 'ARC':
 					pt1 = [0,0,0]
@@ -185,7 +185,7 @@ class dxf_render:
 					
 					#desenha, se houver onde
 					if self.tela:
-						self.tela.arco(pt1[:2], raio, ang_ini, ang_fim, self.t_cor[cor])
+						self.tela.arco(entidade, pt1[:2], raio, ang_ini, ang_fim, self.t_cor[cor])
 						
 				elif tipo == 'TRACE':
 					pt1 = [0,0,0]
@@ -233,10 +233,10 @@ class dxf_render:
 						pt4 = self.rotaciona(pt4, offset, rotacao*math.pi/180)
 					
 					if self.tela:
-						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
-						self.tela.linha(pt1[:2], pt3[:2], self.t_cor[cor])
-						self.tela.linha(pt2[:2], pt4[:2], self.t_cor[cor])
-						self.tela.linha(pt3[:2], pt4[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt1[:2], pt2[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt1[:2], pt3[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt2[:2], pt4[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt3[:2], pt4[:2], self.t_cor[cor])
 						
 				elif tipo == 'SOLID':
 					pt1 = [0,0,0]
@@ -291,13 +291,13 @@ class dxf_render:
 						pt4 = self.rotaciona(pt4, offset, rotacao*math.pi/180)
 					
 					if self.tela:
-						self.tela.linha(pt1[:2], pt2[:2], self.t_cor[cor])
-						self.tela.linha(pt1[:2], pt3[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt1[:2], pt2[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt1[:2], pt3[:2], self.t_cor[cor])
 						if quarto_ponto: #se houver quarto ponto
-							self.tela.linha(pt2[:2], pt4[:2], self.t_cor[cor])
-							self.tela.linha(pt3[:2], pt4[:2], self.t_cor[cor])
+							self.tela.linha(entidade, pt2[:2], pt4[:2], self.t_cor[cor])
+							self.tela.linha(entidade, pt3[:2], pt4[:2], self.t_cor[cor])
 						else:
-							self.tela.linha(pt2[:2], pt3[:2], self.t_cor[cor])
+							self.tela.linha(entidade, pt2[:2], pt3[:2], self.t_cor[cor])
 				
 				elif tipo == 'TEXT':
 					pt1 = [0,0,0]
@@ -357,9 +357,9 @@ class dxf_render:
 					
 					if self.tela:
 						if segundo_ponto:
-							self.tela.texto(texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto(entidade, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
 						else:
-							self.tela.texto(texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto(entidade, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
 						
 					#print entidade.imprime() #---------------debug
 					
@@ -456,9 +456,9 @@ class dxf_render:
 					
 					if self.tela:
 						if segundo_ponto:
-							self.tela.texto(texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto(entidade, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
 						else:
-							self.tela.texto(texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto(entidade, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
 				elif tipo == 'POLYLINE':
 					self.desenha(entidade, offset, rotacao) #faz recursivamente
 					pt_ant = None
@@ -490,9 +490,9 @@ class dxf_render:
 					#verifica se nao eh o primeiro ponto
 					if pt_ant != None and self.tela:
 						if bulge_ant == 0:
-							self.tela.linha(pt_ant[:2], pt1[:2], self.t_cor[cor])
+							self.tela.linha(entidade, pt_ant[:2], pt1[:2], self.t_cor[cor])
 						else:
-							self.tela.arco_bulge(pt_ant[:2], pt1[:2], bulge_ant, self.t_cor[cor])
+							self.tela.arco_bulge(entidade, pt_ant[:2], pt1[:2], bulge_ant, self.t_cor[cor])
 					else: 
 						pt_ant = [0,0,0]
 						#verifica se a a polyline eh fechada
@@ -517,6 +517,6 @@ class dxf_render:
 			else: #apos o fechamento do loop, verifica se ha pontos pendentes de desenho (polylines fechadas)
 				if pt_final != None and self.tela:
 					if bulge_ant == 0:
-						self.tela.linha(pt_ant[:2], pt_final[:2], self.t_cor[cor])
+						self.tela.linha(entidade, pt_ant[:2], pt_final[:2], self.t_cor[cor])
 					else:
-						self.tela.arco_bulge(pt_ant[:2], pt_final[:2], bulge_ant, self.t_cor[cor])
+						self.tela.arco_bulge(entidade, pt_ant[:2], pt_final[:2], bulge_ant, self.t_cor[cor])

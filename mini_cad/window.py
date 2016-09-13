@@ -4,6 +4,8 @@ import math
 import sdl_event
 import sdl
 from ctypes import *
+import util
+import dxf
 
 class viewer(threading.Thread):
 	def __init__(self, group=None, target=None, name=None,
@@ -36,6 +38,8 @@ class viewer(threading.Thread):
 		self.lib = self.sdl.lib
 		self.lib_ttf = self.sdl.lib_ttf
 		self.pronto = threading.Condition() #informa que esta pronto
+		
+		self.selec = util.selecao() #objeto auxiliar na selecao de elementos na tela
 		
 		#tipo de linhas
 		self.pix_count = 0
@@ -91,6 +95,10 @@ class viewer(threading.Thread):
 				elif (evento.type >= 1024)&(evento.type < 1028): #eventos de mouse
 					if evento.type == 1025: #SDL_MOUSEBUTTONDOWN
 						print evento.button.button
+						_, mouse_x, mouse_y = self.ver_mouse()
+						selec = self.selec.busca([mouse_x,mouse_y])
+						if isinstance(selec, dxf.obj_dxf):
+							print selec.nome
 					elif evento.type == 1027: #SDL_MOUSEWHEEL
 						#print evento.wheel.x, evento.wheel.y
 						#print self.ver_mouse()
@@ -113,6 +121,9 @@ class viewer(threading.Thread):
 		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
 		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 255)
 		self.lib.SDL_RenderClear(self.renderer)
+		
+		#zera a lista de selecao
+		self.selec.lista_busca = []
 	
 	def exibe(self):
 		#exibe a imagem de fundo na tela
@@ -148,7 +159,7 @@ class viewer(threading.Thread):
 				rect.y = int(round(y-esp/2))
 				self.lib.SDL_RenderFillRect(self.renderer, byref(rect))
 	
-	def linha(self, ponto1, ponto2, color=(0,0,0), esp=1):
+	def linha(self, entidade, ponto1, ponto2, color=(0,0,0), esp=1):
 		cor = [0,0,0]
 		cor[0] = color[0]
 		cor[1] = color[1]
@@ -189,8 +200,10 @@ class viewer(threading.Thread):
 		pt2[0] = int(round(pt2[0]))
 		pt2[1] = int(round(pt2[1]))
 		
-		#desenha somente se a linha estadentro da area de desenho
-		if self.intersect(pt1, pt2, [0,0], [self.largura, self.altura]):
+		#desenha somente se a linha esta dentro da area de desenho
+		if util.intersect(pt1, pt2, [0,0], [self.largura, self.altura]):
+			
+			self.selec.add_line(entidade, [[pt1[0], pt1[1]], [pt2[0], pt2[1]]])
 			
 			#corrige a origem em y para emular um plano cartesiano
 			pt1[1] = self.altura - pt1[1]
@@ -306,10 +319,10 @@ class viewer(threading.Thread):
 							self.patt_a = 0
 	
 	
-	def circulo(self, pt1, raio, cor=(0,0,0), esp=1):
-		self.arco(pt1, raio, 0, 0, cor, esp)
+	def circulo(self, entidade, pt1, raio, cor=(0,0,0), esp=1):
+		self.arco(entidade, pt1, raio, 0, 0, cor, esp)
 	
-	def arco(self, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1, sentido=1):
+	def arco(self, entidade, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1, sentido=1):
 		
 		n = 32 #numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 
@@ -338,7 +351,7 @@ class viewer(threading.Thread):
 			py = centro_y + raio * math.sin(2 * math.pi * i * sentido/ n + ang_ini)
 			
 			#self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(px,py,pz), self.velocidade))
-			self.linha([pre_x,pre_y], [px,py], cor, esp)
+			self.linha(entidade, [pre_x,pre_y], [px,py], cor, esp)
 			pre_x=px
 			pre_y=py
 			
@@ -346,9 +359,9 @@ class viewer(threading.Thread):
 		#self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(atual_x,atual_y,atual_z), self.velocidade))
 		px = centro_x + raio * math.cos(ang_fim)
 		py = centro_y + raio * math.sin(ang_fim)
-		self.linha([pre_x,pre_y], [px,py], cor, esp)
+		self.linha(entidade, [pre_x,pre_y], [px,py], cor, esp)
 		
-	def arco_bulge(self, pt1, pt2, bulge, cor=(0,0,0), esp=1):
+	def arco_bulge(self, entidade, pt1, pt2, bulge, cor=(0,0,0), esp=1):
 		
 		theta = 2 * math.atan(bulge)
 		alfa = math.atan2(pt2[1]-pt1[1], pt2[0]-pt1[0])
@@ -372,10 +385,10 @@ class viewer(threading.Thread):
 		ang_ini *= 180/math.pi
 		ang_final *= 180/math.pi
 		
-		self.arco(centro, raio, ang_ini, ang_final, cor, esp, sentido)
+		self.arco(entidade, centro, raio, ang_ini, ang_final, cor, esp, sentido)
 
 				
-	def line(self, x0, y0, x1, y1, color = (0,0,0)):
+	def line(self, entidade, x0, y0, x1, y1, color = (0,0,0)):
 		cor = [0,0,0]
 		cor[0] = color[0]
 		cor[1] = color[1]
@@ -416,7 +429,7 @@ class viewer(threading.Thread):
 		self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
 		self.lib.SDL_RenderDrawLine(self.renderer, pt1[0], self.altura-pt1[1], pt2[0], self.altura-pt2[1])
 		
-	def texto(self, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
+	def texto(self, entidade, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
 		cor = [0,0,0]
 		cor[0] = color[0]
 		cor[1] = color[1]
@@ -502,75 +515,38 @@ class viewer(threading.Thread):
 		
 		self.limpa()
 		
-		self.line(100,90,100,110) #--------teste
-		self.line(90,100,110,100) #--------teste
-		self.texto(texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
+		self.line(None, 100,90,100,110) #--------teste
+		self.line(None,90,100,110,100) #--------teste
+		self.texto(None,texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
 		
-		self.texto('teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
-		self.texto('teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
+		self.texto(None,'teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
+		self.texto(None,'teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
+		self.texto(None,'teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
+		self.texto(None,'teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
+		self.texto(None,'teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
 		
-		self.line(200,180,200,220) #--------teste
-		self.line(180,200,220,200) #--------teste
-		self.texto('testezão',(200,200),(200,200), 30, 0, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -30, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -60, (0,0,0))
-		self.texto('teste',(200,200),(200,200), 30, -90, (0,0,0))
+		self.line(None,200,180,200,220) #--------teste
+		self.line(None,180,200,220,200) #--------teste
+		self.texto(None,'testezão',(200,200),(200,200), 30, 0, (0,0,0))
+		self.texto(None,'teste',(200,200),(200,200), 30, -30, (0,0,0))
+		self.texto(None,'teste',(200,200),(200,200), 30, -60, (0,0,0))
+		self.texto(None,'teste',(200,200),(200,200), 30, -90, (0,0,0))
 		
-		self.line(250,80,250,120) #--------teste
-		self.line(230,100,270,100) #--------teste
-		self.texto('BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
-		self.texto('MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
-		self.texto('TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
-		self.linha([100, 400], [200, 100], (255,0,0),1)
-		self.linha([100, 400], [100, 200], (0,0,0),2)
-		self.linha([100, 400], [200, 200], (0,0,255),3)
+		self.line(None,250,80,250,120) #--------teste
+		self.line(None,230,100,270,100) #--------teste
+		self.texto(None,'BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
+		self.texto(None,'MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
+		self.texto(None,'TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
+		self.linha(None, [100, 400], [200, 100], (255,0,0),1)
+		self.linha(None, [100, 400], [100, 200], (0,0,0),2)
+		self.linha(None, [100, 400], [200, 200], (0,0,255),3)
 		
-		self.arco([200,300], 50, 30, 60, cor=(0,255,0), esp=1)
-		self.arco([200,300], 70, 0, 240, cor=(0,0,255), esp=2)
-		self.arco([200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
-		self.circulo([200,300], 30, cor=(0,0,0), esp=3)
+		self.arco(None,[200,300], 50, 30, 60, cor=(0,255,0), esp=1)
+		self.arco(None,[200,300], 70, 0, 240, cor=(0,0,255), esp=2)
+		self.arco(None,[200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
+		self.circulo(None,[200,300], 30, cor=(0,0,0), esp=3)
 		
 		self.exibe()
-		
-
-	def intersect(self, lin_pt1, lin_pt2, rect_pt1, rect_pt2):
-		'''testa se uma linha intercepta um retangulo'''
-		#ordena os cantos do retangulo
-		r_bl_x = min(rect_pt1[0], rect_pt2[0])
-		r_bl_y = min(rect_pt1[1], rect_pt2[1])
-		r_tr_x = max(rect_pt1[0], rect_pt2[0])
-		r_tr_y = max(rect_pt1[1], rect_pt2[1])
-		
-		#ordena os cantos do retangulo da linha
-		l_bl_x = min(lin_pt1[0], lin_pt2[0])
-		l_bl_y = min(lin_pt1[1], lin_pt2[1])
-		l_tr_x = max(lin_pt1[0], lin_pt2[0])
-		l_tr_y = max(lin_pt1[1], lin_pt2[1])
-		
-		#verifica se a linha esta fora de alcance do retangulo
-		if ((lin_pt1[0] > r_tr_x) and (lin_pt2[0] > r_tr_x)) or ( #linha a direita
-		(lin_pt1[1] > r_tr_y) and (lin_pt2[1] > r_tr_y)) or (  #linha acima
-		(lin_pt1[0] < r_bl_x) and (lin_pt2[0] < r_bl_x)) or ( #linha a esquerda
-		(lin_pt1[1] < r_bl_y) and (lin_pt2[1] < r_bl_y)): #linha abaixo
-			return 0
-		else: #verifica se a linha cruza o retangulo
-			#calcula as polarizacoes dos quatro cantos do retangulo
-			a = lin_pt2[1]-lin_pt1[1]
-			b = lin_pt1[0]-lin_pt2[0]
-			c = lin_pt2[0]*lin_pt1[1] - lin_pt1[0]*lin_pt2[1]
-			
-			pol1 = a*rect_pt1[0] + b*rect_pt1[1] + c
-			pol2 = a*rect_pt1[0] + b*rect_pt2[1] + c
-			pol3 = a*rect_pt2[0] + b*rect_pt1[1] + c
-			pol4 = a*rect_pt2[0] + b*rect_pt2[1] + c
-			if ((pol1>=0) and (pol2>=0) and (pol3>=0) and (pol4>=0)) or(
-			(pol1<0) and (pol2<0) and (pol3<0) and (pol4<0)):
-				return 0
-			return 1
-		
 		
 if __name__ == "__main__":
 	print 'Modulo de interface ao SDL2.'
