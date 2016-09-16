@@ -46,6 +46,12 @@ class viewer(threading.Thread):
 		self.pattern = [10, -5, 0, -5]
 		self.patt_a = 0
 		
+		self.camadas=[]
+		
+		self.cor_hi = (255,0,255,120)
+		
+		self.lista_selecao = dxf.obj_dxf()
+		
 		#------------------------------------------------------------
 		
 		self.start()
@@ -64,6 +70,11 @@ class viewer(threading.Thread):
 		self.window = self.lib.SDL_CreateWindow(self.titulo, 536805376, 536805376, self.largura, self.altura, 0) #janela com posicao indeterminada
 		self.renderer = self.lib.SDL_CreateRenderer(self.window, -1, 0) #tela principal
 		self.t_fundo = self.lib.SDL_CreateTexture(self.renderer, 373694468, 2, self.largura, self.altura) #imagem de fundo
+		self.camadas.append(self.t_fundo)
+		
+		self.t_hilite = self.lib.SDL_CreateTexture(self.renderer, 373694468, 2, self.largura, self.altura)
+		self.lib.SDL_SetTextureBlendMode(self.t_hilite, 1)
+		self.camadas.append(self.t_hilite)
 		
 		self.fonte = self.lib_ttf.TTF_OpenFont(self.sdl.dir + 'SourceCodePro-ExtraLight.ttf', 20)
 		
@@ -96,9 +107,14 @@ class viewer(threading.Thread):
 					if evento.type == 1025: #SDL_MOUSEBUTTONDOWN
 						print evento.button.button
 						_, mouse_x, mouse_y = self.ver_mouse()
-						selec = self.selec.busca([mouse_x,mouse_y])
+						selec = self.selec.busca([mouse_x,self.altura-mouse_y])
 						if isinstance(selec, dxf.obj_dxf):
+							self.lista_selecao.conteudo.append(selec)
 							print selec.nome
+							#principal = selec
+							#while (principal.up.nome != 'SECTION'):
+							#	principal = principal.up
+							#print principal.nome
 					elif evento.type == 1027: #SDL_MOUSEWHEEL
 						#print evento.wheel.x, evento.wheel.y
 						#print self.ver_mouse()
@@ -122,13 +138,19 @@ class viewer(threading.Thread):
 		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 255)
 		self.lib.SDL_RenderClear(self.renderer)
 		
+		#limpa a imagem de hilite com a cor determinada e totalmente transparente
+		self.lib.SDL_SetRenderTarget(self.renderer, self.t_hilite)
+		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 0)
+		self.lib.SDL_RenderClear(self.renderer)
+		
 		#zera a lista de selecao
 		self.selec.lista_busca = []
 	
 	def exibe(self):
 		#exibe a imagem de fundo na tela
 		self.lib.SDL_SetRenderTarget(self.renderer, None)
-		self.lib.SDL_RenderCopy(self.renderer, self.t_fundo, None, None)
+		for i in self.camadas:
+			self.lib.SDL_RenderCopy(self.renderer, i, None, None)
 		self.lib.SDL_RenderPresent(self.renderer)
 
 	def ver_mouse(self):
@@ -139,12 +161,41 @@ class viewer(threading.Thread):
 	
 	def sai(self):
 		#saida segura do SDL
-		self.lib.SDL_DestroyTexture(self.t_fundo)
+		for i in self.camadas:
+			self.lib.SDL_DestroyTexture(i)
 		self.lib.SDL_DestroyRenderer(self.renderer)
 		self.lib.SDL_DestroyWindow(self.window)
 		self.lib_ttf.TTF_CloseFont(self.fonte)
 		self.lib_ttf.TTF_Quit()
 		self.lib.SDL_Quit()
+	
+	def set_camada(self, camada=0, color=(0,0,0)):
+		cor = [0,0,0]
+		cor[0] = color[0]
+		cor[1] = color[1]
+		cor[2] = color[2]
+		
+		#verifica se eh a mesma cor do fundo de tela
+		if (cor[0] == self.fundo[0]) and (
+		cor[1] == self.fundo[1]) and (
+		cor[2] == self.fundo[2]):
+			cor[0] ^= 255 #faz um XOR na cor
+			cor[1] ^= 255 #faz um XOR na cor
+			cor[2] ^= 255 #faz um XOR na cor
+		
+		#Busca a camada na lista de camadas existentes
+		try:
+			self.lib.SDL_SetRenderTarget(self.renderer, self.camadas[camada])
+		except: #se nao existir a camada, determina a camada de fundo
+			self.lib.SDL_SetRenderTarget(self.renderer, self.camadas[0])
+		
+		#determina a cor de desenho para cada camada
+		if camada == 0: #para a camada de fundo, a cor eh a propria do objeto
+			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
+		elif camada == 1: #para a camada de hilite, a cor eh a propria do hilite
+			self.lib.SDL_SetRenderDrawColor(self.renderer, self.cor_hi[0], self.cor_hi[1], self.cor_hi[2], self.cor_hi[3])
+		else: #outros casos, a cor eh a propria do objeto
+			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
 		
 	def set_pt(self, x, y, esp=4):
 		'''desenha um pixel na camada SDL'''
@@ -159,24 +210,13 @@ class viewer(threading.Thread):
 				rect.y = int(round(y-esp/2))
 				self.lib.SDL_RenderFillRect(self.renderer, byref(rect))
 	
-	def linha(self, entidade, ponto1, ponto2, color=(0,0,0), esp=1):
-		cor = [0,0,0]
-		cor[0] = color[0]
-		cor[1] = color[1]
-		cor[2] = color[2]
-		
-		#verifica se eh a mesma cor do fundo de tela
-		if (cor[0] == self.fundo[0]) and (
-		cor[1] == self.fundo[1]) and (
-		cor[2] == self.fundo[2]):
-			cor[0] ^= 255 #faz um XOR na cor
-			cor[1] ^= 255 #faz um XOR na cor
-			cor[2] ^= 255 #faz um XOR na cor
-		
+	def linha(self, entidade, camada, ponto1, ponto2, color=(0,0,0), esp=1):
 		
 		#determina a camada e a cor
-		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
-		self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
+		self.set_camada(camada, color)
+		
+		if camada == 1: #para a camada de hilite, aumenta a espessura
+			esp += 2
 		
 		pt1 = [0,0]
 		pt2 = [0,0]
@@ -319,10 +359,10 @@ class viewer(threading.Thread):
 							self.patt_a = 0
 	
 	
-	def circulo(self, entidade, pt1, raio, cor=(0,0,0), esp=1):
-		self.arco(entidade, pt1, raio, 0, 0, cor, esp)
+	def circulo(self, entidade, camada, pt1, raio, cor=(0,0,0), esp=1):
+		self.arco(entidade, camada, pt1, raio, 0, 0, cor, esp)
 	
-	def arco(self, entidade, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1, sentido=1):
+	def arco(self, entidade, camada, pt1, raio, ang_ini, ang_fim, cor=(0,0,0), esp=1, sentido=1):
 		
 		n = 32 #numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 
@@ -351,7 +391,7 @@ class viewer(threading.Thread):
 			py = centro_y + raio * math.sin(2 * math.pi * i * sentido/ n + ang_ini)
 			
 			#self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(px,py,pz), self.velocidade))
-			self.linha(entidade, [pre_x,pre_y], [px,py], cor, esp)
+			self.linha(entidade, camada, [pre_x,pre_y], [px,py], cor, esp)
 			pre_x=px
 			pre_y=py
 			
@@ -359,9 +399,9 @@ class viewer(threading.Thread):
 		#self.lista.append(ponto.l_usin(ponto.ponto(pre_x,pre_y,pre_z),ponto.ponto(atual_x,atual_y,atual_z), self.velocidade))
 		px = centro_x + raio * math.cos(ang_fim)
 		py = centro_y + raio * math.sin(ang_fim)
-		self.linha(entidade, [pre_x,pre_y], [px,py], cor, esp)
+		self.linha(entidade, camada, [pre_x,pre_y], [px,py], cor, esp)
 		
-	def arco_bulge(self, entidade, pt1, pt2, bulge, cor=(0,0,0), esp=1):
+	def arco_bulge(self, entidade, camada, pt1, pt2, bulge, cor=(0,0,0), esp=1):
 		
 		theta = 2 * math.atan(bulge)
 		alfa = math.atan2(pt2[1]-pt1[1], pt2[0]-pt1[0])
@@ -385,10 +425,10 @@ class viewer(threading.Thread):
 		ang_ini *= 180/math.pi
 		ang_final *= 180/math.pi
 		
-		self.arco(entidade, centro, raio, ang_ini, ang_final, cor, esp, sentido)
+		self.arco(entidade, camada, centro, raio, ang_ini, ang_final, cor, esp, sentido)
 
 				
-	def line(self, entidade, x0, y0, x1, y1, color = (0,0,0)):
+	def line(self, entidade, camada, x0, y0, x1, y1, color = (0,0,0)):
 		cor = [0,0,0]
 		cor[0] = color[0]
 		cor[1] = color[1]
@@ -429,7 +469,7 @@ class viewer(threading.Thread):
 		self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
 		self.lib.SDL_RenderDrawLine(self.renderer, pt1[0], self.altura-pt1[1], pt2[0], self.altura-pt2[1])
 		
-	def texto(self, entidade, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
+	def texto(self, entidade, camada, txt, pt1, pt2, tam=1, rot=0, color=(0,0,0), alin=(0,1)):
 		cor = [0,0,0]
 		cor[0] = color[0]
 		cor[1] = color[1]
@@ -445,10 +485,23 @@ class viewer(threading.Thread):
 		
 		
 		cor_sdl = sdl.SDL_Color()
-		cor_sdl.r = cor[0]
-		cor_sdl.g = cor[1]
-		cor_sdl.b = cor[2]
-		cor_sdl.a = 255
+		#determina a cor de desenho para cada camada
+		if camada == 0: #para a camada de fundo, a cor eh a propria do objeto
+			cor_sdl.r = cor[0]
+			cor_sdl.g = cor[1]
+			cor_sdl.b = cor[2]
+			cor_sdl.a = 255
+		elif camada == 1: #para a camada de hilite, a cor eh a do hilite
+			cor_sdl.r = self.cor_hi[0]
+			cor_sdl.g = self.cor_hi[1]
+			cor_sdl.b = self.cor_hi[2]
+			cor_sdl.a = self.cor_hi[3]
+		else:
+			cor_sdl.r = cor[0]
+			cor_sdl.g = cor[1]
+			cor_sdl.b = cor[2]
+			cor_sdl.a = 255
+		
 		pos = [0, 0]
 		
 		#renderiza o texto em uma nova camada (textura)
@@ -496,9 +549,16 @@ class viewer(threading.Thread):
 		pivo.x = int(round(alin[0] * r_destino.w/2))
 		pivo.y = int(round((3-alin[1])* r_destino.h/2))
 		
-		#copia o texto na camada de fundo na tela com a rotacao
-		self.lib.SDL_SetRenderTarget(self.renderer, self.t_fundo)
-		#self.lib.SDL_RenderCopy(self.renderer, t_texto, None, byref(r_destino))
+		#acrescenta o ponto de insercao do texto na lista de busca para selecao da tela			
+		self.selec.add_line(entidade, [[pos[0], float(self.altura) - pos[1]], [pos[0], float(self.altura) - pos[1]]])
+		
+		#Busca a camada na lista de camadas existentes
+		try:
+			self.lib.SDL_SetRenderTarget(self.renderer, self.camadas[camada])
+		except: #se nao existir a camada, determina a camada de fundo
+			self.lib.SDL_SetRenderTarget(self.renderer, self.camadas[0])
+		
+		#copia o texto na camada com a rotacao
 		self.lib.SDL_RenderCopyEx(self.renderer, t_texto, None, byref(r_destino), rot, byref(pivo), 0)
 		
 		#exclui a camada temporaria
@@ -515,36 +575,36 @@ class viewer(threading.Thread):
 		
 		self.limpa()
 		
-		self.line(None, 100,90,100,110) #--------teste
-		self.line(None,90,100,110,100) #--------teste
-		self.texto(None,texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
+		self.line(None, 0, 100,90,100,110) #--------teste
+		self.line(None, 0, 90,100,110,100) #--------teste
+		self.texto(None, 0, texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
 		
-		self.texto(None,'teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
-		self.texto(None,'teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
-		self.texto(None,'teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
-		self.texto(None,'teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
-		self.texto(None,'teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
+		self.texto(None, 0, 'teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
+		self.texto(None, 0, 'teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
+		self.texto(None, 0, 'teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
+		self.texto(None, 0,'teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
+		self.texto(None, 0,'teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
 		
-		self.line(None,200,180,200,220) #--------teste
-		self.line(None,180,200,220,200) #--------teste
-		self.texto(None,'testezão',(200,200),(200,200), 30, 0, (0,0,0))
-		self.texto(None,'teste',(200,200),(200,200), 30, -30, (0,0,0))
-		self.texto(None,'teste',(200,200),(200,200), 30, -60, (0,0,0))
-		self.texto(None,'teste',(200,200),(200,200), 30, -90, (0,0,0))
+		self.line(None, 0, 200,180,200,220) #--------teste
+		self.line(None, 0, 180,200,220,200) #--------teste
+		self.texto(None, 0, 'testezão',(200,200),(200,200), 30, 0, (0,0,0))
+		self.texto(None, 0, 'teste',(200,200),(200,200), 30, -30, (0,0,0))
+		self.texto(None, 0, 'teste',(200,200),(200,200), 30, -60, (0,0,0))
+		self.texto(None, 0, 'teste',(200,200),(200,200), 30, -90, (0,0,0))
 		
-		self.line(None,250,80,250,120) #--------teste
-		self.line(None,230,100,270,100) #--------teste
-		self.texto(None,'BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
-		self.texto(None,'MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
-		self.texto(None,'TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
-		self.linha(None, [100, 400], [200, 100], (255,0,0),1)
-		self.linha(None, [100, 400], [100, 200], (0,0,0),2)
-		self.linha(None, [100, 400], [200, 200], (0,0,255),3)
+		self.line(None, 0, 250,80,250,120) #--------teste
+		self.line(None, 0, 230,100,270,100) #--------teste
+		self.texto(None, 0, 'BL', (250,100), (250,100), 40, 0, (255,0,0), (0,1))
+		self.texto(None, 0, 'MC', [250,100], [250,100], 40, 0, (0,255,0), (1,2))
+		self.texto(None, 0, 'TR', [250,100], [250,100], 40, 0, (0,0,255), (2,3))
+		self.linha(None, 0, [100, 400], [200, 100], (255,0,0),1)
+		self.linha(None, 0, [100, 400], [100, 200], (0,0,0),2)
+		self.linha(None, 0, [100, 400], [200, 200], (0,0,255),3)
 		
-		self.arco(None,[200,300], 50, 30, 60, cor=(0,255,0), esp=1)
-		self.arco(None,[200,300], 70, 0, 240, cor=(0,0,255), esp=2)
-		self.arco(None,[200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
-		self.circulo(None,[200,300], 30, cor=(0,0,0), esp=3)
+		self.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
+		self.arco(None, 0, [200,300], 70, 0, 240, cor=(0,0,255), esp=2)
+		self.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
+		self.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
 		
 		self.exibe()
 		
