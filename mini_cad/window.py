@@ -6,6 +6,8 @@ import sdl
 from ctypes import *
 import util
 import dxf
+import shape
+
 
 class viewer(threading.Thread):
 	def __init__(self, group=None, target=None, name=None,
@@ -39,11 +41,13 @@ class viewer(threading.Thread):
 		self.lib_ttf = self.sdl.lib_ttf
 		self.pronto = threading.Condition() #informa que esta pronto
 		
+		self.fonte_shx = shape.fonte_shx()
+		
 		self.selec = util.selecao() #objeto auxiliar na selecao de elementos na tela
 		
 		#tipo de linhas
 		self.pix_count = 0
-		self.pattern = [10, -5, 0, -5]
+		self.pattern = [1]
 		self.patt_a = 0
 		
 		self.camadas=[]
@@ -564,6 +568,44 @@ class viewer(threading.Thread):
 		#exclui a camada temporaria
 		self.lib.SDL_DestroyTexture(t_texto)
 	
+	def texto_shx(self, entidade, camada, txt, pt1, pt2, tam=1, rot=0, cor=(0,0,0), alin=(0,1)):
+		
+		#renderiza o texto
+		linhas, largura, altura = self.fonte_shx.interpreta(txt)
+		
+		if (len(linhas)>0) and (altura!=0):
+			pos = [0, 0]
+			#tam_fonte = abs(self.fonte_shx.dados_fonte[0]+self.fonte_shx.dados_fonte[1])
+			tam_fonte = self.fonte_shx.dados_fonte[0]
+			tamanho = float(tam)/tam_fonte
+			
+			#determina a posicao de insercao do texto em funcao de seu alinhamento
+			centro_x = alin[0] * (float(largura)/altura * tam/2)
+			centro_y = (alin[1]-1)* (float(tam)/ 2)
+			base_x =  alin[0] * (float(pt2[0]) - pt1[0])/2
+			base_y =  alin[0] * (float(pt2[1]) - pt1[1])/2
+			pos[0] += float(pt1[0]) + base_x - centro_x
+			pos[1] += float(pt1[1]) + base_y - centro_y
+			if rot != 0:
+				cosseno = math.cos(rot*math.pi/180)
+				seno = math.sin(rot*math.pi/180)
+			
+			for lin in linhas:
+				p1_x = tamanho * lin[0][0] + pos[0]
+				p1_y = tamanho * lin[0][1] + pos[1]
+				p2_x = tamanho * lin[1][0] + pos[0]
+				p2_y = tamanho * lin[1][1] + pos[1]
+				
+				#aplica rotacao
+				if rot != 0:
+					p1_x = cosseno*(p1_x-pos[0]) - seno*(p1_y-pos[1]) + pos[0]
+					p1_y = seno*(p1_x-pos[0]) + cosseno*(p1_y-pos[1]) + pos[1]
+					p2_x = cosseno*(p2_x-pos[0]) - seno*(p2_y-pos[1]) + pos[0]
+					p2_y = seno*(p2_x-pos[0]) + cosseno*(p2_y-pos[1]) + pos[1]
+				self.linha(entidade, camada, [p1_x,p1_y], [p2_x,p2_y], cor)
+			#self.linha(None, 0, [pre_x,pre_y], [pre_x+px,pre_y+py], (0,0,0), 3)
+		
+	
 	def des_teste(self):
 		texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\
 		'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +\
@@ -572,8 +614,10 @@ class viewer(threading.Thread):
 		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
 		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
 		'culpa qui officia deserunt mollit anim id est laborum.'
+		texto_teste2 ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðõôóòöúùûü.,;:!@#$%¨&*(){}[]?><|/\\^~-=+°º²³¹ª'
 		
 		self.limpa()
+		self.pattern = [10, -5, 0, -5]
 		
 		self.line(None, 0, 100,90,100,110) #--------teste
 		self.line(None, 0, 90,100,110,100) #--------teste
@@ -606,6 +650,21 @@ class viewer(threading.Thread):
 		self.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
 		self.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
 		
+		#self.texto_shx(None, 0, 'teste',(200,200),(200,200), 30, -30, (0,0,0))
+		self.pix_count = 0
+		self.pattern = [1]
+		self.patt_a = 0
+		
+		self.texto_shx(None, 0, texto_teste,(200,200),(200,200), 30, 0, (255,0,0))
+		
+		self.line(None, 0, 350,80,350,120) #--------teste
+		self.line(None, 0, 330,100,370,100) #--------teste
+		self.texto_shx(None, 0, 'BL', (350,100), (350,100), 40, 0, (255,0,0), (0,1))
+		self.texto_shx(None, 0, 'MC', [350,100], [350,100], 40, 0, (0,255,0), (1,2))
+		self.texto_shx(None, 0, 'TR', [350,100], [350,100], 40, 0, (0,0,255), (2,3))
+		
+		self.texto_shx(None, 0, texto_teste2, [350,300], [350,300], 10, 60, (0,255,0), (0,1))
+		
 		self.exibe()
 		
 if __name__ == "__main__":
@@ -616,6 +675,7 @@ if __name__ == "__main__":
 		janela.pronto.wait(1)
 	janela.des_teste()
 	janela.redesenha = janela.des_teste
+	
 	
 	'''
 	#cria uma camada

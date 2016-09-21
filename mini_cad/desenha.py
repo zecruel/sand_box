@@ -364,9 +364,9 @@ class dxf_render:
 					
 					if self.tela:
 						if segundo_ponto:
-							self.tela.texto(dono, camada, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto_shx(dono, camada, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
 						else:
-							self.tela.texto(dono, camada, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto_shx(dono, camada, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
 						
 					#print entidade.imprime() #---------------debug
 					
@@ -463,9 +463,9 @@ class dxf_render:
 					
 					if self.tela:
 						if segundo_ponto:
-							self.tela.texto(dono, camada, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto_shx(dono, camada, texto, pt1[:2], pt2[:2], tam, rot, self.t_cor[cor], alin)
 						else:
-							self.tela.texto(dono, camada, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
+							self.tela.texto_shx(dono, camada, texto, pt1[:2], pt1[:2], tam, rot, self.t_cor[cor], alin)
 				elif tipo == 'POLYLINE':
 					self.desenha(entidade, offset, rotacao, dono, camada) #faz recursivamente
 					pt_ant = None
