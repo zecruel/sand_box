@@ -598,10 +598,14 @@ class viewer(threading.Thread):
 				
 				#aplica rotacao
 				if rot != 0:
-					p1_x = cosseno*(p1_x-pos[0]) - seno*(p1_y-pos[1]) + pos[0]
-					p1_y = seno*(p1_x-pos[0]) + cosseno*(p1_y-pos[1]) + pos[1]
-					p2_x = cosseno*(p2_x-pos[0]) - seno*(p2_y-pos[1]) + pos[0]
-					p2_y = seno*(p2_x-pos[0]) + cosseno*(p2_y-pos[1]) + pos[1]
+					p1r_x = cosseno*(p1_x-pos[0]) - seno*(p1_y-pos[1]) + pos[0]
+					p1r_y = seno*(p1_x-pos[0]) + cosseno*(p1_y-pos[1]) + pos[1]
+					p2r_x = cosseno*(p2_x-pos[0]) - seno*(p2_y-pos[1]) + pos[0]
+					p2r_y = seno*(p2_x-pos[0]) + cosseno*(p2_y-pos[1]) + pos[1]
+					p1_x = p1r_x
+					p1_y = p1r_y
+					p2_x = p2r_x
+					p2_y = p2r_y
 				self.linha(entidade, camada, [p1_x,p1_y], [p2_x,p2_y], cor)
 			#self.linha(None, 0, [pre_x,pre_y], [pre_x+px,pre_y+py], (0,0,0), 3)
 		
@@ -624,9 +628,9 @@ class viewer(threading.Thread):
 		self.texto(None, 0, texto_teste[:150],(0,100),(100,100), 30, 0, (0,0,255), (2,2))
 		
 		self.texto(None, 0, 'teste',(100,100),(100,100), 30, 0, (0,0,0), (1,2))
-		self.texto(None, 0, 'teste',(100,100),(100,100), 30, -30, (0,0,100), (1,2))
-		self.texto(None, 0, 'teste',(100,100),(100,100), 30, -60, (0,0,255), (1,2))
-		self.texto(None, 0,'teste',(100,100),(100,100), 30, -90, (0,0,0), (1,2))
+		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 30, (0,0,100), (1,2))
+		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 60, (0,0,255), (1,2))
+		self.texto_shx(None, 0,'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
 		self.texto(None, 0,'teste',(100,100),(100,100), 30, -120, (0,0,0), (1,2))
 		
 		self.line(None, 0, 200,180,200,220) #--------teste
