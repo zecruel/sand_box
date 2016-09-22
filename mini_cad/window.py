@@ -589,6 +589,8 @@ class viewer(threading.Thread):
 			if rot != 0:
 				cosseno = math.cos(rot*math.pi/180)
 				seno = math.sin(rot*math.pi/180)
+				pivo_x = float(pt1[0]) + base_x
+				pivo_y = float(pt1[1]) + base_y
 			
 			for lin in linhas:
 				p1_x = tamanho * lin[0][0] + pos[0]
@@ -598,10 +600,10 @@ class viewer(threading.Thread):
 				
 				#aplica rotacao
 				if rot != 0:
-					p1r_x = cosseno*(p1_x-pos[0]) - seno*(p1_y-pos[1]) + pos[0]
-					p1r_y = seno*(p1_x-pos[0]) + cosseno*(p1_y-pos[1]) + pos[1]
-					p2r_x = cosseno*(p2_x-pos[0]) - seno*(p2_y-pos[1]) + pos[0]
-					p2r_y = seno*(p2_x-pos[0]) + cosseno*(p2_y-pos[1]) + pos[1]
+					p1r_x = cosseno*(p1_x-pivo_x) - seno*(p1_y-pivo_y) + pivo_x
+					p1r_y = seno*(p1_x-pivo_x) + cosseno*(p1_y-pivo_y) + pivo_y
+					p2r_x = cosseno*(p2_x-pivo_x) - seno*(p2_y-pivo_y) + pivo_x
+					p2r_y = seno*(p2_x-pivo_x) + cosseno*(p2_y-pivo_y) + pivo_y
 					p1_x = p1r_x
 					p1_y = p1r_y
 					p2_x = p2r_x
@@ -618,7 +620,9 @@ class viewer(threading.Thread):
 		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
 		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
 		'culpa qui officia deserunt mollit anim id est laborum.'
-		texto_teste2 ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡÒΣΤΥΦΨΩΪΫάέήίΰαβγδεζηθικλμνξοπυτσςφϊωϋό.,;:!@#$%¨&*(){}[]?><|/\\^~-=+°Ί²³Ήͺ'
+		texto_teste2 ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'+\
+		'ΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡÒΣΤΥΦΨΩΪΫάέήίΰαβγδεζηθικλμνξοπυτσςφϊωϋό.,;:!@#$%¨&*'+\
+		'(){}[]?><|/\\^~-=+°Ί²³Ήͺ1234567890'
 		
 		self.limpa()
 		self.pattern = [10, -5, 0, -5]

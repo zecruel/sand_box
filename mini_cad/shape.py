@@ -168,21 +168,32 @@ class fonte_shx:
 					executa = 0
 					comando = j
 					if comando > 14:
+						#comando imediato de movimento
 						prox_index = index + 1
+						#obtem o comprimento do nibble maior
 						compr = (comando & 240)/16
+						#obtem o indice do vetor do nibble menor
 						vetor = comando & 15
+						# o vetor eh obtido da consultando o indice na tabela
 						px = compr * direcao[vetor][0]
 						py = compr * direcao[vetor][1]
+						#print compr, vetor
 						executa = 1
 					elif comando == 1:
 						#desenho ativado
-						pena = 1
 						prox_index = index + 1
+						if pula: 
+							pula = 0
+							continue
+						pena = 1
 						continue
 					elif comando == 2:
 						#desenho desligado
-						pena = 0
 						prox_index = index + 1
+						if pula: 
+							pula = 0
+							continue
+						pena = 0
 						continue
 					elif comando == 3:
 						#escala divide
@@ -195,14 +206,26 @@ class fonte_shx:
 					elif comando == 5:
 						#salva posicao atual
 						prox_index = index + 1
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 6:
 						#restaura posicao atual
 						prox_index = index + 1
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 7:
 						#subshape
 						prox_index = index + 3 #unicode pula 2 bytes
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 8:
 						#uma coordenada (x,y)
@@ -217,18 +240,34 @@ class fonte_shx:
 					elif comando == 10:
 						#arco por octante
 						prox_index = index + 3
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 11:
 						#arco fracionario
 						prox_index = index + 6
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 12:
 						#arco por bulge
 						prox_index = index + 4
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 13:
 						#sequencia de arcos por bulge, terminada em (0,0)
 						prox_index = index + 4
+						if pula: 
+							pula = 0
+							continue
+						#
 						continue
 					elif comando == 14:
 						# salta o proximo comando se eh um texto horizontal
@@ -312,4 +351,4 @@ if __name__ == "__main__":
 			letra = unichr(a)
 			cod = ord(letra)
 			#print  i, '#', a, repr(letra), cod
-	print fonte.interpreta('l')
+	print fonte.interpreta('!')
