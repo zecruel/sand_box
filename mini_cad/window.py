@@ -111,14 +111,21 @@ class viewer(threading.Thread):
 					if evento.type == 1025: #SDL_MOUSEBUTTONDOWN
 						print evento.button.button
 						_, mouse_x, mouse_y = self.ver_mouse()
+						self.selec.graf_add_pt([mouse_x,self.altura-mouse_y])
+						'''
 						selec = self.selec.busca([mouse_x,self.altura-mouse_y])
 						if isinstance(selec, dxf.obj_dxf):
-							self.lista_selecao.conteudo.append(selec)
+							if self.lista_selecao.conteudo.count(selec) == 0:
+								self.lista_selecao.conteudo.append(selec)
+							else:
+								indice = self.lista_selecao.conteudo.index(selec)
+								self.lista_selecao.conteudo.pop(indice)
 							print selec.nome
 							#principal = selec
 							#while (principal.up.nome != 'SECTION'):
 							#	principal = principal.up
 							#print principal.nome
+						'''
 					elif evento.type == 1027: #SDL_MOUSEWHEEL
 						#print evento.wheel.x, evento.wheel.y
 						#print self.ver_mouse()
@@ -624,6 +631,10 @@ class viewer(threading.Thread):
 		'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðõôóòöúùûü.,;:!@#$%¨&*'+\
 		'(){}[]?><|/\\^~-=+°º²³¹ª1234567890'
 		
+		texto_teste3 = ''
+		for x in self.fonte_shx.lista_princ:
+			if len(x) > 0: texto_teste3 += unichr(x[0])
+		
 		self.limpa()
 		self.pattern = [10, -5, 0, -5]
 		
@@ -671,8 +682,9 @@ class viewer(threading.Thread):
 		self.texto_shx(None, 0, 'MC', [350,100], [350,100], 40, 0, (0,255,0), (1,2))
 		self.texto_shx(None, 0, 'TR', [350,100], [350,100], 40, 0, (0,0,255), (2,3))
 		
-		self.texto_shx(None, 0, texto_teste2, [350,300], [350,300], 10, 60, (0,255,0), (0,1))
-		
+		self.texto_shx(None, 0, texto_teste2, [350,300], [350,300], 10, 0, (0,255,0), (0,1))
+		self.texto_shx(None, 0, texto_teste3[1:], [50,350], [50,350], 10, 0, (255,255,0), (0,1))
+		#print repr(texto_teste3)
 		self.exibe()
 		
 if __name__ == "__main__":

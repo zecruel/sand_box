@@ -146,6 +146,7 @@ class fonte_shx:
 		lista = []
 		max_x = 0
 		max_y = 0
+		pilha = []
 		
 		for caracter in list(txt):
 			letra = ord(caracter) #pega o codigo utf do caracter
@@ -209,7 +210,7 @@ class fonte_shx:
 						if pula: 
 							pula = 0
 							continue
-						#
+						pilha.append((pre_x, pre_y))
 						continue
 					elif comando == 6:
 						#restaura posicao atual
@@ -217,7 +218,8 @@ class fonte_shx:
 						if pula: 
 							pula = 0
 							continue
-						#
+						if len(pilha)>0:
+							pre_x, pre_y = pilha.pop()
 						continue
 					elif comando == 7:
 						#subshape
@@ -276,7 +278,7 @@ class fonte_shx:
 						continue
 				else:
 					if comando == 3:
-						esc_tmp = escala/j
+						if abs(j) > 0: esc_tmp = escala/j
 						executa = 1
 					if comando == 4:
 						esc_tmp = escala*j
