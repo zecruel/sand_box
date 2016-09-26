@@ -4,10 +4,11 @@ import math
 
 
 class dxf_render:
-	def __init__(self, drawing):
+	def __init__(self, drawing, selecao):
 		#gera a tabela de cores padrao Autocad em uma lista
 		self.t_cor = dxf_color.init_color()
 		self.tela=None
+		self.selecao = selecao
 		
 		#obtem as secoes basicas do DXF
 		self.head, self.tabs, self.blocos, self.ents = dxf_des(drawing)
@@ -28,8 +29,14 @@ class dxf_render:
 			#self.desenha(self.ents, [0,0,0], 30) #teste
 			self.desenha(self.ents, [0,0,0], 0)
 			
-			self.desenha(self.tela.lista_selecao, [0,0,0], 0, None, 1)
+			self.desenha(self.selecao.lista_selecao, [0,0,0], 0, None, 1)
 			
+			self.tela.exibe()
+	
+	def desenha_selec(self):
+		if self.tela:
+			self.tela.limpa_selec()
+			self.desenha(self.selecao.lista_selecao, [0,0,0], 0, None, 1)
 			self.tela.exibe()
 	
 	def rotaciona(self, pt1, pivo, ang):

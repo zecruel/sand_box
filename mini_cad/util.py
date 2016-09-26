@@ -38,7 +38,7 @@ def intersect(lin_pt1, lin_pt2, rect_pt1, rect_pt2):
 
 class selecao:
 	lista_busca = []
-	tam_area = 20 #tamando da area de busca em pixels
+	tam_area = 5 #tamando da area de busca em pixels
 	trava_busca = Lock()
 	
 	lista_selecao = obj_dxf()

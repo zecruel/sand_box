@@ -27,12 +27,14 @@ class viewer(threading.Thread):
 		self.altura = kwargs.pop('altura', 400)
 		self.fundo = kwargs.pop('fundo', (0,0,0))
 		self.titulo = kwargs.pop('titulo', 'SDL 2.0')
+		self.selec = kwargs.pop('selecao', util.selecao()) #objeto auxiliar na selecao de elementos na tela
 	
 		
 		#------------- variaveis internas ---------------
 		self.zoom = 1
 		self.offset = [0,0]
 		self.redesenha = None #funcao externa para redesenho
+		self.des_selec = None #funcao externa para redesenho
 		
 		self.plano = 'xy'
 		
@@ -43,8 +45,6 @@ class viewer(threading.Thread):
 		
 		self.fonte_shx = shape.fonte_shx()
 		
-		self.selec = util.selecao() #objeto auxiliar na selecao de elementos na tela
-		
 		#tipo de linhas
 		self.pix_count = 0
 		self.pattern = [1]
@@ -53,8 +53,6 @@ class viewer(threading.Thread):
 		self.camadas=[]
 		
 		self.cor_hi = (255,0,255,120)
-		
-		self.lista_selecao = dxf.obj_dxf()
 		
 		#------------------------------------------------------------
 		
@@ -109,23 +107,12 @@ class viewer(threading.Thread):
 					#print evento.type
 				elif (evento.type >= 1024)&(evento.type < 1028): #eventos de mouse
 					if evento.type == 1025: #SDL_MOUSEBUTTONDOWN
-						print evento.button.button
+						#print evento.button.button
 						_, mouse_x, mouse_y = self.ver_mouse()
 						self.selec.graf_add_pt([mouse_x,self.altura-mouse_y])
-						'''
-						selec = self.selec.busca([mouse_x,self.altura-mouse_y])
-						if isinstance(selec, dxf.obj_dxf):
-							if self.lista_selecao.conteudo.count(selec) == 0:
-								self.lista_selecao.conteudo.append(selec)
-							else:
-								indice = self.lista_selecao.conteudo.index(selec)
-								self.lista_selecao.conteudo.pop(indice)
-							print selec.nome
-							#principal = selec
-							#while (principal.up.nome != 'SECTION'):
-							#	principal = principal.up
-							#print principal.nome
-						'''
+						if self.des_selec != None:
+							self.des_selec()
+						
 					elif evento.type == 1027: #SDL_MOUSEWHEEL
 						#print evento.wheel.x, evento.wheel.y
 						#print self.ver_mouse()
@@ -156,6 +143,12 @@ class viewer(threading.Thread):
 		
 		#zera a lista de selecao
 		self.selec.lista_busca = []
+	
+	def limpa_selec(self):
+		#limpa a imagem de hilite com a cor determinada e totalmente transparente
+		self.lib.SDL_SetRenderTarget(self.renderer, self.t_hilite)
+		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 0)
+		self.lib.SDL_RenderClear(self.renderer)
 	
 	def exibe(self):
 		#exibe a imagem de fundo na tela
