@@ -131,13 +131,13 @@ class fonte_shx:
 					cab_atual = self.lista_princ[-1]
 					lista_tmp=[]
 					cabecalho = None
-		'''
-		print self.lista_princ
+		
+		#print self.lista_princ
 		print self.comentario
 		print self.num_fonte
 		print self.nome_fonte
 		print self.dados_fonte
-		'''
+		
 	def interpreta(self,txt):
 		pre_x, pre_y = 0, 0
 		px, py = 0, 0
@@ -161,6 +161,7 @@ class fonte_shx:
 			coord_y = 0 #indica que eh a coordenada y
 			pula = 0
 			bulge_f = 0
+			bulge = 0
 			esc_tmp = 1.0
 			escala = 1.0
 			
@@ -265,7 +266,7 @@ class fonte_shx:
 						continue
 					elif comando == 13:
 						#sequencia de arcos por bulge, terminada em (0,0)
-						prox_index = index + 4
+						prox_index = index + 3
 						if pula: 
 							pula = 0
 							continue
@@ -277,6 +278,7 @@ class fonte_shx:
 						pula = 1
 						continue
 				else:
+					#print comando
 					if comando == 3:
 						if abs(j) > 0: esc_tmp = escala/j
 						executa = 1
@@ -299,11 +301,24 @@ class fonte_shx:
 							continue
 						else:
 							py = struct.unpack('b', struct.pack('B', j))[0]
-							if not((px==0) and (px==0)):
+							if not((px==0) and (py==0)):
 								coord_y = 0
 								prox_index = index + 3
 								executa = 1
 								#print px, py
+					if comando == 12:
+						if not coord_y:
+							px = struct.unpack('b', struct.pack('B', j))[0]
+							coord_y = 1
+							continue
+						elif not bulge_f:
+							py = struct.unpack('b', struct.pack('B', j))[0]
+							bulge_f = 1
+						else:
+							bulge = struct.unpack('b', struct.pack('B', j))[0]
+							coord_y = 0
+							bulge_f = 0
+							executa = 1
 					elif comando == 13:
 						if not coord_y:
 							px = struct.unpack('b', struct.pack('B', j))[0]
@@ -311,16 +326,15 @@ class fonte_shx:
 							continue
 						elif not bulge_f:
 							py = struct.unpack('b', struct.pack('B', j))[0]
-							if not((px==0) and (px==0)):
-								coord_y = 0
-								prox_index = index + 4
-								#executa = 1
-							bulge_f = 1
+							if not((px==0) and (py==0)):
+								prox_index = index + 2
+								bulge_f = 1
 							continue
 						else:
+							bulge = struct.unpack('b', struct.pack('B', j))[0]
 							coord_y = 0
 							prox_index = index + 3
-							#executa = 1
+							executa = 1
 							bulge_f = 0
 				if executa:
 					executa = 0
@@ -353,4 +367,4 @@ if __name__ == "__main__":
 			letra = unichr(a)
 			cod = ord(letra)
 			#print  i, '#', a, repr(letra), cod
-	print fonte.interpreta('!')
+	#print fonte.interpreta(',')
