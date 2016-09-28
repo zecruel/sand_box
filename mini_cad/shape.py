@@ -20,6 +20,16 @@ direcao=[(1, 0),
 (1, -1),
 (1, -0.5)]
 
+octantes=[(1, 0),
+(0.707106781, 0.707106781),
+(0, 1),
+(-0.707106781, 0.707106781),
+(-1, 0),
+(-0.707106781, -0.707106781),
+(0, -1),
+(0.707106781, -0.707106781)]
+
+
 class fonte_shx:
 	comentario = ''
 	num_fonte = None
@@ -33,7 +43,7 @@ class fonte_shx:
 	def abre_fonte(self):
 		dir = os.path.dirname(os.path.abspath(__file__)).replace('\\','/') + '/'
 		
-		with open(dir+'txt.shx', 'rb') as arq:
+		with open(dir+'isocp.shx', 'rb') as arq:
 			conteudo = arq.read()
 			#print conteudo[0:4]
 			
@@ -43,55 +53,22 @@ class fonte_shx:
 
 		lista_dados = []
 		cabecalho = None
-
+		nome = None
+		
 		for index, byte_lido in enumerate(conteudo):
 			#considera o byte lido como um inteiro nao negativo
 			valor = struct.unpack('B', byte_lido)[0]
 			if self.comentario == '':
 				#busca os comentarios no inicio do arquivo
-				if valor != 0:
-					str_tmp += chr(abs(valor))
+				if valor != 26:
+					str_tmp += chr(valor)
 					continue
-				else: #termina quando encontra o valor zero
+				else: #termina quando encontra o valor 26 (1A hex)
 					self.comentario += str_tmp
-					prox_index = index + 1
 					str_tmp = ''
-					continue
-			elif not self.num_fonte:
-				#busca o numero da fonte
-				if (prox_index == index):
-					if (valor != 0): break #<=erro, terminou inesperadamente
-					elif valor_tmp:
-						self.num_fonte = valor_tmp
-						continue
-					else: continue
-				elif (valor != 0): #termina quando encontra o valor zero
-					valor_tmp = valor
-					prox_index = index + 1
-					continue
-			elif self.nome_fonte == '':
-				#busca o nome da fonte
-				# os caracteres depois do espaco devem ser ignorados
-				if valor != 0:
-					str_tmp += chr(abs(valor))
-					continue
-				else: #termina quando encontra o valor zero
-					self.nome_fonte += str_tmp
-					#espera que o proximo campo tenha 6 bytes de comprimento (fonte Unicode)
+					
+					#espera que o proximo campo tenha 6 bytes de comprimento (cabecalho do arquivo)
 					prox_index = index + 6
-					str_tmp = ''
-					continue
-			elif not self.dados_fonte:
-				#dados gerais da fonte conforme lista abaixo (fonte Unicode)
-				#[above, below, modes (0 = horizontal, 2= dual), encoding, type(licence)]
-				if index != prox_index:
-					lista_dados.append(valor)
-					continue
-				else: 
-					if (valor != 0): break #<=erro, terminou inesperadamente
-					self.dados_fonte = lista_dados
-					#espera que o proximo campo tenha 4 bytes de comprimento (cabecalhos de cada letra)
-					prox_index = index + 4
 					# prepara a lista para as letras serem adicionadas
 					self.lista_princ.append([])
 					cab_atual = self.lista_princ[-1]
@@ -108,19 +85,29 @@ class fonte_shx:
 					#verifica se o ultimo byte eh igual a zero, senao para por erro
 					if (valor != 0): break #<=erro
 					#o terceiro byte eh o comprimento do campo de dados da letra
-					prox_index = index + lista_tmp[2]
+					prox_index = index + lista_tmp[-1]
 					# combina os dois primeiros bytes como um inteiro, que eh a especificacao unicode
 					caracter= (lista_tmp[1] << 8) + lista_tmp[0]
 					
 					cab_atual.append(caracter)
-					cab_atual.append([]) #adiciona
-					coms_atual = cab_atual[-1]
 					cabecalho = 1
+					nome = None
 					
 			elif cabecalho:
 				#busca os dados da letra (comandos de desenho)
 				if index != prox_index:
-					coms_atual.append(valor)
+					if not nome:
+						if (valor != 0):
+							str_tmp += chr(valor)
+							
+						else:
+							nome = 1
+							cab_atual.append(str_tmp)
+							cab_atual.append([]) #adiciona
+							coms_atual = cab_atual[-1]
+							str_tmp = ''
+					else:
+						coms_atual.append(valor)
 				else: #termina quando atinge o comprimento especificado
 					#verifica se o ultimo byte eh igual a zero, senao para por erro
 					if (valor != 0): break #<=erro
@@ -132,11 +119,17 @@ class fonte_shx:
 					lista_tmp=[]
 					cabecalho = None
 		
+		if len(self.lista_princ)>0:
+			dados = self.lista_princ.pop(0)
+			self.num_fonte = dados[0]
+			self.nome_fonte = dados[1]
+			self.dados_fonte = dados[2]
+			
 		#print self.lista_princ
-		print self.comentario
-		print self.num_fonte
-		print self.nome_fonte
-		print self.dados_fonte
+		#print self.comentario
+		#print self.num_fonte
+		#print self.nome_fonte
+		#print self.dados_fonte
 		
 	def interpreta(self,txt):
 		pre_x, pre_y = 0, 0
@@ -154,18 +147,19 @@ class fonte_shx:
 			for i in self.lista_princ:
 				if len(i)>1: 
 					if i[0] == letra: break
-			else: i = [42, [0, 2, 14, 8, 254, 251, 33, 1, 68, 2, 46, 1, 72, 2, 65, 1, 74, 2, 68, 1, 78, 2, 47, 14, 8, 252, 253]]
+			else: i = [42, 'asterisco', [0, 2, 14, 8, 254, 251, 33, 1, 68, 2, 46, 1, 72, 2, 65, 1, 74, 2, 68, 1, 78, 2, 47, 14, 8, 252, 253]]
 			
-			prox_index = 1 # ja comeca do indice 1
+			prox_index = 0
 			comando = 0 #sem comando
 			coord_y = 0 #indica que eh a coordenada y
 			pula = 0
 			bulge_f = 0
 			bulge = 0
+			arco_f = 0
 			esc_tmp = 1.0
 			escala = 1.0
 			
-			for index, j in enumerate(i[1]):
+			for index, j in enumerate(i[2]):
 				if index == prox_index:
 					executa = 0
 					comando = j
@@ -243,10 +237,6 @@ class fonte_shx:
 					elif comando == 10:
 						#arco por octante
 						prox_index = index + 3
-						if pula: 
-							pula = 0
-							continue
-						#
 						continue
 					elif comando == 11:
 						#arco fracionario
@@ -306,6 +296,18 @@ class fonte_shx:
 								prox_index = index + 3
 								executa = 1
 								#print px, py
+					if comando == 10:
+						if not coord_y:
+							raio = j
+							coord_y = 1
+						else:
+							#obtem o primeiro octante do nibble maior
+							octante = (comando & 240)/16
+							#obtem a quantidade de octantes do nibble menor
+							num_oct = comando & 15
+							coord_y = 0
+							arco_f = 1
+							executa = 1
 					if comando == 12:
 						if not coord_y:
 							px = struct.unpack('b', struct.pack('B', j))[0]
@@ -342,8 +344,14 @@ class fonte_shx:
 					if pula: 
 						pula = 0
 						esc_tmp = escala
+						arco_f = 0
 					else: 
 						if escala != esc_tmp: escala = esc_tmp
+						elif arco_f:
+							arco_f = 0
+							centro_x = pre_x - raio * octantes[octante][0]
+							centro_y = pre_y - raio * octantes[octante][1]
+							print centro_x, centro_y
 						else:
 							px *= escala
 							py *= escala
@@ -367,4 +375,4 @@ if __name__ == "__main__":
 			letra = unichr(a)
 			cod = ord(letra)
 			#print  i, '#', a, repr(letra), cod
-	#print fonte.interpreta(',')
+	print fonte.interpreta('B')
