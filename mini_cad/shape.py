@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 import os
 import struct
+import math
 
 
 direcao=[(1, 0),
@@ -28,7 +29,16 @@ octantes=[(1, 0),
 (-0.707106781, -0.707106781),
 (0, -1),
 (0.707106781, -0.707106781)]
-
+'''
+octantes=[(1, 0),
+(1, 1),
+(0, 1),
+(-1, 1),
+(-1, 0),
+(-1, -1),
+(0, -1),
+(1, -1)]
+'''
 
 class fonte_shx:
 	comentario = ''
@@ -43,7 +53,7 @@ class fonte_shx:
 	def abre_fonte(self):
 		dir = os.path.dirname(os.path.abspath(__file__)).replace('\\','/') + '/'
 		
-		with open(dir+'isocp.shx', 'rb') as arq:
+		with open(dir+'simplex.shx', 'rb') as arq:
 			conteudo = arq.read()
 			#print conteudo[0:4]
 			
@@ -301,10 +311,16 @@ class fonte_shx:
 							raio = j
 							coord_y = 1
 						else:
-							#obtem o primeiro octante do nibble maior
-							octante = (comando & 240)/16
+							#obtem o primeiro octante e o sentido do nibble maior
+							octante = (j & 112)/16
+							sentido = (j & 128)/16
+							if sentido: sentido = -1
+							else: sentido =1
+							
 							#obtem a quantidade de octantes do nibble menor
-							num_oct = comando & 15
+							num_oct = j & 15
+							if num_oct == 0: num_oct = 8 #circulo completo
+							
 							coord_y = 0
 							arco_f = 1
 							executa = 1
@@ -351,7 +367,15 @@ class fonte_shx:
 							arco_f = 0
 							centro_x = pre_x - raio * octantes[octante][0]
 							centro_y = pre_y - raio * octantes[octante][1]
-							print centro_x, centro_y
+							ang_ini = octante * math.pi/4
+							for i in range(1, num_oct+1):
+								px = centro_x + raio * math.cos(2 * math.pi * i * sentido/ 8 + ang_ini)
+								py = centro_y + raio * math.sin(2 * math.pi * i * sentido/ 8 + ang_ini)
+								lista.append(((pre_x,pre_y),(px,py)))
+								pre_x=px
+								pre_y=py
+							#print centro_x, centro_y, raio
+							#print octante, num_oct
 						else:
 							px *= escala
 							py *= escala
