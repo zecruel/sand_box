@@ -135,6 +135,10 @@ class fonte_shx:
 			self.nome_fonte = dados[1]
 			self.dados_fonte = dados[2]
 			
+			tam_fonte = abs(self.dados_fonte[0]+self.dados_fonte[1])
+			cursor = [18, 'cursor', [1, 8, 0, tam_fonte, 2, 8, 0, struct.unpack('B', struct.pack('b',-tam_fonte))[0]]]
+			self.lista_princ.insert(0,cursor)
+			
 		#print self.lista_princ
 		#print self.comentario
 		#print self.num_fonte
@@ -399,4 +403,6 @@ if __name__ == "__main__":
 			letra = unichr(a)
 			cod = ord(letra)
 			#print  i, '#', a, repr(letra), cod
-	print fonte.interpreta('B')
+	print fonte.interpreta(unichr(18))
+	print fonte.lista_princ[0]
+	print fonte.dados_fonte

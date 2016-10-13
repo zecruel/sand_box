@@ -9,7 +9,66 @@ import dxf
 import shape
 
 
+'''
+KMOD_NONE = 0x0000,
+    KMOD_LSHIFT = 0x0001,
+    KMOD_RSHIFT = 0x0002,
+    KMOD_LCTRL = 0x0040,
+    KMOD_RCTRL = 0x0080,
+    KMOD_LALT = 0x0100,
+    KMOD_RALT = 0x0200,
+    KMOD_LGUI = 0x0400, #tecla do windos
+    KMOD_RGUI = 0x0800,
+    KMOD_NUM = 0x1000,
+    KMOD_CAPS = 0x2000,
+    KMOD_MODE = 0x4000, # Alt Gr
+    KMOD_RESERVED = 0x8000
+'''
+class w_texto:
+	texto = ''
+	cursor_pisca = 0
+	cursor_pos = 0
+	window = None
+	camada = 1
+	def evento(self, event):
+		if event.type == 768: #tecla pressionada
+			#print event.key.keysym.mod
+			if event.key.keysym.scancode == 42: #backspace
+				self.cursor_pos -= 1
+				if self.cursor_pos < 0: self.cursor_pos = 0
+				else: self.texto = self.texto[:self.cursor_pos]+self.texto[self.cursor_pos+1:]
+				self.redesenha()
+			elif event.key.keysym.scancode == 79: #seta direita
+				self.cursor_pos += 1
+				if self.cursor_pos >= len(self.texto):
+					self.cursor_pos = len(self.texto)
+				self.redesenha()
+			elif event.key.keysym.scancode == 80: #seta esquerda
+				self.cursor_pos -= 1
+				if self.cursor_pos < 0: self.cursor_pos = 0
+				self.redesenha()
+				
+		elif event.type == 771: #entrada de texto
+			self.texto += event.text.text.decode('utf8')
+			self.cursor_pos += 1
+			self.redesenha()
+		elif event.type == 32768: #temporizador->pisca o cursor
+			if self.cursor_pisca: self.cursor_pisca = 0
+			else: self.cursor_pisca = 1
+			self.redesenha()
+	def redesenha(self):
+		if self.window:
+			self.window.limpa_camada(self.camada)
+			if self.cursor_pisca:
+				#f_desenha(self, entidade, camada, txt, pt1, pt2, tam=1, rot=0, cor=(0,0,0), alin=(0,1))
+				self.window.texto_shx(None, self.camada, self.texto, (10,50,0), (10,50,0), 10)
+			else:
+				self.window.texto_shx(None, self.camada, self.texto[:self.cursor_pos]+unichr(18)+self.texto[self.cursor_pos:], (10,50,0), (10,50,0), 10)
+			self.window.exibe()
+
 class viewer(threading.Thread):
+	sdl = sdl.sdl_dll() #carrega o dll do SDL 2.0
+	lib = sdl.lib
 	def __init__(self, group=None, target=None, name=None,
 				args=(), kwargs={}, verbose=None):
 		''' Deriva a classe threading, permitindo a passagem
@@ -38,8 +97,8 @@ class viewer(threading.Thread):
 		
 		self.plano = 'xy'
 		
-		self.sdl = sdl.sdl_dll() #carrega o dll do SDL 2.0
-		self.lib = self.sdl.lib
+		#self.sdl = sdl.sdl_dll() #carrega o dll do SDL 2.0
+		#self.lib = self.sdl.lib
 		self.lib_ttf = self.sdl.lib_ttf
 		self.pronto = threading.Condition() #informa que esta pronto
 		
@@ -65,7 +124,7 @@ class viewer(threading.Thread):
 		#inicializacao e criacao da janela SDL
 		
 		evento =sdl_event.SDL_Event()
-		self.lib.SDL_Init(32)
+		self.lib.SDL_Init(33) # inicia o video e timer
 		self.lib_ttf.TTF_Init()
 		
 		#cria as entidades SDL basicas
@@ -90,20 +149,34 @@ class viewer(threading.Thread):
 		self.lib.SDL_RenderCopy(self.renderer, self.t_fundo, None, None)
 		self.lib.SDL_RenderPresent(self.renderer)
 		
+		#adiciona um timer com 1 s de resposta
+		self.lib.SDL_AddTimer(500, self.sdl_timer, None)
+		
 		#depois de tudo pronto, notifica os processos em espera
 		with self.pronto:
 			self.pronto.notify()
 		
 		self.lib.SDL_StartTextInput()
 		
+		teste_edit = w_texto()
+		_, teste_edit.camada = self.cria_camada()
+		teste_edit.window = self
+		
+		
 		while 1:
 			if self.lib.SDL_PollEvent(byref(evento)):
+				teste_edit.evento(evento)
 				if evento.type == 256: #evento de sair
 					break
 				elif (evento.type >= 768)&(evento.type < 1024): #eventos de teclado
 					if evento.type == 771:
-						print evento.text.text
-					pass
+						pass
+						#print evento.text.text
+					if evento.type == 768:
+						pass
+						if (evento.key.keysym.scancode == 25) and ((evento.key.keysym.mod & 192) != 0):
+							print self.lib.SDL_GetClipboardText()
+						#print evento.key.keysym.scancode
 					#print evento.type
 				elif (evento.type >= 1024)&(evento.type < 1028): #eventos de mouse
 					if evento.type == 1025: #SDL_MOUSEBUTTONDOWN
@@ -127,6 +200,9 @@ class viewer(threading.Thread):
 							
 						if self.redesenha != None:
 							self.redesenha()
+				elif evento.type == 32768:
+					pass
+					#print 'tempo'
 		
 		self.sai()
 		
@@ -147,6 +223,18 @@ class viewer(threading.Thread):
 	def limpa_selec(self):
 		#limpa a imagem de hilite com a cor determinada e totalmente transparente
 		self.lib.SDL_SetRenderTarget(self.renderer, self.t_hilite)
+		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 0)
+		self.lib.SDL_RenderClear(self.renderer)
+		
+	def cria_camada(self):
+		camada = self.lib.SDL_CreateTexture(self.renderer, 373694468, 2, self.largura, self.altura)
+		self.lib.SDL_SetTextureBlendMode(camada, 1)
+		self.camadas.append(camada)
+		return camada, len(self.camadas)-1
+	
+	def limpa_camada(self, camada=0):
+		#limpa a imagem com a cor determinada e totalmente transparente
+		self.lib.SDL_SetRenderTarget(self.renderer, self.camadas[camada])
 		self.lib.SDL_SetRenderDrawColor(self.renderer, self.fundo[0], self.fundo[1], self.fundo[2], 0)
 		self.lib.SDL_RenderClear(self.renderer)
 	
@@ -195,11 +283,11 @@ class viewer(threading.Thread):
 		
 		#determina a cor de desenho para cada camada
 		if camada == 0: #para a camada de fundo, a cor eh a propria do objeto
-			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
+			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 255)
 		elif camada == 1: #para a camada de hilite, a cor eh a propria do hilite
 			self.lib.SDL_SetRenderDrawColor(self.renderer, self.cor_hi[0], self.cor_hi[1], self.cor_hi[2], self.cor_hi[3])
 		else: #outros casos, a cor eh a propria do objeto
-			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 0)
+			self.lib.SDL_SetRenderDrawColor(self.renderer, cor[0], cor[1], cor[2], 255)
 		
 	def set_pt(self, x, y, esp=4):
 		'''desenha um pixel na camada SDL'''
@@ -620,7 +708,7 @@ class viewer(threading.Thread):
 		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
 		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
 		'culpa qui officia deserunt mollit anim id est laborum.'
-		texto_teste2 ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'+\
+		texto_teste2 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'+\
 		'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðõôóòöúùûü.,;:!@#$%¨&*'+\
 		'(){}[]?><|/\\^~-=+°º²³¹ª1234567890'
 		
@@ -676,9 +764,26 @@ class viewer(threading.Thread):
 		self.texto_shx(None, 0, 'TR', [350,100], [350,100], 40, 0, (0,0,255), (2,3))
 		
 		self.texto_shx(None, 0, texto_teste2, [350,300], [350,300], 10, 0, (0,255,0), (0,1))
-		self.texto_shx(None, 0, texto_teste3[1:], [50,350], [50,350], 10, 0, (255,255,0), (0,1))
+		self.texto_shx(None, 0, texto_teste3[2:], [50,350], [50,350], 10, 0, (255,255,0), (0,1))
 		#print repr(texto_teste3)
 		self.exibe()
+	
+	# ------------------------------------------------------------------------------------
+	# Funcoes de retorno (callbaks)
+
+	#callback do timer
+	@staticmethod
+	@CFUNCTYPE(c_int, c_uint32, c_void_p)
+	def sdl_timer(intervalo, param):
+		#print intervalo
+		#user event = 32768
+		timer_event = sdl_event.SDL_Event()
+		timer_event.type = 32768
+		timer_event.user.code = 2
+		timer_event.user.data1 = None
+		timer_event.user.data2 = None
+		viewer.lib.SDL_PushEvent(byref(timer_event))
+		return intervalo
 		
 if __name__ == "__main__":
 	print 'Modulo de interface ao SDL2.'

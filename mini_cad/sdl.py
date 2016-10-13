@@ -113,6 +113,9 @@ class sdl_dll:
 		'''void SDL_FreeSurface(SDL_Surface* surface)'''
 		self.lib.SDL_FreeSurface.argtypes = [c_void_p]
 		
+		'''char* SDL_GetClipboardText(void)'''
+		self.lib.SDL_GetClipboardText.restype = c_char_p
+		
 		#---- Texture
 		
 		'''SDL_Texture* SDL_CreateTexture(SDL_Renderer* renderer,
@@ -173,6 +176,13 @@ class sdl_dll:
                          int* y)'''
 		self.lib.SDL_GetMouseState.restypes = [c_uint32]
 		self.lib.SDL_GetMouseState.argtypes = [c_void_p, c_void_p]
+		
+		#-------- Timer
+		'''SDL_TimerID SDL_AddTimer(Uint32            interval,
+                         SDL_TimerCallback callback,
+                         void*             param)'''
+		self.lib.SDL_AddTimer.restype = c_int
+		self.lib.SDL_AddTimer.argtypes = [c_uint32, c_void_p, c_void_p]
 		
 		#--------------------------------------
 		#SDL ttf - renderizacao de texto
