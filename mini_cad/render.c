@@ -2,10 +2,21 @@
 // Using SDL2 to create an application window
 
 #include "SDL.h"
-#include <stdio.h>
+#include <stdio.h> 
+#include <stdlib.h> 
 #include <math.h>
 #define MAX_CAMADAS 10
 #define MAX_PATTERN 10
+
+//estrutura de lista encadeada
+//armazena as linhas do desenho visivel
+struct Node{
+	int pt1_x, pt1_y, pt2_x, pt2_y;
+	struct Node *prox;
+}; 
+typedef struct Node node;
+
+
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -21,16 +32,75 @@ int largura = 600;
 int altura = 400;
 char titulo[255] = "teste SDL 2.0";
 int cor_fundo[4] = {255, 255, 255, 255};
-int offset[2] = {0,0};
+
+double offset[2] = {0,0};
 double zoom = 1.0;
+
 int pix_count = 0;
 int pattern[MAX_PATTERN];
 int patt_a = 0;
 int tam_patt = 0;
 
-int init(void){
+node *lista_busca = NULL;
+
+void lista_add(int pt1_x, int pt1_y, int pt2_x, int pt2_y){
+	if (lista_busca){
+		node *novo = (node *) malloc(sizeof(node));
+		if (novo){
+			novo->pt1_x = pt1_x;
+			novo->pt1_y = pt1_y;
+			novo->pt2_x = pt2_x;
+			novo->pt2_y = pt2_y;
+			novo->prox = NULL;
+			if(lista_busca->prox == NULL){ //verifica se a lista esta vazia
+				lista_busca->prox=novo;} // o novo elemento e o ultimo
+			else{ // lista nao vazia
+				//busca o final da lista
+				node *tmp = lista_busca->prox;
+				while(tmp->prox != NULL){
+					tmp = tmp->prox;}
+				tmp->prox = novo; //acrescenta o novo elemento no final
+			}
+		}
+	}
+}
+
+void lista_limpa(void){
+	if (lista_busca){
+		if(lista_busca->prox != NULL){ //verifica se a lista esta vazia
+			node *proxNode, *atual;
+			
+			atual = lista_busca->prox;
+			while(atual != NULL){
+				proxNode = atual->prox;
+				free(atual);
+				atual = proxNode;
+			}
+		}
+	}
+}
+
+int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 	
+	//atualiza os param globais com os valores passados
+	int i;
+	pos_x = x;
+	pos_y = y;
+	largura = larg;
+	altura = alt;
+	
+	for(i=0; i < 255; i++){
+		titulo[i] = tit[i];}
+	for(i=0; i < 4; i++){
+		cor_fundo[i] = fundo[i];}
+	
+	// inicializa o tipo de linha com linha solida
 	pattern[0] = 1;
+		
+	//inicializa a lista de busca
+	lista_busca = (node *) malloc(sizeof(node));
+	if (lista_busca) { 
+		lista_busca->prox = NULL;} //lista vazia
 	
 	// inicia o video e timer
 	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER); 
@@ -99,6 +169,10 @@ void sai(void){
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
+	if (lista_busca){
+		lista_limpa();
+		free(lista_busca);
+	}
 }
 
 void exibe(void){
@@ -158,10 +232,10 @@ void set_pt(int x, int y, int esp){
 	}
 }
 
-void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int color[4], int esp){
-
-	int pt1[2];
-	int pt2[2];
+void linha(void *entidade, int camada, double p1[2], double p2[2], int color[4], int esp){
+	
+	double ponto1[2], ponto2[2];
+	int pt1[2], pt2[2], ret1[2], ret2[2];
 	int x, y, dx, dy, sx, sy, err;
 	
 	//determina a camada e a cor
@@ -172,10 +246,10 @@ void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int c
 	
 	
 	//aplica zoom e offset aos pontos
-	ponto1[0] *= zoom;
-	ponto1[1] *= zoom;
-	ponto2[0] *= zoom;
-	ponto2[1] *= zoom;
+	ponto1[0] = zoom * p1[0];
+	ponto1[1] = zoom * p1[1];
+	ponto2[0] = zoom * p2[0];
+	ponto2[1] = zoom * p2[1];
 	ponto1[0] -= offset[0];
 	ponto1[1] -= offset[1];
 	ponto2[0] -= offset[0];
@@ -186,10 +260,16 @@ void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int c
 	pt2[0] = (int) round(ponto2[0]);
 	pt2[1] = (int) round(ponto2[1]);
 	
+	ret1[0] = 0;
+	ret1[1] = 0;
+	ret2[0] = largura;
+	ret2[1] = altura;
+	
 	//#desenha somente se a linha esta dentro da area de desenho
-	//if util.intersect(pt1, pt2, [0,0], [self.largura, self.altura]):
+	if (intersect(pt1, pt2, ret1, ret2)){
 		
 		//self.selec.add_line(entidade, [[pt1[0], pt1[1]], [pt2[0], pt2[1]]])
+		lista_add(pt1[0], pt1[1], pt2[0], pt2[1]);
 		
 		//corrige a origem em y para emular um plano cartesiano
 		pt1[1] = altura - pt1[1];
@@ -329,6 +409,7 @@ void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int c
 				}
 			}
 		}
+	}
 }
 
 void muda_pattern(int pat[], int tam){
@@ -340,6 +421,12 @@ void muda_pattern(int pat[], int tam){
 	for (patt_a = 0; patt_a < tam; patt_a++){
 		pattern[patt_a] = pat[patt_a];}
 	patt_a = 0;
+}
+
+void muda_zoom(double n_zoom, double n_offset[2]){
+	zoom = n_zoom;
+	offset[0] = n_offset[0];
+	offset[1] = n_offset[1];
 }
 
 void arco(void *entidade, int camada, double centro[2], double raio, double ang_ini, double ang_fim, int cor[4], int esp, int sentido){
@@ -404,6 +491,48 @@ void arco_bulge(void *entidade, int camada, double pt1[2], double pt2[2], double
 	ang_final *= 180/M_PI;
 	
 	arco(entidade, camada, centro, raio, ang_ini, ang_final, cor, esp, sentido);
+}
+
+int intersect(int lin_pt1[2], int lin_pt2[2], int rect_pt1[2], int rect_pt2[2]){
+	//testa se uma linha intercepta um retangulo
+	
+	int r_bl_x, r_bl_y, r_tr_x,r_tr_y;
+	int l_bl_x, l_bl_y, l_tr_x, l_tr_y;
+	int a, b, c, pol1, pol2, pol3, pol4;
+	
+	//ordena os cantos do retangulo
+	r_bl_x = (rect_pt1[0] < rect_pt2[0]) ? rect_pt1[0] : rect_pt2[0];
+	r_bl_y = (rect_pt1[1] < rect_pt2[1]) ? rect_pt1[1] : rect_pt2[1];
+	r_tr_x = (rect_pt1[0] > rect_pt2[0]) ? rect_pt1[0] : rect_pt2[0];
+	r_tr_y = (rect_pt1[1] > rect_pt2[1]) ? rect_pt1[1] : rect_pt2[1];
+	
+	//ordena os cantos do retangulo da linha
+	l_bl_x = (lin_pt1[0] < lin_pt2[0]) ? lin_pt1[0] : lin_pt2[0];
+	l_bl_y = (lin_pt1[1] < lin_pt2[1]) ? lin_pt1[1] : lin_pt2[1];
+	l_tr_x = (lin_pt1[0] > lin_pt2[0]) ? lin_pt1[0] : lin_pt2[0];
+	l_tr_y = (lin_pt1[1] > lin_pt2[1]) ? lin_pt1[1] : lin_pt2[1];
+	
+	//verifica se a linha esta fora de alcance do retangulo
+	if (((lin_pt1[0] > r_tr_x) && (lin_pt2[0] > r_tr_x)) || ( //linha a direita
+	(lin_pt1[1] > r_tr_y) && (lin_pt2[1] > r_tr_y)) || (  //linha acima
+	(lin_pt1[0] < r_bl_x) && (lin_pt2[0] < r_bl_x)) || ( //linha a esquerda
+	(lin_pt1[1] < r_bl_y) && (lin_pt2[1] < r_bl_y))){ //linha abaixo
+		return 0;}
+	else{ //verifica se a linha cruza o retangulo
+		//calcula as polarizacoes dos quatro cantos do retangulo
+		a = lin_pt2[1]-lin_pt1[1];
+		b = lin_pt1[0]-lin_pt2[0];
+		c = lin_pt2[0]*lin_pt1[1] - lin_pt1[0]*lin_pt2[1];
+		
+		pol1 = a*rect_pt1[0] + b*rect_pt1[1] + c;
+		pol2 = a*rect_pt1[0] + b*rect_pt2[1] + c;
+		pol3 = a*rect_pt2[0] + b*rect_pt1[1] + c;
+		pol4 = a*rect_pt2[0] + b*rect_pt2[1] + c;
+		if (((pol1>=0) && (pol2>=0) && (pol3>=0) && (pol4>=0)) ||(
+		(pol1<0) && (pol2<0) && (pol3<0) && (pol4<0))){
+			return 0;}
+		return 1;
+	}
 }
 /*
 int main(int argc, char* argv[]) {
