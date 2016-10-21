@@ -61,8 +61,10 @@ class teste:
 			zoom_x = 800/(lim_x[1] - lim_x[0])
 			zoom_y = 600/(lim_y[1] - lim_y[0])
 			
-			self.view.zoom = min([zoom_x, zoom_y])
-			self.view.offset = [i * self.view.zoom for i in [lim_x[0], lim_y[0]]]
+			zoom = min([zoom_x, zoom_y])
+			offset = [-i * zoom for i in [lim_x[0], lim_y[0]]]
+			
+			self.view.zoom_off(zoom, offset)
 			
 			render = desenha.dxf_render(self.drawing, self.selecao)
 			render.tela = self.view

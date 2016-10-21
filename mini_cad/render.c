@@ -1,17 +1,23 @@
 // Example program:
 // Using SDL2 to create an application window
-
+/*
+import ctypes
+a = "hello world"
+print ctypes.cast(id(a), ctypes.py_object).value
+*/
 #include "SDL.h"
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
 #define MAX_CAMADAS 10
 #define MAX_PATTERN 10
+#define TAM_RET 5
 
 //estrutura de lista encadeada
 //armazena as linhas do desenho visivel
 struct Node{
 	int pt1_x, pt1_y, pt2_x, pt2_y;
+	long entidade;
 	struct Node *prox;
 }; 
 typedef struct Node node;
@@ -43,10 +49,11 @@ int tam_patt = 0;
 
 node *lista_busca = NULL;
 
-void lista_add(int pt1_x, int pt1_y, int pt2_x, int pt2_y){
+void lista_add(long entidade, int pt1_x, int pt1_y, int pt2_x, int pt2_y){
 	if (lista_busca){
 		node *novo = (node *) malloc(sizeof(node));
 		if (novo){
+			novo->entidade = entidade;
 			novo->pt1_x = pt1_x;
 			novo->pt1_y = pt1_y;
 			novo->pt2_x = pt2_x;
@@ -67,17 +74,41 @@ void lista_add(int pt1_x, int pt1_y, int pt2_x, int pt2_y){
 
 void lista_limpa(void){
 	if (lista_busca){
-		if(lista_busca->prox != NULL){ //verifica se a lista esta vazia
+		if(lista_busca->prox){ //verifica se a lista esta vazia
 			node *proxNode, *atual;
 			
 			atual = lista_busca->prox;
-			while(atual != NULL){
+			lista_busca->prox = NULL;
+			while(atual){
 				proxNode = atual->prox;
 				free(atual);
 				atual = proxNode;
 			}
 		}
 	}
+}
+
+long busca_ret(int ret1[2], int ret2 [2]){
+	if (lista_busca){
+		if(lista_busca->prox){ //verifica se a lista esta vazia
+			node *proxNode, *atual;
+			int pt1[2], pt2[2];
+			
+			atual = lista_busca->prox;
+			while(atual){
+				proxNode = atual->prox;
+				pt1[0] = atual->pt1_x;
+				pt1[1] = atual->pt1_y;
+				pt2[0] = atual->pt2_x;
+				pt2[1] = atual->pt2_y;
+				if (intersect(pt1, pt2, ret1, ret2)){
+					return atual->entidade;
+				}
+				atual = proxNode;
+			}
+		}
+	}
+	return 0;
 }
 
 int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
@@ -194,9 +225,23 @@ void limpa_camada(int camada, int cor[4]){
 	}
 }
 
-int eventos(void){
-	SDL_PollEvent(&evento);
-	return evento.type;
+int eventos(SDL_Event *ev, long *entidade, int *botoes, int *x, int *y){
+	if (SDL_PollEvent(ev)){
+		if ((ev->type >= 1024)&&(ev->type < 1028)){ //eventos de mouse
+			int ret1[2], ret2[2];
+			
+			*botoes = SDL_GetMouseState(x, y);
+			*y = altura - *y;
+			ret1[0] = *x - TAM_RET;
+			ret1[1] = *y - TAM_RET;
+			ret2[0] = *x + TAM_RET;
+			ret2[1] = *y + TAM_RET;
+			*entidade = busca_ret(ret1, ret2);
+			//printf("Achei %d \n", entidade);
+		}
+		return 1;
+	}
+	return 0;
 }
 
 void set_camada(int camada, int cor[4]){
@@ -232,7 +277,7 @@ void set_pt(int x, int y, int esp){
 	}
 }
 
-void linha(void *entidade, int camada, double p1[2], double p2[2], int color[4], int esp){
+void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], int esp){
 	
 	double ponto1[2], ponto2[2];
 	int pt1[2], pt2[2], ret1[2], ret2[2];
@@ -250,10 +295,10 @@ void linha(void *entidade, int camada, double p1[2], double p2[2], int color[4],
 	ponto1[1] = zoom * p1[1];
 	ponto2[0] = zoom * p2[0];
 	ponto2[1] = zoom * p2[1];
-	ponto1[0] -= offset[0];
-	ponto1[1] -= offset[1];
-	ponto2[0] -= offset[0];
-	ponto2[1] -= offset[1];
+	ponto1[0] = ponto1[0] - offset[0];
+	ponto1[1] = ponto1[1] - offset[1];
+	ponto2[0] = ponto2[0] - offset[0];
+	ponto2[1] = ponto2[1] - offset[1];
 	
 	pt1[0] = (int) round(ponto1[0]);
 	pt1[1] = (int) round(ponto1[1]);
@@ -269,7 +314,7 @@ void linha(void *entidade, int camada, double p1[2], double p2[2], int color[4],
 	if (intersect(pt1, pt2, ret1, ret2)){
 		
 		//self.selec.add_line(entidade, [[pt1[0], pt1[1]], [pt2[0], pt2[1]]])
-		lista_add(pt1[0], pt1[1], pt2[0], pt2[1]);
+		lista_add(entidade, pt1[0], pt1[1], pt2[0], pt2[1]);
 		
 		//corrige a origem em y para emular um plano cartesiano
 		pt1[1] = altura - pt1[1];
@@ -429,7 +474,7 @@ void muda_zoom(double n_zoom, double n_offset[2]){
 	offset[1] = n_offset[1];
 }
 
-void arco(void *entidade, int camada, double centro[2], double raio, double ang_ini, double ang_fim, int cor[4], int esp, int sentido){
+void arco(long entidade, int camada, double centro[2], double raio, double ang_ini, double ang_fim, int cor[4], int esp, int sentido){
 	int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 	double angulo;
 	int passos, i;
@@ -462,7 +507,7 @@ void arco(void *entidade, int camada, double centro[2], double raio, double ang_
 	linha(entidade, camada, pt1, pt2, cor, esp);
 }
 
-void arco_bulge(void *entidade, int camada, double pt1[2], double pt2[2], double bulge, int cor[4], int esp){
+void arco_bulge(long entidade, int camada, double pt1[2], double pt2[2], double bulge, int cor[4], int esp){
 	
 	double theta, alfa, d, raio, ang_c, ang_ini, ang_final, centro[2];
 	int sentido;

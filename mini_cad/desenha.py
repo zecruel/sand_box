@@ -26,6 +26,7 @@ class dxf_render:
 	def desenha_ents(self):
 		if self.tela:
 			self.tela.limpa()
+			#print 'teste'
 			#self.desenha(self.ents, [0,0,0], 30) #teste
 			self.desenha(self.ents, [0,0,0], 0)
 			
@@ -104,12 +105,12 @@ class dxf_render:
 						#escalona o pattern (pelo maximo = 15 pixels)
 						maximo = max([abs(x) for x in valor])
 						if maximo > 0:
-							pattern = [15*x/maximo for x in valor]
+							pattern = [int(15*x/maximo) for x in valor]
 					
 					#muda o pattern do desenho
 					if self.tela:
-						self.tela.pattern = pattern
-						self.tela.patt_a = 0
+						self.tela.pattern(pattern)
+						#self.tela.patt_a = 0
 				
 				if tipo == 'LINE':
 					pt1 = [0,0,0]
