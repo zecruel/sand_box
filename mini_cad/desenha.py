@@ -34,11 +34,13 @@ class dxf_render:
 			
 			self.tela.exibe()
 	
-	def desenha_selec(self):
+	def desenha_selec(self, selec):
 		if self.tela:
-			self.tela.limpa_selec()
-			self.desenha(self.selecao.lista_selecao, [0,0,0], 0, None, 1)
-			self.tela.exibe()
+			if isinstance(selec, obj_dxf):
+				#print selec
+				self.tela.limpa_selec()
+				self.desenha(selec, [0,0,0], 0, None, 1)
+				self.tela.exibe()
 	
 	def rotaciona(self, pt1, pivo, ang):
 		pt_rot = [0, 0, 0]

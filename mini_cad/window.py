@@ -106,9 +106,20 @@ class viewer(threading.Thread):
 					self.zoom_off(self.zoom, self.offset)
 					if self.redesenha != None:
 						self.redesenha()
-				if ev.type == 1025: #SDL_MOUSEBUTTONDOWN
+				elif ev.type == 1025: #SDL_MOUSEBUTTONDOWN
 					if ent.value:
 						print cast(ent.value, py_object).value
+				
+				elif ev.type == 1024:
+					if ent.value:
+						hi = dxf.obj_dxf()
+						hi.conteudo.append(cast(ent.value, py_object).value)
+						if self.des_selec != None:
+							self.des_selec(hi)
+							#print hi
+					else:
+						self.limpa_selec()
+						self.exibe()
 			
 		'''
 			if self.lib.SDL_PollEvent(byref(evento)):
@@ -198,6 +209,13 @@ class viewer(threading.Thread):
 		pt1 = (c_double * 2)(*ponto1[:2])
 		pt2 = (c_double * 2)(*ponto2[:2])
 		
+		if camada == 1:
+			cor[0] = 255
+			cor[1] = 0
+			cor[2] = 255
+			cor[3] = 120
+			esp += 2
+		
 		self.lib.linha(id(entidade), camada, pt1, pt2, cor, esp)
 	
 	def circulo(self, entidade, camada, pt1, raio, cor=(0,0,0), esp=1):
@@ -211,6 +229,14 @@ class viewer(threading.Thread):
 		cor = (c_int * 4)(*cor)
 		
 		pt1 = (c_double * 2)(*ponto1[:2])
+		
+		if camada == 1:
+			cor[0] = 255
+			cor[1] = 0
+			cor[2] = 255
+			cor[3] = 120
+			esp += 2
+		
 		self.lib.arco(id(entidade), camada, pt1, raio, ang_ini, ang_fim, cor, esp, sentido)
 		
 	def arco_bulge(self, entidade, camada, ponto1, ponto2, bulge, cor=(0,0,0), esp=1):
@@ -222,6 +248,14 @@ class viewer(threading.Thread):
 		
 		pt1 = (c_double * 2)(*ponto1[:2])
 		pt2 = (c_double * 2)(*ponto2[:2])
+		
+		if camada == 1:
+			cor[0] = 255
+			cor[1] = 0
+			cor[2] = 255
+			cor[3] = 120
+			esp += 2
+		
 		self.lib.arco_bulge(id(entidade), camada, pt1, pt2, bulge, cor, esp)
 	
 	
@@ -297,6 +331,8 @@ class viewer(threading.Thread):
 		self.linha(None, 0, [100, 400], [200, 100], (255,0,0),1)
 		self.linha(None, 0, [100, 400], [100, 200], (0,0,0),2)
 		self.linha(None, 0, [100, 400], [200, 200], (0,0,255),3)
+		
+		self.linha(None, 1, [100, 400], [200, 100], (255,0,0),1)
 		
 		self.pattern ([1])
 		self.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
