@@ -26,6 +26,9 @@ class viewer(threading.Thread):
 	lib.linha.argtypes = [c_long, c_int, c_double*2, c_double*2, c_int*4, c_int]
 	lib.arco.argtypes = [c_long, c_int, c_double*2, c_double, c_double, c_double, c_int*4, c_int, c_int]
 	lib.arco_bulge.argtypes = [c_long, c_int, c_double*2, c_double*2, c_double, c_int*4, c_int]
+	#void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp)
+	lib.interpreta.restype = c_void_p
+	lib.texto_shx.argtypes = [c_long, c_int, c_char_p, c_double*2, c_double*2, c_double, c_double,  c_int*4, c_int, c_int, c_int]
 	
 	def __init__(self, group=None, target=None, name=None,
 				args=(), kwargs={}, verbose=None):
@@ -100,8 +103,8 @@ class viewer(threading.Thread):
 					
 					self.offset[0] *= self.zoom/zoom_ant
 					self.offset[1] *= self.zoom/zoom_ant
-					self.offset[0] -= float(mouse_x.value)*(self.zoom/zoom_ant-1)
-					self.offset[1] -= float(mouse_y.value)*(self.zoom/zoom_ant-1)
+					self.offset[0] += float(mouse_x.value)*(self.zoom/zoom_ant-1)
+					self.offset[1] += float(mouse_y.value)*(self.zoom/zoom_ant-1)
 					
 					self.zoom_off(self.zoom, self.offset)
 					if self.redesenha != None:
@@ -259,8 +262,24 @@ class viewer(threading.Thread):
 		self.lib.arco_bulge(id(entidade), camada, pt1, pt2, bulge, cor, esp)
 	
 	
-	def texto_shx(self, entidade, camada, txt, pt1, pt2, tam=1, rot=0, cor=(0,0,0), alin=(0,1)):
+	def texto_shx(self, entidade, camada, txt, ponto1, ponto2, tam=1, rot=0, cor=(0,0,0), alin=(0,1), esp=1):
+		cor = list(cor)
+		if len(cor) < 4: cor.append(255)
+		cor = (c_int * 4)(*cor)
 		
+		pt1 = (c_double * 2)(*ponto1[:2])
+		pt2 = (c_double * 2)(*ponto2[:2])
+		
+		if camada == 1:
+			cor[0] = 255
+			cor[1] = 0
+			cor[2] = 255
+			cor[3] = 120
+			esp += 2
+		
+		#void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp)
+		self.lib.texto_shx(id(entidade), camada, txt, pt1, pt2, tam, rot, cor, alin[0], alin[1], esp)
+		'''
 		#renderiza o texto
 		linhas, largura, altura = self.fonte_shx.interpreta(txt)
 		
@@ -302,7 +321,7 @@ class viewer(threading.Thread):
 				#print entidade
 				self.linha(entidade, camada, [p1_x,p1_y], [p2_x,p2_y], cor)
 			#self.linha(None, 0, [pre_x,pre_y], [pre_x+px,pre_y+py], (0,0,0), 3)
-		
+		'''
 	
 	def des_teste(self):
 		texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\

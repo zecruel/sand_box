@@ -1,21 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <locale.h>
+#include "shape.h"
 
 const double direcoes_x[16] = {1, 1, 1, 0.5, 0, -0.5, -1, -1, -1, -1, -1, -0.5, 0, 0.5, 1, 1};
 const double direcoes_y[16] = {0, 0.5, 1, 1, 1, 1, 1, 0.5, 0, -0.5, -1, -1, -1, -1, -1, -0.5};
 const double octantes_x[8] = {1, 0.707106781, 0, -0.707106781, -1, -0.707106781, 0, 0.707106781};	
 const double octantes_y[8] = {0, 0.707106781, 1, 0.707106781, 0, -0.707106781, -1, -0.707106781};
-
-struct Shape{
-	long numero;
-	char *nome;
-	unsigned char *comandos;
-	unsigned int tam_com;
-	struct Shape *prox;
-}; 
-typedef struct Shape shape;
 
 void fonte_add(shape *fonte, long numero, char *nome, unsigned char *comandos, unsigned int tam_com){
 	if (fonte){
@@ -100,6 +88,60 @@ shape *fonte_busca(shape *fonte, long numero){
 		}
 	}
 	return(NULL);
+}
+
+void lin_add(lin *lista_lin, double pt1_x, double pt1_y, double pt2_x, double pt2_y){
+	if (lista_lin){
+		lin *novo = (lin *) malloc(sizeof(lin));
+		if (novo){
+			novo->pt1_x = pt1_x;
+			novo->pt1_y = pt1_y;
+			novo->pt2_x = pt2_x;
+			novo->pt2_y = pt2_y;
+			novo->prox = NULL;
+			
+			if(lista_lin->prox == NULL){ //verifica se a lista esta vazia
+				lista_lin->prox=novo;} // o novo elemento e o ultimo
+			else{ // lista nao vazia
+				//busca o final da lista
+				lin *tmp = lista_lin->prox;
+				while(tmp->prox != NULL){
+					tmp = tmp->prox;}
+				tmp->prox = novo; //acrescenta o novo elemento no final
+			}
+		}
+	}
+}
+
+void lin_limpa(lin *lista_lin){
+	if (lista_lin){
+		if(lista_lin->prox){ //verifica se a lista esta vazia
+			lin *proxlin, *atual;
+			
+			atual = lista_lin->prox;
+			lista_lin->prox = NULL;
+			while(atual){
+				proxlin = atual->prox;
+				free(atual);
+				atual = proxlin;
+			}
+		}
+	}
+}
+
+void lin_exibe(lin *lista_lin){
+	if (lista_lin){
+		if(lista_lin->prox){ //verifica se a lista esta vazia
+			lin *atual;
+			
+			atual = lista_lin->prox;
+			while(atual){
+				printf("(%3.1f;%3.1f)-", atual->pt1_x, atual->pt1_y);
+				printf("(%3.1f;%3.1f),", atual->pt2_x, atual->pt2_y);
+				atual = atual->prox;
+			}
+		}
+	}
 }
 
 shape *fonte_abre(char *arquivo){
@@ -217,19 +259,19 @@ shape *fonte_abre(char *arquivo){
 	return(fonte); // retorna a fonte
 }
 
-void *interpreta(shape *fonte, char *texto){
+lin *interpreta(shape *fonte, char *texto){
 	double pre_x = 0;
 	double pre_y = 0;
 	double px = 0;
 	double py = 0;
 	int pena = 1;
 	int executa = 0;
-	//lista = []
+	lin *lista = NULL;
 	double max_x = 0;
 	double max_y = 0;
 	double pilha_x[50];
 	double pilha_y[50];
-	int tam_pilha;
+	int tam_pilha = 0;
 	
 	long index = 0;
 	long prox_index = 0;
@@ -242,18 +284,24 @@ void *interpreta(shape *fonte, char *texto){
 	double esc_tmp = 1.0;
 	double escala = 1.0;
 	
-	double compr;
+	double compr, centro_x, centro_y, ang_ini;
 	int vetor, octante, sentido, num_oct, raio;
 	
 	wchar_t *str_uni = (wchar_t *)malloc( sizeof( wchar_t ));
 	int tam_str;
 	
-	int i, j;
+	int i, j, ii;
+	
+	//cria a lista de retorno
+	lista = (lin *) malloc(sizeof(lin));
+	if (lista){
+		lista->prox = NULL;
+	}
 	
 	//converte o texto em uma string unicode
 	tam_str = mbstowcs(str_uni, texto, 255); //tamanho maximo de 255
-	printf("tamanho str = %d\n", tam_str);
-	printf("str = %s\n", str_uni);
+	//printf("tamanho str = %d\n", tam_str);
+	//printf("str = %s\n", str_uni);
 
 	
 	for(i = 0; i < tam_str; i++){
@@ -263,6 +311,8 @@ void *interpreta(shape *fonte, char *texto){
 			//printf("\nCod. %d\n", letra->numero);
 		//}
 		//else: i = [42, 'asterisco', [0, 2, 14, 8, 254, 251, 33, 1, 68, 2, 46, 1, 72, 2, 65, 1, 74, 2, 68, 1, 78, 2, 47, 14, 8, 252, 253]]
+		
+		prox_index = 0;
 		for(index = 0; index < letra->tam_com; index++){
 			j = letra->comandos[index];
 			if (index == prox_index){
@@ -320,7 +370,10 @@ void *interpreta(shape *fonte, char *texto){
 						pula = 0;
 						continue;
 					}
-					//pilha.append((pre_x, pre_y))
+					pilha_x[tam_pilha] = pre_x;
+					pilha_y[tam_pilha] = pre_y;
+					tam_pilha++;
+					
 					continue;
 				}
 				else if(comando == 6){
@@ -331,7 +384,9 @@ void *interpreta(shape *fonte, char *texto){
 						continue;
 					}
 					if(tam_pilha>0){
-						//pre_x, pre_y = pilha.pop()
+						pre_x = pilha_x[tam_pilha];
+						pre_y = pilha_y[tam_pilha];
+						tam_pilha--;
 					}
 					continue;
 				}
@@ -498,91 +553,67 @@ void *interpreta(shape *fonte, char *texto){
 					}
 				}
 			}
-			if(executa){/*
-				executa = 0
-				#print comando
+			if(executa){
+				executa = 0;
+				//print comando
 				if(pula){ 
-					pula = 0
-					esc_tmp = escala
-					arco_f = 0
-				else: 
-					if(escala != esc_tmp){ escala = esc_tmp
+					pula = 0;
+					esc_tmp = escala;
+					arco_f = 0;
+				}
+				else{
+					if(escala != esc_tmp){ escala = esc_tmp; }
 					else if(arco_f){
-						arco_f = 0
-						centro_x = pre_x - raio * octantes[octante][0]
-						centro_y = pre_y - raio * octantes[octante][1]
-						ang_ini = octante * math.pi/4
-						for i in range(1, num_oct+1):
-							px = centro_x + raio * math.cos(2 * math.pi * i * sentido/ 8 + ang_ini)
-							py = centro_y + raio * math.sin(2 * math.pi * i * sentido/ 8 + ang_ini)
-							lista.append(((pre_x,pre_y),(px,py)))
-							pre_x=px
-							pre_y=py
-						#print centro_x, centro_y, raio
-						#print octante, num_oct
-					else){
-						px *= escala
-						py *= escala
+						arco_f = 0;
+						centro_x = pre_x - raio * octantes_x[octante];
+						centro_y = pre_y - raio * octantes_y[octante];
+						ang_ini = octante * M_PI/4;
+						for(ii=1; ii <= num_oct+1; ii++){
+							px = centro_x + raio * cos(2 * M_PI * i * sentido/ 8 + ang_ini);
+							py = centro_y + raio * sin(2 * M_PI * i * sentido/ 8 + ang_ini);
+							//lista.append(((pre_x,pre_y),(px,py)))
+							lin_add(lista, pre_x, pre_y, px, py);
+							pre_x=px;
+							pre_y=py;
+						}
+						//print centro_x, centro_y, raio
+						//print octante, num_oct
+					}
+					else{
+						px *= escala;
+						py *= escala;
 						if(pena){
-							lista.append(((pre_x,pre_y),(pre_x+px,pre_y+py)))
-							#lista.append((pre_x+px,pre_y+py))
-							max_x = max([max_x, pre_x, pre_x+px])
-							max_y = max([max_y, pre_y, pre_y+py])
-						pre_x += px
-						pre_y += py
-						#print [pre_x,pre_y]
-						*/
+							//lista.append(((pre_x,pre_y),(pre_x+px,pre_y+py)))
+							lin_add(lista, pre_x, pre_y, pre_x+px, pre_y+py);
+							//max_x = max([max_x, pre_x, pre_x+px])
+							//max_y = max([max_y, pre_y, pre_y+py])
+						}
+						pre_x += px;
+						pre_y += py;
+						//print [pre_x,pre_y]
+					}
+				}
 			}
 		}
 		}//temporario ate implementar o else
 	}
 	//return lista, max_x, max_y
-	return(NULL);
+	return(lista);
 }
+/*
 int main (){
 	setlocale(LC_ALL,""); //seta a localidade como a atual do computador para aceitar acentuacao
 		
 	shape *txt = fonte_abre("txt.shx"); //abre a fonte txt
-	
 	//fonte_exibe(txt); //exibe os comandos
-	interpreta(txt, "testeÇ");
+	
+	lin *teste = interpreta(txt, "testeÇ");
+	lin_exibe(teste);
+	
 	fonte_limpa(txt); //desaloca a memoria
 	free(txt);
+	lin_limpa(teste);
+	free(teste);
 	
 	return(0);
-	
-	// combinando dois bytes (o menos significativo primeiro)
-	// int number = buf[0] | buf[1] << 8;
-	// ou
-	
-	// #define bytes_to_u16(MSB,LSB) (((unsigned int) ((unsigned char) MSB)) & 255)<<8 | (((unsigned char) LSB)&255)
-	// unsigned int port=bytes_to_u16(buf[1],buf[0]);
-	
-	//unsigned char a;
-	//signed char b;
-	//a= 128;
-	//b = (signed char) a;
-	//printf ("teste: %d , %d\n", a, b);
-	
-	/*
-	patient *createPatient(int number, char *name, 
-	  char *addr, char *bd, char sex) {
-
-	  // Allocate memory for the pointers themselves and other elements
-	  // in the struct.
-	  patient *p = malloc(sizeof(struct patient));
-
-	  p->number = number; // Scalars (int, char, etc) can simply be copied
-
-	  // Must allocate memory for contents of pointers.  Here, strdup()
-	  // creates a new copy of name.  Another option:
-	  // p->name = malloc(strlen(name)+1);
-	  // strcpy(p->name, name);
-	  p->name = strdup(name);
-	  p->address = strdup(addr);
-	  p->birthdate = strdup(bd);
-	  p->gender = sex;
-	  return p;
-	}
-	*/
-}
+}*/

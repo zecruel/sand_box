@@ -9,6 +9,7 @@ print ctypes.cast(id(a), ctypes.py_object).value
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
+#include "shape.h"
 #define MAX_CAMADAS 10
 #define MAX_PATTERN 10
 #define TAM_RET 5
@@ -48,6 +49,7 @@ int patt_a = 0;
 int tam_patt = 0;
 
 node *lista_busca = NULL;
+shape *fonte = NULL;
 
 void lista_add(long entidade, int pt1_x, int pt1_y, int pt2_x, int pt2_y){
 	if (lista_busca){
@@ -132,6 +134,9 @@ int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 	lista_busca = (node *) malloc(sizeof(node));
 	if (lista_busca) { 
 		lista_busca->prox = NULL;} //lista vazia
+	
+	//inicializa a fonte
+	fonte = fonte_abre("txt.shx"); //abre a fonte txt
 	
 	// inicia o video e timer
 	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER); 
@@ -536,6 +541,85 @@ void arco_bulge(long entidade, int camada, double pt1[2], double pt2[2], double 
 	ang_final *= 180/M_PI;
 	
 	arco(entidade, camada, centro, raio, ang_ini, ang_final, cor, esp, sentido);
+}
+
+void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp){
+	
+	double tam_fonte = 1;
+	double tamanho = 1;
+	double centro_x = 0;
+	double centro_y = 0;
+	double base_x = 0;
+	double base_y = 0;
+	double pos_x = 0;
+	double pos_y = 0;
+	double largura, altura;
+	double pivo_x = 0;
+	double pivo_y = 0;
+	double seno = 0;
+	double cosseno = 1;
+	double p1_x, p1_y, p2_x, p2_y;
+	double p1r_x, p1r_y, p2r_x, p2r_y;
+	double ponto1[2], ponto2[2];
+	
+	//renderiza o texto
+	lin *linhas = interpreta(fonte, txt);
+	//linhas, largura, altura = self.fonte_shx.interpreta(txt)
+	largura = 0;
+	altura= 1;
+	
+	//if (len(linhas)>0) and (altura!=0):
+	if (linhas){
+		if(linhas->prox){ //verifica se a lista esta vazia
+			//tam_fonte = abs(self.fonte_shx.dados_fonte[0]+self.fonte_shx.dados_fonte[1])
+			//tam_fonte = self.fonte_shx.dados_fonte[0]
+			tamanho = tam/tam_fonte;
+			
+			//determina a posicao de insercao do texto em funcao de seu alinhamento
+			centro_x = alin_h * (largura/altura * tam/2);
+			centro_y = (alin_v-1)* (tam/ 2);
+			base_x =  alin_h * (pt2[0] - pt1[0])/2;
+			base_y =  alin_h * (pt2[1] - pt1[1])/2;
+			pos_x = pt1[0] + base_x - centro_x;
+			pos_y = pt1[1] + base_y - centro_y;
+			if(rot != 0){
+				cosseno = cos(rot*M_PI/180);
+				seno = sin(rot*M_PI/180);
+				pivo_x = pt1[0] + base_x;
+				pivo_y = pt1[1] + base_y;
+			}
+			
+			//for lin in linhas:
+			lin *atual;
+			atual = linhas->prox;
+			while(atual){ //varre a lista de linhas
+				p1_x = tamanho * atual->pt1_x + pos_x;
+				p1_y = tamanho * atual->pt1_y + pos_y;
+				p2_x = tamanho * atual->pt2_x + pos_x;
+				p2_y = tamanho * atual->pt2_y + pos_y;
+				
+				//aplica rotacao
+				if(rot != 0){
+					p1r_x = cosseno*(p1_x-pivo_x) - seno*(p1_y-pivo_y) + pivo_x;
+					p1r_y = seno*(p1_x-pivo_x) + cosseno*(p1_y-pivo_y) + pivo_y;
+					p2r_x = cosseno*(p2_x-pivo_x) - seno*(p2_y-pivo_y) + pivo_x;
+					p2r_y = seno*(p2_x-pivo_x) + cosseno*(p2_y-pivo_y) + pivo_y;
+					p1_x = p1r_x;
+					p1_y = p1r_y;
+					p2_x = p2r_x;
+					p2_y = p2r_y;
+				}
+				//print entidade
+				//self.linha(entidade, camada, [p1_x,p1_y], [p2_x,p2_y], cor)
+				ponto1[0] = p1_x;
+				ponto1[1] = p1_y;
+				ponto2[0] = p2_x;
+				ponto2[1] = p2_y;
+				linha(entidade, camada, ponto1, ponto2, cor, esp);
+				atual = atual->prox;
+			}
+		}
+	}
 }
 
 int intersect(int lin_pt1[2], int lin_pt2[2], int rect_pt1[2], int rect_pt2[2]){
