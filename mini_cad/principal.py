@@ -13,8 +13,8 @@ class teste:
 	selecao = util.selecao()
 	view = window.viewer(args=(1,2,3),
 	kwargs = {
-	'largura': 800,
-	'altura': 600,
+	'largura': 1000,
+	'altura': 700,
 	'titulo': 'Visualisador DXF',
 	'selecao': selecao
 	})
@@ -62,7 +62,7 @@ class teste:
 			zoom_y = 600/(lim_y[1] - lim_y[0])
 			
 			zoom = min([zoom_x, zoom_y])
-			offset = [-i * zoom for i in [lim_x[0], lim_y[0]]]
+			offset = [i * zoom for i in [lim_x[0], lim_y[0]]]
 			
 			self.view.zoom_off(zoom, offset)
 			

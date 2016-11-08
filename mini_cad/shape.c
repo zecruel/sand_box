@@ -259,7 +259,7 @@ shape *fonte_abre(char *arquivo){
 	return(fonte); // retorna a fonte
 }
 
-lin *interpreta(shape *fonte, char *texto){
+lin *interpreta(shape *fonte, const char *texto, double *altura, double *largura){
 	double pre_x = 0;
 	double pre_y = 0;
 	double px = 0;
@@ -269,6 +269,8 @@ lin *interpreta(shape *fonte, char *texto){
 	lin *lista = NULL;
 	double max_x = 0;
 	double max_y = 0;
+	double min_x = 0;
+	double min_y = 0;
 	double pilha_x[50];
 	double pilha_y[50];
 	int tam_pilha = 0;
@@ -287,10 +289,12 @@ lin *interpreta(shape *fonte, char *texto){
 	double compr, centro_x, centro_y, ang_ini;
 	int vetor, octante, sentido, num_oct, raio;
 	
-	wchar_t *str_uni = (wchar_t *)malloc( sizeof( wchar_t ));
+	wchar_t str_uni[255];
 	int tam_str;
 	
 	int i, j, ii;
+	
+	//double altura, largura;
 	
 	//cria a lista de retorno
 	lista = (lin *) malloc(sizeof(lin));
@@ -384,9 +388,9 @@ lin *interpreta(shape *fonte, char *texto){
 						continue;
 					}
 					if(tam_pilha>0){
+						tam_pilha--;
 						pre_x = pilha_x[tam_pilha];
 						pre_y = pilha_y[tam_pilha];
-						tam_pilha--;
 					}
 					continue;
 				}
@@ -466,24 +470,24 @@ lin *interpreta(shape *fonte, char *texto){
 				}
 				if(comando == 8){
 					if(!coord_y){
-						px = (signed) j;
+						px = (double)((signed char) j);
 						coord_y = 1;
 						continue;
 					}
 					else{
-						py = (signed) j;
+						py = (double)((signed char) j);
 						coord_y = 0;
 						executa = 1;
 					}
 				}
 				else if(comando == 9){
 					if(!coord_y){
-						px = (signed) j;
+						px = (double)((signed char) j);
 						coord_y = 1;
 						continue;
 					}
 					else{
-						py = (signed) j;
+						py = (double)((signed char) j);
 						if(!((px==0) && (py==0))){
 							coord_y = 0;
 							prox_index = index + 3;
@@ -515,16 +519,16 @@ lin *interpreta(shape *fonte, char *texto){
 				}
 				if(comando == 12){
 					if(!coord_y){
-						px = (signed) j;
+						px = (double)((signed char) j);
 						coord_y = 1;
 						continue;
 					}
 					else if(!bulge_f){
-						py = (signed) j;
+						py = (double)((signed char) j);
 						bulge_f = 1;
 					}
 					else{
-						bulge = (signed) j;
+						bulge = (double)((signed char) j);
 						coord_y = 0;
 						bulge_f = 0;
 						executa = 1;
@@ -532,12 +536,12 @@ lin *interpreta(shape *fonte, char *texto){
 				}
 				else if(comando == 13){
 					if(!coord_y){
-						px = (signed) j;
+						px = (double)((signed char) j);
 						coord_y = 1;
 						continue;
 					}
 					else if(!bulge_f){
-						py = (signed) j;
+						py = (double)((signed char) j);
 						if(!((px==0) && (py==0))){
 							prox_index = index + 2;
 							bulge_f = 1;
@@ -545,7 +549,7 @@ lin *interpreta(shape *fonte, char *texto){
 						continue;
 					}
 					else{
-						bulge = (signed) j;
+						bulge = (double)((signed char) j);
 						coord_y = 0;
 						prox_index = index + 3;
 						executa = 1;
@@ -583,10 +587,18 @@ lin *interpreta(shape *fonte, char *texto){
 						px *= escala;
 						py *= escala;
 						if(pena){
-							//lista.append(((pre_x,pre_y),(pre_x+px,pre_y+py)))
+							//adiciona a linha na lista de retorno
 							lin_add(lista, pre_x, pre_y, pre_x+px, pre_y+py);
+							
+							//calcula os valores maximo e minimo de cada coordenada
+							if((pre_x + px) > max_x){ max_x = (pre_x + px); }
+							if((pre_y + py) > max_y){ max_y = (pre_y + py); }
+							if((pre_x + px) < min_x){ min_x = (pre_x + px); }
+							if((pre_y + py) < min_y){ min_y = (pre_y + py); }
 							//max_x = max([max_x, pre_x, pre_x+px])
 							//max_y = max([max_y, pre_y, pre_y+py])
+							
+							//printf("%3.2f,%3.2f,%3.2f,%3.2f\n", pre_x, pre_y, px, py);
 						}
 						pre_x += px;
 						pre_y += py;
@@ -597,6 +609,12 @@ lin *interpreta(shape *fonte, char *texto){
 		}
 		}//temporario ate implementar o else
 	}
+	//calcula a altura e a largura do texto interpretado
+	*altura = fabs(max_y - min_y);
+	*largura = fabs(max_x - min_x);
+	
+	//printf("Altura = %3.2f, largura = %3.2f\n", altura, largura);
+	
 	//return lista, max_x, max_y
 	return(lista);
 }

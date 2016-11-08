@@ -35,4 +35,4 @@ void lin_exibe(lin *lista_lin);
 
 shape *fonte_abre(char *arquivo);
 
-lin *interpreta(shape *fonte, char *texto);
+lin *interpreta(shape *fonte, const char *texto, double *altura, double *largura);

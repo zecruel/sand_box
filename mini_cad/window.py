@@ -26,9 +26,12 @@ class viewer(threading.Thread):
 	lib.linha.argtypes = [c_long, c_int, c_double*2, c_double*2, c_int*4, c_int]
 	lib.arco.argtypes = [c_long, c_int, c_double*2, c_double, c_double, c_double, c_int*4, c_int, c_int]
 	lib.arco_bulge.argtypes = [c_long, c_int, c_double*2, c_double*2, c_double, c_int*4, c_int]
-	#void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp)
 	lib.interpreta.restype = c_void_p
-	lib.texto_shx.argtypes = [c_long, c_int, c_char_p, c_double*2, c_double*2, c_double, c_double,  c_int*4, c_int, c_int, c_int]
+	#void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp){
+	lib.texto_shx.argtypes = [c_long, c_int, c_int, c_char_p, c_double*2, c_double*2, c_double, c_double,  c_int*4, c_int, c_int, c_int]
+	#int nova_fonte(char *arquivo)
+	lib.nova_fonte.restype = c_int
+	lib.nova_fonte.argtypes = [c_char_p]
 	
 	def __init__(self, group=None, target=None, name=None,
 				args=(), kwargs={}, verbose=None):
@@ -66,6 +69,8 @@ class viewer(threading.Thread):
 		self.fonte_shx = shape.fonte_shx()
 		
 		
+		
+		
 		self.cor_hi = (255,0,255,120)
 		
 		#------------------------------------------------------------
@@ -82,6 +87,9 @@ class viewer(threading.Thread):
 		#depois de tudo pronto, notifica os processos em espera
 		with self.pronto:
 			self.pronto.notify()
+			
+		self.fonte = self.lib.nova_fonte('simplex.shx')
+		print self.fonte
 		
 		
 		mouse_x = c_int(0)
@@ -267,8 +275,8 @@ class viewer(threading.Thread):
 		if len(cor) < 4: cor.append(255)
 		cor = (c_int * 4)(*cor)
 		
-		pt1 = (c_double * 2)(*ponto1[:2])
-		pt2 = (c_double * 2)(*ponto2[:2])
+		pt1 = (c_double * 2)(*list(ponto1)[:2])
+		pt2 = (c_double * 2)(*list(ponto2)[:2])
 		
 		if camada == 1:
 			cor[0] = 255
@@ -276,9 +284,12 @@ class viewer(threading.Thread):
 			cor[2] = 255
 			cor[3] = 120
 			esp += 2
-		
+			
+			
+		fonte = 1
+		fonte = self.fonte
 		#void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp)
-		self.lib.texto_shx(id(entidade), camada, txt, pt1, pt2, tam, rot, cor, alin[0], alin[1], esp)
+		self.lib.texto_shx(id(entidade), camada, fonte, str(txt), pt1, pt2, tam, rot, cor, alin[0], alin[1], esp)
 		'''
 		#renderiza o texto
 		linhas, largura, altura = self.fonte_shx.interpreta(txt)
@@ -346,6 +357,8 @@ class viewer(threading.Thread):
 		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 60, (0,0,255), (1,2))
 		self.texto_shx(None, 0,'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
 		
+		#self.texto_shx(None, 0,texto_teste2,(200,200),(100,100), 30, 0, (0,0,0), (1,2))
+		#self.texto_shx(None, 0,'N',(200,200),(100,100), 30, 0, (0,0,0), (1,2))
 		
 		self.linha(None, 0, [100, 400], [200, 100], (255,0,0),1)
 		self.linha(None, 0, [100, 400], [100, 200], (0,0,0),2)

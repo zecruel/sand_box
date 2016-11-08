@@ -12,6 +12,7 @@ print ctypes.cast(id(a), ctypes.py_object).value
 #include "shape.h"
 #define MAX_CAMADAS 10
 #define MAX_PATTERN 10
+#define MAX_FONTES 10
 #define TAM_RET 5
 
 //estrutura de lista encadeada
@@ -49,7 +50,9 @@ int patt_a = 0;
 int tam_patt = 0;
 
 node *lista_busca = NULL;
-shape *fonte = NULL;
+shape *fontes[MAX_FONTES];
+int num_fontes = 0;
+//shape *fonte = NULL;
 
 void lista_add(long entidade, int pt1_x, int pt1_y, int pt2_x, int pt2_y){
 	if (lista_busca){
@@ -113,6 +116,17 @@ long busca_ret(int ret1[2], int ret2 [2]){
 	return 0;
 }
 
+int nova_fonte(char *arquivo){
+	if(num_fontes < MAX_FONTES){ //verifica se o maximo admitido de fontes foi atingido
+		fontes[num_fontes] = fonte_abre(arquivo); //abre a fonte desejada
+		if(fontes[num_fontes]){ //verifica se obteve sucesso
+			num_fontes++;
+			return num_fontes; //retorna o indice + 1 da fonte
+		}
+	}
+	return 0; //retorna 0 se nao sucedido
+}
+
 int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 	
 	//atualiza os param globais com os valores passados
@@ -126,6 +140,8 @@ int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 		titulo[i] = tit[i];}
 	for(i=0; i < 4; i++){
 		cor_fundo[i] = fundo[i];}
+	for(i=0; i < MAX_FONTES; i++){
+		fontes[i] = NULL;}
 	
 	// inicializa o tipo de linha com linha solida
 	pattern[0] = 1;
@@ -136,7 +152,7 @@ int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 		lista_busca->prox = NULL;} //lista vazia
 	
 	//inicializa a fonte
-	fonte = fonte_abre("txt.shx"); //abre a fonte txt
+	nova_fonte("txt.shx"); //abre a fonte txt -> o indice dela eh o 1
 	
 	// inicia o video e timer
 	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER); 
@@ -208,6 +224,10 @@ void sai(void){
 	if (lista_busca){
 		lista_limpa();
 		free(lista_busca);
+	}
+	for (i=0; i < num_fontes; i++){ //desaloca a memoria das fontes
+		fonte_limpa(fontes[i]);
+		free(fontes[i]);
 	}
 }
 
@@ -543,9 +563,9 @@ void arco_bulge(long entidade, int camada, double pt1[2], double pt2[2], double 
 	arco(entidade, camada, centro, raio, ang_ini, ang_final, cor, esp, sentido);
 }
 
-void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp){
+void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp){
 	
-	double tam_fonte = 1;
+	double tam_fonte = 4;
 	double tamanho = 1;
 	double centro_x = 0;
 	double centro_y = 0;
@@ -561,35 +581,51 @@ void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2
 	double p1_x, p1_y, p2_x, p2_y;
 	double p1r_x, p1r_y, p2r_x, p2r_y;
 	double ponto1[2], ponto2[2];
+	double acima, abaixo;
+	lin *linhas = NULL;
+	shape *fonte = NULL;
+	
+	if((i_fonte <= num_fontes) && (i_fonte > 0)){
+		fonte = fontes[i_fonte - 1];
+	}
+	
+	//pega as dimensoes da fonte
+	if(fonte){ //verifica se existe a fonte
+		if(fonte->prox){ //o primeiro item da lista eh a descricao da fonte
+			if(fonte->prox->tam_com > 1){ //verfica se a fonte eh valida
+				acima = fonte->prox->comandos[0]; //dimensao acima da linha base
+				abaixo = fonte->prox->comandos[1]; //dimensao abaixo da linha base
+				if((acima + abaixo) > 0){
+					tam_fonte = acima + abaixo;
+				}
+			}
+		}
+	}
 	
 	//renderiza o texto
-	lin *linhas = interpreta(fonte, txt);
-	//linhas, largura, altura = self.fonte_shx.interpreta(txt)
-	largura = 0;
-	altura= 1;
+	linhas = interpreta(fonte, txt, &altura, &largura);
 	
-	//if (len(linhas)>0) and (altura!=0):
 	if (linhas){
-		if(linhas->prox){ //verifica se a lista esta vazia
-			//tam_fonte = abs(self.fonte_shx.dados_fonte[0]+self.fonte_shx.dados_fonte[1])
-			//tam_fonte = self.fonte_shx.dados_fonte[0]
-			tamanho = tam/tam_fonte;
+		if(linhas->prox){ //verifica se a lista nao esta vazia
+			tamanho = tam/tam_fonte*2;
 			
 			//determina a posicao de insercao do texto em funcao de seu alinhamento
-			centro_x = alin_h * (largura/altura * tam/2);
-			centro_y = (alin_v-1)* (tam/ 2);
+			centro_x = alin_h * (largura * tamanho/2);
+			centro_y = (alin_v - 1) * (tamanho/2);
 			base_x =  alin_h * (pt2[0] - pt1[0])/2;
 			base_y =  alin_h * (pt2[1] - pt1[1])/2;
 			pos_x = pt1[0] + base_x - centro_x;
 			pos_y = pt1[1] + base_y - centro_y;
-			if(rot != 0){
+			
+			if(rot != 0){ //calcula as constantes de rotacao
 				cosseno = cos(rot*M_PI/180);
 				seno = sin(rot*M_PI/180);
 				pivo_x = pt1[0] + base_x;
 				pivo_y = pt1[1] + base_y;
 			}
 			
-			//for lin in linhas:
+			//printf("tam=%3.2f, altura=%3.2f, largura=%3.2f\n",tamanho, altura, largura);
+			
 			lin *atual;
 			atual = linhas->prox;
 			while(atual){ //varre a lista de linhas
@@ -619,6 +655,8 @@ void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2
 				atual = atual->prox;
 			}
 		}
+		lin_limpa(linhas);
+		free(linhas);
 	}
 }
 
