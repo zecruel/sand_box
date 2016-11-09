@@ -402,7 +402,8 @@ if __name__ == "__main__":
 			#letra = struct.pack('H', a)
 			letra = unichr(a)
 			cod = ord(letra)
-			#print  i, '#', a, repr(letra), cod
-	print fonte.interpreta(unichr(18))
-	print fonte.lista_princ[0]
-	print fonte.dados_fonte
+			print  i, '#', a, repr(letra), cod
+	#print fonte.interpreta('teste')
+	#print fonte.lista_princ[0]
+	#print fonte.dados_fonte
+	#print fonte.num_fonte

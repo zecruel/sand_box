@@ -1,7 +1,15 @@
 from dxf import *
 import dxf_color
 import math
+import re
 
+def sub_ctrl(cod):
+	#print cod.group(0), cod.group(1)
+	if cod.group(1).upper() == 'D': return unichr(176)
+	elif cod.group(1).upper() == 'P': return unichr(177)
+	elif cod.group(1).upper() == 'C': return unichr(216) #simbolo de diametro
+		
+	return ''
 
 class dxf_render:
 	def __init__(self, drawing, selecao):
@@ -371,6 +379,11 @@ class dxf_render:
 						pt1 = self.rotaciona(pt1, offset, rotacao*math.pi/180)
 						pt2 = self.rotaciona(pt2, offset, rotacao*math.pi/180)
 						rot -= rotacao
+					
+					#substitui os codigos de controle %% por caracteres unicode
+					texto = re.sub('%%(\w)', sub_ctrl, texto)
+					
+					
 					
 					if self.tela:
 						if segundo_ponto:

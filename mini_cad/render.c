@@ -582,6 +582,8 @@ void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2],
 	double p1r_x, p1r_y, p2r_x, p2r_y;
 	double ponto1[2], ponto2[2];
 	double acima, abaixo;
+	double escala_x = 1, escala_y = 1;
+	
 	lin *linhas = NULL;
 	shape *fonte = NULL;
 	
@@ -610,14 +612,31 @@ void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2],
 			tamanho = tam/tam_fonte*2;
 			
 			//determina a posicao de insercao do texto em funcao de seu alinhamento
-			centro_x = alin_h * (largura * tamanho/2);
-			centro_y = (alin_v - 1) * (tamanho/2);
-			base_x =  alin_h * (pt2[0] - pt1[0])/2;
-			base_y =  alin_h * (pt2[1] - pt1[1])/2;
+			if(alin_h < 3){
+				centro_x = alin_h * (largura * tamanho/2);
+				base_x =  alin_h * (pt2[0] - pt1[0])/2;
+				base_y =  alin_h * (pt2[1] - pt1[1])/2;
+			}
+			else{ 
+				if(alin_h == 4){
+					base_x = (pt2[0] - pt1[0])/2;
+					base_y = (pt2[1] - pt1[1])/2;
+				}
+				else{
+					escala_x = sqrt(pow((pt2[0] - pt1[0]), 2) + pow((pt2[1] - pt1[1]), 2))/(largura * tamanho);
+				}
+				rot = atan2((pt2[1] - pt1[1]),(pt2[0] - pt1[0])) * 180/M_PI;
+				
+				//printf("alinhamento=%d\n", alin_h);
+			}
+			if(alin_v >0){
+				centro_y = (alin_v - 1) * (tamanho/2);
+			}
+			
 			pos_x = pt1[0] + base_x - centro_x;
 			pos_y = pt1[1] + base_y - centro_y;
 			
-			if(rot != 0){ //calcula as constantes de rotacao
+			if(fabs(rot) > 0.5){ //calcula as constantes de rotacao
 				cosseno = cos(rot*M_PI/180);
 				seno = sin(rot*M_PI/180);
 				pivo_x = pt1[0] + base_x;
@@ -629,13 +648,13 @@ void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2],
 			lin *atual;
 			atual = linhas->prox;
 			while(atual){ //varre a lista de linhas
-				p1_x = tamanho * atual->pt1_x + pos_x;
-				p1_y = tamanho * atual->pt1_y + pos_y;
-				p2_x = tamanho * atual->pt2_x + pos_x;
-				p2_y = tamanho * atual->pt2_y + pos_y;
+				p1_x = escala_x * tamanho * atual->pt1_x + pos_x;
+				p1_y = escala_y *tamanho * atual->pt1_y + pos_y;
+				p2_x = escala_x *tamanho * atual->pt2_x + pos_x;
+				p2_y = escala_y *tamanho * atual->pt2_y + pos_y;
 				
 				//aplica rotacao
-				if(rot != 0){
+				if(fabs(rot) > 0.5){
 					p1r_x = cosseno*(p1_x-pivo_x) - seno*(p1_y-pivo_y) + pivo_x;
 					p1r_y = seno*(p1_x-pivo_x) + cosseno*(p1_y-pivo_y) + pivo_y;
 					p2r_x = cosseno*(p2_x-pivo_x) - seno*(p2_y-pivo_y) + pivo_x;
@@ -654,9 +673,9 @@ void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2],
 				linha(entidade, camada, ponto1, ponto2, cor, esp);
 				atual = atual->prox;
 			}
+			lin_limpa(linhas);
+			free(linhas);
 		}
-		lin_limpa(linhas);
-		free(linhas);
 	}
 }
 

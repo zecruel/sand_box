@@ -289,7 +289,7 @@ class viewer(threading.Thread):
 		fonte = 1
 		fonte = self.fonte
 		#void texto_shx(long entidade, int camada, char *txt, double pt1[2], double pt2[2], double tam, double rot, int cor[4], int alin_h, int alin_v, int esp)
-		self.lib.texto_shx(id(entidade), camada, fonte, str(txt), pt1, pt2, tam, rot, cor, alin[0], alin[1], esp)
+		self.lib.texto_shx(id(entidade), camada, fonte, txt, pt1, pt2, tam, rot, cor, alin[0], alin[1], esp)
 		'''
 		#renderiza o texto
 		linhas, largura, altura = self.fonte_shx.interpreta(txt)
