@@ -98,6 +98,8 @@ class viewer(threading.Thread):
 		ent = c_long(0)
 		ev = sdl_event.SDL_Event()
 		
+		ret_ini = 0
+		
 		while 1:
 			if self.lib.eventos(byref(ev), byref(ent), byref(bot), byref(mouse_x), byref(mouse_y)):
 				if  ev.type == 256: #evento de sair
@@ -109,17 +111,55 @@ class viewer(threading.Thread):
 					zoom_ant = self.zoom
 					self.zoom = self.zoom + ev.wheel.y*0.2*self.zoom
 					
+					self.offset[0] -= float(mouse_x.value)*(1/self.zoom-1/zoom_ant)
+					self.offset[1] -= float(mouse_y.value)*(1/self.zoom-1/zoom_ant)
+					'''
 					self.offset[0] *= self.zoom/zoom_ant
 					self.offset[1] *= self.zoom/zoom_ant
 					self.offset[0] += float(mouse_x.value)*(self.zoom/zoom_ant-1)
 					self.offset[1] += float(mouse_y.value)*(self.zoom/zoom_ant-1)
-					
+					'''
 					self.zoom_off(self.zoom, self.offset)
 					if self.redesenha != None:
 						self.redesenha()
 				elif ev.type == 1025: #SDL_MOUSEBUTTONDOWN
-					if ent.value:
-						print cast(ent.value, py_object).value
+					if ret_ini == 1: ret_ini = 0
+					else:
+						ret_ini = 1
+						x1 = mouse_x.value
+						y1 = mouse_y.value
+						
+						#imprime as coordenadas reais referidas aos objetos
+						#print 'x', x1/self.zoom+self.offset[0], 'y', y1/self.zoom+self.offset[1]
+					
+					#if ent.value:
+					#	print cast(ent.value, py_object).value
+						
+				elif ev.type == 1026: #SDL_MOUSEBUTTONUP
+					if ret_ini == 1:
+						ret_ini = 0
+						x2 = mouse_x.value
+						y2 = mouse_y.value
+						#ordena os cantos do retangulo
+						ret_bl_x = min(x1, x2)
+						ret_bl_y = min(y1, y2)
+						ret_tr_x = max(x1, x2)
+						ret_tr_y = max(y1, y2)
+						
+						ret_larg = ret_tr_x - ret_bl_x
+						ret_alt = ret_tr_x - ret_bl_y
+						if (abs(ret_larg) > 20) and (abs(ret_alt)>20):
+							zoom_ant = self.zoom
+							self.zoom = max(zoom_ant*self.largura/float(ret_larg), zoom_ant*self.altura/float(ret_alt))
+								
+							self.offset[0] = ret_bl_x/zoom_ant+self.offset[0]
+							self.offset[1] = ret_bl_y/zoom_ant+self.offset[1]
+							
+							
+							self.zoom_off(self.zoom, self.offset)
+							if self.redesenha != None:
+								self.redesenha()
+							#print "retangulo", ret_larg, ret_alt, self.zoom
 				
 				elif ev.type == 1024:
 					if ent.value:

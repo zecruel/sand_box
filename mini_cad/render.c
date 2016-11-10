@@ -316,14 +316,14 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 	
 	
 	//aplica zoom e offset aos pontos
-	ponto1[0] = zoom * p1[0];
-	ponto1[1] = zoom * p1[1];
-	ponto2[0] = zoom * p2[0];
-	ponto2[1] = zoom * p2[1];
-	ponto1[0] = ponto1[0] - offset[0];
-	ponto1[1] = ponto1[1] - offset[1];
-	ponto2[0] = ponto2[0] - offset[0];
-	ponto2[1] = ponto2[1] - offset[1];
+	ponto1[0] = p1[0] - offset[0];
+	ponto1[1] = p1[1] - offset[1];
+	ponto2[0] = p2[0] - offset[0];
+	ponto2[1] = p2[1] - offset[1];
+	ponto1[0] *= zoom;
+	ponto1[1] *= zoom;
+	ponto2[0] *= zoom;
+	ponto2[1] *= zoom;
 	
 	pt1[0] = (int) round(ponto1[0]);
 	pt1[1] = (int) round(ponto1[1]);

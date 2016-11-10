@@ -58,11 +58,11 @@ class teste:
 			#menor = min(lista_z)
 			#lim_z = [menor, maior]
 			
-			zoom_x = 800/(lim_x[1] - lim_x[0])
-			zoom_y = 600/(lim_y[1] - lim_y[0])
+			zoom_x = 1000/(lim_x[1] - lim_x[0])
+			zoom_y = 700/(lim_y[1] - lim_y[0])
 			
 			zoom = min([zoom_x, zoom_y])
-			offset = [i * zoom for i in [lim_x[0], lim_y[0]]]
+			offset = [lim_x[0], lim_y[0]]
 			
 			self.view.zoom_off(zoom, offset)
 			
