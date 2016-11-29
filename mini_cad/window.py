@@ -68,7 +68,7 @@ class viewer(threading.Thread):
 		
 		self.fonte_shx = shape.fonte_shx()
 		
-		
+		self.fonte = 0
 		
 		
 		self.cor_hi = (255,0,255,120)
@@ -89,7 +89,7 @@ class viewer(threading.Thread):
 			self.pronto.notify()
 			
 		self.fonte = self.lib.nova_fonte('simplex.shx')
-		print self.fonte
+		#print self.fonte
 		
 		
 		mouse_x = c_int(0)
@@ -410,6 +410,7 @@ class viewer(threading.Thread):
 		self.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
 		self.arco(None, 0, [200,300], 70, 0, 240, cor=(0,0,255), esp=2)
 		self.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
+		self.pattern ([10, -10])
 		self.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
 		self.arco_bulge(None, 0, [100, 400], [200, 100], 0.5, (255,0,0),1)
 		

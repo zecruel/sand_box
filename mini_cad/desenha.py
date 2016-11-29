@@ -535,7 +535,73 @@ class dxf_render:
 					#prepara para o proximo ponto
 					pt_ant[0], pt_ant[1], pt_ant[2] = pt1[0], pt1[1], pt1[2]
 					bulge_ant = bulge
+				
+				if tipo == 'LWPOLYLINE':
+					pt1 = [0,0,0]
+					pt2 = [0,0,0]
 					
+					#procura a lista de pontos
+					lista_x = dxf_proc_grupo(entidade, 10) #x
+					lista_y = dxf_proc_grupo(entidade, 20) #y
+					lista_z = dxf_proc_grupo(entidade, 30) #z
+					lista_bulge = dxf_proc_grupo(entidade, 42)
+					
+					#busca o numero de vertices
+					valor = dxf_proc_grupo(entidade, 90)
+					if len(valor)>0:
+						vertices = int(valor[0])
+					else: vertices = 0
+					
+					vertices = max(len(lista_x), len(lista_y), len(lista_z), vertices)
+						
+					if vertices > 1: #continua se houver mais de 1 vertice
+						
+						#pega o primeiro ponto
+						if len(lista_x) > 0: pt1[0] = lista_x[0] + offset[0]
+						else: pt1[0] = offset[0]
+						if len(lista_y) > 0: pt1[1] = lista_y[0] + offset[1]
+						else: pt1[1] = offset[1]
+						if len(lista_z) > 0: pt1[2] = lista_z[0] + offset[2]
+						else: pt1[2] = offset[2]
+						if len(lista_bulge) > 0: bulge = lista_bulge[0]
+						else: bulge = 0
+						
+						#verifica se a a polyline eh fechada
+						pt_final = None
+						valor = dxf_proc_grupo(entidade, 70) #busca a flag no objeto mestre
+						if len(valor)>0:
+							if (valor[0] & 1):
+								pt_final = [0,0,0]
+								#define o primeiro ponto como ponto final para fechar o caminho
+								pt_final[0], pt_final[1], pt_final [2] = pt1[0], pt1[1], pt1[2]
+						
+						for i in range(1,vertices):
+							
+							if i < len(lista_x): pt2[0] = lista_x[i] + offset[0]
+							else: pt2[0] = offset[0]
+							if i < len(lista_y): pt2[1] = lista_y[i] + offset[1]
+							else: pt2[1] = offset[1]
+							if i < len(lista_z): pt2[2] = lista_z[i] + offset[2]
+							else: pt2[2] = offset[2]
+							
+							if self.tela:
+								if bulge == 0:
+									self.tela.linha(dono, camada, pt1[:2], pt2[:2], self.t_cor[cor])
+								else:
+									self.tela.arco_bulge(dono, camada, pt1[:2], pt2[:2], bulge, self.t_cor[cor])
+							
+							pt1[0], pt1[1], pt1[2] = pt2[0], pt2[1], pt2[2]
+							if i < len(lista_bulge): bulge = lista_bulge[i]
+							else: bulge = 0
+						
+						#se for uma plyline fechada
+						if pt_final and self.tela:
+							if bulge == 0:
+								self.tela.linha(dono, camada, pt1[:2], pt_final[:2], self.t_cor[cor])
+							else:
+								self.tela.arco_bulge(dono, camada, pt1[:2], pt_final[:2], bulge, self.t_cor[cor])
+						pt_final = None
+				
 				elif tipo == '3DFACE':
 					pass
 				elif tipo == 'VIEWPORT':

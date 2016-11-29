@@ -286,6 +286,21 @@ void set_camada(int camada, int cor[4]){
 	}
 }
 
+int verif_pattern(){
+	int retorno = 0;
+	
+	pix_count += 1;
+	if (pattern[patt_a] >=0){
+		retorno = 1;}
+	if (pix_count >= abs(pattern[patt_a])){
+		pix_count = 0;
+		patt_a += 1;
+		if (patt_a >= tam_patt){
+			patt_a = 0;}
+	}
+	return retorno;
+}
+
 void set_pt(int x, int y, int esp){
 	///desenha um ponto na camada SDL
 	if ((x < largura) && (y < altura) && (x >= 0) && (y >= 0)){
@@ -361,30 +376,18 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 				if ((x >= 0) && (x < largura)){
 					if ((dy*sy) > 0){
 						while (y <= pt2[1]){
-							pix_count += 1;
-							if (pattern[patt_a] >=0){
+							//verifica se o ponto atual esta conforme o tipo de linha
+							if (verif_pattern()){
 								set_pt(x, y, esp);}
-							if (pix_count >= abs(pattern[patt_a])){
-								pix_count = 0;
-								patt_a += 1;
-								if (patt_a >= tam_patt){
-									patt_a = 0;}
-							}
 							y += 1;
 						}
 					}
 					else{
 						y = pt2[1];
 						while (y <= pt1[1]){
-							pix_count += 1;
-							if (pattern[patt_a] >=0){
+							//verifica se o ponto atual esta conforme o tipo de linha
+							if (verif_pattern()){
 								set_pt(x, y, esp);}
-							if (pix_count >= abs(pattern[patt_a])){
-								pix_count = 0;
-								patt_a += 1;
-								if (patt_a >= tam_patt){
-									patt_a = 0;}
-							}
 							y += 1;
 						}
 					}
@@ -395,30 +398,18 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 				if ((y >= 0) && (y < altura)){
 					if ((dx*sx) > 0){
 						while (x <= pt2[0]){
-							pix_count += 1;
-							if (pattern[patt_a] >=0){
+							//verifica se o ponto atual esta conforme o tipo de linha
+							if (verif_pattern()){
 								set_pt(x, y, esp);}
-							if (pix_count >= abs(pattern[patt_a])){
-								pix_count = 0;
-								patt_a += 1;
-								if (patt_a >= tam_patt){
-									patt_a = 0;}
-							}
 							x += 1;
 						}
 					}
 					else {
 						x = pt2[0];
 						while (x <= pt1[0]){
-							pix_count += 1;
-							if (pattern[patt_a] >=0){
+							//verifica se o ponto atual esta conforme o tipo de linha
+							if (verif_pattern()){
 								set_pt(x, y, esp);}
-							if (pix_count >= abs(pattern[patt_a])){
-								pix_count = 0;
-								patt_a += 1;
-								if (patt_a >= tam_patt){
-									patt_a = 0;}
-							}
 							x += 1;
 						}
 					}
@@ -431,15 +422,9 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 				if (dx > dy){
 					err = dx / 2;
 					while (x != pt2[0]){
-						pix_count += 1;
-						if (pattern[patt_a] >=0){
+						//verifica se o ponto atual esta conforme o tipo de linha
+						if (verif_pattern()){
 							set_pt(x, y, esp);}
-						if (pix_count >= abs(pattern[patt_a])){
-							pix_count = 0;
-							patt_a += 1;
-							if (patt_a >= tam_patt){
-								patt_a = 0;}
-						}
 						err -= dy;
 						if (err < 0){
 							y += sy;
@@ -451,15 +436,9 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 				else {
 					err = dy / 2;
 					while (y != pt2[1]){
-						pix_count += 1;
-						if (pattern[patt_a] >=0){
+						//verifica se o ponto atual esta conforme o tipo de linha
+						if (verif_pattern()){
 							set_pt(x, y, esp);}
-						if (pix_count >= abs(pattern[patt_a])){
-							pix_count = 0;
-							patt_a += 1;
-							if (patt_a >= tam_patt){
-								patt_a = 0;}
-						}
 						err -= dx;
 						if (err < 0){
 							x += sx;
@@ -468,15 +447,9 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 						y += sy;
 					}
 				}						
-				pix_count += 1;
-				if (pattern[patt_a] >=0){
+				//verifica se o ponto atual esta conforme o tipo de linha
+				if (verif_pattern()){
 					set_pt(x, y, esp);}
-				if (pix_count >= abs(pattern[patt_a])){
-					pix_count = 0;
-					patt_a += 1;
-					if (patt_a >= tam_patt){
-						patt_a = 0;}
-				}
 			}
 		}
 	}
