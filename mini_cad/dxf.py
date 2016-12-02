@@ -223,6 +223,22 @@ def dxf_item(mestre, tipo, item):
 			return None #se chegou ao final, entao nao encontrou						return i #sucesso: retorna o objeto
 	else:
 		return None #se chegou ao final, entao nao encontrou
+		
+def dxf_itens(mestre, tipo):
+	'''Lista o nome dos itens dentro de um mestre DXF, que pode der uma secao, tabela ou bloco.
+	Deve-se especificar as strings de tipo (conforme especificacao DXF) '''
+	
+	lista = [] #lista mestre de retorno
+	if isinstance(mestre, obj_dxf):
+		for i in mestre.conteudo: #varre o conteudo da tabela
+			if isinstance(i, obj_dxf):
+				if i.nome == tipo: #verifica o tipo
+					j = dxf_proc_grupo(i, 2)
+					if len(j) > 0:
+						lista.append(j[0])
+					#else:
+					#	lista.append('')
+	return lista
 
 def dxf_vars(head):
 	''' Lista as variaveis dentro da secao HEADER DXF.

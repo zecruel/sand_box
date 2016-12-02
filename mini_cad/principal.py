@@ -68,6 +68,9 @@ class teste:
 			
 			render = desenha.dxf_render(self.drawing, self.selecao)
 			render.tela = self.view
+			
+			render.tipos_linha()
+			
 			self.view.redesenha = render.desenha_ents
 			self.view.des_selec = render.desenha_selec
 			render.desenha_ents()

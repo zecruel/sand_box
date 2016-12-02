@@ -17,8 +17,8 @@ class viewer(threading.Thread):
 	#void limpa_camada(int camada, int cor[4])
 	lib.limpa_camada.argtypes =[c_int, c_int*4]
 	lib.set_camada.argtypes =[c_int, c_int*4]
-	#void muda_pattern(int pat[], int tam)
-	lib.muda_pattern.argtypes =[POINTER(c_int), c_int]
+	#muda_pattern(int pat_i)
+	lib.muda_pattern.argtypes =[c_int]
 	#lib.eventos.restype = sdl_event.SDL_Event
 	lib.eventos.restype = c_int
 	lib.eventos.argtypes = [POINTER(sdl_event.SDL_Event), POINTER(c_long), POINTER(c_int), POINTER(c_int), POINTER(c_int)]
@@ -32,6 +32,9 @@ class viewer(threading.Thread):
 	#int nova_fonte(char *arquivo)
 	lib.nova_fonte.restype = c_int
 	lib.nova_fonte.argtypes = [c_char_p]
+	#add_pattern(int pat[], int tam)
+	lib.add_pattern.restype = c_int
+	lib.add_pattern.argtypes = [POINTER(c_int), c_int]
 	
 	def __init__(self, group=None, target=None, name=None,
 				args=(), kwargs={}, verbose=None):
@@ -238,11 +241,15 @@ class viewer(threading.Thread):
 	def exibe(self):
 		#exibe a imagem de fundo na tela
 		self.lib.exibe()
-		
+	'''	
 	def pattern(self, pat):
 		pat =(c_int* len(pat))(*pat)
 		#void muda_pattern(int pat[], int tam)
 		self.lib.muda_pattern(pat, len(pat))
+	'''	
+	def add_pattern(self, pat): #----------TESTE
+		pat =(c_int* len(pat))(*pat)
+		return self.lib.add_pattern(pat, len(pat))
 		
 	def zoom_off(self, zoom, off):
 		self.zoom = zoom
@@ -391,11 +398,11 @@ class viewer(threading.Thread):
 			if len(x) > 0: texto_teste3 += unichr(x[0])
 		
 		self.limpa()
-		self.pattern ([10, -5, 0, -5])
+		self.lib.muda_pattern(3)
 		
 		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 30, (0,0,100), (1,2))
 		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 60, (0,0,255), (1,2))
-		self.texto_shx(None, 0,'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
+		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
 		
 		#self.texto_shx(None, 0,texto_teste2,(200,200),(100,100), 30, 0, (0,0,0), (1,2))
 		#self.texto_shx(None, 0,'N',(200,200),(100,100), 30, 0, (0,0,0), (1,2))
@@ -406,11 +413,11 @@ class viewer(threading.Thread):
 		
 		self.linha(None, 1, [100, 400], [200, 100], (255,0,0),1)
 		
-		self.pattern ([1])
+		self.lib.muda_pattern(4)
 		self.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
 		self.arco(None, 0, [200,300], 70, 0, 240, cor=(0,0,255), esp=2)
 		self.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
-		self.pattern ([10, -10])
+		self.lib.muda_pattern(2)
 		self.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
 		self.arco_bulge(None, 0, [100, 400], [200, 100], 0.5, (255,0,0),1)
 		
@@ -439,6 +446,11 @@ if __name__ == "__main__":
 	janela = viewer()
 	with janela.pronto:
 		janela.pronto.wait(1)
+		
+	janela.add_pattern([1])
+	janela.add_pattern([10, -5, 0, -5])
+	janela.add_pattern([5, -5])
+	
 	janela.des_teste()
 	janela.redesenha = janela.des_teste
 	

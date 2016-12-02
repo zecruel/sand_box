@@ -14,17 +14,40 @@ print ctypes.cast(id(a), ctypes.py_object).value
 #define MAX_PATTERN 10
 #define MAX_FONTES 10
 #define TAM_RET 5
+#define MAX_LIN_T 50
 
 //estrutura de lista encadeada
 //armazena as linhas do desenho visivel
 struct Node{
 	int pt1_x, pt1_y, pt2_x, pt2_y;
 	long entidade;
+	
 	struct Node *prox;
 }; 
 typedef struct Node node;
 
+//estrutura de lista encadeada
+//armazena as linhas do desenho com todos os atributos
+struct N_linha{
+	double pt1_x, pt1_y, pt2_x, pt2_y;
+	long entidade;
+	
+	int camada;
+	int cor[4];
+	int esp;
+	int pattern;
+	
+	struct N_linha *prox;
+}; 
+typedef struct N_linha n_linha;
 
+//estrutura de vetor de inteiros
+//armazena um vetor com informacao de seu tamanho
+struct Vet_int{
+	int *dados;
+	int tam;
+};
+typedef struct Vet_int vet_int;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -49,10 +72,47 @@ int pattern[MAX_PATTERN];
 int patt_a = 0;
 int tam_patt = 0;
 
+vet_int *tipos_lin[MAX_LIN_T]; //array com os tipos de linha
+int num_lin_t = 0; //numero de tipos de linha carregados
+
 node *lista_busca = NULL;
 shape *fontes[MAX_FONTES];
 int num_fontes = 0;
 //shape *fonte = NULL;
+
+/*-------------------------------------------------------------------------------------
+-------------------------- FUNCOES RELACIONADOS A VETORES ----------
+---------------------------------------------------------------------------------------- */
+vet_int * novo_vet_int(int vetor[], int tam){
+	
+	int i; //iterador
+	
+	//aloca memoria da estrutura
+	vet_int *novo = (vet_int *) malloc(sizeof(vet_int));
+	if (novo){
+		//aloca memoria do conteudo
+		novo->dados = (int *) malloc(tam*sizeof(int));
+		if (novo->dados){
+			novo->tam = tam; //informa o tamanho na estrutura do vetor
+			//carrega os valores no vetor
+			for (i = 0; i < tam; i++){
+				novo->dados[i] = vetor[i];}
+				
+			return novo; //sucesso -> retorna a estrutura do vetor
+		}
+		else { //se deu errado a alocacao do conteudo
+			free(novo); //libera a meoria alocada da estrutura
+		}
+	}
+	return NULL; // retorna nulo se nao sucedido
+}
+
+void del_vet_int(vet_int *vet){
+	free(vet->dados); //libera a meoria alocada do conteudo
+	free(vet); //libera a meoria alocada da estrutura
+}
+/*-------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------- */
 
 void lista_add(long entidade, int pt1_x, int pt1_y, int pt2_x, int pt2_y){
 	if (lista_busca){
@@ -153,6 +213,10 @@ int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 	
 	//inicializa a fonte
 	nova_fonte("txt.shx"); //abre a fonte txt -> o indice dela eh o 1
+		
+	//inicializa os tipos de linha
+	int l_continua[1] = {1}; // linha continua eh a primeira
+	add_pattern(l_continua, 1); //o indice eh o 1
 	
 	// inicia o video e timer
 	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER); 
@@ -455,15 +519,40 @@ void linha(long entidade, int camada, double p1[2], double p2[2], int color[4], 
 	}
 }
 
-void muda_pattern(int pat[], int tam){
+void muda_pattern(int pat_i){
 	pix_count = 0;
+	
+	if (pat_i <= num_lin_t){ //se houver o tipo de linha cadastrada
+		
+		tam_patt = tipos_lin[pat_i-1]->tam;
+		for (patt_a = 0; patt_a < tam_patt; patt_a++){
+			pattern[patt_a] = tipos_lin[pat_i-1]->dados[patt_a];}
+	}
+	else{ //se nao houver, o tipo de linha sera continua
+		tam_patt = 1;
+		pattern[0] = 1;
+	}
 	patt_a = 0;
-	if (tam > MAX_PATTERN){
-		tam = MAX_PATTERN;}
-	tam_patt = tam;
-	for (patt_a = 0; patt_a < tam; patt_a++){
-		pattern[patt_a] = pat[patt_a];}
-	patt_a = 0;
+}
+
+int add_pattern(int pat[], int tam){
+	
+	vet_int *novo_pat;
+	
+	if(num_lin_t < MAX_LIN_T){ //verifica se o maximo admitido de tipos foi atingido
+		
+		if (tam > MAX_PATTERN){ //verifica o maximo de comandos permitidos
+			tam = MAX_PATTERN;} //TALVEZ ESTA VERIFICACAO NAO SEJA NECESSARIA
+
+		novo_pat = novo_vet_int(pat, tam); //cria um novo vetor
+		if (novo_pat){ //se sucedido
+			tipos_lin[num_lin_t] = novo_pat; //acrescenta o vetor a lista
+			num_lin_t++; //incrementa o numero de tipos em uso
+			
+			return num_lin_t; //retorna o indice + 1 do tipo de linha
+		}
+	}
+	return 0; // retorna 0 se nao sucedido
 }
 
 void muda_zoom(double n_zoom, double n_offset[2]){

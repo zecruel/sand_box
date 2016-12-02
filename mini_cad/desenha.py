@@ -31,6 +31,9 @@ class dxf_render:
 		#obtem os tipos de linha cadastrados
 		self.ltypes = dxf_item(self.tabs, 'TABLE', 'LTYPE')
 		
+		self.t_linhas = {}
+		
+		
 	def desenha_ents(self):
 		if self.tela:
 			self.tela.limpa()
@@ -56,6 +59,29 @@ class dxf_render:
 		pt_rot[1] = math.sin(ang)*(pt1[0]-pivo[0]) + math.cos(ang)*(pt1[1]-pivo[1]) + pivo[1]
 		pt_rot[2] = pt1[2]
 		return pt_rot
+		
+	def tipos_linha(self):
+		self.t_linhas = {}
+		lista = dxf_itens(self.ltypes, 'LTYPE')
+		for ltype_n in lista:
+			#busca o patern da linha
+			ltype = dxf_item(self.ltypes, 'LTYPE', ltype_n) #objeto ltype
+			valor = dxf_proc_grupo(ltype, 49)
+			#print ltype_n, valor
+			if len(valor)>0:
+				#escalona o pattern (minimo 4 pixels)
+				#minimo = min([abs(x) for x in valor])
+				#pattern = [4*x/minimo for x in valor]
+				
+				#escalona o pattern (pelo maximo = 15 pixels)
+				maximo = max([abs(x) for x in valor])
+				if maximo >= 0:
+					pattern = [int(15*x/maximo) for x in valor]
+			else:
+				pattern = [1]
+			#muda o pattern do desenho
+			if self.tela:
+				self.t_linhas[ltype_n] = self.tela.add_pattern(pattern)
 	
 	def desenha(self, mestre, offset=[0,0,0], rotacao=0, contido=None, camada=0):
 		if isinstance(mestre, obj_dxf):
@@ -104,6 +130,7 @@ class dxf_render:
 					if len(valor)>0:
 						if valor[0].upper() != 'BYLAYER': ltype_n = valor[0] #nome do tipo de linha	
 					
+					'''
 					#busca o patern da linha
 					ltype = dxf_item(self.ltypes, 'LTYPE', ltype_n) #objeto ltype
 					valor = dxf_proc_grupo(ltype, 49)
@@ -116,10 +143,15 @@ class dxf_render:
 						maximo = max([abs(x) for x in valor])
 						if maximo > 0:
 							pattern = [int(15*x/maximo) for x in valor]
+					'''
 					
 					#muda o pattern do desenho
 					if self.tela:
-						self.tela.pattern(pattern)
+						try:
+							self.tela.lib.muda_pattern(self.t_linhas[ltype_n])
+						except KeyError:
+							self.tela.lib.muda_pattern(1)
+						#print self.t_linhas[ltype_n]
 						#self.tela.patt_a = 0
 				
 				if tipo == 'LINE':
