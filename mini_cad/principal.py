@@ -71,8 +71,12 @@ class teste:
 			
 			render.tipos_linha()
 			
-			self.view.redesenha = render.desenha_ents
-			self.view.des_selec = render.desenha_selec
+			#self.view.redesenha = render.desenha_ents
+			self.view.redesenha = self.view.des_teste
+			#self.view.des_selec = render.desenha_selec
+			
+			self.view.lib.linha_limpa()
+			
 			render.desenha_ents()
 
 	def salvar(self):

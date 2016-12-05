@@ -41,8 +41,8 @@ class dxf_render:
 			#self.desenha(self.ents, [0,0,0], 30) #teste
 			self.desenha(self.ents, [0,0,0], 0)
 			
-			self.desenha(self.selecao.lista_selecao, [0,0,0], 0, None, 1)
-			
+			#self.desenha(self.selecao.lista_selecao, [0,0,0], 0, None, 1)
+			self.tela.lib.desenha_lista()
 			self.tela.exibe()
 	
 	def desenha_selec(self, selec):

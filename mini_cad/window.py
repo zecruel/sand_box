@@ -36,6 +36,9 @@ class viewer(threading.Thread):
 	lib.add_pattern.restype = c_int
 	lib.add_pattern.argtypes = [POINTER(c_int), c_int]
 	
+	#linha_add(long entidade, int camada, double pt1[2], double pt2[2], int cor[4], int esp, int pattern)
+	lib.linha_add.argtypes = [c_long, c_int, c_double*2, c_double*2, c_int*4, c_int, c_int]
+	
 	def __init__(self, group=None, target=None, name=None,
 				args=(), kwargs={}, verbose=None):
 		''' Deriva a classe threading, permitindo a passagem
@@ -258,7 +261,7 @@ class viewer(threading.Thread):
 		self.lib.muda_zoom(zoom, offset)
 		
 
-	def linha(self, entidade, camada, ponto1, ponto2, color=(0,0,0), esp=1):
+	def linha2(self, entidade, camada, ponto1, ponto2, color=(0,0,0), esp=1):
 		#void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int color[4], int esp)
 		cor = list(color)
 		if len(cor) < 4: cor.append(255)
@@ -275,6 +278,24 @@ class viewer(threading.Thread):
 			esp += 2
 		
 		self.lib.linha(id(entidade), camada, pt1, pt2, cor, esp)
+		
+	def linha(self, entidade, camada, ponto1, ponto2, color=(0,0,0), esp=1, pat = 1):
+		#void linha(void *entidade, int camada, double ponto1[2], double ponto2[2], int color[4], int esp)
+		cor = list(color)
+		if len(cor) < 4: cor.append(255)
+		cor = (c_int * 4)(*cor)
+		
+		pt1 = (c_double * 2)(*ponto1[:2])
+		pt2 = (c_double * 2)(*ponto2[:2])
+		
+		if camada == 1:
+			cor[0] = 255
+			cor[1] = 0
+			cor[2] = 255
+			cor[3] = 120
+			esp += 2
+		
+		self.lib.linha_add(id(entidade), camada, pt1, pt2, cor, esp, pat)
 	
 	def circulo(self, entidade, camada, pt1, raio, cor=(0,0,0), esp=1):
 		self.arco(entidade, camada, pt1, raio, 0, 0, cor, esp)
@@ -382,44 +403,10 @@ class viewer(threading.Thread):
 		'''
 	
 	def des_teste(self):
-		texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\
-		'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +\
-		'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' +\
-		'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in ' +\
-		'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
-		'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
-		'culpa qui officia deserunt mollit anim id est laborum.'
-		texto_teste2 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'+\
-		'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðõôóòöúùûü.,;:!@#$%¨&*'+\
-		'(){}[]?><|/\\^~-=+°º²³¹ª1234567890'
-		
-		texto_teste3 = ''
-		for x in self.fonte_shx.lista_princ:
-			if len(x) > 0: texto_teste3 += unichr(x[0])
 		
 		self.limpa()
-		self.lib.muda_pattern(3)
 		
-		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 30, (0,0,100), (1,2))
-		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 60, (0,0,255), (1,2))
-		self.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
-		
-		#self.texto_shx(None, 0,texto_teste2,(200,200),(100,100), 30, 0, (0,0,0), (1,2))
-		#self.texto_shx(None, 0,'N',(200,200),(100,100), 30, 0, (0,0,0), (1,2))
-		
-		self.linha(None, 0, [100, 400], [200, 100], (255,0,0),1)
-		self.linha(None, 0, [100, 400], [100, 200], (0,0,0),2)
-		self.linha(None, 0, [100, 400], [200, 200], (0,0,255),3)
-		
-		self.linha(None, 1, [100, 400], [200, 100], (255,0,0),1)
-		
-		self.lib.muda_pattern(4)
-		self.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
-		self.arco(None, 0, [200,300], 70, 0, 240, cor=(0,0,255), esp=2)
-		self.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
-		self.lib.muda_pattern(2)
-		self.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
-		self.arco_bulge(None, 0, [100, 400], [200, 100], 0.5, (255,0,0),1)
+		self.lib.desenha_lista()
 		
 		self.exibe()
 	
@@ -450,6 +437,49 @@ if __name__ == "__main__":
 	janela.add_pattern([1])
 	janela.add_pattern([10, -5, 0, -5])
 	janela.add_pattern([5, -5])
+	
+	janela.linha(None, 0, [0, 400], [400, 0], (0,0,250),3,3)
+	
+	
+	texto_teste ='Lorem ipsum dolor sit amet, consectetur adipiscing elit, '+\
+	'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +\
+	'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' +\
+	'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in ' +\
+	'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla ' +\
+	'pariatur. Excepteur sint occaecat cupidatat non proident, sunt in ' +\
+	'culpa qui officia deserunt mollit anim id est laborum.'
+	texto_teste2 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'+\
+	'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðõôóòöúùûü.,;:!@#$%¨&*'+\
+	'(){}[]?><|/\\^~-=+°º²³¹ª1234567890'
+	
+	texto_teste3 = ''
+	for x in janela.fonte_shx.lista_princ:
+		if len(x) > 0: texto_teste3 += unichr(x[0])
+	
+	janela.limpa()
+	janela.lib.muda_pattern(3)
+	
+	janela.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 30, (0,0,100), (1,2))
+	janela.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 60, (0,0,255), (1,2))
+	janela.texto_shx(None, 0, 'teste',(100,100),(100,100), 30, 90, (0,0,0), (1,2))
+	
+	janela.texto_shx(None, 0,texto_teste2,(200,200),(100,100), 30, 0, (0,0,0), (1,2))
+	#janela.texto_shx(None, 0,'N',(200,200),(100,100), 30, 0, (0,0,0), (1,2))
+	
+	janela.linha(None, 0, [100, 400], [200, 100], (255,0,0),1)
+	janela.linha(None, 0, [100, 400], [100, 200], (0,0,0),2)
+	janela.linha(None, 0, [100, 400], [200, 200], (0,0,255),3)
+	
+	janela.linha(None, 1, [100, 400], [200, 100], (255,0,0),1)
+	
+	janela.lib.muda_pattern(4)
+	janela.arco(None, 0, [200,300], 50, 30, 60, cor=(0,255,0), esp=1)
+	janela.arco(None, 0, [200,300], 70, 0, 240, cor=(0,0,255), esp=2)
+	janela.arco(None, 0, [200,300], 70, 0, 240, cor=(255,0,255), esp=1, sentido=-1)
+	janela.lib.muda_pattern(2)
+	janela.circulo(None, 0, [200,300], 30, cor=(0,0,0), esp=3)
+	janela.arco_bulge(None, 0, [100, 400], [200, 100], 0.5, (255,0,0),1)
+	
 	
 	janela.des_teste()
 	janela.redesenha = janela.des_teste

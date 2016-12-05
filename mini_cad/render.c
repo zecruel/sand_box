@@ -29,7 +29,7 @@ typedef struct Node node;
 //estrutura de lista encadeada
 //armazena as linhas do desenho com todos os atributos
 struct N_linha{
-	double pt1_x, pt1_y, pt2_x, pt2_y;
+	double pt1[2], pt2[2];
 	long entidade;
 	
 	int camada;
@@ -74,6 +74,8 @@ int tam_patt = 0;
 
 vet_int *tipos_lin[MAX_LIN_T]; //array com os tipos de linha
 int num_lin_t = 0; //numero de tipos de linha carregados
+
+n_linha *lista_linhas = NULL;
 
 node *lista_busca = NULL;
 shape *fontes[MAX_FONTES];
@@ -175,6 +177,62 @@ long busca_ret(int ret1[2], int ret2 [2]){
 	}
 	return 0;
 }
+/*-----------------------------------------------------------------------------------------
+funcoes de linhas
+-------------------------------------------------------------------------------------------*/
+void linha_add(long entidade, int camada, double pt1[2], double pt2[2], int cor[4], int esp, int pattern){
+	if (lista_linhas){
+		n_linha *novo = (n_linha *) malloc(sizeof(n_linha));
+		if (novo){
+			novo->entidade = entidade;
+			novo->camada = camada;
+			
+			novo->pt1[0] = pt1[0];
+			novo->pt1[1] = pt1[1];
+			novo->pt2[0] = pt2[0];
+			novo->pt2[1] = pt2[1];
+			
+			novo->cor[0] = cor[0];
+			novo->cor[1] = cor[1];
+			novo->cor[2] = cor[2];
+			novo->cor[3] = cor[3];
+			
+			novo->pattern = pattern;
+			novo->esp = esp;
+			
+			novo->prox = NULL;
+			
+			if(lista_linhas->prox == NULL){ //verifica se a lista esta vazia
+				lista_linhas->prox=novo;} // o novo elemento e o ultimo
+			else{ // lista nao vazia
+				//busca o final da lista
+				n_linha *tmp = lista_linhas->prox;
+				while(tmp->prox != NULL){
+					tmp = tmp->prox;}
+				tmp->prox = novo; //acrescenta o novo elemento no final
+			}
+		}
+	}
+}
+
+void linha_limpa(void){
+	if (lista_linhas){
+		if(lista_linhas->prox){ //verifica se a lista esta vazia
+			n_linha *proxNode, *atual;
+			
+			atual = lista_linhas->prox;
+			lista_linhas->prox = NULL;
+			while(atual){
+				proxNode = atual->prox;
+				free(atual);
+				atual = proxNode;
+			}
+		}
+	}
+}
+
+/*------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------*/
 
 int nova_fonte(char *arquivo){
 	if(num_fontes < MAX_FONTES){ //verifica se o maximo admitido de fontes foi atingido
@@ -210,6 +268,11 @@ int init(int x, int y, int larg, int alt, char tit[255], int fundo[4]){
 	lista_busca = (node *) malloc(sizeof(node));
 	if (lista_busca) { 
 		lista_busca->prox = NULL;} //lista vazia
+		
+	//inicializa a lista de linhas
+	lista_linhas = (n_linha *) malloc(sizeof(n_linha));
+	if (lista_linhas) { 
+		lista_linhas->prox = NULL;} //lista vazia
 	
 	//inicializa a fonte
 	nova_fonte("txt.shx"); //abre a fonte txt -> o indice dela eh o 1
@@ -289,9 +352,18 @@ void sai(void){
 		lista_limpa();
 		free(lista_busca);
 	}
+	
+	if (lista_linhas){ //desaloca a memoria da lista de linhas
+		linha_limpa();
+		free(lista_linhas);
+	}
+	
 	for (i=0; i < num_fontes; i++){ //desaloca a memoria das fontes
 		fonte_limpa(fontes[i]);
 		free(fontes[i]);
+	}
+	for (i=0; i < num_lin_t; i++){ //desaloca a memoria dos tipos de linha
+		del_vet_int(tipos_lin[i]);
 	}
 }
 
@@ -584,14 +656,16 @@ void arco(long entidade, int camada, double centro[2], double raio, double ang_i
 		pt2[0] = centro[0] + raio * cos(2 * M_PI * i * sentido/ n + ang_ini);
 		pt2[1] = centro[1] + raio * sin(2 * M_PI * i * sentido/ n + ang_ini);
 		
-		linha(entidade, camada, pt1, pt2, cor, esp);
+		//linha(entidade, camada, pt1, pt2, cor, esp);
+		linha_add(entidade, camada, pt1, pt2, cor, esp, 1);
 		pt1[0]=pt2[0];
 		pt1[1]=pt2[1];
 	}
 	// o ultimo vertice do arco eh o ponto final, nao calculado no laço
 	pt2[0] = centro[0] + raio * cos(ang_fim);
 	pt2[1] = centro[1] + raio * sin(ang_fim);
-	linha(entidade, camada, pt1, pt2, cor, esp);
+	//linha(entidade, camada, pt1, pt2, cor, esp);
+	linha_add(entidade, camada, pt1, pt2, cor, esp, 1);
 }
 
 void arco_bulge(long entidade, int camada, double pt1[2], double pt2[2], double bulge, int cor[4], int esp){
@@ -732,7 +806,8 @@ void texto_shx(long entidade, int camada, int i_fonte, char *txt, double pt1[2],
 				ponto1[1] = p1_y;
 				ponto2[0] = p2_x;
 				ponto2[1] = p2_y;
-				linha(entidade, camada, ponto1, ponto2, cor, esp);
+				//linha(entidade, camada, ponto1, ponto2, cor, esp);
+				linha_add(entidade, camada, ponto1, ponto2, cor, esp, 1);
 				atual = atual->prox;
 			}
 			lin_limpa(linhas);
@@ -780,6 +855,20 @@ int intersect(int lin_pt1[2], int lin_pt2[2], int rect_pt1[2], int rect_pt2[2]){
 		(pol1<0) && (pol2<0) && (pol3<0) && (pol4<0))){
 			return 0;}
 		return 1;
+	}
+}
+
+void desenha_lista(){
+	if (lista_linhas){
+		if(lista_linhas->prox){ //verifica se a lista esta vazia
+			n_linha *atual;
+			atual = lista_linhas->prox;
+			while(atual){
+				muda_pattern(atual->pattern);
+				linha(atual->entidade, atual->camada, atual->pt1, atual->pt2, atual->cor, atual->esp);
+				atual = atual->prox;
+			}
+		}
 	}
 }
 /*
