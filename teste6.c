@@ -34,6 +34,30 @@ struct Dxf_node{
 }; 
 typedef struct Dxf_node dxf_node;
 
+struct Dxf_drawing{
+	/* DXF main sections */
+	dxf_node 	
+	*head,  /* header with drawing variables */
+	*tabs,  /* tables - see next */
+	*blks, /* blocks definitions */
+	*ents; /* entities - grahics elements */
+	
+	/* DXF table types */
+	dxf_node 
+	*t_ltype, /* line types */ 
+	*t_layer,  /* layers */
+	*t_style,  /*text styles, text fonts */
+	*t_view,  /* views */
+	*t_ucs,   /*UCS - coordinate systems */
+	*t_vport,  /*viewports (useful in layout mode) */
+	*t_dimst, /*dimension styles*/
+	*t_appid; /*third part application indentifier */
+	
+	/* complete structure access */
+	dxf_node *main_struct;
+};
+typedef struct Dxf_drawing dxf_drawing;
+
 /* Linked list to store pointers. The head node store the size. */
 struct List_p{
 	union{
@@ -333,30 +357,48 @@ vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
 	return list;
 }
 
-dxf_node * dxf_open (char *path){
+dxf_drawing dxf_open (char *path){
+	dxf_drawing drawing;
 	char buf[255], *line;
 	FILE *file;
 	long f_index = 0;  /*  indexes the file´s lines */
 	dxf_node *new_node = NULL;
 	dxf_node *master, *prev, *next, *tmp, *last_obj;
-	dxf_node *drawing = NULL;
+	dxf_node *main_struct = NULL;
 	int group = 0; /* current group */
 	int t_data = DXF_STR; /* current type of data */
 	double d_data;
 	int i_data;
+	vector_p part;
+
+	/* init the drawing */
+	drawing.head = NULL;
+	drawing.tabs = NULL;
+	drawing.blks = NULL;
+	drawing.ents = NULL; 
+	drawing.t_ltype = NULL;
+	drawing.t_layer = NULL;
+	drawing.t_style = NULL;
+	drawing.t_view = NULL;
+	drawing.t_ucs = NULL;
+	drawing.t_vport = NULL;
+	drawing.t_dimst = NULL;
+	drawing.t_appid = NULL;
+	drawing.main_struct = NULL;
 	
-	/* create a new drawing */
-	drawing = obj_new(NULL);
+	/* create a new main_struct */
+	main_struct = obj_new(NULL);
 	
 	file = fopen(path, "r");
 	if(file == NULL){
-		drawing = NULL;
+		free(main_struct);
+		main_struct = NULL;
 	}
-	else if (drawing){
+	else if (main_struct){
 		
-		master = drawing; /* current master is the drawing */
-		last_obj = drawing;
-		prev = drawing->obj.content; /* the list starts on drawing's content */
+		master = main_struct; /* current master is the main_struct */
+		last_obj = main_struct;
+		prev = main_struct->obj.content; /* the list starts on main_struct's content */
 		next = NULL; /* end of list (empty list) */
 		
 		while((fgets(buf, sizeof(buf), file))!=NULL ){
@@ -530,18 +572,87 @@ dxf_node * dxf_open (char *path){
 		
 	}
 	fclose(file);
+	
+	drawing.main_struct = main_struct;
+	
+	/* disassembly the drawing structure */
+	/* the main sections */
+	part = find_obj_descr(main_struct, "SECTION", "HEADER");
+	if (part.data){
+		drawing.head = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(main_struct, "SECTION", "TABLES");
+	if (part.data){
+		drawing.tabs = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(main_struct, "SECTION", "BLOCKS");
+	if (part.data){
+		drawing.blks = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(main_struct, "SECTION", "ENTITIES");
+	if (part.data){
+		drawing.ents = ((dxf_node **) part.data)[0]; 
+		free(part.data);
+	}
+	
+	/* the tables */
+	part = find_obj_descr(drawing.tabs, "TABLE", "LTYPE");
+	if (part.data){
+		drawing.t_ltype = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "LAYER");
+	if (part.data){
+		drawing.t_layer = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "STYLE");
+	if (part.data){
+		drawing.t_style = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "VIEW");
+	if (part.data){
+		drawing.t_view = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "UCS");
+	if (part.data){
+		drawing.t_ucs = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "VPORT");
+	if (part.data){
+		drawing.t_vport = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "DIMSTYLE");
+	if (part.data){
+		drawing.t_dimst = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	part = find_obj_descr(drawing.tabs, "TABLE", "APPID");
+	if (part.data){
+		drawing.t_appid = ((dxf_node **) part.data)[0];
+		free(part.data);
+	}
+	
 	return drawing;
 }
 
 int main(void)
 {
 	char url[]="teste.dxf";
-	dxf_node * drawing;
-	vector_p sec, name, head;
+	dxf_drawing drawing;
+	//vector_p sec, name, head;
 	
 	drawing = dxf_open(url);
-	//ent_print(drawing->obj.content->next, 0);
-	sec = find_obj(drawing, "SECTION");
+	ent_print(drawing.t_layer->obj.content->next, 0);
+	
+	/*sec = find_obj(drawing, "SECTION");
 	
 	if ((sec.size > 0) && (sec.data != NULL)){
 		//ent_print(((dxf_node **) sec.data)[0]->obj.content->next, 0);
@@ -564,9 +675,9 @@ int main(void)
 	
 	free(sec.data);
 	free(name.data);
-	free(head.data);
+	free(head.data); */
 	
-	ent_clear(drawing);
+	ent_clear(drawing.main_struct);
 	//printf("\nNum linhas = %d", f_index);
 
 	
