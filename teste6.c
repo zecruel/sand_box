@@ -118,6 +118,59 @@ void list_p_clear(list_p *head){
 	}
 }
 
+int stack_push (vector_p *stack, void *new_ptr){
+	int size;
+	void **data;
+	
+	if (stack){ /* check if stack exists */
+		size = stack->size + 1;
+		/* try to allocate more memory */
+		data = realloc(stack->data, size * sizeof(void *));
+		if (data){ /*success on memory allocation */
+			/* change the stack */
+			stack->data = data; 
+			stack->size = size;
+			/* store new pointer at end of stack */
+			data[size-1] = new_ptr;
+			return 1; /* return success */
+		}
+		/* if memory allocation fails, the stack is unchanged */
+	}
+	return 0; /* return fail */
+}
+
+void * stack_pop (vector_p *stack){
+	int size;
+	void **data, *last = NULL;
+	
+	if ((stack->size > 0) && (stack->data != NULL)){ /* check if stack is not empty*/
+		size = stack->size - 1;
+		data = stack->data;
+		
+		/* get the last element of stack */
+		last = data[size];
+		
+		if (size == 0){ /* stack will be empty */
+			free(stack->data); /* free the data */
+			stack->data = NULL;
+			stack->size = 0;
+			return last; /* return success */
+		}
+		else{
+			/* try to shrink memory of stack*/
+			data = realloc(stack->data, size * sizeof(void *));
+			if (data){ /*success on memory allocation */
+				/* change the stack */
+				stack->data = data; 
+				stack->size = size;
+				return last; /* return success */
+			}
+			/* if memory allocation fails, the stack is unchanged */
+		}
+	}
+	return NULL; /* return fail */
+}
+
 void ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 	if (ent){
 		if (ent->type == DXF_ENT){
@@ -188,6 +241,65 @@ void ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 		}
 		//printf("limpa %d", ent);
 		//free(ent); //free the memory of structure
+	}
+}
+
+void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
+	/* this function is non recursive */
+	int i;
+	vector_p stack;
+	dxf_node *current;
+	
+	stack.size = 0;
+	stack.data = NULL;
+	
+	if (ent){
+		stack_push (&stack, ent);
+		while (current = stack_pop(&stack)){
+			if (current->next){
+				//ent_print(current->next, indent); /* recursive call */
+				stack_push (&stack, current->next);
+			}
+			
+			if (current->type == DXF_ENT){
+				if (current->obj.name){
+					for (i=0; i<indent; i++){ /* print the indentation spaces */
+						printf("    ");
+					}
+					
+					printf(current->obj.name);  /* print the string of entity's name */
+					printf("\n");
+				}
+				if (current->obj.content){
+					/* recursive call and increment the indentation */
+					//ent_print(current->obj.content->next, indent+1);
+					stack_push (&stack, current->obj.content->next);
+					indent++;
+				}
+			}
+			else if (current->type == DXF_ATTR){
+				for (i=0; i<indent; i++){ /* print the indentation spaces */
+					printf("    ");
+				}
+				printf ("%d = ", current->value.group);
+				switch (current->value.t_data) {
+					case DXF_STR:
+						if(current->value.s_data){
+							printf(current->value.s_data); /* printf the string of data */
+						}
+						break;
+					case DXF_FLOAT:
+						printf("%f", current->value.d_data);
+						break;
+					case DXF_INT:
+						printf("%d", current->value.i_data);
+				}
+				printf("\n");
+			}
+			if (current->next == NULL){
+				indent--;
+			}
+		}
 	}
 }
 
@@ -266,7 +378,7 @@ vector_p find_attr(dxf_node * obj, int attr){
 				if (current->type == DXF_ATTR){
 					if(current->value.group == attr){ /* success */
 						size++;
-						data = realloc(data, size * sizeof(dxf_node *));
+						data = realloc(data, size * sizeof(void *));
 						if (data){
 							data[size-1] = current;
 						}
@@ -298,7 +410,7 @@ vector_p find_obj(dxf_node * obj, char *name){
 				if (current->type == DXF_ENT){
 					if(strcmp(current->obj.name, name) == 0){ /* success */
 						size++;
-						data = realloc(data, size * sizeof(dxf_node *));
+						data = realloc(data, size * sizeof(void *));
 						if (data){
 							data[size-1] = current;
 						}
@@ -335,7 +447,7 @@ vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
 							if(strcmp(((dxf_node **) descr_attr.data)[0]->value.s_data, descr) == 0){
 								/* success */
 								size++;
-								data = realloc(data, size * sizeof(dxf_node *));
+								data = realloc(data, size * sizeof(void *));
 								if (data){
 									data[size-1] = current;
 								}
@@ -643,14 +755,77 @@ dxf_drawing dxf_open (char *path){
 	return drawing;
 }
 
+int dxf_save (char *path, dxf_drawing drawing){
+	FILE *file;
+	vector_p stack;
+	dxf_node *current;
+	
+	stack.size = 0;
+	stack.data = NULL;
+	
+	file = fopen(path, "w");
+	
+	
+	if ((file != NULL) && (drawing.main_struct != NULL)){
+		stack_push (&stack, drawing.main_struct->obj.content->next);
+		while (current = stack_pop(&stack)){
+			if (current->next){
+				stack_push (&stack, current->next);
+			}
+			
+			if (current->type == DXF_ENT){
+				if (current->obj.name){
+					fprintf(file, "%s\n", current->obj.name);
+				}
+				if (current->obj.content){
+					stack_push (&stack, current->obj.content->next);
+				}
+			}
+			else if (current->type == DXF_ATTR){
+				fprintf(file, "%d\n",  current->value.group);
+				switch (current->value.t_data) {
+					case DXF_STR:
+						fprintf(file, "%s\n", current->value.s_data); /* printf the string of data */
+						break;
+					case DXF_FLOAT:
+						fprintf(file, "%f\n", current->value.d_data);
+						break;
+					case DXF_INT:
+						fprintf(file, "%d\n",  current->value.i_data);
+				}
+			}
+		}
+	}
+	
+	
+	
+	fclose(file);
+	
+	return 0;
+}
+
 int main(void)
 {
 	char url[]="teste.dxf";
 	dxf_drawing drawing;
-	//vector_p sec, name, head;
+	vector_p stack;
+	
+	stack.size = 0;
+	stack.data = NULL;
 	
 	drawing = dxf_open(url);
-	ent_print(drawing.t_layer->obj.content->next, 0);
+	
+	dxf_ent_print(drawing.blks->obj.content->next, 0);
+	
+	/*
+	stack_push (&stack, drawing.head->obj.content->next);
+	stack_push (&stack, drawing.t_layer->obj.content->next);
+
+	dxf_ent_print(stack_pop(&stack), 0);
+	dxf_ent_print(stack_pop(&stack), 0);
+	
+	printf("\n%d",stack.size);
+	*/
 	
 	/*sec = find_obj(drawing, "SECTION");
 	
@@ -678,7 +853,6 @@ int main(void)
 	free(head.data); */
 	
 	ent_clear(drawing.main_struct);
-	//printf("\nNum linhas = %d", f_index);
 
 	
 	return 0;
