@@ -248,32 +248,32 @@ void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 	/* this function is non recursive */
 	int i;
 	vector_p stack;
-	dxf_node *current;
+	dxf_node *current, *master = NULL;
 	
 	stack.size = 0;
 	stack.data = NULL;
 	
 	if (ent){
-		stack_push (&stack, ent);
-		while (current = stack_pop(&stack)){
-			if (current->next){
-				//ent_print(current->next, indent); /* recursive call */
-				stack_push (&stack, current->next);
+		current = ent;
+		while ((current != NULL) || (stack.size > 0)){
+			if (current == NULL){
+				current = stack_pop (&stack);
+				if (current){
+					current = current->next;
+					indent--;
+				}
 			}
-			
-			if (current->type == DXF_ENT){
+			else if (current->type == DXF_ENT){
+				stack_push (&stack, current);
 				if (current->obj.name){
 					for (i=0; i<indent; i++){ /* print the indentation spaces */
 						printf("    ");
 					}
-					
 					printf(current->obj.name);  /* print the string of entity's name */
 					printf("\n");
 				}
 				if (current->obj.content){
-					/* recursive call and increment the indentation */
-					//ent_print(current->obj.content->next, indent+1);
-					stack_push (&stack, current->obj.content->next);
+					current = current->obj.content->next;
 					indent++;
 				}
 			}
@@ -295,9 +295,7 @@ void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 						printf("%d", current->value.i_data);
 				}
 				printf("\n");
-			}
-			if (current->next == NULL){
-				indent--;
+				current = current->next;
 			}
 		}
 	}
@@ -815,7 +813,8 @@ int main(void)
 	
 	drawing = dxf_open(url);
 	
-	dxf_ent_print(drawing.blks->obj.content->next, 0);
+	dxf_ent_print(drawing.main_struct->obj.content->next, 0);
+	//dxf_ent_print(drawing.t_layer->obj.content->next, 0);
 	
 	/*
 	stack_push (&stack, drawing.head->obj.content->next);
