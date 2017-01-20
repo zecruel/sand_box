@@ -248,7 +248,7 @@ void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 	/* this function is non recursive */
 	int i;
 	vector_p stack;
-	dxf_node *current, *master = NULL;
+	dxf_node *current;
 	
 	stack.size = 0;
 	stack.data = NULL;
@@ -755,28 +755,52 @@ dxf_drawing dxf_open (char *path){
 
 int dxf_save (char *path, dxf_drawing drawing){
 	FILE *file;
-	vector_p stack;
+	vector_p stack, attr;
 	dxf_node *current;
+	int ret_success;
 	
 	stack.size = 0;
 	stack.data = NULL;
 	
+	ret_success = 0;
 	file = fopen(path, "w");
 	
 	
 	if ((file != NULL) && (drawing.main_struct != NULL)){
-		stack_push (&stack, drawing.main_struct->obj.content->next);
-		while (current = stack_pop(&stack)){
-			if (current->next){
-				stack_push (&stack, current->next);
+		current = drawing.main_struct->obj.content->next;
+		while ((current != NULL) || (stack.size > 0)){
+			if (current == NULL){
+				current = stack_pop (&stack);
+				if (current){
+					/* close complex entities */
+					if(strcmp(current->obj.name, "SECTION") == 0){
+						fprintf(file, "0\nENDSEC\n");
+					}
+					else if(strcmp(current->obj.name, "TABLE") == 0){
+						fprintf(file, "0\nENDTAB\n");
+					}
+					else if(strcmp(current->obj.name, "BLOCK") == 0){
+						fprintf(file, "0\nENDBLK\n");
+					}
+					else{
+						attr = find_attr(current, 66); /* look for entities folow flag*/
+						if (attr.data){ /* if flag is found and */
+							if(((int*) attr.data)[0] != 0){ /* its value is non zero */
+								fprintf(file, "0\nSEQEND\n");
+							}
+							free(attr.data);
+						}
+					}
+					current = current->next;
+				}
 			}
-			
-			if (current->type == DXF_ENT){
+			else if (current->type == DXF_ENT){
+				stack_push (&stack, current);
 				if (current->obj.name){
-					fprintf(file, "%s\n", current->obj.name);
+					fprintf(file, "0\n%s\n", current->obj.name);
 				}
 				if (current->obj.content){
-					stack_push (&stack, current->obj.content->next);
+					current = current->obj.content->next;
 				}
 			}
 			else if (current->type == DXF_ATTR){
@@ -791,15 +815,15 @@ int dxf_save (char *path, dxf_drawing drawing){
 					case DXF_INT:
 						fprintf(file, "%d\n",  current->value.i_data);
 				}
+				current = current->next;
 			}
 		}
+		ret_success = 1;
 	}
-	
-	
 	
 	fclose(file);
 	
-	return 0;
+	return ret_success;
 }
 
 int main(void)
@@ -813,7 +837,16 @@ int main(void)
 	
 	drawing = dxf_open(url);
 	
-	dxf_ent_print(drawing.main_struct->obj.content->next, 0);
+	//dxf_ent_print(drawing.main_struct->obj.content->next, 0);
+	
+	if (dxf_save ("save_test.dxf", drawing)){
+		printf("\nSUCESSO!\n");
+	}
+	else{
+		printf("\nFalhou\n");
+	}
+	
+	
 	//dxf_ent_print(drawing.t_layer->obj.content->next, 0);
 	
 	/*
