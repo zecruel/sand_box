@@ -3,6 +3,8 @@
 #include <string.h>
 
 #define MYDXF_STRDUP(str,lit) strcpy(str=malloc(strlen(lit)+1),lit)
+#define DXF_MAX_LAYERS 50
+#define DXF_MAX_CHARS 250
 
 /* supportable graphic entities */
 enum dxf_graph {
@@ -23,7 +25,7 @@ enum dxf_graph {
 	DXF_3DFACE,
 	DXF_VIEWPORT,
 	DXF_DIMENSION
-	}; 
+}; 
 
 struct Dxf_node{
 	struct Dxf_node *master; /* entity to which it is contained */
@@ -55,6 +57,17 @@ struct Dxf_node{
 }; 
 typedef struct Dxf_node dxf_node;
 
+struct Dxf_layer{
+	char name[DXF_MAX_CHARS];
+	int color;
+	char ltype[DXF_MAX_CHARS];
+	int line_w;
+	int frozen;
+	int lock;
+	int off;
+};
+typedef struct Dxf_layer dxf_layer;
+
 struct Dxf_drawing{
 	/* DXF main sections */
 	dxf_node 	
@@ -76,6 +89,9 @@ struct Dxf_drawing{
 	
 	/* complete structure access */
 	dxf_node *main_struct;
+	
+	dxf_layer layers[DXF_MAX_LAYERS];
+	int num_layers;
 };
 typedef struct Dxf_drawing dxf_drawing;
 
@@ -495,6 +511,74 @@ vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
 	return list;
 }
 
+int dxf_layer_assemb (dxf_drawing *drawing){
+	vector_p v_search;
+	int i, flags;
+	dxf_node *current;
+	dxf_layer  layer;
+	
+	char name[DXF_MAX_CHARS];
+	int color;
+	char ltype[DXF_MAX_CHARS];
+	int line_w;
+	int frozen;
+	int lock;
+	int off;
+	
+	v_search = find_obj(drawing->t_layer, "LAYER"); /* get the list of layers */
+	if (v_search.data){
+		drawing->num_layers = v_search.size;
+		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LAYERS)); i++){
+			name[0] = 0;
+			color = 0;
+			ltype[0] = 0;
+			line_w = 0;
+			frozen = 0;
+			lock = 0;
+			off = 0;
+			
+			current = ((dxf_node **) v_search.data)[i]; /* get the layer */
+			/* and sweep its content */
+			current = current->obj.content->next;
+			while (current){
+				if (current->type == DXF_ATTR){
+					switch (current->value.group){
+						case 2: /* layer name */
+							strcpy(name, current->value.s_data);
+							break;
+						case 6: /* layer line type name */
+							strcpy(ltype, current->value.s_data);
+							break;
+						case 62: /* layer color */
+							color = current->value.i_data;
+							if (color < 0) {
+								off = 1;
+								color = abs(color);
+							}
+							break;
+						case 70: /* flags */
+							flags = current->value.i_data;
+							if (flags & 1) frozen = 1;
+							if (flags & 4) lock = 1;
+					}
+				}
+				current = current->next;
+			}
+			/* set the variables on the current layer in drawing structure */
+			strcpy(drawing->layers[i].name, name);
+			strcpy(drawing->layers[i].ltype, ltype);
+			drawing->layers[i].color = color;
+			drawing->layers[i].line_w = line_w;
+			drawing->layers[i].frozen = frozen;
+			drawing->layers[i].lock = lock;
+			drawing->layers[i].off = off;
+		}
+		free(v_search.data);
+	}
+	
+	return 0;
+}
+
 dxf_drawing dxf_open (char *path){
 	dxf_drawing drawing;
 	char buf[255], *line;
@@ -815,7 +899,7 @@ int dxf_save (char *path, dxf_drawing drawing){
 					else{
 						attr = find_attr(current, 66); /* look for entities folow flag*/
 						if (attr.data){ /* if flag is found and */
-							if(((int*) attr.data)[0] != 0){ /* its value is non zero */
+							if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero */
 								fprintf(file, "0\nSEQEND\n");
 							}
 							free(attr.data);
@@ -860,8 +944,8 @@ int dxf_save (char *path, dxf_drawing drawing){
 }
 
 int dxf_draw(dxf_drawing drawing, dxf_node * ent){
-	vector_p stack, attr;
-	dxf_node *current = NULL;
+	vector_p stack, attr, v_search;
+	dxf_node *current = NULL, *e_layer = NULL;
 	enum dxf_graph ent_type;
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -873,10 +957,10 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 	double ang_ini = 0, ang_end = 0, bulge = 0;
 	double t_size = 0, t_rot = 0;
 	
-	char handle[250], l_type[250], t_style[250], layer[250], comment[250];
-	char t_text[250], name1[250], name2[250];
+	char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS], t_style[DXF_MAX_CHARS], layer[DXF_MAX_CHARS], comment[DXF_MAX_CHARS];
+	char t_text[DXF_MAX_CHARS], name1[DXF_MAX_CHARS], name2[DXF_MAX_CHARS];
 	
-	int color = 1, paper = 0;
+	int color = 256, paper = 0;
 	int t_alin_v = 0, t_alin_h = 0;
 	
 	/*flags*/
@@ -896,9 +980,29 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 			while ((current != NULL) || (stack.size > 0)){
 				if (current == NULL){ /* end of list sweeping */
 					
+					/* find the layer */
+					v_search = find_obj_descr(drawing.t_layer, "LAYER", layer);
+					if (v_search.data){
+						e_layer = ((dxf_node **) v_search.data)[0];
+						free(v_search.data);
+					}
+					
+					/* check if  object's color  is definied by layer,
+					then look for layer's color */
+					if (color >= 256){
+						color = 1; /* the standard color, if search fails */
+						/* look for the layer's color */
+						v_search = find_attr(e_layer, 62);
+						if (v_search.data){
+							color = ((dxf_node **) v_search.data)[0]->value.i_data;
+							free(v_search.data);
+						}
+					}
+					
+					
 					switch (ent_type){
 						case DXF_LINE:
-							printf("(%.2f,%.2f)-(%.2f,%.2f)\n", pt1_x, pt1_y, pt2_x, pt2_y);
+							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d\n", pt1_x, pt1_y, pt2_x, pt2_y, color);
 							goto reinit_vars;
 						
 						case DXF_POINT:
@@ -966,7 +1070,7 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 						name1[0] = 0;
 						name2[0] = 0;
 						
-						color = 1; paper= 0;
+						color = 256; paper= 0;
 						t_alin_v = 0; t_alin_h = 0;
 						
 						/*clear flags*/
@@ -1169,6 +1273,7 @@ int main(void)
 	char url[]="teste.dxf";
 	dxf_drawing drawing;
 	vector_p stack;
+	int i;
 	
 	stack.size = 0;
 	stack.data = NULL;
@@ -1184,9 +1289,22 @@ int main(void)
 	else{
 		printf("\nFalhou\n");
 	}
-	*/
 	
-	dxf_draw(drawing, drawing.ents);
+	
+	dxf_draw(drawing, drawing.ents);*/
+	
+	dxf_layer_assemb (&drawing);
+	
+	printf("%d\n", drawing.num_layers);
+	for (i = 0; i < drawing.num_layers; i++){
+		printf("%s %d %s off = %d lock = %d froz = %d\n",
+		drawing.layers[i].name, 
+		drawing.layers[i].color, 
+		drawing.layers[i].ltype,
+		drawing.layers[i].off,
+		drawing.layers[i].lock,
+		drawing.layers[i].frozen);
+	}
 	
 	//dxf_ent_print(drawing.t_layer->obj.content->next, 0);
 	
