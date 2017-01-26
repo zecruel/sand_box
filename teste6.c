@@ -4,7 +4,9 @@
 
 #define MYDXF_STRDUP(str,lit) strcpy(str=malloc(strlen(lit)+1),lit)
 #define DXF_MAX_LAYERS 50
+#define DXF_MAX_LTYPES 50
 #define DXF_MAX_CHARS 250
+#define DXF_MAX_PAT 10
 
 /* supportable graphic entities */
 enum dxf_graph {
@@ -68,6 +70,14 @@ struct Dxf_layer{
 };
 typedef struct Dxf_layer dxf_layer;
 
+struct Dxf_ltype{
+	char name[DXF_MAX_CHARS];
+	int size;
+	double pat[DXF_MAX_PAT];
+	double length;
+};
+typedef struct Dxf_ltype dxf_ltype;
+
 struct Dxf_drawing{
 	/* DXF main sections */
 	dxf_node 	
@@ -92,6 +102,9 @@ struct Dxf_drawing{
 	
 	dxf_layer layers[DXF_MAX_LAYERS];
 	int num_layers;
+	
+	dxf_ltype ltypes[DXF_MAX_LTYPES];
+	int num_ltypes;
 };
 typedef struct Dxf_drawing dxf_drawing;
 
@@ -511,11 +524,10 @@ vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
 	return list;
 }
 
-int dxf_layer_assemb (dxf_drawing *drawing){
+void dxf_layer_assemb (dxf_drawing *drawing){
 	vector_p v_search;
 	int i, flags;
 	dxf_node *current;
-	dxf_layer  layer;
 	
 	char name[DXF_MAX_CHARS];
 	int color;
@@ -525,10 +537,20 @@ int dxf_layer_assemb (dxf_drawing *drawing){
 	int lock;
 	int off;
 	
+	/* always set the index 0 as the default layer*/
+	drawing->num_layers = 1;
+	drawing->layers[0].name[0] = 0;
+	drawing->layers[0].ltype[0] = 0;
+	drawing->layers[0].color = 0;
+	drawing->layers[0].line_w = 0;
+	drawing->layers[0].frozen = 0;
+	drawing->layers[0].lock = 0;
+	drawing->layers[0].off = 0;
+	
 	v_search = find_obj(drawing->t_layer, "LAYER"); /* get the list of layers */
 	if (v_search.data){
-		drawing->num_layers = v_search.size;
-		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LAYERS)); i++){
+		drawing->num_layers += v_search.size;
+		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LAYERS-1)); i++){
 			name[0] = 0;
 			color = 0;
 			ltype[0] = 0;
@@ -565,18 +587,91 @@ int dxf_layer_assemb (dxf_drawing *drawing){
 				current = current->next;
 			}
 			/* set the variables on the current layer in drawing structure */
-			strcpy(drawing->layers[i].name, name);
-			strcpy(drawing->layers[i].ltype, ltype);
-			drawing->layers[i].color = color;
-			drawing->layers[i].line_w = line_w;
-			drawing->layers[i].frozen = frozen;
-			drawing->layers[i].lock = lock;
-			drawing->layers[i].off = off;
+			strcpy(drawing->layers[i+1].name, name);
+			strcpy(drawing->layers[i+1].ltype, ltype);
+			drawing->layers[i+1].color = color;
+			drawing->layers[i+1].line_w = line_w;
+			drawing->layers[i+1].frozen = frozen;
+			drawing->layers[i+1].lock = lock;
+			drawing->layers[i+1].off = off;
 		}
 		free(v_search.data);
 	}
+}
+
+void dxf_ltype_assemb (dxf_drawing *drawing){
+	vector_p v_search;
+	int i, pat_idx;
+	dxf_node *current;
 	
-	return 0;
+	char name[DXF_MAX_CHARS];
+	int size;
+	double pat[DXF_MAX_PAT];
+	double length;
+	
+	/* always set the index 0 as the default ltype*/
+	drawing->num_ltypes = 1;
+	drawing->ltypes[0].name[0] = 0;
+	drawing->ltypes[0].size = 1;
+	drawing->ltypes[0].pat[0] = 0;
+	drawing->ltypes[0].length = 0;
+	
+	v_search = find_obj(drawing->t_ltype, "LTYPE"); /* get the list of ltypes */
+	if (v_search.data){
+		drawing->num_ltypes += v_search.size;
+		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LTYPES-1)); i++){
+			name[0] = 0;
+			size = 0;
+			pat[0] = 0;
+			pat_idx = 0;
+			length = 0;
+			
+			current = ((dxf_node **) v_search.data)[i]; /* get the ltype */
+			/* and sweep its content */
+			current = current->obj.content->next;
+			while (current){
+				if (current->type == DXF_ATTR){
+					switch (current->value.group){
+						case 2: /* ltype name */
+							strcpy(name, current->value.s_data);
+							break;
+						case 40: /* pattern length */
+							length = current->value.d_data;
+							break;
+						case 49: /* pattern element */
+							if (pat_idx < DXF_MAX_PAT) {
+								pat[pat_idx] = current->value.d_data;
+								pat_idx++;
+							}
+							break;
+						case 73: /* num of pattern elements */
+							size = current->value.i_data;
+							if (size > DXF_MAX_PAT) {
+								size < DXF_MAX_PAT;}
+					}
+				}
+				current = current->next;
+			}
+			/* set the variables on the current ltype in drawing structure */
+			strcpy(drawing->ltypes[i+1].name, name);
+			memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));
+			drawing->ltypes[i+1].size = size;
+			drawing->ltypes[i+1].length = length;
+		}
+		free(v_search.data);
+	}
+}
+
+int dxf_lay_idx (dxf_drawing drawing, char *name){
+	int i;
+	
+	for (i=1; i < drawing.num_layers; i++){
+		if (strcmp(drawing.layers[i].name, name) == 0){
+			return i;
+		}
+	}
+	
+	return 0; /*if search fails, return the standard layer */
 }
 
 dxf_drawing dxf_open (char *path){
@@ -862,6 +957,12 @@ dxf_drawing dxf_open (char *path){
 		free(part.data);
 	}
 	
+	/* assemble the layers list */
+	dxf_layer_assemb (&drawing);
+	
+	/* assemble the ltypes list */
+	dxf_ltype_assemb (&drawing);
+	
 	return drawing;
 }
 
@@ -947,6 +1048,7 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 	vector_p stack, attr, v_search;
 	dxf_node *current = NULL, *e_layer = NULL;
 	enum dxf_graph ent_type;
+	int lay_idx;
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 	double pt2_x = 0, pt2_y = 0, pt2_z = 0;
@@ -980,23 +1082,13 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 			while ((current != NULL) || (stack.size > 0)){
 				if (current == NULL){ /* end of list sweeping */
 					
-					/* find the layer */
-					v_search = find_obj_descr(drawing.t_layer, "LAYER", layer);
-					if (v_search.data){
-						e_layer = ((dxf_node **) v_search.data)[0];
-						free(v_search.data);
-					}
+					/* find the layer index */
+					lay_idx = dxf_lay_idx(drawing, layer);
 					
 					/* check if  object's color  is definied by layer,
 					then look for layer's color */
 					if (color >= 256){
-						color = 1; /* the standard color, if search fails */
-						/* look for the layer's color */
-						v_search = find_attr(e_layer, 62);
-						if (v_search.data){
-							color = ((dxf_node **) v_search.data)[0]->value.i_data;
-							free(v_search.data);
-						}
+						color = drawing.layers[lay_idx].color;
 					}
 					
 					
@@ -1289,12 +1381,12 @@ int main(void)
 	else{
 		printf("\nFalhou\n");
 	}
+	*/
+	
+	dxf_draw(drawing, drawing.ents);
 	
 	
-	dxf_draw(drawing, drawing.ents);*/
-	
-	dxf_layer_assemb (&drawing);
-	
+	/*
 	printf("%d\n", drawing.num_layers);
 	for (i = 0; i < drawing.num_layers; i++){
 		printf("%s %d %s off = %d lock = %d froz = %d\n",
@@ -1305,6 +1397,22 @@ int main(void)
 		drawing.layers[i].lock,
 		drawing.layers[i].frozen);
 	}
+	
+	
+	printf("%d\n", dxf_lay_idx(drawing, "PEDAL"));*/
+	
+	printf("%d\n", drawing.num_ltypes);
+	for (i = 0; i < drawing.num_ltypes; i++){
+		printf("%s %d %f [%f %f %f %f]\n",
+		drawing.ltypes[i].name, 
+		drawing.ltypes[i].size,
+		drawing.ltypes[i].length,
+		drawing.ltypes[i].pat[0],
+		drawing.ltypes[i].pat[1],
+		drawing.ltypes[i].pat[2],
+		drawing.ltypes[i].pat[3]
+		);
+	}		
 	
 	//dxf_ent_print(drawing.t_layer->obj.content->next, 0);
 	
