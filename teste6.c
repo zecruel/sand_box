@@ -674,6 +674,18 @@ int dxf_lay_idx (dxf_drawing drawing, char *name){
 	return 0; /*if search fails, return the standard layer */
 }
 
+int dxf_ltype_idx (dxf_drawing drawing, char *name){
+	int i;
+	
+	for (i=1; i < drawing.num_ltypes; i++){
+		if (strcmp(drawing.ltypes[i].name, name) == 0){
+			return i;
+		}
+	}
+	
+	return 0; /*if search fails, return the standard layer */
+}
+
 dxf_drawing dxf_open (char *path){
 	dxf_drawing drawing;
 	char buf[255], *line;
@@ -713,7 +725,7 @@ dxf_drawing dxf_open (char *path){
 	}
 	else if (main_struct){
 		
-		master = main_struct; /* current master is the main_struct */
+		master = main_struct; /* current master is the main struct */
 		last_obj = main_struct;
 		prev = main_struct->obj.content; /* the list starts on main_struct's content */
 		next = NULL; /* end of list (empty list) */
@@ -1048,7 +1060,7 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 	vector_p stack, attr, v_search;
 	dxf_node *current = NULL, *e_layer = NULL;
 	enum dxf_graph ent_type;
-	int lay_idx;
+	int lay_idx, ltype_idx;
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 	double pt2_x = 0, pt2_y = 0, pt2_z = 0;
@@ -1091,10 +1103,19 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 						color = drawing.layers[lay_idx].color;
 					}
 					
+					/* check if  object's ltype  is definied by layer,
+					then look for layer's ltype */
+					if ((strcmp(l_type, "BYLAYER") == 0) ||
+						((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+						strcpy(l_type, drawing.layers[lay_idx].ltype);
+					}
+					
+					/* find the ltype index */
+					ltype_idx = dxf_ltype_idx(drawing, l_type);
 					
 					switch (ent_type){
 						case DXF_LINE:
-							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d\n", pt1_x, pt1_y, pt2_x, pt2_y, color);
+							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
 							goto reinit_vars;
 						
 						case DXF_POINT:
@@ -1412,7 +1433,9 @@ int main(void)
 		drawing.ltypes[i].pat[2],
 		drawing.ltypes[i].pat[3]
 		);
-	}		
+	}
+	
+	printf("%d\n", dxf_ltype_idx(drawing, "CENTER"));
 	
 	//dxf_ent_print(drawing.t_layer->obj.content->next, 0);
 	
