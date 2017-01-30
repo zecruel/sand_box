@@ -222,11 +222,11 @@ void * stack_pop (vector_p *stack){
 	return NULL; /* return fail */
 }
 
-void ent_clear (dxf_node *ent){ /* free the memory of list or entity */
+void dxf_ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 	if (ent){
 		if (ent->type == DXF_ENT){
 			if (ent->obj.content){
-				ent_clear(ent->obj.content); /* recursive call */
+				dxf_ent_clear(ent->obj.content); /* recursive call */
 			}
 			if (ent->obj.name){
 				free(ent->obj.name);  /* free the string of entity's name */
@@ -241,7 +241,7 @@ void ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 		}
 		
 		if (ent->next){
-			ent_clear(ent->next); /* recursive call */
+			dxf_ent_clear(ent->next); /* recursive call */
 		}
 		//printf("limpa %d", ent);
 		free(ent); /* free the memory of structure */
@@ -358,7 +358,7 @@ void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 	}
 }
 
-dxf_node * obj_new (char *name){
+dxf_node * dxf_obj_new (char *name){
 	char *new_name = NULL;
 	
 	if(name){
@@ -393,7 +393,7 @@ dxf_node * obj_new (char *name){
 	return new_obj;
 }
 
-dxf_node * attr_new (int group, int type, void *value){
+dxf_node * dxf_attr_new (int group, int type, void *value){
 	/* create a new DXF attribute */
 	dxf_node *new_attr = (dxf_node *) malloc(sizeof(dxf_node));
 	if (new_attr){
@@ -420,7 +420,7 @@ dxf_node * attr_new (int group, int type, void *value){
 	return new_attr;
 }
 
-vector_p find_attr(dxf_node * obj, int attr){
+vector_p dxf_find_attr(dxf_node * obj, int attr){
 	int size = 0;
 	dxf_node **data = NULL;
 	vector_p list;
@@ -452,7 +452,7 @@ vector_p find_attr(dxf_node * obj, int attr){
 	return list;
 }
 
-vector_p find_obj(dxf_node * obj, char *name){
+vector_p dxf_find_obj(dxf_node * obj, char *name){
 	int size = 0;
 	dxf_node **data = NULL;
 	vector_p list;
@@ -484,7 +484,7 @@ vector_p find_obj(dxf_node * obj, char *name){
 	return list;
 }
 
-vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
+vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	int size = 0;
 	dxf_node **data = NULL;
 	vector_p list, descr_attr;
@@ -496,7 +496,7 @@ vector_p find_obj_descr(dxf_node * obj, char *name, char *descr){
 			while (current){ /* sweep master content */
 				if (current->type == DXF_ENT){ /* look for dxf entities */
 					if(strcmp(current->obj.name, name) == 0){ /* match obj's name */
-						descr_attr = find_attr(current, 2); /* look for descriptor in group 2 attribute */
+						descr_attr = dxf_find_attr(current, 2); /* look for descriptor in group 2 attribute */
 						if (descr_attr.data){ /* found attribute */
 							/* match descriptor */
 							if(strcmp(((dxf_node **) descr_attr.data)[0]->value.s_data, descr) == 0){
@@ -547,7 +547,7 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 	drawing->layers[0].lock = 0;
 	drawing->layers[0].off = 0;
 	
-	v_search = find_obj(drawing->t_layer, "LAYER"); /* get the list of layers */
+	v_search = dxf_find_obj(drawing->t_layer, "LAYER"); /* get the list of layers */
 	if (v_search.data){
 		drawing->num_layers += v_search.size;
 		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LAYERS-1)); i++){
@@ -616,7 +616,7 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	drawing->ltypes[0].pat[0] = 0;
 	drawing->ltypes[0].length = 0;
 	
-	v_search = find_obj(drawing->t_ltype, "LTYPE"); /* get the list of ltypes */
+	v_search = dxf_find_obj(drawing->t_ltype, "LTYPE"); /* get the list of ltypes */
 	if (v_search.data){
 		drawing->num_ltypes += v_search.size;
 		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LTYPES-1)); i++){
@@ -716,7 +716,7 @@ dxf_drawing dxf_open (char *path){
 	drawing.main_struct = NULL;
 	
 	/* create a new main_struct */
-	main_struct = obj_new(NULL);
+	main_struct = dxf_obj_new(NULL);
 	
 	file = fopen(path, "r");
 	if(file == NULL){
@@ -792,7 +792,7 @@ dxf_drawing dxf_open (char *path){
 						if((strcmp(line, "SECTION") == 0) ||
 							(strcmp(line, "TABLE") == 0) ||
 							(strcmp(line, "BLOCK") == 0)){
-							new_node = obj_new (line); /* new object */
+							new_node = dxf_obj_new (line); /* new object */
 							if (new_node){
 								/*  append new to master's list */
 								new_node->master = master;
@@ -827,7 +827,7 @@ dxf_drawing dxf_open (char *path){
 						
 						/*  new ordinary DXF object */
 						else {
-							new_node = obj_new (line); /* new object */
+							new_node = dxf_obj_new (line); /* new object */
 							if (new_node){
 								/*  append new to master's list */
 								new_node->master = master;
@@ -845,7 +845,7 @@ dxf_drawing dxf_open (char *path){
 						
 					case 66: /* Entities follow flag */
 						i_data = atoi(line);
-						new_node = attr_new (group, t_data, (void *) &i_data);
+						new_node = dxf_attr_new (group, t_data, (void *) &i_data);
 						if (new_node){
 							/*  append new to last obj's list */
 							new_node->master = last_obj;
@@ -871,14 +871,14 @@ dxf_drawing dxf_open (char *path){
 						switch(t_data) {
 							case DXF_FLOAT :
 								d_data = atof(line);
-								new_node = attr_new (group, t_data, (void *) &d_data);
+								new_node = dxf_attr_new (group, t_data, (void *) &d_data);
 								break;
 							case DXF_INT :
 								i_data = atoi(line);
-								new_node = attr_new (group, t_data, (void *) &i_data);
+								new_node = dxf_attr_new (group, t_data, (void *) &i_data);
 								break;
 							case DXF_STR :
-								new_node = attr_new (group, t_data, (void *) line);
+								new_node = dxf_attr_new (group, t_data, (void *) line);
 						}
 						
 						if (new_node){
@@ -906,64 +906,64 @@ dxf_drawing dxf_open (char *path){
 	
 	/* disassembly the drawing structure */
 	/* the main sections */
-	part = find_obj_descr(main_struct, "SECTION", "HEADER");
+	part = dxf_find_obj_descr(main_struct, "SECTION", "HEADER");
 	if (part.data){
 		drawing.head = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(main_struct, "SECTION", "TABLES");
+	part = dxf_find_obj_descr(main_struct, "SECTION", "TABLES");
 	if (part.data){
 		drawing.tabs = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(main_struct, "SECTION", "BLOCKS");
+	part = dxf_find_obj_descr(main_struct, "SECTION", "BLOCKS");
 	if (part.data){
 		drawing.blks = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(main_struct, "SECTION", "ENTITIES");
+	part = dxf_find_obj_descr(main_struct, "SECTION", "ENTITIES");
 	if (part.data){
 		drawing.ents = ((dxf_node **) part.data)[0]; 
 		free(part.data);
 	}
 	
 	/* the tables */
-	part = find_obj_descr(drawing.tabs, "TABLE", "LTYPE");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "LTYPE");
 	if (part.data){
 		drawing.t_ltype = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "LAYER");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "LAYER");
 	if (part.data){
 		drawing.t_layer = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "STYLE");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "STYLE");
 	if (part.data){
 		drawing.t_style = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "VIEW");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "VIEW");
 	if (part.data){
 		drawing.t_view = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "UCS");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "UCS");
 	if (part.data){
 		drawing.t_ucs = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "VPORT");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "VPORT");
 	if (part.data){
 		drawing.t_vport = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "DIMSTYLE");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "DIMSTYLE");
 	if (part.data){
 		drawing.t_dimst = ((dxf_node **) part.data)[0];
 		free(part.data);
 	}
-	part = find_obj_descr(drawing.tabs, "TABLE", "APPID");
+	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "APPID");
 	if (part.data){
 		drawing.t_appid = ((dxf_node **) part.data)[0];
 		free(part.data);
@@ -1010,7 +1010,7 @@ int dxf_save (char *path, dxf_drawing drawing){
 						fprintf(file, "0\nENDBLK\n");
 					}
 					else{
-						attr = find_attr(current, 66); /* look for entities folow flag*/
+						attr = dxf_find_attr(current, 66); /* look for entities folow flag*/
 						if (attr.data){ /* if flag is found and */
 							if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero */
 								fprintf(file, "0\nSEQEND\n");
@@ -1449,7 +1449,7 @@ int main(void)
 	printf("\n%d",stack.size);
 	*/
 	
-	/*sec = find_obj(drawing, "SECTION");
+	/*sec = dxf_find_obj(drawing, "SECTION");
 	
 	if ((sec.size > 0) && (sec.data != NULL)){
 		//ent_print(((dxf_node **) sec.data)[0]->obj.content->next, 0);
@@ -1457,7 +1457,7 @@ int main(void)
 		int i;
 		for (i=0; i < sec.size; i++){
 			printf ("\n%s ", ((dxf_node **) sec.data)[i]->obj.name);
-			name = find_attr(((dxf_node **) sec.data)[i], 2);
+			name = dxf_find_attr(((dxf_node **) sec.data)[i], 2);
 			printf ("%d ", name.size);
 			if (name.data){
 				printf("%s", ((dxf_node **) name.data)[0]->value.s_data);
@@ -1465,7 +1465,7 @@ int main(void)
 		}
 	}
 	
-	head = find_obj_descr(drawing, "SECTION", "HEADER");
+	head = dxf_find_obj_descr(drawing, "SECTION", "HEADER");
 	if (head.data){
 		ent_print(((dxf_node **) head.data)[0]->obj.content->next, 0);
 	}
@@ -1474,7 +1474,7 @@ int main(void)
 	free(name.data);
 	free(head.data); */
 	
-	ent_clear(drawing.main_struct);
+	dxf_ent_clear(drawing.main_struct);
 
 	
 	return 0;
