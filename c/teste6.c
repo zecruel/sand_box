@@ -690,7 +690,7 @@ dxf_drawing dxf_open (char *path){
 	dxf_drawing drawing;
 	char buf[255], *line;
 	FILE *file;
-	long f_index = 0;  /*  indexes the file´s lines */
+	long f_index = 0;  /*  indexes the fileÂ´s lines */
 	dxf_node *new_node = NULL;
 	dxf_node *master, *prev, *next, *tmp, *last_obj;
 	dxf_node *main_struct = NULL;
