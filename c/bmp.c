@@ -23,6 +23,12 @@ struct Bmp_img {
 	unsigned int height;
 	bmp_color bkg; /* background color */
 	bmp_color frg; /* current foreground color */
+	
+	int pattern[20]; /* pattern information */
+	int patt_size;
+	int patt_i; /* current pattern index */
+	int pix_count;
+
 	unsigned int tick; /* current brush tickness */
 	
 	/* the pixmap */
@@ -31,9 +37,9 @@ struct Bmp_img {
 typedef struct Bmp_img bmp_img;
 
 
+rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax){
 /* Compute the bit code for a point (x, y) using the clip rectangle
  bounded diagonally by (xmin, ymin), and (xmax, ymax) */
-rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax){
 	rect_pos code;
 	code = INSIDE;          /* initialised as being inside of [[clip window]]*/
 
@@ -50,12 +56,14 @@ rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax
 }
 
 int bmp_fill (bmp_img *img, bmp_color color){
+	/* fill the bmp image with passed color */
+	
 	unsigned int i, n;
 	
 	if (img){
-		n = 4* img->width * img->height;
-		for (i=0; i < n; i += 4)
-		{
+		n = 4 * img->width * img->height; /* four components: RGBA */
+		for (i=0; i < n; i += 4) /* increment by 4 in each step */
+		{ /* store each component in memory buffer */
 			img->buf[i] = color.r;
 			img->buf[i+1] = color.g;
 			img->buf[i+2] = color.b;
@@ -67,14 +75,29 @@ int bmp_fill (bmp_img *img, bmp_color color){
 }
 
 bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_color frg){
+	/* create new bmp image */
+	
+	/* alloc the structure */
 	bmp_img * img = (bmp_img *) malloc (sizeof (bmp_img));
 	if (img){
+		/* initialize */
+		/* dimensions */
 		img->width = width;
 		img->height = height;
+		/* colors */
 		img->bkg = bkg;
 		img->frg =frg;
+		/* line pattern generation vars  */
 		img->tick = 0;
-		/* the image will have 4 chanels: R, G, B and alfa */
+		img->patt_i = 0;
+		img->pix_count = 0;
+		/* line pattern */
+		/* initialize the image with a solid line pattern */
+		img->patt_size = 1;
+		img->pattern[0] = 1;
+		
+		/* alloc the pix map buffer
+		the image will have 4 chanels: R, G, B and alfa */
 		img->buf = malloc(4 * width * height * sizeof(unsigned char));
 		if (img->buf == NULL){ /* fail in memory allocation */
 			free (img);
@@ -95,6 +118,8 @@ void bmp_free(bmp_img *img){
 }
 
 int bmp_save (char *path, bmp_img *img){
+	/* save the pixmap in a PPM file */
+	
 	FILE *file;
 	int ret_success;
 	unsigned int i, n;
@@ -102,19 +127,17 @@ int bmp_save (char *path, bmp_img *img){
 	ret_success = 0;
 	file = fopen(path, "w"); /* open the file */
 	if ((file != NULL) && (img != NULL)){
+		/* the header of PPM: binary file with 8 bit deph */
 		fprintf(file, "P6 %d %d 255\r",  img->width, img->height);
 		
-		
+		/* sweep the buffer of image*/
 		n = 4 * img->width * img->height;
-		for (i=0; i < n; i += 4)
-		{
+		for (i=0; i < n; i += 4){
+			/* only the RGB components are writen */
 			fputc(img->buf[i], file);
 			fputc(img->buf[i+1], file);
 			fputc(img->buf[i+2], file);
-			//fputc(img->buf[i+3], file);
 		}
-		
-		
 		ret_success = 1; /* return success */
 	}
 	
@@ -124,33 +147,46 @@ int bmp_save (char *path, bmp_img *img){
 }
 
 int bmp_point_raw (bmp_img *img, int x, int y){
+	/* draw one pixel on x,y coordinates in bmp image */
+	
 	unsigned int ofs;
 	
 	if(img != NULL){
+		/* check if point is in image bounds */
 		if((abs(x) < img->width) && (abs(y) < img->height)){
-			
+			/* find the initial position on image buffer */
 			ofs = 4 * ((y * img->width) + x);
+			/* store each component in memory buffer 
+			with the image´s foreground color*/
 			img->buf[ofs] = img->frg.r;
 			img->buf[ofs+1] = img->frg.g;
 			img->buf[ofs+2] = img->frg.b;
 			img->buf[ofs+3] = img->frg.a;
 			
-			return 1;
+			return 1; /* return success */
 		}
 	}
-	return 0;
+	return 0; /* fail */
 }
 
 int bmp_point (bmp_img *img, int xc, int yc){
+	/* Draw a point on image. The coordinates xc,yc indicates the center of point.
+	the tickness is specified in image */
+	
 	if(img != NULL){
-		if (img->tick > 1){
+		if (img->tick > 1){ /* if the point have a tickness */
 			unsigned int i, j, half;
 			int x, y;
 			
+			/*aproximate the point with a rectangle */
+			/* TODO : better aproximation */
+			
+			/* find the initial coordinates */
 			half = img->tick/2;
 			x = xc - half;
 			y = yc - half;
 			
+			/* fill the rectangle */
 			for (i = 0; i < img->tick; i++){
 				for (j = 0; j < img->tick; j++){
 					if((abs(x) < img->width) && (abs(y) < img->height)){
@@ -160,16 +196,65 @@ int bmp_point (bmp_img *img, int xc, int yc){
 			}
 			return 1;
 		}
-		else{
+		else{ /* a skinny point */
 			bmp_point_raw (img, xc, yc);
-			return 1;
+			return 1; /* return success */
 		}
 	}
-	return 0;
+	return 0; /* fail */
+}
+
+int patt_change(bmp_img *img, int patt[], int size){
+	/* change the current pattern in image to draw lines */
+	if(img != NULL){
+		int i;
+		/*set size */
+		img->patt_size = size;
+		/*TODO: verifiy the maximum size */
+		
+		/* restart the pattern generation*/
+		img->patt_i = 0;
+		img->pix_count = 0;
+		
+		/*copy the pattern data*/
+		for (i = 0; i < size; i++){
+			img->pattern[i] = patt[i];
+		}
+		
+		return 1; /* return success */
+	}
+	return 0; /* fail */
+}
+
+int patt_check(bmp_img *img){
+	/* auxiliary function to line pattern generation
+	check if current position on line will be draw ("pen down") or will be blank ("pen up") */
+	
+	int pen = 0; /* pen up by default*/
+	
+	if(img != NULL){
+		img->pix_count += 1; /* increment the position */
+		/* check if current pattern data is positive */
+		if (img->pattern[img->patt_i] >=0){ 
+			/* its means the draw command */
+			pen = 1; /* pen down */
+		}
+		/*check the end of current pattern data */
+		if (img->pix_count >= abs(img->pattern[img->patt_i])){
+			img->pix_count = 0; /* restart the position */
+			img->patt_i += 1; /* go to the next pattern data */
+			/*check the end of pattern */
+			if (img->patt_i >= img->patt_size){
+				img->patt_i = 0; /* restart the pattern */
+			}
+		}
+	}
+	return pen;
 }
 
 void bmp_line_raw(bmp_img *img, int x0, int y0, int x1, int y1) {
-/*Bitmap/Bresenham's line algorithm
+/* Draw a line on bmp image
+Bitmap/Bresenham's line algorithm
 from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
@@ -177,7 +262,9 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	int err = (dx>dy ? dx : -dy)/2, e2;
 
 	for(;;){
-		bmp_point(img, x0, y0);
+		if (patt_check(img)){ /* image's line pattern generation*/
+			bmp_point(img, x0, y0);
+		}
 		if (x0==x1 && y0==y1) break;
 		e2 = err;
 		if (e2 >-dx) { err -= dy; x0 += sx; }
@@ -188,6 +275,8 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 
 	/* 
+	Draw a line on bmp image - clip the line on the window area
+	
 	from: https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
 	Cohen–Sutherland clipping algorithm clips a line from
 	P0 = (x0, y0) to P1 = (x1, y1) against a rectangle of bitmap image */
@@ -247,29 +336,38 @@ void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 	}
 	if (accept) {
 		bmp_line_raw(img, (int) x0, (int) y0, (int) x1, (int) y1);
-		//printf("(%d,%d)----(%d,%d)\n", (int) x0, (int) y0, (int) x1, (int) y1);
 	}
 }
 
 int main (void){
 	
-	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
+	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
 	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
 	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
 	
-	bmp_img * img = bmp_new(100,100, white, black);
+	int center [] = {12, -6, 2 , -6};
+	int dash [] = {8, -8};
+	
+	bmp_img * img = bmp_new(200, 200, white, black);
 	
 	//bmp_fill(img, blue);
 	bmp_point(img, 10, 20);
 	img->frg = blue;
 	bmp_line(img, 20, 20, 500, 700);
 	
-	img->tick = 3;
+	patt_change(img, center, 4);
+	img->tick = 2;
 	bmp_line(img, 0, 100, 50, 70);
+	
+	patt_change(img, dash, 2);
 	img->frg = red;
 	bmp_line(img, -50, 50, 250, 50);
+	
+	img->frg = green;
+	img->tick = 3;
+	bmp_line(img, 100, 0, 0, 70);
 	
 	bmp_save("teste.ppm", img);
 	bmp_free(img);
