@@ -1,4 +1,5 @@
 #include "dxf.h"
+#include "bmp.h"
 
 int main(void)
 {
@@ -94,6 +95,37 @@ int main(void)
 	free(head.data); */
 	
 	dxf_ent_clear(drawing.main_struct);
+	
+	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
+	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
+	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
+	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
+	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
+	
+	int center [] = {12, -6, 2 , -6};
+	int dash [] = {8, -8};
+	
+	bmp_img * img = bmp_new(200, 200, white, black);
+	
+	//bmp_fill(img, blue);
+	bmp_point(img, 10, 20);
+	img->frg = blue;
+	bmp_line(img, 20, 20, 500, 700);
+	
+	patt_change(img, center, 4);
+	img->tick = 2;
+	bmp_line(img, 0, 100, 50, 70);
+	
+	patt_change(img, dash, 2);
+	img->frg = red;
+	bmp_line(img, -50, 50, 250, 50);
+	
+	img->frg = green;
+	img->tick = 3;
+	bmp_line(img, 100, 0, 0, 70);
+	
+	bmp_save("teste.ppm", img);
+	bmp_free(img);
 
 	
 	return 0;

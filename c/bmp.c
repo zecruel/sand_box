@@ -1,41 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
-/* position of a point in rectangle */
-enum Rect_pos{  /* is bit coded */
-	INSIDE = 0, /* 0000 */
-	LEFT = 1,   /* 0001 */
-	RIGHT = 2,  /* 0010 */
-	BOTTOM = 4, /* 0100 */
-	TOP = 8    /* 1000 */
-};
-typedef enum Rect_pos rect_pos;
-
-struct Bmp_color {
-	/* the color depth is 8 bit per component */
-	unsigned char r, g, b, a;
-};
-typedef struct Bmp_color bmp_color;
-
-struct Bmp_img {
-	unsigned int width;
-	unsigned int height;
-	bmp_color bkg; /* background color */
-	bmp_color frg; /* current foreground color */
-	
-	int pattern[20]; /* pattern information */
-	int patt_size;
-	int patt_i; /* current pattern index */
-	int pix_count;
-
-	unsigned int tick; /* current brush tickness */
-	
-	/* the pixmap */
-	unsigned char * buf; /* the color depth is 8 bit per component */
-};
-typedef struct Bmp_img bmp_img;
-
+#include "bmp.h"
 
 rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax){
 /* Compute the bit code for a point (x, y) using the clip rectangle
@@ -146,7 +109,7 @@ int bmp_save (char *path, bmp_img *img){
 	return ret_success;
 }
 
-int bmp_point_raw (bmp_img *img, int x, int y){
+void bmp_point_raw (bmp_img *img, int x, int y){
 	/* draw one pixel on x,y coordinates in bmp image */
 	
 	unsigned int ofs;
@@ -162,14 +125,11 @@ int bmp_point_raw (bmp_img *img, int x, int y){
 			img->buf[ofs+1] = img->frg.g;
 			img->buf[ofs+2] = img->frg.b;
 			img->buf[ofs+3] = img->frg.a;
-			
-			return 1; /* return success */
 		}
 	}
-	return 0; /* fail */
 }
 
-int bmp_point (bmp_img *img, int xc, int yc){
+void bmp_point (bmp_img *img, int xc, int yc){
 	/* Draw a point on image. The coordinates xc,yc indicates the center of point.
 	the tickness is specified in image */
 	
@@ -194,14 +154,11 @@ int bmp_point (bmp_img *img, int xc, int yc){
 					}
 				}
 			}
-			return 1;
 		}
 		else{ /* a skinny point */
 			bmp_point_raw (img, xc, yc);
-			return 1; /* return success */
 		}
 	}
-	return 0; /* fail */
 }
 
 int patt_change(bmp_img *img, int patt[], int size){
@@ -337,41 +294,4 @@ void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 	if (accept) {
 		bmp_line_raw(img, (int) x0, (int) y0, (int) x1, (int) y1);
 	}
-}
-
-int main (void){
-	
-	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
-	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
-	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
-	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
-	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
-	
-	int center [] = {12, -6, 2 , -6};
-	int dash [] = {8, -8};
-	
-	bmp_img * img = bmp_new(200, 200, white, black);
-	
-	//bmp_fill(img, blue);
-	bmp_point(img, 10, 20);
-	img->frg = blue;
-	bmp_line(img, 20, 20, 500, 700);
-	
-	patt_change(img, center, 4);
-	img->tick = 2;
-	bmp_line(img, 0, 100, 50, 70);
-	
-	patt_change(img, dash, 2);
-	img->frg = red;
-	bmp_line(img, -50, 50, 250, 50);
-	
-	img->frg = green;
-	img->tick = 3;
-	bmp_line(img, 100, 0, 0, 70);
-	
-	bmp_save("teste.ppm", img);
-	bmp_free(img);
-	
-	
-	return 0;
 }
