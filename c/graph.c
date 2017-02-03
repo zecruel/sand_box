@@ -14,8 +14,12 @@ typedef struct Line_node line_node;
 struct Graph_obj{
 	dxf_node * owner;
 	bmp_color color;
-	dxf_ltype ltype;
 	double rot, scale, ofs_x, ofs_y;
+	int tick;
+	/* pattern information */
+	int pattern[20];
+	int patt_size;
+	
 	line_node * list;
 };
 typedef struct Graph_obj graph_obj;
@@ -27,6 +31,25 @@ graph_obj * graph_new(void){
 	graph_obj * new_obj = malloc(sizeof(graph_obj));
 	
 	if (new_obj){
+		
+		/* initialize */
+		new_obj->owner = NULL;
+		/* initialize with a black color */
+		new_obj->color.r = 0;
+		new_obj->color.g = 0;
+		new_obj->color.b =0;
+		new_obj->color.a = 255;
+		
+		new_obj->rot = 0;
+		new_obj->scale = 1;
+		new_obj->ofs_x = 0;
+		new_obj->ofs_y = 0;
+		new_obj->tick = 1;
+		
+		/* initialize with a solid line pattern */
+		new_obj->patt_size = 1;
+		new_obj->pattern[0] = 1;
+		
 		/* allocate the line list */
 		new_obj->list = malloc(sizeof(line_node));
 		if(new_obj->list){
@@ -97,11 +120,47 @@ void graph_free(graph_obj * master){
 	}
 }
 
+void graph_draw(graph_obj * master, bmp_img * img){
+	if ((master != NULL) && (img != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			line_node *current = master->list->next;
+			
+			/* set the pattern */
+			patt_change(img, master->pattern, master->patt_size);
+			/* set the color */
+			img->frg = master->color;
+			/* set the tickness */
+			img->tick = master->tick;
+			
+			/* draw the lines */
+			while(current){ /*sweep the list content */
+				bmp_line(img, current->x0, 
+					current->y0, 
+					current->x1,
+					current->y1);
+				
+				current = current->next; /* go to next */
+				//printf("linha\n");
+			}
+		}
+	}
+}
+
 
 int main (void){
+	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
+	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
+	
+	bmp_img * img = bmp_new(200, 200, white, black);
 	graph_obj * test = graph_new();
-	line_add(test, 0,0,1,1);
-	line_add(test, 0,0,2,2);
+	line_add(test, 10,10,100,100);
+	line_add(test, 210,210,100,2);
+	test->tick = 3;
+	
+	graph_draw(test, img);
+	
+	bmp_save("teste2.ppm", img);
+	bmp_free(img);
 	graph_free(test);
 	return 0;
 }
