@@ -116,7 +116,8 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 	
 	if(img != NULL){
 		/* check if point is in image bounds */
-		if((abs(x) < img->width) && (abs(y) < img->height)){
+		if((x >= 0) && (x < img->width) && 
+			(y >= 0) && (y < img->height)){
 			/* find the initial position on image buffer */
 			ofs = 4 * ((y * img->width) + x);
 			/* store each component in memory buffer 
@@ -149,9 +150,7 @@ void bmp_point (bmp_img *img, int xc, int yc){
 			/* fill the rectangle */
 			for (i = 0; i < img->tick; i++){
 				for (j = 0; j < img->tick; j++){
-					if((abs(x) < img->width) && (abs(y) < img->height)){
-						bmp_point_raw (img, x+i, y+j);
-					}
+					bmp_point_raw (img, x+i, y+j);
 				}
 			}
 		}

@@ -150,12 +150,14 @@ void graph_draw(graph_obj * master, bmp_img * img){
 int main (void){
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
+	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
 	
 	bmp_img * img = bmp_new(200, 200, white, black);
 	graph_obj * test = graph_new();
-	line_add(test, 10,10,100,100);
+	line_add(test, 0,0,100,100);
 	line_add(test, 210,210,100,2);
-	test->tick = 3;
+	test->tick = 5;
+	test->color = red;
 	
 	graph_draw(test, img);
 	
