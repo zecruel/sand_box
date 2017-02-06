@@ -1,5 +1,7 @@
 #include "dxf.h"
 
+#include "graph.h"
+
 void str_upp(char *str) { /* upper case the string */
 	while (*str= toupper(*str)) str++;
 }
@@ -92,6 +94,7 @@ void dxf_ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 			}
 			if (ent->obj.name){
 				free(ent->obj.name);  /* free the string of entity's name */
+				graph_free(ent->obj.graphics);
 			}
 		}
 		else if (ent->type == DXF_ATTR){
@@ -236,6 +239,7 @@ dxf_node * dxf_obj_new (char *name){
 		new_obj->next = NULL;
 		new_obj->type = DXF_ENT;
 		new_obj->obj.name = new_name;
+		new_obj->obj.graphics = NULL;
 		
 		/* create head of content's list */
 		new_obj->obj.content = (dxf_node *) malloc(sizeof(dxf_node));
@@ -918,11 +922,12 @@ int dxf_save (char *path, dxf_drawing drawing){
 	return ret_success;
 }
 
-int dxf_draw(dxf_drawing drawing, dxf_node * ent){
+int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	vector_p stack, attr, v_search;
 	dxf_node *current = NULL, *e_layer = NULL;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
+	graph_obj * curr_graph = NULL;
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 	double pt2_x = 0, pt2_y = 0, pt2_z = 0;
@@ -951,6 +956,7 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 	if ((ent != NULL) && (drawing.ents != NULL) && (drawing.main_struct != NULL)){
 		if (ent->type == DXF_ENT){ /* check if is a DXF entity */
 			current = ent;
+			curr_graph = ent->obj.graphics;
 			
 			/* starts the content sweep */
 			while ((current != NULL) || (stack.size > 0)){
@@ -977,7 +983,10 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 					
 					switch (ent_type){
 						case DXF_LINE:
-							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
+							//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
+							if (curr_graph){
+								line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
+							}
 							goto reinit_vars;
 						
 						case DXF_POINT:
@@ -1112,7 +1121,15 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 						ent_type = DXF_3DFACE;
 					}
 					
-					
+					/* -------------------------------------------*/
+					if (current->obj.graphics){
+						curr_graph = current->obj.graphics;
+					}
+					else{
+						current->obj.graphics = graph_new();
+						curr_graph = current->obj.graphics;
+					}
+					/*---------------------------------------*/
 					
 					/* down in the structure hierarchy */
 					stack_push (&stack, current);
@@ -1234,6 +1251,59 @@ int dxf_draw(dxf_drawing drawing, dxf_node * ent){
 							strcpy(comment, current->value.s_data);
 							break;
 					}
+					current = current->next;
+				}
+			}
+		}
+	}
+	
+	return 0;
+}
+
+int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
+	vector_p stack, v_search;
+	dxf_node *current = NULL;
+	graph_obj * curr_graph = NULL;
+	
+	/* initialize the stack */
+	stack.size = 0;
+	stack.data = NULL;
+	
+	if ((ent != NULL) && (drawing.ents != NULL) && (drawing.main_struct != NULL)){
+		if (ent->type == DXF_ENT){ /* check if is a DXF entity */
+			current = ent;
+			
+			/* starts the content sweep */
+			while ((current != NULL) || (stack.size > 0)){
+				if (current == NULL){ /* end of list sweeping */
+					
+					/* try to up in the structure hierarchy */
+					current = stack_pop (&stack);
+					if (current){
+						current = current->next; /* go to the next in the list */
+					}
+				}
+				else if (current->type == DXF_ENT){ /* DXF entity */
+					
+					/* -------------------------------------------*/
+					if (current->obj.graphics){
+						//curr_graph = current->obj.graphics;
+						graph_draw(current->obj.graphics, img);
+					}
+					/*---------------------------------------*/
+					
+					/* down in the structure hierarchy */
+					stack_push (&stack, current);
+					if (current->obj.name){
+						//fprintf(file, "0\n%s\n", current->obj.name); /* write the start of entity */
+					}
+					if (current->obj.content){
+						/* starts the content sweep */
+						current = current->obj.content->next;
+					}
+				}
+				else if (current->type == DXF_ATTR){ /* DXF attribute */
+					
 					current = current->next;
 				}
 			}

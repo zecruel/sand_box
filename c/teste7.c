@@ -1,5 +1,6 @@
 #include "dxf.h"
 #include "bmp.h"
+#include "graph.h"
 
 int main(void)
 {
@@ -24,8 +25,30 @@ int main(void)
 	}
 	*/
 	
-	dxf_draw(drawing, drawing.ents);
+	dxf_graph_parse(drawing, drawing.ents);
 	
+	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
+	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
+	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
+	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
+	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
+	
+	int center [] = {12, -6, 2 , -6};
+	int dash [] = {8, -8};
+	
+	bmp_img * img = bmp_new(200, 200, white, black);
+	
+	dxf_graph_draw(drawing, drawing.ents, img);
+	
+	
+	dxf_ent_clear(drawing.main_struct);
+	
+	bmp_save("teste.ppm", img);
+	bmp_free(img);
+
+	
+	return 0;
+}
 	
 	/*
 	printf("%d\n", drawing.num_layers);
@@ -40,7 +63,7 @@ int main(void)
 	}
 	
 	
-	printf("%d\n", dxf_lay_idx(drawing, "PEDAL"));*/
+	printf("%d\n", dxf_lay_idx(drawing, "PEDAL"));
 	
 	printf("%d\n", drawing.num_ltypes);
 	for (i = 0; i < drawing.num_ltypes; i++){
@@ -92,7 +115,7 @@ int main(void)
 	
 	free(sec.data);
 	free(name.data);
-	free(head.data); */
+	free(head.data); 
 	
 	dxf_ent_clear(drawing.main_struct);
 	
@@ -123,6 +146,13 @@ int main(void)
 	img->frg = green;
 	img->tick = 3;
 	bmp_line(img, 100, 0, 0, 70);
+	
+	graph_obj * test = graph_new();
+	line_add(test, 0,0,100,100);
+	line_add(test, 210,210,100,2);
+	test->tick = 5;
+	test->color = red;
+	graph_draw(test, img);
 	
 	bmp_save("teste.ppm", img);
 	bmp_free(img);

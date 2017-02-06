@@ -1,28 +1,4 @@
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <math.h>
-
-#include "dxf.h"
-#include "bmp.h"
-
-struct Line_node{
-	double x0, y0, x1, y1;
-	struct Line_node * next;
-};
-typedef struct Line_node line_node;
-
-struct Graph_obj{
-	dxf_node * owner;
-	bmp_color color;
-	double rot, scale, ofs_x, ofs_y;
-	int tick;
-	/* pattern information */
-	int pattern[20];
-	int patt_size;
-	
-	line_node * list;
-};
-typedef struct Graph_obj graph_obj;
+#include "graph.h"
 
 graph_obj * graph_new(void){
 	/* create new graphics object */
@@ -146,7 +122,7 @@ void graph_draw(graph_obj * master, bmp_img * img){
 	}
 }
 
-
+/*
 int main (void){
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
@@ -166,3 +142,4 @@ int main (void){
 	graph_free(test);
 	return 0;
 }
+*/

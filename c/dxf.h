@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define DXF_MAX_LAYERS 50
 #define DXF_MAX_LTYPES 50
 #define DXF_MAX_CHARS 250
@@ -43,6 +44,9 @@ struct Dxf_node{
 		struct {
 			/* == entity dxf especific */
 			char *name; /* standardized DXF name of entity */
+			
+			void * graphics; /* graphics information */
+			
 			struct Dxf_node *content; /* the content is a list */
 		} obj;
 		
@@ -152,6 +156,10 @@ dxf_drawing dxf_open (char *path);
 
 int dxf_save (char *path, dxf_drawing drawing);
 
-int dxf_draw(dxf_drawing drawing, dxf_node * ent);
+int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent);
+
+#include "bmp.h"
+
+int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img);
 
 #endif
