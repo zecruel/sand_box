@@ -37,4 +37,8 @@ void graph_free(graph_obj * master);
 
 void graph_draw(graph_obj * master, bmp_img * img);
 
+void vec_graph_draw(vector_p * vec, bmp_img * img);
+
+void vec_graph_free(vector_p * vec);
+
 #endif

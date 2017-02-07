@@ -122,6 +122,26 @@ void graph_draw(graph_obj * master, bmp_img * img){
 	}
 }
 
+void vec_graph_draw(vector_p * vec, bmp_img * img){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			graph_draw(((graph_obj **)vec->data)[i], img);
+		}
+	}
+}
+
+void vec_graph_free(vector_p * vec){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			graph_free(((graph_obj **)vec->data)[i]);
+			printf("Liberando %d = %d\n", vec->size, ((graph_obj **)vec->data)[i]);
+		}
+		free (vec);
+	}
+}
+
 /*
 int main (void){
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};

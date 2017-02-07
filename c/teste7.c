@@ -46,7 +46,7 @@ int main(void)
 	bmp_save("teste.ppm", img);
 	bmp_free(img);
 
-	
+	printf("suceso\n");
 	return 0;
 }
 	

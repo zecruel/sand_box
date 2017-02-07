@@ -3,7 +3,7 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = dxf.c bmp.c teste7.c
+OBJS = dxf.c bmp.c graph.c dxf_graph.c teste7.c
 
 #CC specifies which compiler we're using
 CC = gcc

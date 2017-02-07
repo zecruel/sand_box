@@ -126,6 +126,8 @@ void str_upp(char *str);
 
 char * trimwhitespace(char *str);
 
+vector_p * vect_new (void);
+
 int stack_push (vector_p *stack, void *new_ptr);
 
 void * stack_pop (vector_p *stack);
@@ -155,11 +157,5 @@ int dxf_ltype_idx (dxf_drawing drawing, char *name);
 dxf_drawing dxf_open (char *path);
 
 int dxf_save (char *path, dxf_drawing drawing);
-
-int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent);
-
-#include "bmp.h"
-
-int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img);
 
 #endif

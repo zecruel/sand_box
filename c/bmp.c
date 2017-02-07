@@ -119,7 +119,8 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 		if((x >= 0) && (x < img->width) && 
 			(y >= 0) && (y < img->height)){
 			/* find the initial position on image buffer */
-			ofs = 4 * ((y * img->width) + x);
+			/* (y = img->height - y) emulate the cartesian coordinates */
+			ofs = 4 * (((img->height - y) * img->width) + x);
 			/* store each component in memory buffer 
 			with the image´s foreground color*/
 			img->buf[ofs] = img->frg.r;
