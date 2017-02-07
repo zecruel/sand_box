@@ -1,7 +1,7 @@
 #include "dxf_graph.h"
 
 int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
-	vector_p stack, v_search, *v_return;
+	vector_p stack, v_search, *v_return = NULL;
 	dxf_node *current = NULL, *e_layer = NULL;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
@@ -25,15 +25,12 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	/*flags*/
 	int pt1 = 0, pt2 = 0, pt3 = 0, pt4 = 0;
 	
-	/*create the vector of retuned values */
-	v_return = vect_new ();
-	
 	
 	/* initialize the stack */
 	stack.size = 0;
 	stack.data = NULL;
 	
-	if ((ent != NULL) && (drawing.ents != NULL) && (drawing.main_struct != NULL)  && (v_return != NULL)){
+	if ((ent != NULL) && (drawing.ents != NULL) && (drawing.main_struct != NULL)){
 		if (ent->type == DXF_ENT){ /* check if is a DXF entity */
 			current = ent;
 			//curr_graph = ent->obj.graphics;
@@ -63,11 +60,11 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					switch (ent_type){
 						case DXF_LINE:
-							//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
+							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
 							if (curr_graph){
 								line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
 								stack_push(v_return, curr_graph);
-								printf("ADD %d\n", curr_graph);
+								printf("ADD %d, %d\n", ent_type, curr_graph);
 							}
 							goto reinit_vars;
 						
@@ -150,6 +147,10 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					/* try to up in the structure hierarchy */
 					current = stack_pop (&stack);
+					if (current == ent){ /* back on initial ent */
+						current = NULL;
+					}
+						
 					if (current){
 						current = current->next; /* go to the next in the list */
 					}
@@ -224,15 +225,17 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						(ent_type == DXF_3DFACE) ||
 						(ent_type == DXF_VIEWPORT) ||
 						(ent_type == DXF_DIMENSION))*/
+						if (v_return == NULL){
+							/*create the vector of returned values */
+							v_return = vect_new ();
+						}
 						curr_graph = graph_new();
 					}
 					/*---------------------------------------*/
 					
 					/* down in the structure hierarchy */
 					stack_push (&stack, current);
-					if (current->obj.name){
-						//fprintf(file, "0\n%s\n", current->obj.name); /* write the start of entity */
-					}
+					
 					if (current->obj.content){
 						/* starts the content sweep */
 						current = current->obj.content->next;
@@ -357,6 +360,29 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	return 0;
 }
 
+int dxf_ents_parse(dxf_drawing drawing){
+	dxf_node *current = NULL;
+		
+	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
+		current = drawing.ents->obj.content->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->type == DXF_ENT){ // DXF entity 
+				
+				// -------------------------------------------
+				dxf_graph_parse(drawing, current);
+				if (current->obj.name){
+					printf("%s\n", current->obj.name);
+				}
+				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
+}
+	
+
 int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
 	if (ent != NULL){
 		vec_graph_draw(ent->obj.graphics, img);
@@ -414,4 +440,23 @@ int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
 	}
 	*/
 	return 0;
+}
+
+int dxf_ents_draw(dxf_drawing drawing, bmp_img * img){
+	dxf_node *current = NULL;
+		
+	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
+		current = drawing.ents->obj.content->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->type == DXF_ENT){ // DXF entity 
+				
+				// -------------------------------------------
+				vec_graph_draw(current->obj.graphics, img);
+				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
 }

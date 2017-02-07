@@ -25,7 +25,7 @@ int main(void)
 	}
 	*/
 	
-	dxf_graph_parse(drawing, drawing.ents);
+	dxf_ents_parse(drawing);
 	
 	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
@@ -38,8 +38,9 @@ int main(void)
 	
 	bmp_img * img = bmp_new(200, 200, white, black);
 	
-	dxf_graph_draw(drawing, drawing.ents, img);
+	//dxf_graph_draw(drawing, drawing.ents, img);
 	
+	dxf_ents_draw(drawing, img);
 	
 	dxf_ent_clear(drawing.main_struct);
 	
