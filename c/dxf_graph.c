@@ -382,14 +382,12 @@ int dxf_ents_parse(dxf_drawing drawing){
 	}
 }
 	
-
+/*
 int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
 	if (ent != NULL){
 		vec_graph_draw(ent->obj.graphics, img);
 	}
 	
-	
-	/*
 	vector_p stack, v_search;
 	dxf_node *current = NULL;
 	graph_obj * curr_graph = NULL;
@@ -438,11 +436,11 @@ int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
 			}
 		}
 	}
-	*/
+	
 	return 0;
-}
+}*/
 
-int dxf_ents_draw(dxf_drawing drawing, bmp_img * img){
+int dxf_ents_draw(dxf_drawing drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	dxf_node *current = NULL;
 		
 	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
@@ -453,8 +451,42 @@ int dxf_ents_draw(dxf_drawing drawing, bmp_img * img){
 			if (current->type == DXF_ENT){ // DXF entity 
 				
 				// -------------------------------------------
-				vec_graph_draw(current->obj.graphics, img);
+				vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_x, scale);
+				
 				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
+}
+
+int dxf_ents_ext(dxf_drawing drawing, double * min_x, double * min_y, double * max_x, double * max_y){
+	dxf_node *current = NULL;
+	int ext_ini = 0;
+		
+	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
+		current = drawing.ents->obj.content->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->type == DXF_ENT){ // DXF entity 
+				
+				/* -------------------------------------------
+				if (ext_ini == 0){
+					ext_ini = 1;
+					*min_x = current->ext_min_x;
+					*min_y = current->ext_min_y;
+					*max_x = current->ext_max_x;
+					*max_y = current->ext_max_y;
+				}
+				else{
+					*min_x = (*min_x < current->ext_min_x) ? *min_x : current->ext_min_x;
+					*min_y = (*min_y < current->ext_min_y) ? *min_y : current->ext_min_y;
+					*max_x = (*max_x > current->ext_max_x) ? *max_x : current->ext_max_x;
+					*max_y = (*max_y > current->ext_max_y) ? *max_y : current->ext_max_y;
+				}
+				
+				//---------------------------------------*/
 			}
 			current = current->next;
 		}

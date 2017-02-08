@@ -40,9 +40,19 @@ int main(void)
 	
 	//dxf_graph_draw(drawing, drawing.ents, img);
 	
-	dxf_ents_draw(drawing, img);
+	dxf_ents_draw(drawing, img, 0.0, 0.0, 1.0);
 	
 	bmp_save("teste.ppm", img);
+	printf("salvo\n");
+	
+	bmp_fill(img, white);
+	dxf_ents_draw(drawing, img, 0.0, 0.0, 0.5);
+	bmp_save("teste2.ppm", img);
+	printf("salvo\n");
+	
+	bmp_fill(img, white);
+	dxf_ents_draw(drawing, img, 30.0, 30.0, 0.5);
+	bmp_save("teste3.ppm", img);
 	printf("salvo\n");
 	
 	dxf_ent_clear(drawing.main_struct);

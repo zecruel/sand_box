@@ -26,6 +26,9 @@ graph_obj * graph_new(void){
 		new_obj->patt_size = 1;
 		new_obj->pattern[0] = 1;
 		
+		/* extent init */
+		new_obj->ext_ini = 0;
+		
 		/* allocate the line list */
 		new_obj->list = malloc(sizeof(line_node));
 		if(new_obj->list){
@@ -64,6 +67,25 @@ void line_add(graph_obj * master, double x0, double y0, double x1, double y1){
 				/* then, the new line is put in end of list */
 				tmp->next = new_line;
 			}
+			/*update the extent of graph */
+			/* sort the coordinates of entire line*/
+			double min_x = (x0 < x1) ? x0 : x1;
+			double min_y = (y0 < y1) ? y0 : y1;
+			double max_x = (x0 > x1) ? x0 : x1;
+			double max_y = (y0 > y1) ? y0 : y1;
+			if (master->ext_ini == 0){
+				master->ext_ini = 1;
+				master->ext_min_x = min_x;
+				master->ext_min_y = min_y;
+				master->ext_max_x = max_x;
+				master->ext_max_y = max_y;
+			}
+			else{
+				master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
+				master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+				master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
+				master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
+			}
 		}
 	}
 }
@@ -96,7 +118,7 @@ void graph_free(graph_obj * master){
 	}
 }
 
-void graph_draw(graph_obj * master, bmp_img * img){
+void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
 			line_node *current = master->list->next;
@@ -108,12 +130,18 @@ void graph_draw(graph_obj * master, bmp_img * img){
 			/* set the tickness */
 			img->tick = master->tick;
 			
+			/* apply the scale and offset */
+			int x0, y0, x1, y1;
+			x0 = (int) round((current->x0 + ofs_x) * scale);
+			y0 = (int) round((current->y0 + ofs_y) * scale);
+			x1 = (int) round((current->x1 + ofs_x) * scale);
+			y1 = (int) round((current->y1 + ofs_y) * scale);
+			
+			
 			/* draw the lines */
 			while(current){ /*sweep the list content */
-				bmp_line(img, current->x0, 
-					current->y0, 
-					current->x1,
-					current->y1);
+				bmp_line(img, x0, y0, x1, y1);
+				//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
 				
 				current = current->next; /* go to next */
 				//printf("linha\n");
@@ -122,11 +150,12 @@ void graph_draw(graph_obj * master, bmp_img * img){
 	}
 }
 
-void vec_graph_draw(vector_p * vec, bmp_img * img){
+void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	int i;
 	if (vec){
 		for(i = 0; i < vec->size; i++){
-			graph_draw(((graph_obj **)vec->data)[i], img);
+			graph_draw(((graph_obj **)vec->data)[i], img, ofs_x, ofs_x, scale);
+			//printf("%f\n", scale);
 			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
 		}
 	}

@@ -22,6 +22,10 @@ struct Graph_obj{
 	/* pattern information */
 	int pattern[20];
 	int patt_size;
+	/* extent information */
+	double ext_min_x, ext_min_y;
+	double ext_max_x, ext_max_y;
+	int ext_ini;
 	
 	line_node * list;
 };
@@ -35,9 +39,9 @@ void lines_free(graph_obj * master);
 
 void graph_free(graph_obj * master);
 
-void graph_draw(graph_obj * master, bmp_img * img);
+void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
-void vec_graph_draw(vector_p * vec, bmp_img * img);
+void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
 void vec_graph_free(vector_p * vec);
 
