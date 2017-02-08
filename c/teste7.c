@@ -42,9 +42,10 @@ int main(void)
 	
 	dxf_ents_draw(drawing, img);
 	
-	dxf_ent_clear(drawing.main_struct);
-	
 	bmp_save("teste.ppm", img);
+	printf("salvo\n");
+	
+	dxf_ent_clear(drawing.main_struct);
 	bmp_free(img);
 
 	printf("suceso\n");

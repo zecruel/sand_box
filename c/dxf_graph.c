@@ -372,9 +372,9 @@ int dxf_ents_parse(dxf_drawing drawing){
 				
 				// -------------------------------------------
 				dxf_graph_parse(drawing, current);
-				if (current->obj.name){
+				/*if (current->obj.name){
 					printf("%s\n", current->obj.name);
-				}
+				}*/
 				//---------------------------------------
 			}
 			current = current->next;
