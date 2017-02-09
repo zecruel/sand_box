@@ -132,10 +132,10 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			
 			/* apply the scale and offset */
 			int x0, y0, x1, y1;
-			x0 = (int) round((current->x0 + ofs_x) * scale);
-			y0 = (int) round((current->y0 + ofs_y) * scale);
-			x1 = (int) round((current->x1 + ofs_x) * scale);
-			y1 = (int) round((current->y1 + ofs_y) * scale);
+			x0 = (int) round((current->x0 - ofs_x) * scale);
+			y0 = (int) round((current->y0 - ofs_y) * scale);
+			x1 = (int) round((current->x1 - ofs_x) * scale);
+			y1 = (int) round((current->y1 - ofs_y) * scale);
 			
 			
 			/* draw the lines */
@@ -154,7 +154,7 @@ void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, d
 	int i;
 	if (vec){
 		for(i = 0; i < vec->size; i++){
-			graph_draw(((graph_obj **)vec->data)[i], img, ofs_x, ofs_x, scale);
+			graph_draw(((graph_obj **)vec->data)[i], img, ofs_x, ofs_y, scale);
 			//printf("%f\n", scale);
 			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
 		}
@@ -170,6 +170,33 @@ void vec_graph_free(vector_p * vec){
 		}
 		free (vec);
 	}
+}
+
+int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y){
+	int i;
+	if (vec){
+		graph_obj * current;
+		for(i = 0; i < vec->size; i++){
+			current = ((graph_obj **)vec->data)[i];
+			if (current){
+				if (*init == 0){
+					*init = 1;
+					*min_x = current->ext_min_x;
+					*min_y = current->ext_min_y;
+					*max_x = current->ext_max_x;
+					*max_y = current->ext_max_y;
+				}
+				else{
+					*min_x = (*min_x < current->ext_min_x) ? *min_x : current->ext_min_x;
+					*min_y = (*min_y < current->ext_min_y) ? *min_y : current->ext_min_y;
+					*max_x = (*max_x > current->ext_max_x) ? *max_x : current->ext_max_x;
+					*max_y = (*max_y > current->ext_max_y) ? *max_y : current->ext_max_y;
+				}
+			}
+		}
+		return 1;
+	}
+	return 0;
 }
 
 /*

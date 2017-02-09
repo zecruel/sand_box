@@ -451,7 +451,7 @@ int dxf_ents_draw(dxf_drawing drawing, bmp_img * img, double ofs_x, double ofs_y
 			if (current->type == DXF_ENT){ // DXF entity 
 				
 				// -------------------------------------------
-				vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_x, scale);
+				vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
 				
 				//---------------------------------------
 			}
@@ -469,7 +469,9 @@ int dxf_ents_ext(dxf_drawing drawing, double * min_x, double * min_y, double * m
 		
 		// starts the content sweep 
 		while (current != NULL){
-			if (current->type == DXF_ENT){ // DXF entity 
+			if (current->type == DXF_ENT){
+				
+				vec_graph_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
 				
 				/* -------------------------------------------
 				if (ext_ini == 0){

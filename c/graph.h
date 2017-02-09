@@ -45,4 +45,6 @@ void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, d
 
 void vec_graph_free(vector_p * vec);
 
+int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y);
+
 #endif

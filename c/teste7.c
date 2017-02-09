@@ -27,6 +27,10 @@ int main(void)
 	
 	dxf_ents_parse(drawing);
 	
+	double min_x, min_y, max_x, max_y;
+	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", min_x, min_y, max_x, max_y);
+	
 	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
@@ -36,12 +40,23 @@ int main(void)
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
-	bmp_img * img = bmp_new(200, 200, white, black);
+	bmp_img * img = bmp_new(200, 300, white, black);
+	
+	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
+	zoom_x = (max_x - min_x)/img->width;
+	zoom_y = (max_y - min_y)/img->height;
+	zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+	if (zoom <= 0){ zoom =1;}
+	else{ zoom = 1/(1.1 * zoom);}
+	
+	ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
+	ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
+	
+	printf("zoom = %f, %f, %f\n", zoom, (max_x - min_x)*zoom - img->width, (max_y - min_y)*zoom - img->height); 
 	
 	//dxf_graph_draw(drawing, drawing.ents, img);
 	
-	dxf_ents_draw(drawing, img, 0.0, 0.0, 1.0);
-	
+	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
 	bmp_save("teste.ppm", img);
 	printf("salvo\n");
 	
