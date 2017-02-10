@@ -13,7 +13,7 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	double pt4_x = 0, pt4_y = 0, pt4_z = 0;
 	double offset_x = 0, offset_y = 0, offset_z = 0;
 	double radius = 0, rot = 0, tick = 0, elev = 0;
-	double ang_ini = 0, ang_end = 0, bulge = 0;
+	double ang_start = 0, ang_end = 0, bulge = 0;
 	double t_size = 0, t_rot = 0;
 	
 	char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS], t_style[DXF_MAX_CHARS], layer[DXF_MAX_CHARS], comment[DXF_MAX_CHARS];
@@ -24,6 +24,11 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	
 	/*flags*/
 	int pt1 = 0, pt2 = 0, pt3 = 0, pt4 = 0;
+	
+	/*for polylines*/
+	int first = 0, poly = 0, closed =0;
+	double prev_x, prev_y, last_x, last_y;
+	
 	
 	
 	/* initialize the stack */
@@ -60,11 +65,11 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					switch (ent_type){
 						case DXF_LINE:
-							printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
+							//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
 							if (curr_graph){
 								line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
 								stack_push(v_return, curr_graph);
-								printf("ADD %d, %d\n", ent_type, curr_graph);
+								//printf("ADD %d, %d\n", ent_type, curr_graph);
 							}
 							goto reinit_vars;
 						
@@ -72,9 +77,17 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							goto reinit_vars;
 							
 						case DXF_CIRCLE:
+							if (curr_graph){
+								graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+								stack_push(v_return, curr_graph);
+							}
 							goto reinit_vars;
 							
 						case DXF_ARC:
+							if (curr_graph){
+								graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, 1);
+								stack_push(v_return, curr_graph);
+							}
 							goto reinit_vars;
 							
 						case DXF_TRACE:
@@ -96,13 +109,33 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							goto reinit_vars;
 							
 						case DXF_POLYLINE:
-							goto reinit_vars;
+							printf("polyline");
+							poly = 1;
+							first = 0;
+							goto continue_poly;
 							
 						case DXF_VERTEX:
-							goto reinit_vars;
+							printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
+							if(poly){
+								
+								if(first){
+									line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
+									stack_push(v_return, curr_graph);
+								}
+								else{
+									first = 1;
+									last_x = pt1_x;
+									last_y = pt1_y;
+								}
+								prev_x = pt1_x;
+								prev_y = pt1_y;
+							}
+							goto continue_poly;
 							
 						case DXF_LWPOLYLINE:
-							goto reinit_vars;
+							poly = 1;
+							first = 0;
+							goto continue_poly;
 							
 						case DXF_3DFACE:
 							goto reinit_vars;
@@ -112,8 +145,14 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							
 						case DXF_DIMENSION:
 							
+						goto continue_poly;
+							
 						reinit_vars:
+						/*reset polylines*/
+						first = 0; poly = 0; closed =0;
+						//double prev_x, prev_y, last_x, last_y;
 						
+						continue_poly:
 						ent_type = DXF_NONE;
 							
 						pt1_x = 0; pt1_y = 0; pt1_z = 0;
@@ -122,7 +161,7 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						pt4_x = 0; pt4_y = 0; pt4_z = 0;
 						radius = 0; rot = 0;
 						tick = 0; elev = 0;
-						ang_ini = 0; ang_end = 0; bulge =0;
+						ang_start = 0; ang_end = 0; bulge =0;
 						t_size = 0; t_rot = 0;
 						
 						/* clear the strings */
@@ -171,6 +210,8 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					}
 					else if (strcmp(current->obj.name, "POLYLINE") == 0){
 						ent_type = DXF_POLYLINE;
+						poly = 1;
+						first = 0;
 					}
 					else if (strcmp(current->obj.name, "VERTEX") == 0){
 						ent_type = DXF_VERTEX;
@@ -326,7 +367,7 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							bulge = current->value.d_data;
 							break;
 						case 50:
-							ang_ini = current->value.d_data;
+							ang_start = current->value.d_data;
 							t_rot = current->value.d_data;
 							break;
 						case 51:

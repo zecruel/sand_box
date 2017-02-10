@@ -31,7 +31,7 @@ int main(void)
 	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 	printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", min_x, min_y, max_x, max_y);
 	
-	bmp_color white = {.r = 255, .g = 200, .b =200, .a = 255};
+	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
 	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
@@ -40,7 +40,7 @@ int main(void)
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
-	bmp_img * img = bmp_new(200, 300, white, black);
+	bmp_img * img = bmp_new(600, 400, white, black);
 	
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	zoom_x = (max_x - min_x)/img->width;
@@ -59,7 +59,7 @@ int main(void)
 	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
 	bmp_save("teste.ppm", img);
 	printf("salvo\n");
-	
+	/*
 	bmp_fill(img, white);
 	dxf_ents_draw(drawing, img, 0.0, 0.0, 0.5);
 	bmp_save("teste2.ppm", img);
@@ -68,7 +68,9 @@ int main(void)
 	bmp_fill(img, white);
 	dxf_ents_draw(drawing, img, 30.0, 30.0, 0.5);
 	bmp_save("teste3.ppm", img);
-	printf("salvo\n");
+	printf("salvo\n");*/
+	
+	//dxf_ent_print(drawing.main_struct,0);
 	
 	dxf_ent_clear(drawing.main_struct);
 	bmp_free(img);

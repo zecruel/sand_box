@@ -121,6 +121,7 @@ void graph_free(graph_obj * master){
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
+			int x0, y0, x1, y1;			
 			line_node *current = master->list->next;
 			
 			/* set the pattern */
@@ -130,21 +131,18 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			/* set the tickness */
 			img->tick = master->tick;
 			
-			/* apply the scale and offset */
-			int x0, y0, x1, y1;
-			x0 = (int) round((current->x0 - ofs_x) * scale);
-			y0 = (int) round((current->y0 - ofs_y) * scale);
-			x1 = (int) round((current->x1 - ofs_x) * scale);
-			y1 = (int) round((current->y1 - ofs_y) * scale);
-			
-			
 			/* draw the lines */
 			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				x0 = (int) round((current->x0 - ofs_x) * scale);
+				y0 = (int) round((current->y0 - ofs_y) * scale);
+				x1 = (int) round((current->x1 - ofs_x) * scale);
+				y1 = (int) round((current->y1 - ofs_y) * scale);
+				
 				bmp_line(img, x0, y0, x1, y1);
 				//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
 				
 				current = current->next; /* go to next */
-				//printf("linha\n");
 			}
 		}
 	}
@@ -197,6 +195,81 @@ int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, dou
 		return 1;
 	}
 	return 0;
+}
+
+void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double ang_start, double ang_end, int sig){
+	if (master){
+		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		double ang;
+		int steps, i;
+		double x0, y0, x1, y1;
+		
+		ang_start *= M_PI/180;
+		ang_end *= M_PI/180;
+		
+		ang = (ang_start - ang_end) * sig; //angulo do arco
+		if (ang <= 0){ ang = ang + 2*M_PI;}
+		
+		//descobre quantos passos para o laço a seguir
+		steps = (int) floor(fabs(ang*n/(2*M_PI))); //numero de vertices do arco
+		
+		x0 = c_x + radius * cos(ang_start);
+		y0 = c_y + radius * sin(ang_start);
+		
+		//printf("Arco, stp = %d, r = %0.2f, ang = %0.2f\n pts = )", steps, radius, ang);
+		
+		//já começa do segundo vértice
+		for (i = 1; i < steps; i++){
+			x1 = c_x + radius * cos(2 * M_PI * i * sig/ n + ang_start);
+			y1 = c_y + radius * sin(2 * M_PI * i * sig/ n + ang_start);
+			
+			
+			line_add(master, x0, y0, x1, y1);
+			//printf("(%0.2f,%0.2f),", x1, y1);
+			x0=x1;
+			y0=y1;
+		}
+		// o ultimo vertice do arco eh o ponto final, nao calculado no laço
+		x1 = c_x + radius * cos(ang_end);
+		y1 = c_y + radius * sin(ang_end);
+		line_add(master, x0, y0, x1, y1);
+		//printf("(%0.2f,%0.2f)\n", x1, y1);
+	}
+}
+
+void graph_arc_bulge(graph_obj * master, 
+			double pt1_x, double pt1_y,
+			double pt2_x, double pt2_y, 
+			double bulge){
+	
+	double theta, alfa, d, radius, ang_c, ang_start, ang_end, center_x, center_y;
+	int sig;
+	
+	theta = 2 * atan(bulge);
+	alfa = atan2(pt2_y-pt1_y, pt2_x-pt1_x);
+	d = sqrt((pt2_y-pt1_y)*(pt2_y-pt1_y) + (pt2_x-pt1_x)*(pt2_x-pt1_x)) / 2;
+	radius = d*(bulge*bulge + 1)/(2*bulge);
+	
+	ang_c = M_PI+(alfa - M_PI/2 - theta);
+	center_x = radius*cos(ang_c) + pt1_x;
+	center_y = radius*sin(ang_c) + pt1_y;
+	
+	//angulo inicial e final obtidos das coordenadas iniciais
+	ang_start = atan2(pt1_y-center_y,pt1_x-center_x);
+	ang_end = atan2(pt2_y-center_y,pt2_x-center_x);
+	
+	sig = 1;
+	if (bulge < 0){
+		ang_start += M_PI;
+		ang_end += M_PI;
+		sig = -1;
+	}
+	//converte para garus
+	ang_start *= 180/M_PI;
+	ang_end *= 180/M_PI;
+	
+	//arco(entidade, camada, center, radius, ang_start, ang_end, cor, esp, sig);
+	graph_arc(master, center_x, center_y, radius, ang_start, ang_end, sig);
 }
 
 /*

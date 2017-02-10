@@ -47,4 +47,11 @@ void vec_graph_free(vector_p * vec);
 
 int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y);
 
+void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double ang_start, double ang_end, int sig);
+
+void graph_arc_bulge(graph_obj * master, 
+			double pt1_x, double pt1_y,
+			double pt2_x, double pt2_y, 
+			double bulge);
+
 #endif
