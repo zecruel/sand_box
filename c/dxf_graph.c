@@ -2,7 +2,7 @@
 
 int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	vector_p stack, v_search, *v_return = NULL;
-	dxf_node *current = NULL, *e_layer = NULL;
+	dxf_node *current = NULL, *cmplx = NULL;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
 	graph_obj * curr_graph = NULL;
@@ -26,6 +26,7 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	int pt1 = 0, pt2 = 0, pt3 = 0, pt4 = 0;
 	
 	/*for polylines*/
+	int pline_flag;
 	int first = 0, poly = 0, closed =0;
 	double prev_x, prev_y, last_x, last_y;
 	
@@ -63,7 +64,7 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					/* find the ltype index */
 					ltype_idx = dxf_ltype_idx(drawing, l_type);
 					
-					switch (ent_type){
+					switch (ent_type){ /* simple entities */
 						case DXF_LINE:
 							//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
 							if (curr_graph){
@@ -102,20 +103,11 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						case DXF_SHAPE:
 							goto reinit_vars;
 							
-						case DXF_INSERT:
-							goto reinit_vars;
-							
 						case DXF_ATTRIB:
 							goto reinit_vars;
 							
-						case DXF_POLYLINE:
-							printf("polyline");
-							poly = 1;
-							first = 0;
-							goto continue_poly;
-							
 						case DXF_VERTEX:
-							printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
+							//printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
 							if(poly){
 								
 								if(first){
@@ -130,12 +122,12 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 								prev_x = pt1_x;
 								prev_y = pt1_y;
 							}
-							goto continue_poly;
+							goto reinit_vars;
 							
 						case DXF_LWPOLYLINE:
 							poly = 1;
 							first = 0;
-							goto continue_poly;
+							goto reinit_vars;
 							
 						case DXF_3DFACE:
 							goto reinit_vars;
@@ -144,15 +136,10 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							goto reinit_vars;
 							
 						case DXF_DIMENSION:
-							
-						goto continue_poly;
+							goto reinit_vars;
 							
 						reinit_vars:
-						/*reset polylines*/
-						first = 0; poly = 0; closed =0;
-						//double prev_x, prev_y, last_x, last_y;
 						
-						continue_poly:
 						ent_type = DXF_NONE;
 							
 						pt1_x = 0; pt1_y = 0; pt1_z = 0;
@@ -186,6 +173,17 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					/* try to up in the structure hierarchy */
 					current = stack_pop (&stack);
+					
+					if (current == cmplx){ /* back on complex ent */
+						/*then end the complex entity */
+						cmplx = NULL;
+						
+						/*reset polylines*/
+						//printf("reset polylines\n");
+						first = 0; poly = 0; closed =0;
+						prev_x = 0; prev_y =0; last_x = 0; last_y = 0;
+					}
+					
 					if (current == ent){ /* back on initial ent */
 						current = NULL;
 					}
@@ -194,7 +192,49 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						current = current->next; /* go to the next in the list */
 					}
 				}
-				else if (current->type == DXF_ENT){ /* DXF entity */
+				else if (current->type == DXF_ENT){
+					
+					switch (ent_type){ /* complex entities */
+						case DXF_INSERT:
+							
+							goto reinit_cmplx;
+							
+						case DXF_POLYLINE:
+							//printf("polyline");
+							poly = 1;
+							first = 0;
+							if (pline_flag & 1){
+								closed = 1;
+							}
+						
+						reinit_cmplx:	
+						pline_flag = 0;							
+						pt1_x = 0; pt1_y = 0; pt1_z = 0;
+						pt2_x = 0; pt2_y = 0; pt2_z = 0;
+						pt3_x = 0; pt3_y = 0; pt3_z = 0;
+						pt4_x = 0; pt4_y = 0; pt4_z = 0;
+						radius = 0; rot = 0;
+						tick = 0; elev = 0;
+						ang_start = 0; ang_end = 0; bulge =0;
+						t_size = 0; t_rot = 0;
+						
+						/* clear the strings */
+						handle[0] = 0;
+						l_type[0] = 0;
+						t_style[0] = 0;
+						layer[0] = 0;
+						comment[0] = 0;
+						t_text[0] =0;
+						name1[0] = 0;
+						name2[0] = 0;
+						
+						color = 256; paper= 0;
+						t_alin_v = 0; t_alin_h = 0;
+						
+						/*clear flags*/
+						pt1 = 0; pt2 = 0; pt3 = 0; pt4 = 0;
+					}
+					
 					ent_type = DXF_NONE;
 					if (strcmp(current->obj.name, "LINE") == 0){
 						ent_type = DXF_LINE;
@@ -210,8 +250,6 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					}
 					else if (strcmp(current->obj.name, "POLYLINE") == 0){
 						ent_type = DXF_POLYLINE;
-						poly = 1;
-						first = 0;
 					}
 					else if (strcmp(current->obj.name, "VERTEX") == 0){
 						ent_type = DXF_VERTEX;
@@ -271,6 +309,10 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							v_return = vect_new ();
 						}
 						curr_graph = graph_new();
+						
+						if ((ent_type == DXF_INSERT) || (ent_type == DXF_POLYLINE)){
+							cmplx = current;
+						}
 					}
 					/*---------------------------------------*/
 					
@@ -378,6 +420,9 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							break;
 						case 67:
 							paper = current->value.i_data;
+							break;
+						case 70:
+							pline_flag = current->value.i_data;
 							break;
 						case 72:
 							t_alin_h = current->value.i_data;
