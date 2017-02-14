@@ -231,6 +231,73 @@ void dxf_ent_print (dxf_node *ent, int indent){ /* print the entity structure */
 	}
 }
 
+void dxf_ent_print2 (dxf_node *ent){ /* print the entity structure */
+	/* this function is non recursive */
+	int i;
+	int indent = 0;
+	dxf_node *current, *prev;
+	
+	current = ent;
+	while (current){
+		prev = current;
+		if (current->type == DXF_ENT){ /* DXF entity */
+			if (current->obj.name){
+				for (i=0; i<indent; i++){ /* print the indentation spaces */
+					printf("    ");
+				}
+				printf(current->obj.name);  /* print the string of entity's name */
+				printf("\n");
+			}
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				indent++;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			for (i=0; i<indent; i++){ /* print the indentation spaces */
+				printf("    ");
+			}
+			printf ("%d = ", current->value.group); /* print the DFX group */
+			/* print the value of atrribute, acording its type */
+			switch (current->value.t_data) {
+				case DXF_STR:
+					if(current->value.s_data){
+						printf(current->value.s_data);
+					}
+					break;
+				case DXF_FLOAT:
+					printf("%f", current->value.d_data);
+					break;
+				case DXF_INT:
+					printf("%d", current->value.i_data);
+			}
+			printf("\n");
+			current = current->next; /* go to the next in the list */
+		}
+		while (current == NULL){
+			if (prev == ent){
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){
+				current = prev->next;
+				indent --;
+				if (prev == ent){
+					current = NULL;
+					printf("fim loop ");
+					break;
+				}
+			}
+			else{
+				current = NULL;
+				break;
+			}
+		}
+	}
+}
+
 dxf_node * dxf_obj_new (char *name){
 	char *new_name = NULL;
 	
