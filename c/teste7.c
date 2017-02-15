@@ -1,6 +1,7 @@
 #include "dxf.h"
 #include "bmp.h"
 #include "graph.h"
+#include "dxf_graph.h"
 
 int main(void)
 {
@@ -14,6 +15,9 @@ int main(void)
 	
 	drawing = dxf_open(url);
 	
+	//dxf_ent_print2(drawing.main_struct->obj.content->next);
+	//printf("pronto ");
+	
 	//dxf_ent_print(drawing.main_struct->obj.content->next, 0);
 	
 	/*
@@ -25,7 +29,7 @@ int main(void)
 	}
 	*/
 	
-	dxf_ents_parse(drawing);
+	dxf_ents_parse2(drawing);
 	
 	double min_x, min_y, max_x, max_y;
 	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
@@ -59,6 +63,8 @@ int main(void)
 	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
 	bmp_save("teste.ppm", img);
 	printf("salvo\n");
+	
+	
 	/*
 	bmp_fill(img, white);
 	dxf_ents_draw(drawing, img, 0.0, 0.0, 0.5);

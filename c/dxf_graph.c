@@ -475,9 +475,10 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	return 0;
 }
 
-dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
+vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 	/* this function is non recursive */
 	
+	vector_p *v_return = NULL;
 	dxf_node *current = NULL, *pline_ent = NULL, *insert_ent = NULL, *blk = NULL , *prev;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
@@ -509,9 +510,19 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 	int i;
 	int indent = 0;
 	
-	current = ent;
+	/* Initialize */
+	/*create the vector of returned values */
+	v_return = vect_new ();
+	if (v_return){
+		current = ent;
+	}
+	else{
+		current = NULL;
+	}
+	
 	while (current){
 		prev = current;
+		/* ============================================================= */
 		if (current->type == DXF_ENT){
 			ent_type = DXF_NONE;
 			if (strcmp(current->obj.name, "LINE") == 0){
@@ -569,6 +580,7 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 				current = current->obj.content->next;
 			}
 		}
+		/* ============================================================= */
 		else if (current->type == DXF_ATTR){ /* DXF attibute */
 			switch (current->value.group){
 				case 1:
@@ -685,6 +697,7 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			
 			current = current->next; /* go to the next in the list */
 		}
+		/* ============================================================= */
 		if (current == NULL){
 			/* end of list sweeping */
 			
@@ -710,9 +723,10 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			switch (ent_type){ /* simple entities */
 				case DXF_LINE:
 					//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
+					curr_graph = graph_new();
 					if (curr_graph){
-						//line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
-						//stack_push(v_return, curr_graph);
+						line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
+						stack_push(v_return, curr_graph);
 						//printf("ADD %d, %d\n", ent_type, curr_graph);
 					}
 					goto reinit_vars;
@@ -721,16 +735,18 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_CIRCLE:
+					curr_graph = graph_new();
 					if (curr_graph){
-						//graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
-						//stack_push(v_return, curr_graph);
+						graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
 					
 				case DXF_ARC:
+					curr_graph = graph_new();
 					if (curr_graph){
-						//graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, -1);
-						//stack_push(v_return, curr_graph);
+						graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, -1);
+						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
 					
@@ -753,8 +769,8 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					//printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
 					if(poly){
 						
-						if(first){
-							//line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
+						if((first != 0) && (curr_graph != NULL)){
+							line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
 							
 						}
 						else{
@@ -785,6 +801,14 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_POLYLINE:
+					curr_graph = graph_new();
+					//printf("polyline");
+					poly = 1;
+					first = 0;
+					if (pline_flag & 1){
+						closed = 1;
+					}
+					pline_ent = current;
 					goto reinit_vars;
 						
 				reinit_vars:
@@ -818,14 +842,36 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			}
 			
 		}
-		while (current == NULL){			
+		/* ============================================================= */
+		while (current == NULL){
+			
 			/* try to back in structure hierarchy */
 			if (prev == ent){ /* stop the search if back on initial entity */
 				current = NULL;
 				break;
 			}
 			prev = prev->master;
-			if (prev){
+			if (prev){ /* up in structure */
+				
+				/* ====== close complex entities ============== */
+				if (prev == pline_ent){ /* back on polyline ent */
+					/*then end the polyline entity */
+					pline_ent = NULL;
+					/* store the graph */
+					if (curr_graph){
+						stack_push(v_return, curr_graph);
+					}
+					
+					/*reset polylines*/
+					printf("reset polylines\n");
+					first = 0; poly = 0; closed =0;
+					prev_x = 0; prev_y =0; last_x = 0; last_y = 0;
+				}
+				
+				
+				/* ============================== */
+				
+				/* try to continue on previous point in structure */
 				current = prev->next;
 				//indent --;
 				if (prev == ent){
@@ -841,6 +887,7 @@ dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			}
 		}
 	}
+	return v_return;
 }
 
 int dxf_ents_parse(dxf_drawing drawing){
@@ -864,7 +911,33 @@ int dxf_ents_parse(dxf_drawing drawing){
 		}
 	}
 }
-	
+
+int dxf_ents_parse2(dxf_drawing drawing){
+	dxf_node *current = NULL;
+	vector_p *vec_graph;
+		
+	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
+		current = drawing.ents->obj.content->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->type == DXF_ENT){ // DXF entity 
+				
+				// -------------------------------------------
+				vec_graph = dxf_graph_parse2(drawing, current);
+				if (vec_graph){
+					current->obj.graphics = vec_graph;
+				}
+				/*if (current->obj.name){
+					printf("%s\n", current->obj.name);
+				}*/
+				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
+}
+
 /*
 int dxf_graph_draw(dxf_drawing drawing, dxf_node * ent, bmp_img * img){
 	if (ent != NULL){
