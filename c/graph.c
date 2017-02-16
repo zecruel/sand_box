@@ -164,7 +164,7 @@ void vec_graph_free(vector_p * vec){
 	if (vec){
 		for(i = 0; i < vec->size; i++){
 			graph_free(((graph_obj **)vec->data)[i]);
-			//printf("Liberando %d = %d\n", i, ((graph_obj **)vec->data)[i]);
+			//printf("Liberando %d = %d\n", i, (((graph_obj **)vec->data)[i]));
 		}
 		free (vec);
 	}

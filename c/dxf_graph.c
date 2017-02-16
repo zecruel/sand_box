@@ -478,11 +478,31 @@ int dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 	/* this function is non recursive */
 	
-	vector_p *v_return = NULL;
+	vector_p *v_return = NULL, v_search;
 	dxf_node *current = NULL, *pline_ent = NULL, *insert_ent = NULL, *blk = NULL , *prev;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
 	graph_obj * curr_graph = NULL;
+	
+	/* for insert objects */
+	struct ins_save{
+		dxf_node * ins_ent, *prev;
+		double ofs_x, ofs_y, ofs_z;
+		double rot, scale;
+	};
+	
+	struct ins_save ins_stack[10];
+	int ins_stack_pos = 0;
+	
+	struct ins_save ins_zero = {
+		.ins_ent = ent, .prev = NULL,
+		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
+		.rot = 0.0, .scale = 1.0
+	};
+	
+	ins_stack[0] = ins_zero;
+	int ins_flag = 0;
+	/* ---- */
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 	double pt2_x = 0, pt2_y = 0, pt2_z = 0;
@@ -697,6 +717,9 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			
 			current = current->next; /* go to the next in the list */
 		}
+		
+		
+		
 		/* ============================================================= */
 		if (current == NULL){
 			/* end of list sweeping */
@@ -798,17 +821,34 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 				
 				case DXF_INSERT:
+					/* look for block */
+					v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
+					if (v_search.data){ /* block found */
+						blk = ((dxf_node **) v_search.data)[0];
+						printf ("bloco %s\n", name1);
+						free(v_search.data);
+						/* save current entity for future process */
+						ins_stack_pos++;
+						ins_stack[ins_stack_pos].ins_ent = blk;
+						ins_stack[ins_stack_pos].prev = prev;
+						
+						/* now, current is the block */
+						prev = blk;
+						current = blk->obj.content->next;
+					}
 					goto reinit_vars;
 					
 				case DXF_POLYLINE:
 					curr_graph = graph_new();
-					//printf("polyline");
-					poly = 1;
-					first = 0;
-					if (pline_flag & 1){
-						closed = 1;
+					if (curr_graph){
+						printf("polyline");
+						poly = 1;
+						first = 0;
+						if (pline_flag & 1){
+							closed = 1;
+						}
+						pline_ent = current;
 					}
-					pline_ent = current;
 					goto reinit_vars;
 						
 				reinit_vars:
@@ -874,11 +914,19 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 				/* try to continue on previous point in structure */
 				current = prev->next;
 				//indent --;
-				if (prev == ent){
-					/* stop the search if back on initial entity */
-					current = NULL;
-					//printf("fim loop ");
-					break;
+				if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
+					if (ins_stack_pos < 1){
+						/* stop the search if back on initial entity */
+						current = NULL;
+						break;
+					}
+					else{
+						prev = ins_stack[ins_stack_pos].prev;
+						ins_stack_pos--;
+						//prev = ins_stack[ins_stack_pos].ins_ent;
+						printf("retorna %d\n", prev);
+						current = NULL;
+					}
 				}
 			}
 			else{ /* stop the search if structure ends */
