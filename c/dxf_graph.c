@@ -559,12 +559,17 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			}
 			else if (strcmp(current->obj.name, "POLYLINE") == 0){
 				ent_type = DXF_POLYLINE;
+				poly = 1;
+				first = 0;
+				pline_ent = current;
 			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
 				ent_type = DXF_VERTEX;
 			}
 			else if (strcmp(current->obj.name, "INSERT") == 0){
 				ent_type = DXF_INSERT;
+				insert_ent = current;
+				ins_flag = 1;
 			}
 			else if (strcmp(current->obj.name, "TRACE") == 0){
 				ent_type = DXF_TRACE;
@@ -718,6 +723,38 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			current = current->next; /* go to the next in the list */
 		}
 		
+		/* complex entities */
+		
+		if (((ins_flag != 0) && (current == NULL))||
+			((ins_flag != 0) && (current != NULL) && (insert_ent != current) && (current->type == DXF_ENT))){
+			ins_flag = 0;
+			/* look for block */
+			v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
+			if (v_search.data){ /* block found */
+				blk = ((dxf_node **) v_search.data)[0];
+				printf ("bloco %s\n", name1);
+				free(v_search.data);
+				/* save current entity for future process */
+				ins_stack_pos++;
+				ins_stack[ins_stack_pos].ins_ent = blk;
+				ins_stack[ins_stack_pos].prev = prev;
+				
+				/* now, current is the block */
+				prev = blk;
+				current = blk->obj.content->next;
+			}
+		}
+		else if((poly !=0) && (current != NULL) && (pline_ent != current) && (current->type == DXF_ENT)){
+			curr_graph = graph_new();
+			if (curr_graph){
+				printf("polyline\n");
+				if (pline_flag & 1){
+					closed = 1;
+				}
+			}
+		}
+
+		
 		
 		
 		/* ============================================================= */
@@ -789,7 +826,7 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_VERTEX:
-					//printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
+					printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
 					if(poly){
 						
 						if((first != 0) && (curr_graph != NULL)){
@@ -818,37 +855,6 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_DIMENSION:
-					goto reinit_vars;
-				
-				case DXF_INSERT:
-					/* look for block */
-					v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
-					if (v_search.data){ /* block found */
-						blk = ((dxf_node **) v_search.data)[0];
-						printf ("bloco %s\n", name1);
-						free(v_search.data);
-						/* save current entity for future process */
-						ins_stack_pos++;
-						ins_stack[ins_stack_pos].ins_ent = blk;
-						ins_stack[ins_stack_pos].prev = prev;
-						
-						/* now, current is the block */
-						prev = blk;
-						current = blk->obj.content->next;
-					}
-					goto reinit_vars;
-					
-				case DXF_POLYLINE:
-					curr_graph = graph_new();
-					if (curr_graph){
-						printf("polyline");
-						poly = 1;
-						first = 0;
-						if (pline_flag & 1){
-							closed = 1;
-						}
-						pline_ent = current;
-					}
 					goto reinit_vars;
 						
 				reinit_vars:
