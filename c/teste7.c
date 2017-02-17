@@ -44,7 +44,7 @@ int main(void)
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
-	bmp_img * img = bmp_new(600, 400, white, black);
+	bmp_img * img = bmp_new(800, 600, white, black);
 	
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	zoom_x = (max_x - min_x)/img->width;

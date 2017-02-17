@@ -523,9 +523,10 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 	int pt1 = 0, pt2 = 0, pt3 = 0, pt4 = 0;
 	
 	/*for polylines*/
-	int pline_flag;
+	int pline_flag = 0;
 	int first = 0, poly = 0, closed =0;
 	double prev_x, prev_y, last_x, last_y;
+	double prev_bulge = 0;
 	
 	int i;
 	int indent = 0;
@@ -630,51 +631,51 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					strcpy(layer, current->value.s_data);
 					break;
 				case 10:
-					pt1_x = current->value.d_data;
+					pt1_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
 					pt1 = 1; /* set flag */
 					break;
 				case 11:
-					pt2_x = current->value.d_data;
+					pt2_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
 					pt2 = 1; /* set flag */
 					break;
 				case 12:
-					pt3_x = current->value.d_data;
+					pt3_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
 					pt3 = 1; /* set flag */
 					break;
 				case 13:
-					pt4_x = current->value.d_data;
+					pt4_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
 					pt4 = 1; /* set flag */
 					break;
 				case 20:
-					pt1_y = current->value.d_data;
+					pt1_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
 					pt1 = 1; /* set flag */
 					break;
 				case 21:
-					pt2_y = current->value.d_data;
+					pt2_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
 					pt2 = 1; /* set flag */
 					break;
 				case 22:
-					pt3_y = current->value.d_data;
+					pt3_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
 					pt3 = 1; /* set flag */
 					break;
 				case 23:
-					pt4_y = current->value.d_data;
+					pt4_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
 					pt4 = 1; /* set flag */
 					break;
 				case 30:
-					pt1_z = current->value.d_data;
+					pt1_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
 					pt1 = 1; /* set flag */
 					break;
 				case 31:
-					pt2_z = current->value.d_data;
+					pt2_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
 					pt2 = 1; /* set flag */
 					break;
 				case 32:
-					pt3_z = current->value.d_data;
+					pt3_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
 					pt3 = 1; /* set flag */
 					break;
 				case 33:
-					pt4_z = current->value.d_data;
+					pt4_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
 					pt4 = 1; /* set flag */
 					break;
 				case 38:
@@ -732,13 +733,15 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 			v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
 			if (v_search.data){ /* block found */
 				blk = ((dxf_node **) v_search.data)[0];
-				printf ("bloco %s\n", name1);
+				//printf ("bloco %s\n", name1);
 				free(v_search.data);
 				/* save current entity for future process */
 				ins_stack_pos++;
 				ins_stack[ins_stack_pos].ins_ent = blk;
 				ins_stack[ins_stack_pos].prev = prev;
-				
+				ins_stack[ins_stack_pos].ofs_x = pt1_x;
+				ins_stack[ins_stack_pos].ofs_y = pt1_y;
+				ins_stack[ins_stack_pos].ofs_z = pt1_z;
 				/* now, current is the block */
 				prev = blk;
 				current = blk->obj.content->next;
@@ -747,11 +750,12 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 		else if((poly !=0) && (current != NULL) && (pline_ent != current) && (current->type == DXF_ENT)){
 			curr_graph = graph_new();
 			if (curr_graph){
-				printf("polyline\n");
+				//printf("polyline\n");
 				if (pline_flag & 1){
 					closed = 1;
 				}
 			}
+			pline_flag = 0; /* reset flag */
 		}
 
 		
@@ -805,7 +809,7 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 				case DXF_ARC:
 					curr_graph = graph_new();
 					if (curr_graph){
-						graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, -1);
+						graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, 1);
 						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
@@ -826,20 +830,26 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_VERTEX:
-					printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
+					//printf("vertice (%0.2f, %0.2f)\n", pt1_x, pt1_y);
 					if(poly){
 						
 						if((first != 0) && (curr_graph != NULL)){
-							line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
-							
+							//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, pt1_x, pt1_y);
+							if (prev_bulge == 0){
+								line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
+							}
+							else{
+								graph_arc_bulge(curr_graph, prev_x, prev_y, pt1_x, pt1_y, prev_bulge);
+							}
 						}
-						else{
+						else if(first == 0){
 							first = 1;
 							last_x = pt1_x;
 							last_y = pt1_y;
 						}
 						prev_x = pt1_x;
 						prev_y = pt1_y;
+						prev_bulge = bulge;
 					}
 					goto reinit_vars;
 					
@@ -903,13 +913,25 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 				if (prev == pline_ent){ /* back on polyline ent */
 					/*then end the polyline entity */
 					pline_ent = NULL;
+					
+					
+					if((closed != 0) && (curr_graph != NULL)){
+						if (prev_bulge == 0){
+							line_add(curr_graph, prev_x, prev_y, last_x, last_y);
+						}
+						else{
+							graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, prev_bulge);
+						}
+					}
+					
+					
 					/* store the graph */
 					if (curr_graph){
 						stack_push(v_return, curr_graph);
 					}
 					
 					/*reset polylines*/
-					printf("reset polylines\n");
+					//printf("reset polylines\n");
 					first = 0; poly = 0; closed =0;
 					prev_x = 0; prev_y =0; last_x = 0; last_y = 0;
 				}
@@ -930,7 +952,7 @@ vector_p * dxf_graph_parse2(dxf_drawing drawing, dxf_node * ent){
 						prev = ins_stack[ins_stack_pos].prev;
 						ins_stack_pos--;
 						//prev = ins_stack[ins_stack_pos].ins_ent;
-						printf("retorna %d\n", prev);
+						//printf("retorna %d\n", prev);
 						current = NULL;
 					}
 				}

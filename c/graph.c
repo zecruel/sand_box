@@ -207,7 +207,7 @@ void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double
 		ang_start *= M_PI/180;
 		ang_end *= M_PI/180;
 		
-		ang = (ang_start - ang_end) * sig; //angulo do arco
+		ang = (ang_end - ang_start) * sig; //angulo do arco
 		if (ang <= 0){ ang = ang + 2*M_PI;}
 		
 		//descobre quantos passos para o laço a seguir
