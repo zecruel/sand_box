@@ -34,6 +34,9 @@ struct Bmp_img {
 
 	unsigned int tick; /* current brush tickness */
 	
+	/* index of each color component in buffer order */
+	unsigned int r_i, g_i, b_i, a_i;
+	
 	/* the pixmap */
 	unsigned char * buf; /* the color depth is 8 bit per component */
 };

@@ -21,16 +21,22 @@ rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax
 int bmp_fill (bmp_img *img, bmp_color color){
 	/* fill the bmp image with passed color */
 	
-	unsigned int i, n;
+	unsigned int i, n, r_i, g_i, b_i, a_i;
 	
 	if (img){
+		/* get the order of color components */
+		r_i = img->r_i;
+		g_i = img->g_i;
+		b_i = img->b_i;
+		a_i = img->a_i;
+		
 		n = 4 * img->width * img->height; /* four components: RGBA */
 		for (i=0; i < n; i += 4) /* increment by 4 in each step */
 		{ /* store each component in memory buffer */
-			img->buf[i] = color.r;
-			img->buf[i+1] = color.g;
-			img->buf[i+2] = color.b;
-			img->buf[i+3] = color.a;
+			img->buf[i+r_i] = color.r;
+			img->buf[i+g_i] = color.g;
+			img->buf[i+b_i] = color.b;
+			img->buf[i+a_i] = color.a;
 		}
 		return 1; /*return success*/
 	}
@@ -49,7 +55,7 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		img->height = height;
 		/* colors */
 		img->bkg = bkg;
-		img->frg =frg;
+		img->frg = frg;
 		/* line pattern generation vars  */
 		img->tick = 0;
 		img->patt_i = 0;
@@ -58,6 +64,12 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		/* initialize the image with a solid line pattern */
 		img->patt_size = 1;
 		img->pattern[0] = 1;
+		
+		/*order of color components in buffer. Init with ARGB */
+		img->r_i = 2;
+		img->g_i = 1;
+		img->b_i = 0;
+		img->a_i = 3;
 		
 		/* alloc the pix map buffer
 		the image will have 4 chanels: R, G, B and alfa */
@@ -85,11 +97,17 @@ int bmp_save (char *path, bmp_img *img){
 	
 	FILE *file;
 	int ret_success;
-	unsigned int i, n;
+	unsigned int i, n, r_i, g_i, b_i, a_i;
 	
 	ret_success = 0;
 	file = fopen(path, "w"); /* open the file */
 	if ((file != NULL) && (img != NULL)){
+		/* get the order of color components */
+		r_i = img->r_i;
+		g_i = img->g_i;
+		b_i = img->b_i;
+		a_i = img->a_i;
+		
 		/* the header of PPM: binary file with 8 bit deph */
 		fprintf(file, "P6 %d %d 255\r",  img->width, img->height);
 		
@@ -97,9 +115,9 @@ int bmp_save (char *path, bmp_img *img){
 		n = 4 * img->width * img->height;
 		for (i=0; i < n; i += 4){
 			/* only the RGB components are writen */
-			fputc(img->buf[i], file);
-			fputc(img->buf[i+1], file);
-			fputc(img->buf[i+2], file);
+			fputc(img->buf[i+r_i], file);
+			fputc(img->buf[i+g_i], file);
+			fputc(img->buf[i+b_i], file);
 		}
 		ret_success = 1; /* return success */
 	}
@@ -112,9 +130,15 @@ int bmp_save (char *path, bmp_img *img){
 void bmp_point_raw (bmp_img *img, int x, int y){
 	/* draw one pixel on x,y coordinates in bmp image */
 	
-	unsigned int ofs;
+	unsigned int ofs, r_i, g_i, b_i, a_i;
 	
 	if(img != NULL){
+		/* get the order of color components */
+		r_i = img->r_i;
+		g_i = img->g_i;
+		b_i = img->b_i;
+		a_i = img->a_i;
+		
 		/* check if point is in image bounds */
 		if((x >= 0) && (x < img->width) && 
 			(y >= 0) && (y < img->height)){
@@ -123,10 +147,10 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 			ofs = 4 * (((img->height - 1 - y) * img->width) + x);
 			/* store each component in memory buffer 
 			with the image´s foreground color*/
-			img->buf[ofs] = img->frg.r;
-			img->buf[ofs+1] = img->frg.g;
-			img->buf[ofs+2] = img->frg.b;
-			img->buf[ofs+3] = img->frg.a;
+			img->buf[ofs+r_i] = img->frg.r;
+			img->buf[ofs+g_i] = img->frg.g;
+			img->buf[ofs+b_i] = img->frg.b;
+			img->buf[ofs+a_i] = img->frg.a;
 		}
 	}
 }
