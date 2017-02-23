@@ -30,6 +30,7 @@ struct Bmp_img {
 	int pattern[20]; /* pattern information */
 	int patt_size;
 	int patt_i; /* current pattern index */
+	double pat_scale;
 	int pix_count;
 
 	unsigned int tick; /* current brush tickness */
@@ -57,7 +58,7 @@ void bmp_point_raw (bmp_img *img, int x, int y);
 
 void bmp_point (bmp_img *img, int xc, int yc);
 
-int patt_change(bmp_img *img, int patt[], int size);
+int patt_change(bmp_img *img, double patt[], int size);
 
 int patt_check(bmp_img *img);
 

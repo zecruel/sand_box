@@ -1,4 +1,5 @@
 #include "dxf.h"
+#include <math.h>
 
 void str_upp(char *str) { /* upper case the string */
 	while (*str= toupper(*str)) str++;
@@ -542,13 +543,13 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 
 void dxf_ltype_assemb (dxf_drawing *drawing){
 	vector_p v_search;
-	int i, pat_idx;
+	int i, j, pat_idx;
 	dxf_node *current;
 	
 	char name[DXF_MAX_CHARS];
 	int size;
 	double pat[DXF_MAX_PAT];
-	double length;
+	double length, max;
 	
 	/* always set the index 0 as the default ltype*/
 	drawing->num_ltypes = 1;
@@ -593,6 +594,21 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 				}
 				current = current->next;
 			}
+			
+			/* adjust pattern to pixel units */
+			/* first, find the max patt length*/
+			max = 0.0;
+			for(j = 0; j < size; j++){
+				if (max < fabs(pat[j])){
+					max = fabs(pat[j]);
+				}
+			}
+			if (max == 0.0) max = 1.0;
+			/* then normalize each value in pattern */
+			for(j = 0; j < size; j++){
+				pat[j] = pat[j]/max;
+			}
+			
 			/* set the variables on the current ltype in drawing structure */
 			strcpy(drawing->ltypes[i+1].name, name);
 			memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));

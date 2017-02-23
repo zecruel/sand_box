@@ -24,7 +24,7 @@ graph_obj * graph_new(void){
 		
 		/* initialize with a solid line pattern */
 		new_obj->patt_size = 1;
-		new_obj->pattern[0] = 1;
+		new_obj->pattern[0] = 1.0;
 		
 		/* extent init */
 		new_obj->ext_ini = 0;

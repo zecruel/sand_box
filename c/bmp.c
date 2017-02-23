@@ -64,6 +64,7 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		/* initialize the image with a solid line pattern */
 		img->patt_size = 1;
 		img->pattern[0] = 1;
+		img->pat_scale = 15;
 		
 		/*order of color components in buffer. Init with ARGB */
 		img->r_i = 2;
@@ -185,7 +186,7 @@ void bmp_point (bmp_img *img, int xc, int yc){
 	}
 }
 
-int patt_change(bmp_img *img, int patt[], int size){
+int patt_change(bmp_img *img, double patt[], int size){
 	/* change the current pattern in image to draw lines */
 	if(img != NULL){
 		int i;
@@ -197,9 +198,9 @@ int patt_change(bmp_img *img, int patt[], int size){
 		img->patt_i = 0;
 		img->pix_count = 0;
 		
-		/*copy the pattern data*/
+		/*set the pattern data*/
 		for (i = 0; i < size; i++){
-			img->pattern[i] = patt[i];
+			img->pattern[i] = (int) (img->pat_scale * patt[i]);
 		}
 		
 		return 1; /* return success */

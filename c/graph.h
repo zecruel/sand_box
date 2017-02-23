@@ -20,7 +20,7 @@ struct Graph_obj{
 	double rot, scale, ofs_x, ofs_y;
 	int tick;
 	/* pattern information */
-	int pattern[20];
+	double pattern[20];
 	int patt_size;
 	/* extent information */
 	double ext_min_x, ext_min_y;
