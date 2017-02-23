@@ -20,6 +20,7 @@ int main(int argc, char** argv){
 	int i;
 	double min_x, min_y, max_x, max_y;
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
+	double prev_zoom;
 	
 	drawing = dxf_open(url);
 	dxf_ents_parse(drawing);
@@ -46,16 +47,17 @@ int main(int argc, char** argv){
 	ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
 	
 	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-	bmp_save("teste.ppm", img);
+	//bmp_save("teste.ppm", img);
 	
 	/*============================*/
 	
 	SDL_Event event;
+	int mouse_x, mouse_y;
 
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_Window * window = SDL_CreateWindow(
-		"SDL2 Pixel Drawing", /* title */
+		"DXF Viewer with SDL2", /* title */
 		SDL_WINDOWPOS_UNDEFINED, /* x position */
 		SDL_WINDOWPOS_UNDEFINED, /* y position */
 		width, /* width */
@@ -64,6 +66,7 @@ int main(int argc, char** argv){
 	
 
 	SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
+	/*
 	SDL_RendererInfo info;
 	if (SDL_GetRenderDriverInfo(0, &info) == 0){
 		printf("Driver num pix format = %d\n", info.num_texture_formats);
@@ -84,7 +87,7 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-	
+	*/
 	
 	SDL_Texture * texture = SDL_CreateTexture(
 		renderer,
@@ -97,34 +100,48 @@ int main(int argc, char** argv){
 		/*=======================*/
 		SDL_UpdateTexture(texture, NULL, img->buf, width * 4);
 
-		SDL_PollEvent(&event);
-		
-		switch (event.type){
-			case SDL_QUIT:
-				quit = 1;
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if (event.button.button == SDL_BUTTON_LEFT){
-					//leftMouseButtonDown = false;
-				}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (event.button.button == SDL_BUTTON_LEFT){
-					//leftMouseButtonDown = true;
-				}
-				break;
-			case SDL_MOUSEMOTION:
-				//if (leftMouseButtonDown){
-					//int mouseX = event.motion.x;
-					//int mouseY = event.motion.y;
-					//pixels[mouseY * 640 + mouseX] = 0;
-				//}
-				break;
-		}
+		if(SDL_PollEvent(&event)){
+			switch (event.type){
+				case SDL_QUIT:
+					quit = 1;
+					break;
+				case SDL_MOUSEBUTTONUP:
+					if (event.button.button == SDL_BUTTON_LEFT){
+						//leftMouseButtonDown = false;
+					}
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					if (event.button.button == SDL_BUTTON_LEFT){
+						//leftMouseButtonDown = true;
+					}
+					break;
+				case SDL_MOUSEMOTION:
+					//if (leftMouseButtonDown){
+						//int mouseX = event.motion.x;
+						//int mouseY = event.motion.y;
+						//pixels[mouseY * 640 + mouseX] = 0;
+					//}
+					break;
+				case SDL_MOUSEWHEEL:
+					prev_zoom = zoom;
+					zoom = zoom + event.wheel.y * 0.2 * zoom;
+					
+					SDL_GetMouseState(&mouse_x, &mouse_y);
+					mouse_y = height - mouse_y;
+					//ofs_x -= ((double) mouse_x)*(1/zoom - 1/prev_zoom);
+					//ofs_y -= ((double) mouse_y)*(1/zoom - 1/prev_zoom);
+					ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
+					ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
+					
+					bmp_fill(img, img->bkg); /* clear bitmap */
+					dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+					break;
+			}
 
-		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
+			SDL_RenderClear(renderer);
+			SDL_RenderCopy(renderer, texture, NULL, NULL);
+			SDL_RenderPresent(renderer);
+		}
 	}
 	
 	/* safe quit */

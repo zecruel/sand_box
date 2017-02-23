@@ -308,12 +308,23 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 			/* find the ltype index */
 			ltype_idx = dxf_ltype_idx(drawing, l_type);
 			
+			
+			
 			switch (ent_type){ /* simple entities */
 				case DXF_LINE:
 					//printf("linha (%.2f,%.2f)-(%.2f,%.2f)  cor=%d ltype = %d \n", pt1_x, pt1_y, pt2_x, pt2_y, color, ltype_idx);
 					curr_graph = graph_new();
 					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/* add the line */
 						line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
+						
+						/* store the graph in the return vector */
 						stack_push(v_return, curr_graph);
 						//printf("ADD %d, %d\n", ent_type, curr_graph);
 					}
