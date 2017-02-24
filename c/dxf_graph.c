@@ -1,4 +1,5 @@
 #include "dxf_graph.h"
+#include "shape2.h"
 
 vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	/* this function is non recursive */
@@ -8,6 +9,9 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
 	graph_obj * curr_graph = NULL;
+	
+	shape *shx_font = shx_font_open("txt.shx");
+	double fnt_size, fnt_above, fnt_below, txt_h, txt_w, txt_size;
 	
 	/* for insert objects */
 	struct ins_save{
@@ -356,6 +360,26 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_TEXT:
+					//pega as dimensoes da fonte
+					if(shx_font){ //verifica se existe a fonte
+						if(shx_font->next){ //o primeiro item da lista eh a descricao da fonte
+							if(shx_font->next->cmd_size > 1){ //verfica se a fonte eh valida
+								fnt_above = shx_font->next->cmds[0]; //dimensao acima da linha base
+								fnt_below = shx_font->next->cmds[1]; //dimensao abaixo da linha base
+								if((fnt_above + fnt_below) > 0){
+									fnt_size = fnt_above + fnt_below;
+								}
+							}
+						}
+					}
+					curr_graph = shx_font_parse(shx_font, t_text, &txt_h, &txt_w);
+					
+					if (curr_graph){
+						txt_size = t_size/fnt_size * 2;
+						graph_modify(curr_graph, pt1_x, pt1_y, txt_size);
+						stack_push(v_return, curr_graph);
+					}
+					
 					goto reinit_vars;
 					
 				case DXF_SHAPE:
@@ -498,6 +522,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 			}
 		}
 	}
+	shx_font_free(shx_font);
 	return v_return;
 }
 

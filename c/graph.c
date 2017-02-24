@@ -272,6 +272,32 @@ void graph_arc_bulge(graph_obj * master,
 	graph_arc(master, center_x, center_y, radius, ang_start, ang_end, sig);
 }
 
+void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
+	if ((master != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			int x0, y0, x1, y1;			
+			line_node *current = master->list->next;
+			
+			/* apply changes to each point */
+			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				x0 = (int) round((current->x0 - ofs_x) * scale);
+				y0 = (int) round((current->y0 - ofs_y) * scale);
+				x1 = (int) round((current->x1 - ofs_x) * scale);
+				y1 = (int) round((current->y1 - ofs_y) * scale);
+				
+				/* update the graph */
+				current->x0 = x0;
+				current->y0 = y0;
+				current->x1 = x1;
+				current->y1 = y1;
+				
+				current = current->next; /* go to next */
+			}
+		}
+	}
+}
+
 /*
 int main (void){
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};

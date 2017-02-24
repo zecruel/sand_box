@@ -66,6 +66,4 @@ void bmp_line_raw(bmp_img *img, int x0, int y0, int x1, int y1);
 
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1);
 
-
-
 #endif
