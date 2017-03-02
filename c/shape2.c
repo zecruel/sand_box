@@ -205,7 +205,7 @@ shape *shx_font_open(char *path){
 	return(shx_font); // retorna a shx_font
 }
 
-graph_obj *shx_font_parse(shape *shx_font, const char *txt, double *height, double *weigth){
+graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 	double pre_x = 0;
 	double pre_y = 0;
 	double px = 0;
@@ -213,10 +213,10 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt, double *height, doub
 	int pen = 1;
 	int exec = 0;
 	graph_obj * line_list = NULL;
-	double max_x = 0;
-	double max_y = 0;
-	double min_x = 0;
-	double min_y = 0;
+	//double max_x = 0;
+	//double max_y = 0;
+	//double min_x = 0;
+	//double min_y = 0;
 	double stack_x[50];
 	double stack_y[50];
 	int stk_size = 0;
@@ -240,7 +240,7 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt, double *height, doub
 	
 	int i, j, ii;
 	
-	//double altura, weigth;
+	//double height, weigth;
 	
 	//cria a lista de retorno
 	line_list = graph_new();
@@ -539,10 +539,11 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt, double *height, doub
 							line_add(line_list, pre_x, pre_y, pre_x+px, pre_y+py);
 							
 							//calcula os valores maximo e minimo de cada coordenada
+							/*
 							if((pre_x + px) > max_x){ max_x = (pre_x + px); }
 							if((pre_y + py) > max_y){ max_y = (pre_y + py); }
 							if((pre_x + px) < min_x){ min_x = (pre_x + px); }
-							if((pre_y + py) < min_y){ min_y = (pre_y + py); }
+							if((pre_y + py) < min_y){ min_y = (pre_y + py); }*/
 							//max_x = max([max_x, pre_x, pre_x+px])
 							//max_y = max([max_y, pre_y, pre_y+py])
 							
@@ -558,8 +559,8 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt, double *height, doub
 		}//temporario ate implementar o else
 	}
 	//calcula a altura e a largura do texto interpretado
-	*height = fabs(max_y - min_y);
-	*weigth = fabs(max_x - min_x);
+	/*height = fabs(max_y - min_y);
+	weigth = fabs(max_x - min_x);*/
 	
 	//printf("Altura = %3.2f, largura = %3.2f\n", height, weigth);
 	

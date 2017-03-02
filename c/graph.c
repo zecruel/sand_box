@@ -275,22 +275,44 @@ void graph_arc_bulge(graph_obj * master,
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */
-			int x0, y0, x1, y1;			
+			int x0, y0, x1, y1;
+			double min_x, min_y, max_x, max_y;
 			line_node *current = master->list->next;
 			
+			master->ext_ini = 0;
 			/* apply changes to each point */
 			while(current){ /*sweep the list content */
 				/* apply the scale and offset */
-				x0 = (int) round((current->x0 - ofs_x) * scale);
-				y0 = (int) round((current->y0 - ofs_y) * scale);
-				x1 = (int) round((current->x1 - ofs_x) * scale);
-				y1 = (int) round((current->y1 - ofs_y) * scale);
+				x0 = (int) round((current->x0 + ofs_x) * scale);
+				y0 = (int) round((current->y0 + ofs_y) * scale);
+				x1 = (int) round((current->x1 + ofs_x) * scale);
+				y1 = (int) round((current->y1 + ofs_y) * scale);
 				
 				/* update the graph */
 				current->x0 = x0;
 				current->y0 = y0;
 				current->x1 = x1;
 				current->y1 = y1;
+				
+				/*update the extent of graph */
+				/* sort the coordinates of entire line*/
+				min_x = (x0 < x1) ? x0 : x1;
+				min_y = (y0 < y1) ? y0 : y1;
+				max_x = (x0 > x1) ? x0 : x1;
+				max_y = (y0 > y1) ? y0 : y1;
+				if (master->ext_ini == 0){
+					master->ext_ini = 1;
+					master->ext_min_x = min_x;
+					master->ext_min_y = min_y;
+					master->ext_max_x = max_x;
+					master->ext_max_y = max_y;
+				}
+				else{
+					master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
+					master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+					master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
+					master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
+				}
 				
 				current = current->next; /* go to next */
 			}

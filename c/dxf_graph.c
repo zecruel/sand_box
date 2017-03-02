@@ -10,8 +10,11 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	int lay_idx, ltype_idx;
 	graph_obj * curr_graph = NULL;
 	
+	/* for text objects */
 	shape *shx_font = shx_font_open("txt.shx");
-	double fnt_size, fnt_above, fnt_below, txt_h, txt_w, txt_size;
+	double fnt_size, fnt_above, fnt_below, txt_size;
+	double t_pos_x, t_pos_y, t_center_x, t_center_y, t_base_x, t_base_y;
+	double t_scale_x, t_scale_y, txt_w, txt_h;
 	
 	/* for insert objects */
 	struct ins_save{
@@ -372,11 +375,41 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							}
 						}
 					}
-					curr_graph = shx_font_parse(shx_font, t_text, &txt_h, &txt_w);
+					curr_graph = shx_font_parse(shx_font, t_text);
 					
 					if (curr_graph){
-						txt_size = t_size/fnt_size * 2;
-						graph_modify(curr_graph, pt1_x, pt1_y, txt_size);
+						txt_size = t_size/fnt_size;
+						txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
+						txt_h = fabs(curr_graph->ext_max_y - curr_graph->ext_min_y);
+						
+						//determina a posicao de insercao do texto em funcao de seu alinhamento
+						if(t_alin_h < 3){
+							t_center_x = t_alin_h * (txt_w * txt_size/2);
+							t_base_x =  t_alin_h * (pt2_x - pt1_x)/2;
+							t_base_y =  t_alin_h * (pt2_y - pt1_y)/2;
+						}
+						else{ 
+							if(t_alin_h == 4){
+								t_base_x = (pt2_x - pt1_x)/2;
+								t_base_y = (pt2_y - pt1_y)/2;
+							}
+							else{
+								t_scale_x = sqrt(pow((pt2_x - pt1_x), 2) + pow((pt2_y - pt1_y), 2))/(txt_w * txt_size);
+							}
+							//rot = atan2((pt2_y - pt1_y),(pt2_x - pt1_x)) * 180/M_PI;
+							
+							//printf("alinhamento=%d\n", t_alin_h);
+						}
+						if(t_alin_v >0){
+							t_center_y = (t_alin_v - 1) * (txt_size/2);
+						}
+						
+						t_pos_x = pt1_x + t_base_x - t_center_x;
+						t_pos_y = pt1_y + t_base_y - t_center_y;
+						
+						
+						graph_modify(curr_graph, 0.0, 0.0, txt_size);
+						graph_modify(curr_graph, t_pos_x, t_pos_y, 1.0);
 						stack_push(v_return, curr_graph);
 					}
 					
