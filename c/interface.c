@@ -31,11 +31,12 @@ int main(int argc, char** argv){
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
 	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
 	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
+	bmp_color grey = {.r = 100, .g = 100, .b = 100, .a = 255};
 	
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
-	bmp_img * img = bmp_new(width, height, white, red);
+	bmp_img * img = bmp_new(width, height, grey, red);
 	
 	zoom_x = (max_x - min_x)/img->width;
 	zoom_y = (max_y - min_y)/img->height;

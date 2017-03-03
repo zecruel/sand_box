@@ -1,6 +1,9 @@
 #include "dxf_graph.h"
 #include "shape2.h"
 
+#include "dxf_colors.h"
+
+
 vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	/* this function is non recursive */
 	
@@ -279,12 +282,76 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				/* now, current is the block */
 				prev = blk;
 				current = blk->obj.content->next;
+				
+				/*reinit_vars: */
+				
+				ent_type = DXF_NONE;
+					
+				pt1_x = 0; pt1_y = 0; pt1_z = 0;
+				pt2_x = 0; pt2_y = 0; pt2_z = 0;
+				pt3_x = 0; pt3_y = 0; pt3_z = 0;
+				pt4_x = 0; pt4_y = 0; pt4_z = 0;
+				radius = 0; rot = 0;
+				tick = 0; elev = 0;
+				ang_start = 0; ang_end = 0; bulge =0;
+				t_size = 0; t_rot = 0;
+				
+				/* clear the strings */
+				handle[0] = 0;
+				l_type[0] = 0;
+				t_style[0] = 0;
+				layer[0] = 0;
+				comment[0] = 0;
+				t_text[0] =0;
+				name1[0] = 0;
+				name2[0] = 0;
+				
+				color = 256; paper= 0;
+				t_alin_v = 0; t_alin_h = 0;
+				
+				/*clear flags*/
+				pt1 = 0; pt2 = 0; pt3 = 0; pt4 = 0;
+				
+				/*reset polylines*/
+				first = 0; poly = 0; closed =0;
+				prev_x = 0; prev_y =0; last_x = 0; last_y = 0;
 			}
 		}
 		else if((poly !=0) && (current != NULL) && (pline_ent != current) && (current->type == DXF_ENT)){
 			curr_graph = graph_new();
 			if (curr_graph){
 				//printf("polyline\n");
+				
+				/* find the layer index */
+				lay_idx = dxf_lay_idx(drawing, layer);
+				
+				/* check if  object's color  is definied by layer,
+				then look for layer's color */
+				if (color >= 256){
+					color = drawing.layers[lay_idx].color;
+				}
+				
+				/* check if  object's ltype  is definied by layer,
+				then look for layer's ltype */
+				if ((strcmp(l_type, "BYLAYER") == 0) ||
+					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+					strcpy(l_type, drawing.layers[lay_idx].ltype);
+				}
+				
+				/* find the ltype index */
+				ltype_idx = dxf_ltype_idx(drawing, l_type);
+				
+				
+				/* change the graph line pattern */
+				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				}
+				
+				/*change the color */
+				curr_graph->color = dxf_colors[color];
+						
+				
 				if (pline_flag & 1){
 					closed = 1;
 				}
@@ -328,6 +395,9 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
 						}
 						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
 						/* add the line */
 						line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
 						
@@ -343,6 +413,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				case DXF_CIRCLE:
 					curr_graph = graph_new();
 					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
 						graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
 						stack_push(v_return, curr_graph);
 					}
@@ -351,6 +430,16 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				case DXF_ARC:
 					curr_graph = graph_new();
 					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						
 						graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, 1);
 						stack_push(v_return, curr_graph);
 					}
@@ -363,12 +452,12 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_TEXT:
-					//pega as dimensoes da fonte
-					if(shx_font){ //verifica se existe a fonte
-						if(shx_font->next){ //o primeiro item da lista eh a descricao da fonte
-							if(shx_font->next->cmd_size > 1){ //verfica se a fonte eh valida
-								fnt_above = shx_font->next->cmds[0]; //dimensao acima da linha base
-								fnt_below = shx_font->next->cmds[1]; //dimensao abaixo da linha base
+					/* find the dimentions of SHX font */
+					if(shx_font){ /* if the font exists */
+						if(shx_font->next){ /* the font descriptor is stored in first iten of list */
+							if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
+								fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
+								fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
 								if((fnt_above + fnt_below) > 0){
 									fnt_size = fnt_above + fnt_below;
 								}
@@ -378,11 +467,21 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					curr_graph = shx_font_parse(shx_font, t_text);
 					
 					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						/* find the dimentions of text */
 						txt_size = t_size/fnt_size;
 						txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
 						txt_h = fabs(curr_graph->ext_max_y - curr_graph->ext_min_y);
 						
-						//determina a posicao de insercao do texto em funcao de seu alinhamento
+						/* find the insert point of text, in function of its aling */
 						if(t_alin_h < 3){
 							t_center_x = t_alin_h * (txt_w * txt_size/2);
 							t_base_x =  t_alin_h * (pt2_x - pt1_x)/2;
@@ -407,7 +506,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						t_pos_x = pt1_x + t_base_x - t_center_x;
 						t_pos_y = pt1_y + t_base_y - t_center_y;
 						
-						
+						/* apply the scales, offsets and rotation to graphs */
 						graph_modify(curr_graph, 0.0, 0.0, txt_size);
 						graph_modify(curr_graph, t_pos_x, t_pos_y, 1.0);
 						stack_push(v_return, curr_graph);
@@ -419,6 +518,66 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_ATTRIB:
+					printf("attrib\n");
+					/* find the dimentions of SHX font */
+					if(shx_font){ /* if the font exists */
+						if(shx_font->next){ /* the font descriptor is stored in first iten of list */
+							if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
+								fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
+								fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
+								if((fnt_above + fnt_below) > 0){
+									fnt_size = fnt_above + fnt_below;
+								}
+							}
+						}
+					}
+					curr_graph = shx_font_parse(shx_font, t_text);
+					
+					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						/* find the dimentions of text */
+						txt_size = t_size/fnt_size;
+						txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
+						txt_h = fabs(curr_graph->ext_max_y - curr_graph->ext_min_y);
+						
+						/* find the insert point of text, in function of its aling */
+						if(t_alin_h < 3){
+							t_center_x = t_alin_h * (txt_w * txt_size/2);
+							t_base_x =  t_alin_h * (pt2_x - pt1_x)/2;
+							t_base_y =  t_alin_h * (pt2_y - pt1_y)/2;
+						}
+						else{ 
+							if(t_alin_h == 4){
+								t_base_x = (pt2_x - pt1_x)/2;
+								t_base_y = (pt2_y - pt1_y)/2;
+							}
+							else{
+								t_scale_x = sqrt(pow((pt2_x - pt1_x), 2) + pow((pt2_y - pt1_y), 2))/(txt_w * txt_size);
+							}
+							//rot = atan2((pt2_y - pt1_y),(pt2_x - pt1_x)) * 180/M_PI;
+							
+							//printf("alinhamento=%d\n", t_alin_h);
+						}
+						if(t_alin_v >0){
+							t_center_y = (t_alin_v - 1) * (txt_size/2);
+						}
+						
+						t_pos_x = pt1_x + t_base_x - t_center_x;
+						t_pos_y = pt1_y + t_base_y - t_center_y;
+						
+						/* apply the scales, offsets and rotation to graphs */
+						graph_modify(curr_graph, 0.0, 0.0, txt_size);
+						graph_modify(curr_graph, t_pos_x, t_pos_y, 1.0);
+						stack_push(v_return, curr_graph);
+					}
 					goto reinit_vars;
 					
 				case DXF_VERTEX:
