@@ -97,6 +97,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				ent_type = DXF_POLYLINE;
 				poly = 1;
 				first = 0;
+				pline_flag = 0; /* reset flag */
 				pline_ent = current;
 			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
@@ -355,8 +356,41 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				if (pline_flag & 1){
 					closed = 1;
 				}
+				else {
+					closed = 0;
+				}
 			}
-			pline_flag = 0; /* reset flag */
+			
+			
+			/*reinit_vars: */
+				
+				ent_type = DXF_NONE;
+					
+				pt1_x = 0; pt1_y = 0; pt1_z = 0;
+				pt2_x = 0; pt2_y = 0; pt2_z = 0;
+				pt3_x = 0; pt3_y = 0; pt3_z = 0;
+				pt4_x = 0; pt4_y = 0; pt4_z = 0;
+				radius = 0; rot = 0;
+				tick = 0; elev = 0;
+				ang_start = 0; ang_end = 0; bulge =0;
+				t_size = 0; t_rot = 0;
+				
+				/* clear the strings */
+				handle[0] = 0;
+				l_type[0] = 0;
+				t_style[0] = 0;
+				layer[0] = 0;
+				comment[0] = 0;
+				t_text[0] =0;
+				name1[0] = 0;
+				name2[0] = 0;
+				
+				color = 256; paper= 0;
+				t_alin_v = 0; t_alin_h = 0;
+				
+				/*clear flags*/
+				pt1 = 0; pt2 = 0; pt3 = 0; pt4 = 0;
+			
 		}
 		
 		/* ============================================================= */
@@ -518,7 +552,6 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 					
 				case DXF_ATTRIB:
-					printf("attrib\n");
 					/* find the dimentions of SHX font */
 					if(shx_font){ /* if the font exists */
 						if(shx_font->next){ /* the font descriptor is stored in first iten of list */
@@ -535,6 +568,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					if (curr_graph){
 						/* change the graph line pattern */
+						
 						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
 						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
 							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
@@ -704,7 +738,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						ins_stack_pos--;
 						//prev = ins_stack[ins_stack_pos].ins_ent;
 						//printf("retorna %d\n", prev);
-						current = NULL;
+						current = prev->next;
 					}
 				}
 			}

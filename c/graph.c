@@ -275,7 +275,7 @@ void graph_arc_bulge(graph_obj * master,
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */
-			int x0, y0, x1, y1;
+			double x0, y0, x1, y1;
 			double min_x, min_y, max_x, max_y;
 			line_node *current = master->list->next;
 			
@@ -283,10 +283,10 @@ void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
 			/* apply changes to each point */
 			while(current){ /*sweep the list content */
 				/* apply the scale and offset */
-				x0 = (int) round((current->x0 + ofs_x) * scale);
-				y0 = (int) round((current->y0 + ofs_y) * scale);
-				x1 = (int) round((current->x1 + ofs_x) * scale);
-				y1 = (int) round((current->y1 + ofs_y) * scale);
+				x0 = (current->x0 + ofs_x) * scale;
+				y0 = (current->y0 + ofs_y) * scale;
+				x1 = (current->x1 + ofs_x) * scale;
+				y1 = (current->y1 + ofs_y) * scale;
 				
 				/* update the graph */
 				current->x0 = x0;
