@@ -54,6 +54,8 @@ void graph_arc_bulge(graph_obj * master,
 			double pt2_x, double pt2_y, 
 			double bulge);
 
-void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale);
+void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot);
+
+void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot);
 
 #endif

@@ -272,21 +272,31 @@ void graph_arc_bulge(graph_obj * master,
 	graph_arc(master, center_x, center_y, radius, ang_start, ang_end, sig);
 }
 
-void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
+void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */
 			double x0, y0, x1, y1;
+			double sine = 0, cosine = 1;
 			double min_x, min_y, max_x, max_y;
 			line_node *current = master->list->next;
-			
 			master->ext_ini = 0;
+			
+			/* rotation constants */
+			cosine = cos(rot*M_PI/180);
+			sine = sin(rot*M_PI/180);
+			
 			/* apply changes to each point */
 			while(current){ /*sweep the list content */
 				/* apply the scale and offset */
-				x0 = (current->x0 + ofs_x) * scale;
-				y0 = (current->y0 + ofs_y) * scale;
-				x1 = (current->x1 + ofs_x) * scale;
-				y1 = (current->y1 + ofs_y) * scale;
+				current->x0 = current->x0 * scale_x + ofs_x;
+				current->y0 = current->y0 * scale_y + ofs_y;
+				current->x1 = current->x1 * scale_x + ofs_x;
+				current->y1 = current->y1 * scale_y + ofs_y;
+				
+				x0 = cosine*(current->x0-ofs_x) - sine*(current->y0-ofs_y) + ofs_x;
+				y0 = sine*(current->x0-ofs_x) + cosine*(current->y0-ofs_y) + ofs_y;
+				x1 = cosine*(current->x1-ofs_x) - sine*(current->y1-ofs_y) + ofs_x;
+				y1 = sine*(current->x1-ofs_x) + cosine*(current->y1-ofs_y) + ofs_y;
 				
 				/* update the graph */
 				current->x0 = x0;
@@ -316,6 +326,15 @@ void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale){
 				
 				current = current->next; /* go to next */
 			}
+		}
+	}
+}
+
+void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			graph_modify(((graph_obj **)vec->data)[i], ofs_x, ofs_y, scale_x, scale_y, rot);
 		}
 	}
 }

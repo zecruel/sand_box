@@ -23,7 +23,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	struct ins_save{
 		dxf_node * ins_ent, *prev;
 		double ofs_x, ofs_y, ofs_z;
-		double rot, scale;
+		double rot, scale_x, scale_y, scale_z;
 	};
 	
 	struct ins_save ins_stack[10];
@@ -32,7 +32,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	struct ins_save ins_zero = {
 		.ins_ent = ent, .prev = NULL,
 		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
-		.rot = 0.0, .scale = 1.0
+		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0
 	};
 	
 	ins_stack[0] = ins_zero;
@@ -47,6 +47,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	double radius = 0, rot = 0, tick = 0, elev = 0;
 	double ang_start = 0, ang_end = 0, bulge = 0;
 	double t_size = 0, t_rot = 0;
+	double scale_x = 1.0, scale_y = 1.0, scale_z = 1.0;
 	
 	char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS], t_style[DXF_MAX_CHARS], layer[DXF_MAX_CHARS], comment[DXF_MAX_CHARS];
 	char t_text[DXF_MAX_CHARS], name1[DXF_MAX_CHARS], name2[DXF_MAX_CHARS];
@@ -168,51 +169,51 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					strcpy(layer, current->value.s_data);
 					break;
 				case 10:
-					pt1_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
+					pt1_x = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 11:
-					pt2_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
+					pt2_x = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 				case 12:
-					pt3_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
+					pt3_x = current->value.d_data;
 					pt3 = 1; /* set flag */
 					break;
 				case 13:
-					pt4_x = current->value.d_data + ins_stack[ins_stack_pos].ofs_x;
+					pt4_x = current->value.d_data;
 					pt4 = 1; /* set flag */
 					break;
 				case 20:
-					pt1_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
+					pt1_y = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 21:
-					pt2_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
+					pt2_y = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 				case 22:
-					pt3_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
+					pt3_y = current->value.d_data;
 					pt3 = 1; /* set flag */
 					break;
 				case 23:
-					pt4_y = current->value.d_data + ins_stack[ins_stack_pos].ofs_y;
+					pt4_y = current->value.d_data;
 					pt4 = 1; /* set flag */
 					break;
 				case 30:
-					pt1_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
+					pt1_z = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 31:
-					pt2_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
+					pt2_z = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 				case 32:
-					pt3_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
+					pt3_z = current->value.d_data;
 					pt3 = 1; /* set flag */
 					break;
 				case 33:
-					pt4_z = current->value.d_data + ins_stack[ins_stack_pos].ofs_z;
+					pt4_z = current->value.d_data;
 					pt4 = 1; /* set flag */
 					break;
 				case 38:
@@ -225,8 +226,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					radius = current->value.d_data;
 					t_size = current->value.d_data;
 					break;
+				case 41:
+					scale_x = current->value.d_data;
+					break;
 				case 42:
 					bulge = current->value.d_data;
+					scale_y = current->value.d_data;
+					break;
+				case 43:
+					scale_z = current->value.d_data;
 					break;
 				case 50:
 					ang_start = current->value.d_data;
@@ -280,6 +288,10 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				ins_stack[ins_stack_pos].ofs_x = pt1_x;
 				ins_stack[ins_stack_pos].ofs_y = pt1_y;
 				ins_stack[ins_stack_pos].ofs_z = pt1_z;
+				ins_stack[ins_stack_pos].scale_x = scale_x;
+				ins_stack[ins_stack_pos].scale_y = scale_y;
+				ins_stack[ins_stack_pos].scale_z = scale_z;
+				ins_stack[ins_stack_pos].rot = t_rot;
 				/* now, current is the block */
 				prev = blk;
 				current = blk->obj.content->next;
@@ -296,6 +308,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				tick = 0; elev = 0;
 				ang_start = 0; ang_end = 0; bulge =0;
 				t_size = 0; t_rot = 0;
+				scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
 				
 				/* clear the strings */
 				handle[0] = 0;
@@ -374,6 +387,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				tick = 0; elev = 0;
 				ang_start = 0; ang_end = 0; bulge =0;
 				t_size = 0; t_rot = 0;
+				scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
 				
 				/* clear the strings */
 				handle[0] = 0;
@@ -435,6 +449,14 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						/* add the line */
 						line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
 						
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						/* store the graph in the return vector */
 						stack_push(v_return, curr_graph);
 						//printf("ADD %d, %d\n", ent_type, curr_graph);
@@ -457,6 +479,14 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						curr_graph->color = dxf_colors[color];
 						
 						graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
@@ -475,6 +505,14 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						
 						
 						graph_arc(curr_graph, pt1_x, pt1_y, radius, ang_start, ang_end, 1);
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
@@ -541,8 +579,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						t_pos_y = pt1_y + t_base_y - t_center_y;
 						
 						/* apply the scales, offsets and rotation to graphs */
-						graph_modify(curr_graph, 0.0, 0.0, txt_size);
-						graph_modify(curr_graph, t_pos_x, t_pos_y, 1.0);
+						graph_modify(curr_graph, t_pos_x, t_pos_y, txt_size, txt_size, 0);
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						stack_push(v_return, curr_graph);
 					}
 					
@@ -608,8 +653,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						t_pos_y = pt1_y + t_base_y - t_center_y;
 						
 						/* apply the scales, offsets and rotation to graphs */
-						graph_modify(curr_graph, 0.0, 0.0, txt_size);
-						graph_modify(curr_graph, t_pos_x, t_pos_y, 1.0);
+						graph_modify(curr_graph, t_pos_x, t_pos_y, txt_size, txt_size, 0);
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						stack_push(v_return, curr_graph);
 					}
 					goto reinit_vars;
@@ -664,6 +716,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				tick = 0; elev = 0;
 				ang_start = 0; ang_end = 0; bulge =0;
 				t_size = 0; t_rot = 0;
+				scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
 				
 				/* clear the strings */
 				handle[0] = 0;
@@ -712,6 +765,14 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					
 					/* store the graph */
 					if (curr_graph){
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
 						stack_push(v_return, curr_graph);
 					}
 					
