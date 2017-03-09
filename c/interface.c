@@ -14,10 +14,154 @@
 
 #include "tinyfiledialogs.h"
 
+struct Widget{
+	//struct Widget * next;
+	unsigned int x, y, w, h;
+	graph_obj * graph;
+	bmp_img * img;
+	char action[255];
+};
+typedef struct Widget widget;
+
+struct Toolbox{
+	unsigned int x, y, w, h, size;
+	widget ** list;
+	bmp_img * img;
+};
+typedef struct Toolbox toolbox;
+
+widget * wdg_new(graph_obj * graph, int x, int y, int w, int h){
+	/* create new widget */
+	
+	/*colors */
+	bmp_color bkg = {.r = 0, .g = 0, .b =255, .a = 255};
+	bmp_color frg = {.r = 255, .g = 255, .b =255, .a = 255};
+	double ofs_x, ofs_y, zoom, zoom_x, zoom_y;
+	
+	
+	/* alloc the structure */
+	widget * wdg = (widget *) malloc (sizeof (widget));
+	if (wdg){
+		/* initialize */
+		wdg->graph = graph;
+		if (wdg->graph){
+			wdg->graph->color = frg;
+		}
+		wdg->x = x;
+		wdg->y = y;
+		wdg->w = w;
+		wdg->h = h;
+		//wdg->next = NULL;
+		
+		wdg->img = bmp_new(w, h, bkg, frg);
+		if (wdg->img){
+			bmp_fill(wdg->img, wdg->img->bkg); /* clear bitmap */
+			if (wdg->graph){
+				/* fit the graph on bmp img */
+				zoom_x = (wdg->graph->ext_max_x - wdg->graph->ext_min_x)/(wdg->img->width*0.7);
+				zoom_y = (wdg->graph->ext_max_y - wdg->graph->ext_min_y)/(wdg->img->height*0.7);
+				zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+				if (zoom <= 0){ zoom = 1;}
+				else{ zoom = 1/(1.1 * zoom);}
+				
+				ofs_x = wdg->graph->ext_min_x - (fabs((wdg->graph->ext_max_x - wdg->graph->ext_min_x)*zoom - wdg->img->width)/2)/zoom;
+				ofs_y = wdg->graph->ext_min_y - (fabs((wdg->graph->ext_max_y - wdg->graph->ext_min_y)*zoom - wdg->img->height)/2)/zoom;
+				graph_draw(wdg->graph, wdg->img, ofs_x, ofs_y, zoom);
+			}
+		}
+		
+	}
+	return wdg;
+}
+
+void wdg_free(widget * wdg){
+	if (wdg){
+		graph_free(wdg->graph);
+		bmp_free(wdg->img);
+		free(wdg);
+	}
+};
+
+widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h){
+	graph_obj *graph = shx_font_parse(shx_font, txt);
+	widget * wdg = wdg_new(graph, x, y, w, h);
+	return wdg;
+}
+
+toolbox * tbx_new(int x, int y, int w, int h){
+	/* create new toolbox */
+	
+	/*colors */
+	bmp_color bkg = {.r = 255, .g = 255, .b =255, .a = 255};
+	bmp_color frg = {.r = 0, .g = 0, .b =0, .a = 255};
+	
+	/* alloc the structure */
+	toolbox * tbx = (toolbox *) malloc (sizeof (toolbox));
+	if (tbx){
+		/* initialize */
+		tbx->x = x;
+		tbx->y = y;
+		tbx->w = w;
+		tbx->h = h;
+		tbx->size = 0;
+		tbx->list = NULL;
+		tbx->img = bmp_new(w, h, bkg, frg);
+		if (tbx->img){
+			bmp_fill(tbx->img, tbx->img->bkg); /* clear bitmap */
+		}
+	}
+}
+
+void tbx_free(toolbox * tbx){
+	if(tbx){
+		int i;
+		
+		bmp_free(tbx->img);
+		for (i = 0; i < tbx->size; i++){
+			wdg_free(tbx->list[i]);
+		}
+		free (tbx->list);
+		free(tbx);
+	}
+}
+
+void tbx_add(toolbox * tbx, widget * wdg){
+	int size;
+	widget **data;
+	
+	if ((tbx != NULL) && (wdg != NULL)){ /* check if toolbox and widget exists */
+		size = tbx->size + 1;
+		/* try to allocate more memory */
+		data = realloc(tbx->list, size * sizeof(widget *));
+		if (data){ /*success on memory allocation */
+			/* change the tbx */
+			tbx->list = data; 
+			tbx->size = size;
+			/* store new widget at end of list */
+			data[size-1] = wdg;
+			
+			/* place the widget image in the toolbox image */
+			bmp_copy(wdg->img, tbx->img, wdg->x, wdg->y);
+		}
+		/* if memory allocation fails, the tbx is unchanged */
+	}
+}
+
 int main(int argc, char** argv){
 	unsigned int width = 640;
 	unsigned int height = 480;
 	unsigned int quit = 0;
+	SDL_Rect canvas_rect;
+	canvas_rect.x = 20;
+	canvas_rect.y = 0;
+	canvas_rect.w = width - 20;
+	canvas_rect.h = height - 20;
+	
+	SDL_Rect status_rect;
+	status_rect.x = 0;
+	status_rect.y = height-20;
+	status_rect.w = width;
+	status_rect.h = 20;
 	
 	
 	
@@ -26,17 +170,19 @@ int main(int argc, char** argv){
 	
 	shape *shx_font = shx_font_open("txt.shx");
 	graph_obj *t_open = shx_font_parse(shx_font, "Open");
+	//widget *w_open = wdg_new_txt("Abrir", shx_font, 0, 0, 50, 10);
 	graph_modify(t_open, 5, 5, 2, 2, 0);
+	
+	/*
+	SDL_Rect r_w_open;
+	r_w_open.x = 100; //w_open->x;
+	r_w_open.y = w_open->y;
+	r_w_open.w = w_open->w;
+	r_w_open.h = w_open->h;*/
 	
 	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
 	//tinyfd_messageBox("DXF Viewer", "click OK to continue", "ok", "info", 0);
-	char *url = (char *) tinyfd_openFileDialog(
-		"Open a Drawing",
-		"",
-		2,
-		lFilterPatterns,
-		NULL,
-		0);
+	char *url = NULL;
 	
 	
 	//char url[]="teste.dxf";
@@ -60,7 +206,8 @@ int main(int argc, char** argv){
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
-	bmp_img * img = bmp_new(width, height, grey, red);
+	bmp_img * img = bmp_new(canvas_rect.w, canvas_rect.h, grey, red);
+	bmp_img * status_img = bmp_new(status_rect.w, status_rect.h, white, black);
 	
 	zoom_x = (max_x - min_x)/img->width;
 	zoom_y = (max_y - min_y)/img->height;
@@ -72,7 +219,10 @@ int main(int argc, char** argv){
 	ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
 	
 	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-	graph_draw(t_open, img, 0, 0, 1);
+	
+	bmp_fill(status_img, status_img->bkg); /* clear bitmap */
+	graph_draw(t_open, status_img, 0, 0, 1);
+	//bmp_copy(w_open->img, status_img, 300, 5);
 	//bmp_save("teste.ppm", img);
 	
 	/*============================*/
@@ -115,12 +265,19 @@ int main(int argc, char** argv){
 	}
 	*/
 	
-	SDL_Texture * texture = SDL_CreateTexture(
+	SDL_Texture * canvas = SDL_CreateTexture(
 		renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STATIC, 
-		width, /* width */
-		height); /* height */
+		canvas_rect.w, /* width */
+		canvas_rect.h); /* height */
+		
+	SDL_Texture * status = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STATIC, 
+		status_rect.w, /* width */
+		status_rect.h); /* height */
 	
 	while (quit == 0){
 		/*=======================*/
@@ -166,8 +323,9 @@ int main(int argc, char** argv){
 								ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
 								ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
 								
+								bmp_fill(img, img->bkg); /* clear bitmap */
 								dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-								graph_draw(t_open, img, 0, 0, 1);
+								//graph_draw(t_open, img, 0, 0, 1);
 							}
 						}
 					}
@@ -192,18 +350,22 @@ int main(int argc, char** argv){
 					
 					bmp_fill(img, img->bkg); /* clear bitmap */
 					dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
-					graph_draw(t_open, img, 0, 0, 1);
+					//graph_draw(t_open, img, 0, 0, 1);
 					break;
 			}
-			SDL_UpdateTexture(texture, NULL, img->buf, width * 4);
+			SDL_UpdateTexture(canvas, NULL, img->buf, canvas_rect.w * 4);
+			SDL_UpdateTexture(status, NULL, status_img->buf, status_rect.w * 4);
+			//SDL_UpdateTexture(status, &r_w_open, w_open->img->buf, r_w_open.w * 4);
 			SDL_RenderClear(renderer);
-			SDL_RenderCopy(renderer, texture, NULL, NULL);
+			SDL_RenderCopy(renderer, canvas, NULL, &canvas_rect);
+			SDL_RenderCopy(renderer, status, NULL, &status_rect);
 			SDL_RenderPresent(renderer);
 		}
 	}
 	
 	/* safe quit */
-	SDL_DestroyTexture(texture);
+	SDL_DestroyTexture(canvas);
+	SDL_DestroyTexture(status);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -213,6 +375,7 @@ int main(int argc, char** argv){
 	bmp_free(img);
 	shx_font_free(shx_font);
 	graph_free(t_open);
+	//wdg_free(w_open);
 	
 	return 0;
 }
