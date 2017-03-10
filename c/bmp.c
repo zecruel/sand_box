@@ -320,3 +320,42 @@ void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 		bmp_line_raw(img, (int) x0, (int) y0, (int) x1, (int) y1);
 	}
 }
+
+void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
+	
+	unsigned int i, j, ofs_src, ofs_dst, src_r, src_g, src_b, src_a, dst_r, dst_g, dst_b, dst_a;
+	int ofs_x, ofs_y;
+	
+	if((src != NULL) && (dst != NULL)){
+		/* get the order of color components */
+		src_r= src->r_i;
+		src_g = src->g_i;
+		src_b = src->b_i;
+		src_a = src->a_i;
+		dst_r= dst->r_i;
+		dst_g = dst->g_i;
+		dst_b = dst->b_i;
+		dst_a = dst->a_i;
+		
+		/* sweep the source image */
+		for (i=0; i < src->width; i++){
+			for (j=0; j < src->height; j++){
+				/* check if point is in destination bounds */
+				ofs_x = i + x;
+				ofs_y = j + y;
+				if((ofs_x >= 0) && (ofs_x < dst->width) && 
+					(ofs_y >= 0) && (ofs_y < dst->height)){
+					/* find the position on destination buffer */
+					/* (y = dst->height - y) emulate the cartesian coordinates */
+					ofs_dst = 4 * (((dst->height - 1 - ofs_y) * dst->width) + ofs_x);
+					ofs_src = 4 * (((src->height - 1 - j) * src->width) + i);
+					/* store each component in memory buffer */
+					dst->buf[ofs_dst + dst_r] = src->buf[ofs_src + src_r];
+					dst->buf[ofs_dst + dst_g] = src->buf[ofs_src + src_g];
+					dst->buf[ofs_dst + dst_b] = src->buf[ofs_src + src_b];
+					dst->buf[ofs_dst + dst_a] = src->buf[ofs_src + src_a];
+				}
+			}
+		}
+	}
+}

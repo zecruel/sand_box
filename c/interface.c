@@ -30,7 +30,7 @@ struct Toolbox{
 };
 typedef struct Toolbox toolbox;
 
-widget * wdg_new(graph_obj * graph, int x, int y, int w, int h){
+widget * wdg_new(graph_obj * graph, int x, int y, int w, int h, char *action){
 	/* create new widget */
 	
 	/*colors */
@@ -52,6 +52,7 @@ widget * wdg_new(graph_obj * graph, int x, int y, int w, int h){
 		wdg->w = w;
 		wdg->h = h;
 		//wdg->next = NULL;
+		strcpy(wdg->action, action);
 		
 		wdg->img = bmp_new(w, h, bkg, frg);
 		if (wdg->img){
@@ -82,9 +83,9 @@ void wdg_free(widget * wdg){
 	}
 };
 
-widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h){
+widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h, char *action){
 	graph_obj *graph = shx_font_parse(shx_font, txt);
-	widget * wdg = wdg_new(graph, x, y, w, h);
+	widget * wdg = wdg_new(graph, x, y, w, h, action);
 	return wdg;
 }
 
@@ -176,8 +177,8 @@ widget * tbx_event(toolbox * tbx, int x, int y){
 }
 
 int main(int argc, char** argv){
-	unsigned int width = 640;
-	unsigned int height = 480;
+	unsigned int width = 1024;
+	unsigned int height = 720;
 	unsigned int quit = 0;
 	SDL_Rect canvas_rect;
 	canvas_rect.x = 20;
@@ -202,10 +203,12 @@ int main(int argc, char** argv){
 	//graph_modify(t_open, 5, 5, 2, 2, 0);
 	
 	widget *wdg;
-	widget *w_open = wdg_new_txt("Abrir", shx_font, 0, 0, 50, 10);
+	widget *w_open = wdg_new_txt("Open", shx_font, 0, 0, 50, 10, "open");
+	widget *w_quit = wdg_new_txt("Quit", shx_font, 100, 0, 50, 10, "quit");
 	toolbox *main_tbx = tbx_new(0, 0, status_rect.w, status_rect.h);
 	//bmp_save("teste.ppm", main_tbx->img);
 	tbx_add(main_tbx, w_open);
+	tbx_add(main_tbx, w_quit);
 	
 	/*
 	SDL_Rect r_w_open;
@@ -315,7 +318,7 @@ int main(int argc, char** argv){
 	
 	while (quit == 0){
 		/*=======================*/
-
+		wdg = NULL;
 		if(SDL_PollEvent(&event)){
 			switch (event.type){
 				case SDL_QUIT:
@@ -334,38 +337,7 @@ int main(int argc, char** argv){
 						mouse_y = height - mouse_y;
 						
 						wdg = tbx_event(main_tbx, mouse_x, mouse_y);
-						printf ("%d\n", wdg);
 						
-						//if (rect_find_pos(mouse_x, mouse_y, 
-							//t_open->ext_min_x, t_open->ext_min_y, 
-							//t_open->ext_max_x, t_open->ext_max_y) == INSIDE){
-						if(quit == 1){	
-							url = (char *) tinyfd_openFileDialog(
-							"Open a Drawing",
-							"",
-							2,
-							lFilterPatterns,
-							NULL,
-							0);
-							if (url){
-								dxf_ent_clear(drawing.main_struct);
-								drawing = dxf_open(url);
-								dxf_ents_parse(drawing);
-								dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-								zoom_x = (max_x - min_x)/img->width;
-								zoom_y = (max_y - min_y)/img->height;
-								zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-								if (zoom <= 0){ zoom =1;}
-								else{ zoom = 1/(1.1 * zoom);}
-								
-								ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-								ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-								
-								bmp_fill(img, img->bkg); /* clear bitmap */
-								dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-								//graph_draw(t_open, img, 0, 0, 1);
-							}
-						}
 					}
 					break;
 				case SDL_MOUSEMOTION:
@@ -398,6 +370,47 @@ int main(int argc, char** argv){
 			SDL_RenderCopy(renderer, canvas, NULL, &canvas_rect);
 			SDL_RenderCopy(renderer, status, NULL, &status_rect);
 			SDL_RenderPresent(renderer);
+		}
+		
+		if (wdg) {
+			
+			if(strcmp(wdg->action, "open") == 0) {	
+				url = (char *) tinyfd_openFileDialog(
+				"Open a Drawing",
+				"",
+				2,
+				lFilterPatterns,
+				NULL,
+				0);
+				if (url){
+					dxf_ent_clear(drawing.main_struct);
+					drawing = dxf_open(url);
+					dxf_ents_parse(drawing);
+					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+					zoom_x = (max_x - min_x)/img->width;
+					zoom_y = (max_y - min_y)/img->height;
+					zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+					if (zoom <= 0){ zoom =1;}
+					else{ zoom = 1/(1.1 * zoom);}
+					
+					ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
+					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
+					
+					bmp_fill(img, img->bkg); /* clear bitmap */
+					dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
+					
+					SDL_UpdateTexture(canvas, NULL, img->buf, canvas_rect.w * 4);
+					SDL_UpdateTexture(status, NULL, main_tbx->img->buf, main_tbx->img->width * 4);
+					SDL_RenderClear(renderer);
+					SDL_RenderCopy(renderer, canvas, NULL, &canvas_rect);
+					SDL_RenderCopy(renderer, status, NULL, &status_rect);
+					SDL_RenderPresent(renderer);
+				}
+			}
+			else if (strcmp(wdg->action, "quit") == 0){
+				quit = 1;
+				break;
+			}
 		}
 	}
 	

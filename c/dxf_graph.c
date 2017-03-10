@@ -285,13 +285,13 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				ins_stack_pos++;
 				ins_stack[ins_stack_pos].ins_ent = blk;
 				ins_stack[ins_stack_pos].prev = prev;
-				ins_stack[ins_stack_pos].ofs_x = pt1_x;
-				ins_stack[ins_stack_pos].ofs_y = pt1_y;
-				ins_stack[ins_stack_pos].ofs_z = pt1_z;
-				ins_stack[ins_stack_pos].scale_x = scale_x;
-				ins_stack[ins_stack_pos].scale_y = scale_y;
-				ins_stack[ins_stack_pos].scale_z = scale_z;
-				ins_stack[ins_stack_pos].rot = t_rot;
+				ins_stack[ins_stack_pos].ofs_x = pt1_x + ins_stack[ins_stack_pos - 1].ofs_x;
+				ins_stack[ins_stack_pos].ofs_y = pt1_y + ins_stack[ins_stack_pos - 1].ofs_y;
+				ins_stack[ins_stack_pos].ofs_z = pt1_z + ins_stack[ins_stack_pos - 1].ofs_z;
+				ins_stack[ins_stack_pos].scale_x = scale_x * ins_stack[ins_stack_pos - 1].scale_x;
+				ins_stack[ins_stack_pos].scale_y = scale_y * ins_stack[ins_stack_pos - 1].scale_y;
+				ins_stack[ins_stack_pos].scale_z = scale_z * ins_stack[ins_stack_pos - 1].scale_z;
+				ins_stack[ins_stack_pos].rot = t_rot + ins_stack[ins_stack_pos - 1].rot;
 				/* now, current is the block */
 				prev = blk;
 				current = blk->obj.content->next;
@@ -579,7 +579,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 						t_pos_y = pt1_y + t_base_y - t_center_y;
 						
 						/* apply the scales, offsets and rotation to graphs */
-						graph_modify(curr_graph, t_pos_x, t_pos_y, txt_size, txt_size, 0);
+						graph_modify(curr_graph, t_pos_x, t_pos_y, txt_size, txt_size, t_rot);
 						if (ins_stack_pos > 0){
 							graph_modify(curr_graph, 
 								ins_stack[ins_stack_pos].ofs_x,
