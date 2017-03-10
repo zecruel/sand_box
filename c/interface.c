@@ -92,7 +92,7 @@ toolbox * tbx_new(int x, int y, int w, int h){
 	/* create new toolbox */
 	
 	/*colors */
-	bmp_color bkg = {.r = 255, .g = 255, .b =255, .a = 255};
+	bmp_color bkg = {.r = 250, .g = 250, .b =250, .a = 255};
 	bmp_color frg = {.r = 0, .g = 0, .b =0, .a = 255};
 	
 	/* alloc the structure */
@@ -110,6 +110,7 @@ toolbox * tbx_new(int x, int y, int w, int h){
 			bmp_fill(tbx->img, tbx->img->bkg); /* clear bitmap */
 		}
 	}
+	return tbx;
 }
 
 void tbx_free(toolbox * tbx){
@@ -147,6 +148,33 @@ void tbx_add(toolbox * tbx, widget * wdg){
 	}
 }
 
+widget * tbx_event(toolbox * tbx, int x, int y){
+	if (tbx){ /*check if toolbox exists */
+		/* first, check if the event is inside of toolbox */
+		if (rect_find_pos(x, y, tbx->x, tbx->y,
+		tbx->x + tbx->w, tbx->y + tbx->h) == INSIDE){
+			/* then find the widget that was clicked */
+			int i;
+			widget * wdg;
+			/* convert the global coordninates to local in toolbox */
+			x -= tbx->x;
+			y -= tbx->y;
+			/* sweep the toolbox list of widgets */
+			for (i = 0; i < tbx->size; i++){
+				wdg = tbx->list[i];
+				if (wdg){ /* check if wdg exists */
+					if (rect_find_pos(x, y, wdg->x, wdg->y,
+					wdg->x + wdg->w, wdg->y + wdg->h) == INSIDE){
+						/* success in search */
+						return wdg;
+					}
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
 int main(int argc, char** argv){
 	unsigned int width = 640;
 	unsigned int height = 480;
@@ -169,9 +197,15 @@ int main(int argc, char** argv){
 	/*============================*/
 	
 	shape *shx_font = shx_font_open("txt.shx");
-	graph_obj *t_open = shx_font_parse(shx_font, "Open");
+	//graph_obj *t_open = shx_font_parse(shx_font, "Open");
 	//widget *w_open = wdg_new_txt("Abrir", shx_font, 0, 0, 50, 10);
-	graph_modify(t_open, 5, 5, 2, 2, 0);
+	//graph_modify(t_open, 5, 5, 2, 2, 0);
+	
+	widget *wdg;
+	widget *w_open = wdg_new_txt("Abrir", shx_font, 0, 0, 50, 10);
+	toolbox *main_tbx = tbx_new(0, 0, status_rect.w, status_rect.h);
+	//bmp_save("teste.ppm", main_tbx->img);
+	tbx_add(main_tbx, w_open);
 	
 	/*
 	SDL_Rect r_w_open;
@@ -207,7 +241,7 @@ int main(int argc, char** argv){
 	int dash [] = {8, -8};
 	
 	bmp_img * img = bmp_new(canvas_rect.w, canvas_rect.h, grey, red);
-	bmp_img * status_img = bmp_new(status_rect.w, status_rect.h, white, black);
+	//bmp_img * status_img = bmp_new(status_rect.w, status_rect.h, white, black);
 	
 	zoom_x = (max_x - min_x)/img->width;
 	zoom_y = (max_y - min_y)/img->height;
@@ -220,8 +254,8 @@ int main(int argc, char** argv){
 	
 	dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
 	
-	bmp_fill(status_img, status_img->bkg); /* clear bitmap */
-	graph_draw(t_open, status_img, 0, 0, 1);
+	//bmp_fill(status_img, status_img->bkg); /* clear bitmap */
+	//graph_draw(t_open, status_img, 0, 0, 1);
 	//bmp_copy(w_open->img, status_img, 300, 5);
 	//bmp_save("teste.ppm", img);
 	
@@ -298,10 +332,14 @@ int main(int argc, char** argv){
 						//leftMouseButtonDown = true;
 						SDL_GetMouseState(&mouse_x, &mouse_y);
 						mouse_y = height - mouse_y;
-						if (rect_find_pos(mouse_x, mouse_y, 
-							t_open->ext_min_x, t_open->ext_min_y, 
-							t_open->ext_max_x, t_open->ext_max_y) == INSIDE){
-							
+						
+						wdg = tbx_event(main_tbx, mouse_x, mouse_y);
+						printf ("%d\n", wdg);
+						
+						//if (rect_find_pos(mouse_x, mouse_y, 
+							//t_open->ext_min_x, t_open->ext_min_y, 
+							//t_open->ext_max_x, t_open->ext_max_y) == INSIDE){
+						if(quit == 1){	
 							url = (char *) tinyfd_openFileDialog(
 							"Open a Drawing",
 							"",
@@ -354,7 +392,7 @@ int main(int argc, char** argv){
 					break;
 			}
 			SDL_UpdateTexture(canvas, NULL, img->buf, canvas_rect.w * 4);
-			SDL_UpdateTexture(status, NULL, status_img->buf, status_rect.w * 4);
+			SDL_UpdateTexture(status, NULL, main_tbx->img->buf, main_tbx->img->width * 4);
 			//SDL_UpdateTexture(status, &r_w_open, w_open->img->buf, r_w_open.w * 4);
 			SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, NULL, &canvas_rect);
@@ -374,7 +412,8 @@ int main(int argc, char** argv){
 	dxf_ent_clear(drawing.main_struct);
 	bmp_free(img);
 	shx_font_free(shx_font);
-	graph_free(t_open);
+	tbx_free(main_tbx);
+	//graph_free(t_open);
 	//wdg_free(w_open);
 	
 	return 0;
