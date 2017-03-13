@@ -272,6 +272,49 @@ void graph_arc_bulge(graph_obj * master,
 	graph_arc(master, center_x, center_y, radius, ang_start, ang_end, sig);
 }
 
+void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, double p2_y, double minor_ax, double ang_start, double ang_end){
+	if (master){
+		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		double ang, major_ax;
+		int steps, i;
+		double x0, y0, x1, y1;
+		
+		//ang_start *= M_PI/180;
+		//ang_end *= M_PI/180;
+		
+		major_ax = sqrt(pow(p1_x - p2_x, 2) + pow(p1_y - p2_y, 2)) ;
+		minor_ax *= major_ax;
+		
+		ang = (ang_end - ang_start); //angulo do arco
+		if (ang <= 0){ ang = ang + 2*M_PI;}
+		
+		//descobre quantos passos para o laço a seguir
+		steps = (int) floor(fabs(ang*n/(2*M_PI))); //numero de vertices do arco
+		
+		x0 = p1_x + major_ax * cos(ang_start);
+		y0 = p1_y + minor_ax * sin(ang_start);
+		
+		//printf("Arco, stp = %d, r = %0.2f, ang = %0.2f\n pts = )", steps, radius, ang);
+		
+		//já começa do segundo vértice
+		for (i = 1; i < steps; i++){
+			x1 = p1_x + major_ax * cos(2 * M_PI * i / n + ang_start);
+			y1 = p1_y + minor_ax * sin(2 * M_PI * i / n + ang_start);
+			
+			
+			line_add(master, x0, y0, x1, y1);
+			//printf("(%0.2f,%0.2f),", x1, y1);
+			x0=x1;
+			y0=y1;
+		}
+		// o ultimo vertice do arco eh o ponto final, nao calculado no laço
+		x1 = p1_y + minor_ax * cos(ang_end);
+		y1 = p1_y + minor_ax * sin(ang_end);
+		line_add(master, x0, y0, x1, y1);
+		//printf("(%0.2f,%0.2f)\n", x1, y1);
+	}
+}
+
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */

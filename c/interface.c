@@ -36,7 +36,7 @@ widget * wdg_new(graph_obj * graph, int x, int y, int w, int h, char *action){
 	/*colors */
 	bmp_color bkg = {.r = 0, .g = 0, .b =255, .a = 255};
 	bmp_color frg = {.r = 255, .g = 255, .b =255, .a = 255};
-	double ofs_x, ofs_y, zoom, zoom_x, zoom_y;
+	//double ofs_x, ofs_y, zoom, zoom_x, zoom_y;
 	
 	
 	/* alloc the structure */
@@ -59,6 +59,7 @@ widget * wdg_new(graph_obj * graph, int x, int y, int w, int h, char *action){
 			bmp_fill(wdg->img, wdg->img->bkg); /* clear bitmap */
 			if (wdg->graph){
 				/* fit the graph on bmp img */
+				/*
 				zoom_x = (wdg->graph->ext_max_x - wdg->graph->ext_min_x)/(wdg->img->width*0.7);
 				zoom_y = (wdg->graph->ext_max_y - wdg->graph->ext_min_y)/(wdg->img->height*0.7);
 				zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
@@ -67,7 +68,8 @@ widget * wdg_new(graph_obj * graph, int x, int y, int w, int h, char *action){
 				
 				ofs_x = wdg->graph->ext_min_x - (fabs((wdg->graph->ext_max_x - wdg->graph->ext_min_x)*zoom - wdg->img->width)/2)/zoom;
 				ofs_y = wdg->graph->ext_min_y - (fabs((wdg->graph->ext_max_y - wdg->graph->ext_min_y)*zoom - wdg->img->height)/2)/zoom;
-				graph_draw(wdg->graph, wdg->img, ofs_x, ofs_y, zoom);
+				graph_draw(wdg->graph, wdg->img, ofs_x, ofs_y, zoom);*/
+				graph_draw(wdg->graph, wdg->img, 0, 0, 1);
 			}
 		}
 		
@@ -83,8 +85,42 @@ void wdg_free(widget * wdg){
 	}
 };
 
-widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h, char *action){
+widget * wdg_new_txt2(char * txt, shape *shx_font, int x, int y, int w, int h, char *action){
 	graph_obj *graph = shx_font_parse(shx_font, txt);
+	widget * wdg = wdg_new(graph, x, y, w, h, action);
+	return wdg;
+}
+
+widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h, char *action){
+	double fnt_size, fnt_above, fnt_below, txt_size;
+	double txt_w, txt_h, pos_x, pos_y;
+	
+	/* find the dimentions of SHX font */
+	if(shx_font){ /* if the font exists */
+		if(shx_font->next){ /* the font descriptor is stored in first iten of list */
+			if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
+				fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
+				fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
+				if((fnt_above + fnt_below) > 0){
+					fnt_size = fnt_above + fnt_below;
+				}
+			}
+		}
+	}
+	graph_obj *graph = shx_font_parse(shx_font, txt);
+	
+	if (graph){
+		/* find the dimentions of text */
+		txt_size = (double)h * 0.8/fnt_size;
+		txt_w = fabs(graph->ext_max_x - graph->ext_min_x);
+		txt_h = fabs(graph->ext_max_y - graph->ext_min_y);
+		
+		pos_x = (double)w/2 - (txt_w * txt_size/2);
+		pos_y = (double)h * 0.1;
+
+		graph_modify(graph, pos_x, pos_y, txt_size, txt_size, 0);
+	}
+	
 	widget * wdg = wdg_new(graph, x, y, w, h, action);
 	return wdg;
 }
@@ -203,12 +239,14 @@ int main(int argc, char** argv){
 	//graph_modify(t_open, 5, 5, 2, 2, 0);
 	
 	widget *wdg;
-	widget *w_open = wdg_new_txt("Open", shx_font, 0, 0, 50, 10, "open");
-	widget *w_quit = wdg_new_txt("Quit", shx_font, 100, 0, 50, 10, "quit");
+	widget *w_open = wdg_new_txt("Open", shx_font, 2, 2, 50, 10, "open");
+	widget *w_quit = wdg_new_txt("Quit", shx_font, 200, 2, 50, 10, "quit");
+	widget *w_save = wdg_new_txt("Save", shx_font, 100, 2, 50, 10, "save");
 	toolbox *main_tbx = tbx_new(0, 0, status_rect.w, status_rect.h);
 	//bmp_save("teste.ppm", main_tbx->img);
 	tbx_add(main_tbx, w_open);
 	tbx_add(main_tbx, w_quit);
+	tbx_add(main_tbx, w_save);
 	
 	/*
 	SDL_Rect r_w_open;
@@ -410,6 +448,17 @@ int main(int argc, char** argv){
 			else if (strcmp(wdg->action, "quit") == 0){
 				quit = 1;
 				break;
+			}
+			else if(strcmp(wdg->action, "save") == 0) {	
+				url = (char *) tinyfd_saveFileDialog(
+				"Save Drawing",
+				"save.txt",
+				2,
+				lFilterPatterns,
+				NULL);
+				if ((url != NULL) && (drawing.main_struct != NULL)){
+					dxf_ent_print_f (drawing.main_struct, url);
+				}
 			}
 		}
 	}

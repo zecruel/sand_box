@@ -136,6 +136,8 @@ void dxf_ent_clear (dxf_node *ent);
 
 void dxf_ent_print (dxf_node *ent, int indent);
 
+void dxf_ent_print_f (dxf_node *ent, char *path);
+
 dxf_node * dxf_obj_new (char *name);
 
 dxf_node * dxf_attr_new (int group, int type, void *value);

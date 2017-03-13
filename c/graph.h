@@ -53,6 +53,8 @@ void graph_arc_bulge(graph_obj * master,
 			double pt1_x, double pt1_y,
 			double pt2_x, double pt2_y, 
 			double bulge);
+			
+void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, double p2_y, double minor_ax, double ang_start, double ang_end);
 
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot);
 

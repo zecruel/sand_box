@@ -299,6 +299,77 @@ void dxf_ent_print2 (dxf_node *ent){ /* print the entity structure */
 	}
 }
 
+void dxf_ent_print_f (dxf_node *ent, char *path){ /* print the entity structure on file*/
+	/* this function is non recursive */
+	int i;
+	int indent = 0;
+	dxf_node *current, *prev;
+	
+	FILE *file;
+	file = fopen(path, "w"); /* open the file */
+	
+	current = ent;
+	while ((current != NULL) && (file != NULL)){
+		prev = current;
+		if (current->type == DXF_ENT){ /* DXF entity */
+			if (current->obj.name){
+				for (i=0; i<indent; i++){ /* print the indentation spaces */
+					fprintf(file, "    ");
+				}
+				fprintf(file, current->obj.name);  /* print the string of entity's name */
+				fprintf(file, "\n");
+			}
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				indent++;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			for (i=0; i<indent; i++){ /* print the indentation spaces */
+				fprintf(file, "    ");
+			}
+			fprintf(file, "%d = ", current->value.group); /* print the DFX group */
+			/* print the value of atrribute, acording its type */
+			switch (current->value.t_data) {
+				case DXF_STR:
+					if(current->value.s_data){
+						fprintf(file, current->value.s_data);
+					}
+					break;
+				case DXF_FLOAT:
+					fprintf(file, "%f", current->value.d_data);
+					break;
+				case DXF_INT:
+					fprintf(file, "%d", current->value.i_data);
+			}
+			fprintf(file, "\n");
+			current = current->next; /* go to the next in the list */
+		}
+		while (current == NULL){
+			if (prev == ent){
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){
+				current = prev->next;
+				indent --;
+				if (prev == ent){
+					current = NULL;
+					fprintf(file, "fim loop ");
+					break;
+				}
+			}
+			else{
+				current = NULL;
+				break;
+			}
+		}
+	}
+	fclose(file);
+}
+
 dxf_node * dxf_obj_new (char *name){
 	char *new_name = NULL;
 	
