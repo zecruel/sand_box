@@ -136,7 +136,9 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 			else if (strcmp(current->obj.name, "3DFACE") == 0){
 				ent_type = DXF_3DFACE;
 			}
-			
+			else if (strcmp(current->obj.name, "ELLIPSE") == 0){
+				ent_type = DXF_ELLIPSE;
+			}
 			
 			if (current->obj.content){
 				/* starts the content sweep */
@@ -464,6 +466,32 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 					goto reinit_vars;
 				
 				case DXF_POINT:
+					goto reinit_vars;
+				
+				case DXF_ELLIPSE:
+					curr_graph = graph_new();
+					if (curr_graph){
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						//graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+						graph_ellipse(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y, radius, scale_x, scale_y);
+						if (ins_stack_pos > 0){
+							graph_modify(curr_graph, 
+								ins_stack[ins_stack_pos].ofs_x,
+								ins_stack[ins_stack_pos].ofs_y,
+								ins_stack[ins_stack_pos].scale_x,
+								ins_stack[ins_stack_pos].scale_y,
+								ins_stack[ins_stack_pos].rot);
+						}
+						stack_push(v_return, curr_graph);
+					}
 					goto reinit_vars;
 					
 				case DXF_CIRCLE:

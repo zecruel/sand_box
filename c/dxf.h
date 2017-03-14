@@ -29,7 +29,8 @@ enum dxf_graph {
 	DXF_LWPOLYLINE,
 	DXF_3DFACE,
 	DXF_VIEWPORT,
-	DXF_DIMENSION
+	DXF_DIMENSION,
+	DXF_ELLIPSE
 }; 
 
 struct Dxf_node{

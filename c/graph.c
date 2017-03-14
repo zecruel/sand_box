@@ -275,15 +275,23 @@ void graph_arc_bulge(graph_obj * master,
 void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, double p2_y, double minor_ax, double ang_start, double ang_end){
 	if (master){
 		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
-		double ang, major_ax;
+		double ang, major_ax, cosine, sine;
 		int steps, i;
 		double x0, y0, x1, y1;
+		double xx0, yy0, xx1, yy1;
 		
 		//ang_start *= M_PI/180;
 		//ang_end *= M_PI/180;
 		
-		major_ax = sqrt(pow(p1_x - p2_x, 2) + pow(p1_y - p2_y, 2)) ;
+		major_ax = sqrt(pow(p2_x, 2) + pow(p2_y, 2)) ;
 		minor_ax *= major_ax;
+		
+		/* rotation constants */
+		cosine = cos(atan2(p2_y, p2_x));
+		sine = sin(atan2(p2_y, p2_x));
+		
+		//printf("major = %0.2f, minor = %0.2f\n", major_ax, minor_ax);
+		//printf("ang_start = %0.2f, ang_end = %0.2f\n", ang_start, ang_end);
 		
 		ang = (ang_end - ang_start); //angulo do arco
 		if (ang <= 0){ ang = ang + 2*M_PI;}
@@ -301,16 +309,25 @@ void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, do
 			x1 = p1_x + major_ax * cos(2 * M_PI * i / n + ang_start);
 			y1 = p1_y + minor_ax * sin(2 * M_PI * i / n + ang_start);
 			
-			
-			line_add(master, x0, y0, x1, y1);
+			xx0 = cosine*(x0-p1_x) - sine*(y0-p1_y) + p1_x;
+			yy0 = sine*(x0-p1_x) + cosine*(y0-p1_y) + p1_y;
+			xx1 = cosine*(x1-p1_x) - sine*(y1-p1_y) + p1_x;
+			yy1 = sine*(x1-p1_x) + cosine*(y1-p1_y) + p1_y;
+			line_add(master, xx0, yy0, xx1, yy1);
 			//printf("(%0.2f,%0.2f),", x1, y1);
 			x0=x1;
 			y0=y1;
 		}
 		// o ultimo vertice do arco eh o ponto final, nao calculado no laço
-		x1 = p1_y + minor_ax * cos(ang_end);
+		x1 = p1_x + major_ax * cos(ang_end);
 		y1 = p1_y + minor_ax * sin(ang_end);
-		line_add(master, x0, y0, x1, y1);
+		
+		xx0 = cosine*(x0-p1_x) - sine*(y0-p1_y) + p1_x;
+		yy0 = sine*(x0-p1_x) + cosine*(y0-p1_y) + p1_y;
+		xx1 = cosine*(x1-p1_x) - sine*(y1-p1_y) + p1_x;
+		yy1 = sine*(x1-p1_x) + cosine*(y1-p1_y) + p1_y;
+		line_add(master, xx0, yy0, xx1, yy1);
+		
 		//printf("(%0.2f,%0.2f)\n", x1, y1);
 	}
 }
