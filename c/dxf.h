@@ -30,7 +30,9 @@ enum dxf_graph {
 	DXF_3DFACE,
 	DXF_VIEWPORT,
 	DXF_DIMENSION,
-	DXF_ELLIPSE
+	DXF_ELLIPSE,
+	DXF_MTEXT,
+	DXF_BLK
 }; 
 
 struct Dxf_node{

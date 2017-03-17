@@ -228,7 +228,7 @@ int main(int argc, char** argv){
 	status_rect.w = width;
 	status_rect.h = 20;
 	
-	
+	int time_start, time_end;
 	
 	
 	/*============================*/
@@ -422,8 +422,17 @@ int main(int argc, char** argv){
 				0);
 				if (url){
 					dxf_ent_clear(drawing.main_struct);
+					
+					time_start = SDL_GetTicks();
 					drawing = dxf_open(url);
+					time_end = SDL_GetTicks();
+					printf("Open = %d\n", time_end - time_start);
+					
+					time_start = SDL_GetTicks();
 					dxf_ents_parse(drawing);
+					time_end = SDL_GetTicks();
+					printf("Parse = %d\n", time_end - time_start);
+					
 					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 					zoom_x = (max_x - min_x)/img->width;
 					zoom_y = (max_y - min_y)/img->height;
@@ -435,7 +444,11 @@ int main(int argc, char** argv){
 					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
 					
 					bmp_fill(img, img->bkg); /* clear bitmap */
+					
+					time_start = SDL_GetTicks();
 					dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
+					
+					
 					
 					SDL_UpdateTexture(canvas, NULL, img->buf, canvas_rect.w * 4);
 					SDL_UpdateTexture(status, NULL, main_tbx->img->buf, main_tbx->img->width * 4);
@@ -443,6 +456,8 @@ int main(int argc, char** argv){
 					SDL_RenderCopy(renderer, canvas, NULL, &canvas_rect);
 					SDL_RenderCopy(renderer, status, NULL, &status_rect);
 					SDL_RenderPresent(renderer);
+					time_end = SDL_GetTicks();
+					printf("Draw = %d\n\n", time_end - time_start);
 				}
 			}
 			else if (strcmp(wdg->action, "quit") == 0){
