@@ -399,6 +399,15 @@ void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_
 	}
 }
 
+void vec_graph_modify_idx(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx){
+	int i;
+	if (vec){
+		for(i = start_idx; i <= end_idx; i++){
+			graph_modify(((graph_obj **)vec->data)[i], ofs_x, ofs_y, scale_x, scale_y, rot);
+		}
+	}
+}
+
 /*
 int main (void){
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};

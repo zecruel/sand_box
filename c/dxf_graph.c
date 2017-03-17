@@ -693,6 +693,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 		dxf_node * ins_ent, *prev;
 		double ofs_x, ofs_y, ofs_z;
 		double rot, scale_x, scale_y, scale_z;
+		int start_idx, end_idx;
 	};
 	
 	struct ins_save ins_stack[10];
@@ -950,13 +951,19 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				ins_stack_pos++;
 				ins_stack[ins_stack_pos].ins_ent = blk;
 				ins_stack[ins_stack_pos].prev = prev;
-				ins_stack[ins_stack_pos].ofs_x = pt1_x + ins_stack[ins_stack_pos - 1].ofs_x;
-				ins_stack[ins_stack_pos].ofs_y = pt1_y + ins_stack[ins_stack_pos - 1].ofs_y;
-				ins_stack[ins_stack_pos].ofs_z = pt1_z + ins_stack[ins_stack_pos - 1].ofs_z;
-				ins_stack[ins_stack_pos].scale_x = scale_x * ins_stack[ins_stack_pos - 1].scale_x;
-				ins_stack[ins_stack_pos].scale_y = scale_y * ins_stack[ins_stack_pos - 1].scale_y;
-				ins_stack[ins_stack_pos].scale_z = scale_z * ins_stack[ins_stack_pos - 1].scale_z;
-				ins_stack[ins_stack_pos].rot = t_rot + ins_stack[ins_stack_pos - 1].rot;
+				ins_stack[ins_stack_pos].ofs_x = pt1_x;
+				ins_stack[ins_stack_pos].ofs_y = pt1_y;
+				ins_stack[ins_stack_pos].ofs_z = pt1_z;
+				ins_stack[ins_stack_pos].scale_x = scale_x;
+				ins_stack[ins_stack_pos].scale_y = scale_y;
+				ins_stack[ins_stack_pos].scale_z = scale_z;
+				ins_stack[ins_stack_pos].rot = t_rot;
+				if (v_return->size > 0){
+					ins_stack[ins_stack_pos].start_idx = v_return->size - 1;
+				}
+				else{
+					ins_stack[ins_stack_pos].start_idx = 0;
+				}
 				
 				/* now, current is the block */
 				prev = blk;
@@ -1014,6 +1021,25 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 				current = prev->next;
 				//indent --;
 				if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
+					if (v_return->size > 0){
+					vec_graph_modify_idx(v_return,
+						ins_stack[ins_stack_pos].ofs_x,
+						ins_stack[ins_stack_pos].ofs_y,
+						ins_stack[ins_stack_pos].scale_x,
+						ins_stack[ins_stack_pos].scale_y,
+						ins_stack[ins_stack_pos].rot,
+						ins_stack[ins_stack_pos].start_idx,
+						v_return->size - 1
+					);}
+					/*printf("%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d\n",
+						ins_stack[ins_stack_pos].ofs_x,
+						ins_stack[ins_stack_pos].ofs_y,
+						ins_stack[ins_stack_pos].scale_x,
+						ins_stack[ins_stack_pos].scale_y,
+						ins_stack[ins_stack_pos].rot,
+						ins_stack[ins_stack_pos].start_idx,
+						v_return->size - 1
+					);*/
 					if (ins_stack_pos < 1){
 						/* stop the search if back on initial entity */
 						current = NULL;
