@@ -482,6 +482,203 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent){
 	return NULL;
 }
 
+graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent){
+	if(ent){
+		dxf_node *current = NULL, *prev;
+		graph_obj *curr_graph = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double start_w = 0, end_w = 0;
+		double tick = 0, elev = 0, bulge = 0;
+		
+		int pline_flag = 0;
+		int first = 0, closed =0;
+		double prev_x, prev_y, last_x, last_y;
+		double prev_bulge = 0;
+		
+		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
+		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
+		
+		int color = 256, paper = 0;
+		int lay_idx, ltype_idx, i;
+		
+		/*flags*/
+		int pt1 = 0, init = 0;
+		
+		/* clear the strings */
+		handle[0] = 0;
+		l_type[0] = 0;
+		layer[0] = 0;
+		comment[0] = 0;
+		
+		if (ent->type == DXF_ENT){
+			if (ent->obj.content){
+				current = ent->obj.content->next;
+				//printf("%s\n", ent->obj.name);
+			}
+		}
+		while (current){
+			prev = current;
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 5:
+						strcpy(handle, current->value.s_data);
+						break;
+					case 6:
+						strcpy(l_type, current->value.s_data);
+						break;
+					case 8:
+						strcpy(layer, current->value.s_data);
+						break;
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 40:
+						start_w = current->value.d_data;
+						break;
+					case 41:
+						end_w = current->value.d_data;
+						break;
+					case 42:
+						bulge = current->value.d_data;
+						break;
+					case 70:
+						pline_flag = current->value.i_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 39:
+						tick = current->value.d_data;
+						break;
+					case 62:
+						color = current->value.i_data;
+						break;
+					case 67:
+						paper = current->value.i_data;
+						break;
+					case 999:
+						strcpy(comment, current->value.s_data);
+				}
+			}
+			else if (current->type == DXF_ENT){
+				if(init == 0){
+					init = 1;
+					curr_graph = graph_new();
+					if (curr_graph){
+						//printf("primeiro\n");
+						/* find the layer index */
+						lay_idx = dxf_lay_idx(drawing, layer);
+						
+						/* check if  object's color  is definied by layer,
+						then look for layer's color */
+						if (color >= 256){
+							color = drawing.layers[lay_idx].color;
+						}
+						
+						/* check if  object's ltype  is definied by layer,
+						then look for layer's ltype */
+						if ((strcmp(l_type, "BYLAYER") == 0) ||
+							((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+							strcpy(l_type, drawing.layers[lay_idx].ltype);
+						}
+						
+						/* find the ltype index */
+						ltype_idx = dxf_ltype_idx(drawing, l_type);
+						
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						pt1_x = 0; pt1_y = 0; pt1_z = 0;
+						bulge =0;
+						
+						if (pline_flag & 1){
+							closed = 1;
+						}
+						else {
+							closed = 0;
+						}
+					}
+				}
+				
+				if ((strcmp(current->obj.name, "VERTEX") == 0) && (current->obj.content)){
+					current = current->obj.content->next;
+					//printf("vertice\n");
+					continue;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		
+		
+			if (current == NULL){
+				
+				if((first != 0) && (curr_graph != NULL)){
+					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, pt1_x, pt1_y);
+					if (prev_bulge == 0){
+						line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
+					}
+					else{
+						graph_arc_bulge(curr_graph, prev_x, prev_y, pt1_x, pt1_y, prev_bulge);
+					}
+				}
+				else if(first == 0){
+					first = 1;
+					
+					//printf("primeiro vertice\n");
+					last_x = pt1_x;
+					last_y = pt1_y;
+				}
+				prev_x = pt1_x;
+				prev_y = pt1_y;
+				prev_bulge = bulge;
+				
+				pt1_x = 0; pt1_y = 0; pt1_z = 0;
+				bulge =0;
+			}
+		
+			while (current == NULL){
+				
+				prev = prev->master;
+				if (prev){ /* up in structure */
+					
+					/* ====== close complex entities ============== */
+					if (prev == ent){ /* back on polyline ent */
+						if((closed != 0) && (curr_graph != NULL)){
+							if (prev_bulge == 0){
+								line_add(curr_graph, prev_x, prev_y, last_x, last_y);
+							}
+							else{
+								graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, prev_bulge);
+							}
+						}
+						//printf("fim\n");
+						break;
+					}
+					/* try to continue on previous point in structure */
+					current = prev->next;
+				}
+			}
+		}
+		
+		return curr_graph;
+	}
+	return NULL;
+}
+
 vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 	/* this function is non recursive */
 	
@@ -574,7 +771,11 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent){
 			}
 			else if (strcmp(current->obj.name, "POLYLINE") == 0){
 				ent_type = DXF_POLYLINE;
-				
+				curr_graph = dxf_pline_parse(drawing, current);
+				if (curr_graph){
+					/* store the graph in the return vector */
+					stack_push(v_return, curr_graph);
+				}
 				
 			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
