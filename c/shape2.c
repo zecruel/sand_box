@@ -109,14 +109,14 @@ shape *shx_font_open(char *path){
 	
 	file = fopen(path,"rb"); //abre o arquivo -> somente leitura, modo binario
 	if(file == NULL) {
-		perror("Erro, nao foi possivel abrir o arquivo\n");
+		//perror("Erro, nao foi possivel abrir o arquivo\n");
 		return(NULL);
 	}
 	
 	// cria a lista de shapes da shx_font
 	shx_font = (shape *) malloc(sizeof(shape));
 	if(shx_font == NULL) {
-		perror("Erro, nao foi possivel alocar memoria\n");
+		//perror("Erro, nao foi possivel alocar memoria\n");
 		return(NULL);
 	}
 	shx_font->next = NULL; //indica que a lista esta vazia
