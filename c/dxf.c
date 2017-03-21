@@ -1,5 +1,6 @@
 #include "dxf.h"
 #include <math.h>
+#include "shape2.h"
 
 void str_upp(char *str) { /* upper case the string */
 	while (*str= toupper(*str)) str++;
@@ -30,6 +31,58 @@ char * trimwhitespace(char *str){
 	*(end+1) = 0;
 
 	return str;
+}
+
+char *str_replace(char *orig, char *rep, char *with) {
+	/*
+	Author: jmucchiello
+	http://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c
+	*/
+	/* You must free the result if result is non-NULL. */
+	char *result; /* the return string */
+	char *ins;    /* the next insert point */
+	char *tmp;    /* varies */
+	int len_rep;  /* length of rep (the string to remove) */
+	int len_with; /* length of with (the string to replace rep with) */
+	int len_front; /* distance between rep and end of last rep */
+	int count;    /* number of replacements */
+
+	/* sanity checks and initialization */
+	if (!orig || !rep)
+		return NULL;
+	len_rep = strlen(rep);
+	if (len_rep == 0)
+		return NULL; /* empty rep causes infinite loop during count */
+	if (!with)
+		with = "";
+	len_with = strlen(with);
+
+	/* count the number of replacements needed */
+	ins = orig;
+	for (count = 0; tmp = strstr(ins, rep); ++count) {
+		ins = tmp + len_rep;
+	}
+
+	tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+	if (!result)
+		return NULL;
+
+	/*
+	first time through the loop, all the variable are set correctly
+	from here on, tmp points to the end of the result string
+	ins points to the next occurrence of rep in orig
+	orig points to the remainder of orig after "end of rep"
+	*/
+	while (count--) {
+		ins = strstr(orig, rep);
+		len_front = ins - orig;
+		tmp = strncpy(tmp, orig, len_front) + len_front;
+		tmp = strcpy(tmp, with) + len_with;
+		orig += len_front + len_rep; /* move to next "end of rep" */
+	}
+	strcpy(tmp, orig);
+	return result;
 }
 
 vector_p * vect_new (void){
@@ -690,6 +743,60 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	}
 }
 
+void dxf_fonts_assemb (dxf_drawing *drawing){
+	vector_p v_search;
+	int i, flags;
+	dxf_node *current;
+	
+	char name[DXF_MAX_CHARS];
+	char file_name[DXF_MAX_CHARS];
+	
+	drawing->num_fonts = 0;
+	
+	/* open default font */
+	shape *shx_font = shx_font_open("txt.shx");
+	
+	if (shx_font){
+		/* always set the index 0 as the default font*/
+		drawing->num_fonts = 1;
+		drawing->text_fonts[0].name[0] = 0;
+		drawing->text_fonts[0].shx_font = shx_font;
+	}
+	
+	v_search = dxf_find_obj(drawing->t_style, "STYLE"); /* get the list of fonts */
+	if (v_search.data){
+		drawing->num_layers += v_search.size;
+		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_FONTS-1)); i++){
+			name[0] = 0;
+			file_name[0] = 0;
+			
+			current = ((dxf_node **) v_search.data)[i]; /* get the font */
+			/* and sweep its content */
+			current = current->obj.content->next;
+			while (current){
+				if (current->type == DXF_ATTR){
+					switch (current->value.group){
+						case 2: /* font name */
+							strcpy(name, current->value.s_data);
+							break;
+						case 3: /* file name */
+							strcpy(file_name, current->value.s_data);
+							break;
+						case 70: /* flags */
+							flags = current->value.i_data;
+					}
+				}
+				current = current->next;
+			}
+			/* set the variables on the current layer in drawing structure */
+			strcpy(drawing->text_fonts[i+1].name, name);
+			shx_font = shx_font_open(file_name);
+			drawing->text_fonts[i+1].shx_font = shx_font;
+		}
+		free(v_search.data);
+	}
+}
+
 int dxf_lay_idx (dxf_drawing drawing, char *name){
 	int i;
 	
@@ -712,6 +819,18 @@ int dxf_ltype_idx (dxf_drawing drawing, char *name){
 	}
 	
 	return 0; /*if search fails, return the standard layer */
+}
+
+int dxf_font_idx (dxf_drawing drawing, char *name){
+	int i;
+	
+	for (i=1; i < drawing.num_fonts; i++){
+		if (strcmp(drawing.text_fonts[i].name, name) == 0){
+			return i;
+		}
+	}
+	
+	return 0; /*if search fails, return the standard font */
 }
 
 dxf_drawing dxf_open (char *path){
@@ -1002,6 +1121,9 @@ dxf_drawing dxf_open (char *path){
 	
 	/* assemble the ltypes list */
 	dxf_ltype_assemb (&drawing);
+	
+	/* assemble the fonts list */
+	dxf_fonts_assemb(&drawing);
 	
 	return drawing;
 }
