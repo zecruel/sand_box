@@ -2,6 +2,7 @@
 #include "shape2.h"
 
 #include "dxf_colors.h"
+#include <string.h>
 
 
 graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
@@ -710,6 +711,8 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
 		char text[DXF_MAX_CHARS], t_style[DXF_MAX_CHARS];
+		char tmp_str[DXF_MAX_CHARS];
+		char *pos_st, *pos_curr, *pos_tmp, special;
 		
 		double tick = 0, elev = 0;
 		int color = 256, paper = 0;
@@ -831,11 +834,51 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				}
 			}
 			
+			/* find and replace special symbols in the text*/
+			pos_curr = strstr(text, "%%");
+			pos_st = text;
+			pos_tmp = tmp_str;
+			while (pos_curr){
+				/* copy the part of text until the control string */
+				strncpy(pos_tmp, pos_st, pos_curr - pos_st);
+				/*control string is stripped in new string */
+				pos_tmp += pos_curr - pos_st;
+				/*get the control character */
+				special = *(pos_curr + 2);
+				/* verify the action to do */
+				switch (special){
+					/* put the  diameter simbol (unicode D8 Hex) in text*/
+					case 'c':
+						pos_tmp += wctomb(pos_tmp, L'\xd8');
+						break;
+					case 'C':
+						pos_tmp += wctomb(pos_tmp, L'\xd8');
+						break;
+					/* put the degrees simbol in text*/
+					case 'd':
+						pos_tmp += wctomb(pos_tmp, L'\xb0');
+						break;
+					case 'D':
+						pos_tmp += wctomb(pos_tmp, L'\xb0');
+						break;
+					/* put the plus/minus tolerance simbol in text*/
+					case 'p':
+						pos_tmp += wctomb(pos_tmp, L'\xb1');
+						break;
+					case 'P':
+						pos_tmp += wctomb(pos_tmp, L'\xb1');
+						break;
+				}
+				/*try to find new  control sequences in the rest of text*/
+				pos_curr += 3;
+				pos_st = pos_curr;
+				pos_curr = strstr(pos_curr, "%%");
+			}
+			/* copy the rest of text after the last control string */
+			strcpy(pos_tmp, pos_st);
+			//printf("%s\n", tmp_str);
 			
-			char *tmp = strstr(text, "%%");
-			if (tmp) printf("especial character\n");
-			
-			curr_graph = shx_font_parse(shx_font, text);
+			curr_graph = shx_font_parse(shx_font, tmp_str);
 			
 			
 			if (curr_graph){
@@ -1025,6 +1068,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			current = current->next; /* go to the next in the list */
 		}
+		
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
 			
 			/* find the font index and font*/
@@ -1381,6 +1425,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					break;
 				case 67:
 					paper = current->value.i_data;
+					//printf("Paper %d\n", paper);
 					break;
 				case 999:
 					strcpy(comment, current->value.s_data);
@@ -1398,7 +1443,10 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			ins_flag = 0;
 			/* look for block */
 			v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
-			if (v_search.data){ /* block found */
+			if ((v_search.data) && /* block found */
+			/* Also check the paper space parameter */
+			(((p_space == 0) && (paper == 0)) || 
+			((p_space != 0) && (paper != 0)))){ 
 				blk = ((dxf_node **) v_search.data)[0];
 				//printf ("bloco %s\n", name1);
 				free(v_search.data);
@@ -1423,7 +1471,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				/* now, current is the block */
 				prev = blk;
 				current = blk;
-				p_space = paper;
+				//p_space = paper;
 				
 				/*reinit_vars: */
 				
@@ -1452,10 +1500,9 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		else if (((blk_flag != 0) && (current == NULL))||
 			((blk_flag != 0) && (current != NULL) && (current != blk) && (current->type == DXF_ENT))){
 			blk_flag = 0;
-			p_space = paper;
+			//p_space = paper;
 			
-			
-			//printf("Bloco x=%0.2f y=%0.2f\n", pt1_x, pt1_y);
+			//printf("Bloco %d\n", p_space);
 		}
 		
 		if (prev == ent){ /* stop the search if back on initial entity */
