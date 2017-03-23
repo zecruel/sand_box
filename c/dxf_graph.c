@@ -690,6 +690,199 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
+graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+	if(ent){
+		dxf_node *current = NULL, *prev;
+		graph_obj *curr_graph = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double start_w = 0, end_w = 0;
+		double tick = 0, elev = 0, bulge = 0;
+		
+		int pline_flag = 0;
+		int first = 0, closed =0;
+		double prev_x, prev_y, last_x, last_y, curr_x;
+		//double prev_bulge = 0;
+		
+		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
+		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
+		
+		int color = 256, paper = 0;
+		int lay_idx, ltype_idx, i;
+		
+		/*flags*/
+		int pt1 = 0, init = 0;
+		
+		/* clear the strings */
+		handle[0] = 0;
+		l_type[0] = 0;
+		layer[0] = 0;
+		comment[0] = 0;
+		
+		if (ent->type == DXF_ENT){
+			if (ent->obj.content){
+				current = ent->obj.content->next;
+				//printf("%s\n", ent->obj.name);
+			}
+		}
+		while (current){
+			prev = current;
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 5:
+						strcpy(handle, current->value.s_data);
+						break;
+					case 6:
+						strcpy(l_type, current->value.s_data);
+						break;
+					case 8:
+						strcpy(layer, current->value.s_data);
+						break;
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 40:
+						start_w = current->value.d_data;
+						break;
+					case 41:
+						end_w = current->value.d_data;
+						break;
+					case 42:
+						bulge = current->value.d_data;
+						break;
+					case 70:
+						pline_flag = current->value.i_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 39:
+						tick = current->value.d_data;
+						break;
+					case 62:
+						color = current->value.i_data;
+						break;
+					case 67:
+						paper = current->value.i_data;
+						break;
+					case 999:
+						strcpy(comment, current->value.s_data);
+				}
+			}
+			if (pt1){
+				pt1 = 0;
+				
+				if((init != 0) &&(first == 0)){
+					first = 1;
+					
+					//printf("primeiro vertice\n");
+					last_x = curr_x;
+					last_y = pt1_y;
+					prev_x = curr_x;
+					prev_y = pt1_y;
+				}
+				
+				if((init == 0) &&
+				(((p_space == 0) && (paper == 0)) || 
+				((p_space != 0) && (paper != 0)))){
+					init = 1;
+					curr_graph = graph_new();
+					if (curr_graph){
+						//printf("primeiro\n");
+						/* find the layer index */
+						lay_idx = dxf_lay_idx(drawing, layer);
+						
+						/* check if  object's color  is definied by layer,
+						then look for layer's color */
+						if (color >= 256){
+							color = drawing.layers[lay_idx].color;
+						}
+						
+						/* check if  object's ltype  is definied by layer,
+						then look for layer's ltype */
+						if ((strcmp(l_type, "BYLAYER") == 0) ||
+							((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+							strcpy(l_type, drawing.layers[lay_idx].ltype);
+						}
+						
+						/* find the ltype index */
+						ltype_idx = dxf_ltype_idx(drawing, l_type);
+						
+						/* change the graph line pattern */
+						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						}
+						
+						/*change the color */
+						curr_graph->color = dxf_colors[color];
+						
+						//pt1_x = 0; pt1_y = 0; pt1_z = 0;
+						//bulge =0;
+						
+						if (pline_flag & 1){
+							closed = 1;
+						}
+						else {
+							closed = 0;
+						}
+					}
+				}
+				if((first != 0) && (curr_graph != NULL)){
+					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
+					if (bulge == 0){
+						line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
+					}
+					else{
+						graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
+						bulge =0;
+					}
+					prev_x = curr_x;
+					prev_y = pt1_y;
+				}
+				
+				//prev_bulge = bulge;
+				
+				curr_x = pt1_x;
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* last vertex */
+		if((first != 0) && (curr_graph != NULL)){
+			//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
+			if (bulge == 0){
+				line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
+			}
+			else{
+				graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
+				bulge =0;
+			}
+		}
+		
+		if((closed != 0) && (curr_graph != NULL)){
+			if (bulge == 0){
+				line_add(curr_graph, prev_x, prev_y, last_x, last_y);
+			}
+			else{
+				graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, bulge);
+			}
+		}
+		
+		
+		return curr_graph;
+	}
+	return NULL;
+}
+
 graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	if(ent){
 		dxf_node *current = NULL;
@@ -720,6 +913,8 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		/*flags*/
 		int pt1 = 0, pt2 = 0;
+		int under_l, over_l;
+		
 		
 		/* clear the strings */
 		handle[0] = 0;
@@ -728,6 +923,7 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		comment[0] = 0;
 		text[0] = 0;
 		t_style[0] = 0;
+		tmp_str[0] = 0;
 		
 		if (ent->type == DXF_ENT){
 			if (ent->obj.content){
@@ -835,6 +1031,8 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			
 			/* find and replace special symbols in the text*/
+			under_l = 0; /* under line flag*/
+			over_l = 0; /* over line flag*/
 			pos_curr = strstr(text, "%%");
 			pos_st = text;
 			pos_tmp = tmp_str;
@@ -867,6 +1065,20 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 'P':
 						pos_tmp += wctomb(pos_tmp, L'\xb1');
+						break;
+					/* under line */
+					case 'u':
+						under_l = 1;
+						break;
+					case 'U':
+						under_l = 1;
+						break;
+					/* over line */
+					case 'o':
+						over_l = 1;
+						break;
+					case 'O':
+						over_l = 1;
 						break;
 				}
 				/*try to find new  control sequences in the rest of text*/
@@ -914,6 +1126,23 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				txt_size = t_size/fnt_size;
 				txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
 				txt_h = fabs(curr_graph->ext_max_y - curr_graph->ext_min_y);
+				
+				if (under_l){
+					/* add the under line */
+					line_add(curr_graph, 
+						curr_graph->ext_min_x,
+						(double)fnt_size * -0.1,
+						curr_graph->ext_max_x, 
+						(double)fnt_size * -0.1);
+				}
+				if (over_l){
+					/* add the over line */
+					line_add(curr_graph, 
+						curr_graph->ext_min_x,
+						(double)fnt_size * 1.1,
+						curr_graph->ext_max_x, 
+						(double)fnt_size * 1.1);
+				}
 				
 				/* find the insert point of text, in function of its aling */
 				if(t_alin_h < 3){
@@ -1288,6 +1517,11 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "LWPOLYLINE") == 0){
 				ent_type = DXF_LWPOLYLINE;
+				curr_graph = dxf_lwpline_parse(drawing, current, p_space);
+				if (curr_graph){
+					/* store the graph in the return vector */
+					stack_push(v_return, curr_graph);
+				}
 				
 				
 			}
