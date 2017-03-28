@@ -902,10 +902,20 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
 		
 		int color = 256, paper = 0;
-		int lay_idx, ltype_idx, i;
+		int lay_idx, ltype_idx, i, count;
 		
 		/*flags*/
 		int pt1 = 0, init = 0;
+		
+		int num_cpts, order, num_ret;
+		double weight = 1.0;
+		double ctrl_pts[3000], ret[3000];
+		double weights[1000];
+		
+		
+		num_ret = 31; /* num pts on curve */
+		count =0;
+		
 		
 		/* clear the strings */
 		handle[0] = 0;
@@ -948,13 +958,19 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						start_w = current->value.d_data;
 						break;
 					case 41:
-						end_w = current->value.d_data;
+						weight = current->value.d_data;
 						break;
 					case 42:
 						//bulge = current->value.d_data;
 						break;
 					case 70:
 						pline_flag = current->value.i_data;
+						break;
+					case 71:
+						order = current->value.i_data;
+						break;
+					case 73:
+						num_cpts = current->value.i_data;
 						break;
 					case 38:
 						elev = current->value.d_data;
@@ -983,6 +999,12 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					last_y = pt1_y;
 					prev_x = curr_x;
 					prev_y = pt1_y;
+					
+					ctrl_pts[count*3+1] = curr_x;
+					ctrl_pts[count*3+2] = pt1_y;
+					ctrl_pts[count*3+3] = 0; //pt1_z
+					weights[count+1] = weight;
+					count++;
 				}
 				else if((init == 0) &&
 				(((p_space == 0) && (paper == 0)) || 
@@ -1032,13 +1054,12 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				}
 				else if((first != 0) && (curr_graph != NULL)){
 					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-					if (bulge == 0){
-						line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
-					}
-					else{
-						graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
-						bulge =0;
-					}
+					ctrl_pts[count*3+1] = curr_x;
+					ctrl_pts[count*3+2] = pt1_y;
+					ctrl_pts[count*3+3] = 0; //pt1_z
+					weights[count+1] = weight;
+					count++;
+					
 					prev_x = curr_x;
 					prev_y = pt1_y;
 				}
@@ -1052,27 +1073,49 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		/* last vertex */
 		if((first != 0) && (curr_graph != NULL)){
-			//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-			if (bulge == 0){
-				line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
-			}
-			else{
-				graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
-				bulge =0;
-			}
+			ctrl_pts[count*3+1] = curr_x;
+			ctrl_pts[count*3+2] = pt1_y;
+			ctrl_pts[count*3+3] = 0; //pt1_z
+			weights[count+1] = weight;
+			count++;
+			
 			prev_x = curr_x;
 			prev_y = pt1_y;
 		}
 		
 		if((closed != 0) && (curr_graph != NULL)){
-			if (bulge == 0){
-				line_add(curr_graph, prev_x, prev_y, last_x, last_y);
-			}
-			else{
-				graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, bulge);
-			}
+			
 		}
 		
+		for(i = 1; i <= 3*num_ret; i++){
+			ret[i] = 0.0;
+		}
+		
+		rbspline(num_cpts, order, num_ret, ctrl_pts, weights, ret);
+		
+		prev_x = ret[1];
+		prev_y = ret[2];
+		/*
+		printf("\nPolygon points\n");
+
+		for (i = 1; i <= 3*num_cpts; i=i+3){
+			printf(" %f %f %f \n",ctrl_pts[i],ctrl_pts[i+1],ctrl_pts[i+2]);
+		}
+		
+		printf("\nHomogeneous weighting vector is \n");
+		for (i = 1; i <= num_cpts; i++){
+			printf(" %f ", weights[i]);
+		}
+		printf("\n");
+		
+		printf("%d, %d\n", count, num_cpts);
+		*/
+		for(i =4 ; i <= 3*num_ret; i = i+3){
+			line_add(curr_graph, prev_x, prev_y, ret[i], ret[i+1]);
+			prev_x = ret[i];
+			prev_y = ret[i+1];
+			/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
+		}
 		
 		return curr_graph;
 	}
