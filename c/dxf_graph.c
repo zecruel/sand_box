@@ -907,13 +907,12 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		/*flags*/
 		int pt1 = 0, init = 0;
 		
-		int num_cpts, order, num_ret;
+		int num_cpts, order, num_ret, num_knots;
 		double weight = 1.0;
 		double ctrl_pts[3000], ret[3000];
-		double weights[1000];
+		double weights[1000], knots[1000];
+		int knot_count = 1;
 		
-		
-		num_ret = 31; /* num pts on curve */
 		count =0;
 		
 		
@@ -955,7 +954,8 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						//pt1 = 1; /* set flag */
 						break;
 					case 40:
-						start_w = current->value.d_data;
+						knots[knot_count] = current->value.d_data;
+						knot_count++;
 						break;
 					case 41:
 						weight = current->value.d_data;
@@ -968,6 +968,9 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 71:
 						order = current->value.i_data;
+						break;
+					case 72:
+						num_knots = current->value.i_data;
 						break;
 					case 73:
 						num_cpts = current->value.i_data;
@@ -1091,7 +1094,10 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			ret[i] = 0.0;
 		}
 		
-		rbspline(num_cpts, order, num_ret, ctrl_pts, weights, ret);
+		
+		num_ret = (num_cpts + order)*5; /* num pts on curve */
+		
+		rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
 		
 		prev_x = ret[1];
 		prev_y = ret[2];
@@ -1109,7 +1115,15 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		printf("\n");
 		
 		printf("%d, %d\n", count, num_cpts);
-		*/
+		
+		
+		
+		printf("\nDXF knots \n");
+		for (i = 1; i <= num_knots; i++){
+			printf(" %f ", knots[i]);
+		}
+		printf("\n");*/
+		
 		for(i =4 ; i <= 3*num_ret; i = i+3){
 			line_add(curr_graph, prev_x, prev_y, ret[i], ret[i+1]);
 			prev_x = ret[i];
