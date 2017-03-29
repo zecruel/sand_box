@@ -934,6 +934,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				switch (current->value.group){
 					case 5:
 						strcpy(handle, current->value.s_data);
+						//printf("Handle = %s\n", handle);
 						break;
 					case 6:
 						strcpy(l_type, current->value.s_data);

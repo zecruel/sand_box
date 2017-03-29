@@ -500,7 +500,7 @@ double r[];
 	int i,j,k;
 	double d,e;
 	double sum;
-	double temp[36];
+	double temp[3600];
 
 	nplusc = npts + c;
 
@@ -605,12 +605,12 @@ double p[];
 {
 	int i,j,icount,jcount;
 	int i1;
-	int x[30];		/* allows for 20 data points with basis function of order 5 */
+	int x[1000];		/* allows for 20 data points with basis function of order 5 */
 	int nplusc;
 
 	double step;
 	double t;
-	double nbasis[20];
+	double nbasis[1000];
 	double temp;
 
 
@@ -638,6 +638,7 @@ double p[];
 	printf("\n");
 */
 
+	
 	icount = 0;
 
 /*    calculate the points on the rational B-spline curve */
@@ -650,8 +651,9 @@ double p[];
 		if ((double)x[nplusc] - t < 5e-6){
 			t = (double)x[nplusc];
 		}
-
+		
 	    rbasis(k,t,npts,x,h,nbasis);      /* generate the basis function for this value of t */
+		//printf("cpts=%d, order=%d, t=%0.2f \n",npts,k,t);
 /*
 		printf("t = %f \n",t);
 		printf("nbasis = ");
