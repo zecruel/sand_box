@@ -890,13 +890,10 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
-		double start_w = 0, end_w = 0;
-		double tick = 0, elev = 0, bulge = 0;
+		double tick = 0, elev = 0;
 		
-		int pline_flag = 0;
-		int first = 0, closed =0;
-		double prev_x, prev_y, last_x, last_y, curr_x;
-		//double prev_bulge = 0;
+		int pline_flag = 0, closed = 0;
+		double prev_x, prev_y, curr_x;
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -934,7 +931,6 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				switch (current->value.group){
 					case 5:
 						strcpy(handle, current->value.s_data);
-						//printf("Handle = %s\n", handle);
 						break;
 					case 6:
 						strcpy(l_type, current->value.s_data);
@@ -960,9 +956,6 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 41:
 						weight = current->value.d_data;
-						break;
-					case 42:
-						//bulge = current->value.d_data;
 						break;
 					case 70:
 						pline_flag = current->value.i_data;
@@ -995,18 +988,10 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			if (pt1){
 				pt1 = 0;
 				
-				if((init != 0) &&(first == 0)){
-					first = 1;
-					
-					//printf("primeiro vertice\n");
-					last_x = curr_x;
-					last_y = pt1_y;
-					prev_x = curr_x;
-					prev_y = pt1_y;
-					
+				if(init != 0){
 					ctrl_pts[count*3+1] = curr_x;
 					ctrl_pts[count*3+2] = pt1_y;
-					ctrl_pts[count*3+3] = 0; //pt1_z
+					ctrl_pts[count*3+3] = pt1_z;
 					weights[count+1] = weight;
 					count++;
 				}
@@ -1014,61 +999,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				(((p_space == 0) && (paper == 0)) || 
 				((p_space != 0) && (paper != 0)))){
 					init = 1;
-					curr_graph = graph_new();
-					if (curr_graph){
-						//printf("primeiro\n");
-						/* find the layer index */
-						lay_idx = dxf_lay_idx(drawing, layer);
-						
-						/* check if  object's color  is definied by layer,
-						then look for layer's color */
-						if (color >= 256){
-							color = drawing.layers[lay_idx].color;
-						}
-						
-						/* check if  object's ltype  is definied by layer,
-						then look for layer's ltype */
-						if ((strcmp(l_type, "BYLAYER") == 0) ||
-							((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-							strcpy(l_type, drawing.layers[lay_idx].ltype);
-						}
-						
-						/* find the ltype index */
-						ltype_idx = dxf_ltype_idx(drawing, l_type);
-						
-						/* change the graph line pattern */
-						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
-						}
-						
-						/*change the color */
-						curr_graph->color = dxf_colors[color];
-						
-						//pt1_x = 0; pt1_y = 0; pt1_z = 0;
-						//bulge =0;
-						
-						if (pline_flag & 1){
-							closed = 1;
-						}
-						else {
-							closed = 0;
-						}
-					}
 				}
-				else if((first != 0) && (curr_graph != NULL)){
-					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-					ctrl_pts[count*3+1] = curr_x;
-					ctrl_pts[count*3+2] = pt1_y;
-					ctrl_pts[count*3+3] = 0; //pt1_z
-					weights[count+1] = weight;
-					count++;
-					
-					prev_x = curr_x;
-					prev_y = pt1_y;
-				}
-				
-				//prev_bulge = bulge;
 				
 				curr_x = pt1_x;
 			}
@@ -1076,62 +1007,73 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		}
 		
 		/* last vertex */
-		if((first != 0) && (curr_graph != NULL)){
+		if(init != 0){
 			ctrl_pts[count*3+1] = curr_x;
 			ctrl_pts[count*3+2] = pt1_y;
 			ctrl_pts[count*3+3] = 0; //pt1_z
 			weights[count+1] = weight;
 			count++;
+		}
+		
+		curr_graph = graph_new();
+		if (curr_graph){
+			//printf("primeiro\n");
+			/* find the layer index */
+			lay_idx = dxf_lay_idx(drawing, layer);
 			
-			prev_x = curr_x;
-			prev_y = pt1_y;
-		}
-		
-		if((closed != 0) && (curr_graph != NULL)){
+			/* check if  object's color  is definied by layer,
+			then look for layer's color */
+			if (color >= 256){
+				color = drawing.layers[lay_idx].color;
+			}
 			
+			/* check if  object's ltype  is definied by layer,
+			then look for layer's ltype */
+			if ((strcmp(l_type, "BYLAYER") == 0) ||
+				((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+				strcpy(l_type, drawing.layers[lay_idx].ltype);
+			}
+			
+			/* find the ltype index */
+			ltype_idx = dxf_ltype_idx(drawing, l_type);
+			
+			/* change the graph line pattern */
+			curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+			for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+				curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+			}
+			
+			/*change the color */
+			curr_graph->color = dxf_colors[color];
+			
+			//pt1_x = 0; pt1_y = 0; pt1_z = 0;
+			//bulge =0;
+			
+			if (pline_flag & 1){
+				closed = 1;
+			}
+			else {
+				closed = 0;
+			}
+		
+			num_ret = (num_cpts + order)*5; /* num pts on curve */
+			
+			for(i = 1; i <= 3*num_ret; i++){
+				ret[i] = 0.0;
+			}
+			
+			rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
+			
+			prev_x = ret[1];
+			prev_y = ret[2];
+			
+			for(i =4 ; i <= 3*num_ret; i = i+3){
+				line_add(curr_graph, prev_x, prev_y, ret[i], ret[i+1]);
+				prev_x = ret[i];
+				prev_y = ret[i+1];
+				/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
+			}
 		}
-		
-		for(i = 1; i <= 3*num_ret; i++){
-			ret[i] = 0.0;
-		}
-		
-		
-		num_ret = (num_cpts + order)*5; /* num pts on curve */
-		
-		rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
-		
-		prev_x = ret[1];
-		prev_y = ret[2];
-		/*
-		printf("\nPolygon points\n");
-
-		for (i = 1; i <= 3*num_cpts; i=i+3){
-			printf(" %f %f %f \n",ctrl_pts[i],ctrl_pts[i+1],ctrl_pts[i+2]);
-		}
-		
-		printf("\nHomogeneous weighting vector is \n");
-		for (i = 1; i <= num_cpts; i++){
-			printf(" %f ", weights[i]);
-		}
-		printf("\n");
-		
-		printf("%d, %d\n", count, num_cpts);
-		
-		
-		
-		printf("\nDXF knots \n");
-		for (i = 1; i <= num_knots; i++){
-			printf(" %f ", knots[i]);
-		}
-		printf("\n");*/
-		
-		for(i =4 ; i <= 3*num_ret; i = i+3){
-			line_add(curr_graph, prev_x, prev_y, ret[i], ret[i+1]);
-			prev_x = ret[i];
-			prev_y = ret[i+1];
-			/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
-		}
-		
 		return curr_graph;
 	}
 	return NULL;
