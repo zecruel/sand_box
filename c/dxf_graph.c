@@ -906,10 +906,10 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		int num_cpts, order, num_ret, num_knots;
 		double weight = 1.0;
-		double ctrl_pts[3000], ret[3000];
-		double weights[1000], knots[1000];
+		double ctrl_pts[3 * MAX_SPLINE_PTS], ret[3 * MAX_SPLINE_PTS];
+		double weights[MAX_SPLINE_PTS], knots[MAX_SPLINE_PTS];
 		int knot_count = 1;
-		
+
 		count =0;
 		
 		
@@ -988,7 +988,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			if (pt1){
 				pt1 = 0;
 				
-				if(init != 0){
+				if ((init != 0) && (count < MAX_SPLINE_PTS)){
 					ctrl_pts[count*3+1] = curr_x;
 					ctrl_pts[count*3+2] = pt1_y;
 					ctrl_pts[count*3+3] = pt1_z;
@@ -1007,7 +1007,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		}
 		
 		/* last vertex */
-		if(init != 0){
+		if ((init != 0) && (count < MAX_SPLINE_PTS)){
 			ctrl_pts[count*3+1] = curr_x;
 			ctrl_pts[count*3+2] = pt1_y;
 			ctrl_pts[count*3+3] = 0; //pt1_z
@@ -1016,7 +1016,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		}
 		
 		curr_graph = graph_new();
-		if (curr_graph){
+		if ((curr_graph)&&((count + order)*5 < MAX_SPLINE_PTS)){
 			//printf("primeiro\n");
 			/* find the layer index */
 			lay_idx = dxf_lay_idx(drawing, layer);

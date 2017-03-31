@@ -8,6 +8,8 @@
 #include "dxf.h"
 #include "bmp.h"
 
+#define MAX_SPLINE_PTS 1000
+
 struct Line_node{
 	double x0, y0, x1, y1;
 	struct Line_node * next;
