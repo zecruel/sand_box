@@ -79,7 +79,7 @@ widget * wdg_new(graph_obj * graph, int x, int y, int w, int h, char *action){
 
 void wdg_free(widget * wdg){
 	if (wdg){
-		graph_free(wdg->graph);
+		//graph_free(wdg->graph);
 		bmp_free(wdg->img);
 		free(wdg);
 	}
@@ -487,8 +487,12 @@ int main(int argc, char** argv){
 	
 	/*=======================*/
 	dxf_ent_clear(drawing.main_struct);
+	graph_mem_pool(FREE_ALL);
 	bmp_free(img);
 	shx_font_free(shx_font);
+	for (i = 0; i<drawing.num_fonts; i++){
+		shx_font_free(drawing.text_fonts[i].shx_font);
+	}
 	tbx_free(main_tbx);
 	//graph_free(t_open);
 	//wdg_free(w_open);

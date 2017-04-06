@@ -1895,6 +1895,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				ins_stack[ins_stack_pos].ofs_x = pt1_x;
 				ins_stack[ins_stack_pos].ofs_y = pt1_y;
 				ins_stack[ins_stack_pos].ofs_z = pt1_z;
+				//printf("Insert = %s, \tz= %0.2f, \tel= %0.2f\n", name1, pt1_z, elev);
 				ins_stack[ins_stack_pos].scale_x = scale_x;
 				ins_stack[ins_stack_pos].scale_y = scale_y;
 				ins_stack[ins_stack_pos].scale_z = scale_z;
@@ -1940,7 +1941,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			blk_flag = 0;
 			//p_space = paper;
 			
-			//printf("Bloco %d\n", p_space);
+			//printf("Bloco %0.2f, %0.2f, %0.2f\n", pt1_x, pt1_y, pt1_z);
 		}
 		
 		if (prev == ent){ /* stop the search if back on initial entity */
@@ -1965,15 +1966,16 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				//indent --;
 				if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
 					if (v_return->size > 0){
-					vec_graph_modify_idx(v_return,
-						ins_stack[ins_stack_pos].ofs_x,
-						ins_stack[ins_stack_pos].ofs_y,
-						ins_stack[ins_stack_pos].scale_x,
-						ins_stack[ins_stack_pos].scale_y,
-						ins_stack[ins_stack_pos].rot,
-						ins_stack[ins_stack_pos].start_idx,
-						v_return->size - 1
-					);}
+						vec_graph_modify_idx(v_return,
+							ins_stack[ins_stack_pos].ofs_x,
+							ins_stack[ins_stack_pos].ofs_y,
+							ins_stack[ins_stack_pos].scale_x,
+							ins_stack[ins_stack_pos].scale_y,
+							ins_stack[ins_stack_pos].rot,
+							ins_stack[ins_stack_pos].start_idx,
+							v_return->size - 1
+							);
+					}
 					/*printf("%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d\n",
 						ins_stack[ins_stack_pos].ofs_x,
 						ins_stack[ins_stack_pos].ofs_y,
@@ -1992,7 +1994,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						prev = ins_stack[ins_stack_pos].prev;
 						ins_stack_pos--;
 						//prev = ins_stack[ins_stack_pos].ins_ent;
-						//printf("retorna %d\n", prev);
+						//printf("retorna %d\n", ins_stack_pos);
 						current = prev;
 					}
 				}

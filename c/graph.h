@@ -10,6 +10,14 @@
 
 #define MAX_SPLINE_PTS 1000
 
+enum graph_pool_action{
+	ADD_GRAPH,
+	ADD_LINE,
+	ZERO_GRAPH,
+	ZERO_LINE,
+	FREE_ALL
+};
+
 struct Line_node{
 	double x0, y0, x1, y1;
 	struct Line_node * next;
