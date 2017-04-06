@@ -18,6 +18,15 @@ enum graph_pool_action{
 	FREE_ALL
 };
 
+struct Graph_pool_slot{
+	void *pool[1000];
+	/* the pool is a vector of pages. The size of each page is out of this definition */
+	int pos; /* current position in current page vector */
+	int page; /* current page index */
+	int size; /* number of pages available in slot */
+};
+typedef struct Graph_pool_slot graph_pool_slot;
+
 struct Line_node{
 	double x0, y0, x1, y1;
 	struct Line_node * next;
@@ -41,19 +50,15 @@ struct Graph_obj{
 };
 typedef struct Graph_obj graph_obj;
 
+void * graph_mem_pool(enum graph_pool_action action);
+
 graph_obj * graph_new(void);
 
 void line_add(graph_obj * master, double x0, double y0, double x1, double y1);
 
-void lines_free(graph_obj * master);
-
-void graph_free(graph_obj * master);
-
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
 void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale);
-
-void vec_graph_free(vector_p * vec);
 
 int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y);
 
