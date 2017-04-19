@@ -133,6 +133,7 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double radius, tick = 0, elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -194,6 +195,15 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					case 67:
 						paper = current->value.i_data;
 						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
 				}
@@ -233,6 +243,12 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 				/* add the graph */
 				graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal);
 			}
 			return curr_graph;
 		}
@@ -246,6 +262,7 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double radius, tick = 0, elev = 0;
 		double start_ang = 0.0, end_ang = 0.0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -313,6 +330,15 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					case 67:
 						paper = current->value.i_data;
 						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
 				}
@@ -352,6 +378,12 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 				/* add the graph */
 				graph_arc(curr_graph, pt1_x, pt1_y, radius, start_ang, end_ang, 1);
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal);
 			}
 			return curr_graph;
 		}
@@ -366,6 +398,7 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
 		double minor_ax, tick = 0, elev = 0;
 		double start_ang = 0.0, end_ang = 0.0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -445,6 +478,15 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					case 67:
 						paper = current->value.i_data;
 						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
 				}
@@ -484,6 +526,12 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 				/* add the graph */
 				graph_ellipse(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y, minor_ax, start_ang, end_ang);
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal);
 			}
 			return curr_graph;
 		}
@@ -498,6 +546,7 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double start_w = 0, end_w = 0;
 		double tick = 0, elev = 0, bulge = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		int pline_flag = 0;
 		int first = 0, closed =0;
@@ -574,6 +623,15 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					case 67:
 						paper = current->value.i_data;
 						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
 				}
@@ -623,6 +681,12 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						else {
 							closed = 0;
 						}
+						
+						/* convert OCS to WCS */
+						normal[0] = extru_x;
+						normal[1] = extru_y;
+						normal[2] = extru_z;
+						//graph_mod_axis(curr_graph, normal);
 					}
 				}
 				
@@ -677,6 +741,10 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 							}
 						}
 						//printf("fim\n");
+						
+						/* convert OCS to WCS */
+						graph_mod_axis(curr_graph, normal);
+						
 						break;
 					}
 					/* try to continue on previous point in structure */
@@ -697,6 +765,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double start_w = 0, end_w = 0;
 		double tick = 0, elev = 0, bulge = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		int pline_flag = 0;
 		int first = 0, closed =0;
@@ -772,6 +841,15 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 67:
 						paper = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
 						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
@@ -879,6 +957,11 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 		}
 		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		graph_mod_axis(curr_graph, normal);
 		
 		return curr_graph;
 	}
@@ -895,6 +978,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		int pline_flag = 0, closed = 0;
 		double prev_x, prev_y, curr_x;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -981,6 +1065,15 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 67:
 						paper = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
 						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
@@ -1074,6 +1167,11 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				prev_y = ret[i+1];
 				/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
 			}
+			/* convert OCS to WCS */
+			normal[0] = extru_x;
+			normal[1] = extru_y;
+			normal[2] = extru_z;
+			graph_mod_axis(curr_graph, normal);
 		}
 		return curr_graph;
 	}
@@ -1088,6 +1186,7 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		graph_obj *curr_graph = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		shape *shx_font = NULL;
 		
@@ -1198,6 +1297,15 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 73:
 						t_alin_v = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
 						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
@@ -1370,6 +1478,12 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 				/* apply the scales, offsets and rotation to graphs */
 				graph_modify(curr_graph, t_pos_x, t_pos_y, t_scale_x*txt_size, txt_size, t_rot);
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal);
 				
 			}
 			return curr_graph;
