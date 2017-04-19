@@ -767,3 +767,106 @@ double p[];
 		}
 	}
 }
+
+double dot_product(double a[3], double b[3]){
+	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+}
+ 
+void cross_product(double a[3], double b[3], double c[3]){
+	c[0] = a[1]*b[2] - a[2]*b[1];
+	c[1] = a[2]*b[0] - a[0]*b[2];
+	c[2] = a[0]*b[1] - a[1]*b[0];
+}
+
+void unit_vector(double a[3]){
+	double mod;
+	
+	mod = sqrt(pow(a[0], 2) + pow(a[1], 2) + pow(a[2], 2));
+	if (mod > 0.0) {
+		a[0] /= mod;
+		a[1] /= mod;
+		a[2] /= mod;
+	}
+}
+
+void graph_mod_axis(graph_obj * master, double normal[3]){
+	if ((master != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			double x_axis[3], y_axis[3], point[3];
+			double wy_axis[3] = {0.0, 1.0, 0.0};
+			double wz_axis[3] = {0.0, 0.0, 1.0};
+			
+			
+			double x0, y0, x1, y1;
+			double min_x, min_y, max_x, max_y;
+			line_node *current = master->list->next;
+			
+			master->ext_ini = 0;
+			
+			point[2] = 0.0; /*TODO: z cordinates of graph */
+			
+			unit_vector(normal);
+			if ((fabs(normal[0] < 0.015625)) && (fabs(normal[1] < 0.015625))){
+				cross_product(wy_axis, normal, x_axis);
+			}
+			else{
+				cross_product(wz_axis, normal, x_axis);
+			}
+			unit_vector(x_axis);
+			cross_product(normal, x_axis, y_axis);
+			unit_vector(y_axis);
+			
+			/* apply changes to each point */
+			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				point[0] = current->x0;
+				point[1] = current->y0;
+				x0 = dot_product(point, x_axis);
+				y0 = dot_product(point, y_axis);
+				
+				point[0] = current->x1;
+				point[1] = current->y1;
+				x1 = dot_product(point, x_axis);
+				y1 = dot_product(point, y_axis);
+				
+				
+				/* update the graph */
+				current->x0 = x0;
+				current->y0 = y0;
+				current->x1 = x1;
+				current->y1 = y1;
+				
+				/*update the extent of graph */
+				/* sort the coordinates of entire line*/
+				min_x = (x0 < x1) ? x0 : x1;
+				min_y = (y0 < y1) ? y0 : y1;
+				max_x = (x0 > x1) ? x0 : x1;
+				max_y = (y0 > y1) ? y0 : y1;
+				if (master->ext_ini == 0){
+					master->ext_ini = 1;
+					master->ext_min_x = min_x;
+					master->ext_min_y = min_y;
+					master->ext_max_x = max_x;
+					master->ext_max_y = max_y;
+				}
+				else{
+					master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
+					master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+					master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
+					master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
+				}
+				
+				current = current->next; /* go to next */
+			}
+		}
+	}
+}
+
+void vec_graph_mod_ax(vector_p * vec, double normal[3], int start_idx, int end_idx){
+	int i;
+	if (vec){
+		for(i = start_idx; i <= end_idx; i++){
+			graph_mod_axis(((graph_obj **)vec->data)[i], normal);
+		}
+	}
+}

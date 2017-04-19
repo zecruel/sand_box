@@ -701,7 +701,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		int pline_flag = 0;
 		int first = 0, closed =0;
 		double prev_x, prev_y, last_x, last_y, curr_x;
-		//double prev_bulge = 0;
+		double prev_bulge = 0;
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
@@ -837,18 +837,19 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				}
 				else if((first != 0) && (curr_graph != NULL)){
 					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-					if (bulge == 0){
+					if (prev_bulge == 0){
 						line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
 					}
 					else{
-						graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
-						bulge =0;
+						graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, prev_bulge);
+						//bulge =0;
 					}
 					prev_x = curr_x;
 					prev_y = pt1_y;
 				}
 				
-				//prev_bulge = bulge;
+				prev_bulge = bulge;
+				bulge = 0;
 				
 				curr_x = pt1_x;
 			}
@@ -858,12 +859,12 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		/* last vertex */
 		if((first != 0) && (curr_graph != NULL)){
 			//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-			if (bulge == 0){
+			if (prev_bulge == 0){
 				line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
 			}
 			else{
-				graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, bulge);
-				bulge =0;
+				graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, prev_bulge);
+				//bulge =0;
 			}
 			prev_x = curr_x;
 			prev_y = pt1_y;
@@ -1608,6 +1609,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double ofs_x, ofs_y, ofs_z;
 		double rot, scale_x, scale_y, scale_z;
 		int start_idx, end_idx;
+		double normal[3];
 	};
 	
 	struct ins_save ins_stack[10];
@@ -1616,7 +1618,8 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	struct ins_save ins_zero = {
 		.ins_ent = ent, .prev = NULL,
 		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
-		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0
+		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0,
+		.normal = {0.0, 0.0, 1.0}
 	};
 	
 	ins_stack[0] = ins_zero;
@@ -1626,6 +1629,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 	double t_rot = 0, rot = 0, tick = 0, elev = 0;
 	double scale_x = 1.0, scale_y = 1.0, scale_z = 1.0;
+	double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0;
 	
 	char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
 	char name1[DXF_MAX_CHARS], name2[DXF_MAX_CHARS], comment[DXF_MAX_CHARS];
@@ -1865,6 +1869,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					paper = current->value.i_data;
 					//printf("Paper %d\n", paper);
 					break;
+				case 210:
+					extru_x = current->value.d_data;
+					break;
+				case 220:
+					extru_y = current->value.d_data;
+					break;
+				case 230:
+					extru_z = current->value.d_data;
+					break;
 				case 999:
 					strcpy(comment, current->value.s_data);
 					break;
@@ -1895,11 +1908,13 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				ins_stack[ins_stack_pos].ofs_x = pt1_x;
 				ins_stack[ins_stack_pos].ofs_y = pt1_y;
 				ins_stack[ins_stack_pos].ofs_z = pt1_z;
-				//printf("Insert = %s, \tz= %0.2f, \tel= %0.2f\n", name1, pt1_z, elev);
 				ins_stack[ins_stack_pos].scale_x = scale_x;
 				ins_stack[ins_stack_pos].scale_y = scale_y;
 				ins_stack[ins_stack_pos].scale_z = scale_z;
 				ins_stack[ins_stack_pos].rot = t_rot;
+				ins_stack[ins_stack_pos].normal[0] = extru_x;
+				ins_stack[ins_stack_pos].normal[1] = extru_y;
+				ins_stack[ins_stack_pos].normal[2] = extru_z;
 				if (v_return->size > 0){
 					ins_stack[ins_stack_pos].start_idx = v_return->size;
 				}
@@ -1919,6 +1934,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				pt1_x = 0; pt1_y = 0; pt1_z = 0; rot = 0;
 				tick = 0; elev = 0; t_rot = 0;
 				scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
+				extru_x = 0.0; extru_y = 0.0; extru_z = 1.0;
 				
 				/* clear the strings */
 				handle[0] = 0;
@@ -1972,6 +1988,11 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 							ins_stack[ins_stack_pos].scale_x,
 							ins_stack[ins_stack_pos].scale_y,
 							ins_stack[ins_stack_pos].rot,
+							ins_stack[ins_stack_pos].start_idx,
+							v_return->size - 1
+							);
+						vec_graph_mod_ax(v_return,
+							ins_stack[ins_stack_pos].normal,
 							ins_stack[ins_stack_pos].start_idx,
 							v_return->size - 1
 							);
