@@ -524,7 +524,7 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 							px = center_x + radius * cos(2 * M_PI * i * direction/ 8 + ang_ini);
 							py = center_y + radius * sin(2 * M_PI * i * direction/ 8 + ang_ini);
 							//line_list.append(((pre_x,pre_y),(px,py)))
-							line_add(line_list, pre_x, pre_y, px, py);
+							line_add(line_list, pre_x, pre_y, 0.0, px, py, 0.0);
 							pre_x=px;
 							pre_y=py;
 						}
@@ -536,7 +536,7 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 						py *= scale;
 						if(pen){
 							//adiciona a linha na lista de retorno
-							line_add(line_list, pre_x, pre_y, pre_x+px, pre_y+py);
+							line_add(line_list, pre_x, pre_y, 0.0, pre_x+px, pre_y+py, 0.0);
 							
 							//calcula os valores maximo e minimo de cada coordenada
 							/*

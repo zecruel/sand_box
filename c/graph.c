@@ -158,7 +158,7 @@ graph_obj * graph_new(void){
 	return new_obj;
 }
 
-void line_add(graph_obj * master, double x0, double y0, double x1, double y1){
+void line_add(graph_obj * master, double x0, double y0, double z0, double x1, double y1, double z1){
 	/* create and add a line object to the graph master´s list */
 	
 	if (master){
@@ -168,8 +168,10 @@ void line_add(graph_obj * master, double x0, double y0, double x1, double y1){
 		if (new_line){
 			new_line->x0 = x0;
 			new_line->y0 = y0;
+			new_line->z0 = z0;
 			new_line->x1 = x1;
 			new_line->y1 = y1;
+			new_line->z1 = z1;
 			new_line->next = NULL;
 			
 			if(master->list->next == NULL){ /* check if list is empty */
@@ -275,7 +277,7 @@ int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, dou
 	return 0;
 }
 
-void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double ang_start, double ang_end, int sig){
+void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig){
 	if (master){
 		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang;
@@ -302,7 +304,7 @@ void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double
 			y1 = c_y + radius * sin(2 * M_PI * i * sig/ n + ang_start);
 			
 			
-			line_add(master, x0, y0, x1, y1);
+			line_add(master, x0, y0, c_z, x1, y1, c_z);
 			//printf("(%0.2f,%0.2f),", x1, y1);
 			x0=x1;
 			y0=y1;
@@ -310,14 +312,14 @@ void graph_arc(graph_obj * master, double c_x, double c_y, double radius, double
 		// o ultimo vertice do arco eh o ponto final, nao calculado no laço
 		x1 = c_x + radius * cos(ang_end);
 		y1 = c_y + radius * sin(ang_end);
-		line_add(master, x0, y0, x1, y1);
+		line_add(master, x0, y0, c_z, x1, y1, c_z);
 		//printf("(%0.2f,%0.2f)\n", x1, y1);
 	}
 }
 
 void graph_arc_bulge(graph_obj * master, 
-			double pt1_x, double pt1_y,
-			double pt2_x, double pt2_y, 
+			double pt1_x, double pt1_y , double pt1_z,
+			double pt2_x, double pt2_y, double pt2_z, 
 			double bulge){
 	
 	double theta, alfa, d, radius, ang_c, ang_start, ang_end, center_x, center_y;
@@ -347,10 +349,13 @@ void graph_arc_bulge(graph_obj * master,
 	ang_end *= 180/M_PI;
 	
 	//arco(entidade, camada, center, radius, ang_start, ang_end, cor, esp, sig);
-	graph_arc(master, center_x, center_y, radius, ang_start, ang_end, sig);
+	graph_arc(master, center_x, center_y, pt1_z, radius, ang_start, ang_end, sig);
 }
 
-void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, double p2_y, double minor_ax, double ang_start, double ang_end){
+void graph_ellipse(graph_obj * master,
+		double p1_x, double p1_y, double p1_z,
+		double p2_x, double p2_y, double p2_z,
+		double minor_ax, double ang_start, double ang_end){
 	if (master){
 		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang, major_ax, cosine, sine;
@@ -391,7 +396,7 @@ void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, do
 			yy0 = sine*(x0-p1_x) + cosine*(y0-p1_y) + p1_y;
 			xx1 = cosine*(x1-p1_x) - sine*(y1-p1_y) + p1_x;
 			yy1 = sine*(x1-p1_x) + cosine*(y1-p1_y) + p1_y;
-			line_add(master, xx0, yy0, xx1, yy1);
+			line_add(master, xx0, yy0, p1_z, xx1, yy1, p1_z);
 			//printf("(%0.2f,%0.2f),", x1, y1);
 			x0=x1;
 			y0=y1;
@@ -404,7 +409,7 @@ void graph_ellipse(graph_obj * master, double p1_x, double p1_y, double p2_x, do
 		yy0 = sine*(x0-p1_x) + cosine*(y0-p1_y) + p1_y;
 		xx1 = cosine*(x1-p1_x) - sine*(y1-p1_y) + p1_x;
 		yy1 = sine*(x1-p1_x) + cosine*(y1-p1_y) + p1_y;
-		line_add(master, xx0, yy0, xx1, yy1);
+		line_add(master, xx0, yy0, p1_z, xx1, yy1, p1_z);
 		
 		//printf("(%0.2f,%0.2f)\n", x1, y1);
 	}
@@ -803,8 +808,6 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 			
 			master->ext_ini = 0;
 			
-			point[2] = 0.0; /*TODO: z cordinates of graph */
-			
 			//unit_vector(normal);
 			if ((fabs(normal[0] < 0.015625)) && (fabs(normal[1] < 0.015625))){
 				cross_product(wy_axis, normal, x_axis);
@@ -821,11 +824,13 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 				/* apply the scale and offset */
 				point[0] = current->x0;
 				point[1] = current->y0;
+				point[2] = current->z0;
 				x0 = dot_product(point, x_axis);
 				y0 = dot_product(point, y_axis);
 				
 				point[0] = current->x1;
 				point[1] = current->y1;
+				point[2] = current->z1;
 				x1 = dot_product(point, x_axis);
 				y1 = dot_product(point, y_axis);
 				

@@ -120,7 +120,7 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				curr_graph->color = dxf_colors[color];
 				
 				/* add the line */
-				line_add(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y);
+				line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
 			}
 			return curr_graph;
 		}
@@ -242,7 +242,7 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				curr_graph->color = dxf_colors[color];
 				
 				/* add the graph */
-				graph_arc(curr_graph, pt1_x, pt1_y, radius, 0.0, 0.0, 1);
+				graph_arc(curr_graph, pt1_x, pt1_y, pt1_z, radius, 0.0, 0.0, 1);
 				
 				/* convert OCS to WCS */
 				normal[0] = extru_x;
@@ -377,7 +377,7 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				curr_graph->color = dxf_colors[color];
 				
 				/* add the graph */
-				graph_arc(curr_graph, pt1_x, pt1_y, radius, start_ang, end_ang, 1);
+				graph_arc(curr_graph, pt1_x, pt1_y, pt1_z, radius, start_ang, end_ang, 1);
 				
 				/* convert OCS to WCS */
 				normal[0] = extru_x;
@@ -525,7 +525,7 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				curr_graph->color = dxf_colors[color];
 				
 				/* add the graph */
-				graph_ellipse(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y, minor_ax, start_ang, end_ang);
+				graph_ellipse(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z, minor_ax, start_ang, end_ang);
 			}
 			return curr_graph;
 		}
@@ -544,7 +544,7 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		int pline_flag = 0;
 		int first = 0, closed =0;
-		double prev_x, prev_y, last_x, last_y;
+		double prev_x, prev_y, prev_z, last_x, last_y, last_z;
 		double prev_bulge = 0;
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
@@ -676,11 +676,10 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 							closed = 0;
 						}
 						
-						/* convert OCS to WCS */
+						/* for convertion OCS to WCS */
 						normal[0] = extru_x;
 						normal[1] = extru_y;
 						normal[2] = extru_z;
-						//graph_mod_axis(curr_graph, normal);
 					}
 				}
 				
@@ -698,10 +697,10 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				if((first != 0) && (curr_graph != NULL)){
 					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, pt1_x, pt1_y);
 					if (prev_bulge == 0){
-						line_add(curr_graph, prev_x, prev_y, pt1_x, pt1_y);
+						line_add(curr_graph, prev_x, prev_y, prev_z, pt1_x, pt1_y, pt1_z);
 					}
 					else{
-						graph_arc_bulge(curr_graph, prev_x, prev_y, pt1_x, pt1_y, prev_bulge);
+						graph_arc_bulge(curr_graph, prev_x, prev_y, prev_z, pt1_x, pt1_y, pt1_z, prev_bulge);
 					}
 				}
 				else if(first == 0){
@@ -710,9 +709,11 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					//printf("primeiro vertice\n");
 					last_x = pt1_x;
 					last_y = pt1_y;
+					last_z = pt1_z;
 				}
 				prev_x = pt1_x;
 				prev_y = pt1_y;
+				prev_z = pt1_z;
 				prev_bulge = bulge;
 				
 				pt1_x = 0; pt1_y = 0; pt1_z = 0;
@@ -728,10 +729,10 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					if (prev == ent){ /* back on polyline ent */
 						if((closed != 0) && (curr_graph != NULL)){
 							if (prev_bulge == 0){
-								line_add(curr_graph, prev_x, prev_y, last_x, last_y);
+								line_add(curr_graph, prev_x, prev_y, prev_z, last_x, last_y, last_z);
 							}
 							else{
-								graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, prev_bulge);
+								graph_arc_bulge(curr_graph, prev_x, prev_y, prev_z, last_x, last_y, last_z, prev_bulge);
 							}
 						}
 						//printf("fim\n");
@@ -763,7 +764,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		int pline_flag = 0;
 		int first = 0, closed =0;
-		double prev_x, prev_y, last_x, last_y, curr_x;
+		double prev_x, prev_y, prev_z, last_x, last_y, last_z, curr_x;
 		double prev_bulge = 0;
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
@@ -858,8 +859,10 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					//printf("primeiro vertice\n");
 					last_x = curr_x;
 					last_y = pt1_y;
+					last_z = pt1_z;
 					prev_x = curr_x;
 					prev_y = pt1_y;
+					prev_z = pt1_z;
 				}
 				else if((init == 0) &&
 				(((p_space == 0) && (paper == 0)) || 
@@ -910,14 +913,15 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				else if((first != 0) && (curr_graph != NULL)){
 					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
 					if (prev_bulge == 0){
-						line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
+						line_add(curr_graph, prev_x, prev_y, prev_z, curr_x, pt1_y, pt1_z);
 					}
 					else{
-						graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, prev_bulge);
+						graph_arc_bulge(curr_graph, prev_x, prev_y, prev_z, curr_x, pt1_y, pt1_z, prev_bulge);
 						//bulge =0;
 					}
 					prev_x = curr_x;
 					prev_y = pt1_y;
+					prev_z = pt1_z;
 				}
 				
 				prev_bulge = bulge;
@@ -932,10 +936,10 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		if((first != 0) && (curr_graph != NULL)){
 			//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
 			if (prev_bulge == 0){
-				line_add(curr_graph, prev_x, prev_y, curr_x, pt1_y);
+				line_add(curr_graph, prev_x, prev_y, prev_z, curr_x, pt1_y, pt1_z);
 			}
 			else{
-				graph_arc_bulge(curr_graph, prev_x, prev_y, curr_x, pt1_y, prev_bulge);
+				graph_arc_bulge(curr_graph, prev_x, prev_y, prev_z, curr_x, pt1_y, pt1_z, prev_bulge);
 				//bulge =0;
 			}
 			prev_x = curr_x;
@@ -944,10 +948,10 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		
 		if((closed != 0) && (curr_graph != NULL)){
 			if (bulge == 0){
-				line_add(curr_graph, prev_x, prev_y, last_x, last_y);
+				line_add(curr_graph, prev_x, prev_y, prev_z, last_x, last_y, last_z);
 			}
 			else{
-				graph_arc_bulge(curr_graph, prev_x, prev_y, last_x, last_y, bulge);
+				graph_arc_bulge(curr_graph, prev_x, prev_y, prev_z, last_x, last_y, last_z, bulge);
 			}
 		}
 		
@@ -971,7 +975,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		double tick = 0, elev = 0;
 		
 		int pline_flag = 0, closed = 0;
-		double prev_x, prev_y, curr_x;
+		double prev_x, prev_y, prev_z, curr_x;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
@@ -1098,7 +1102,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		if ((init != 0) && (count < MAX_SPLINE_PTS)){
 			ctrl_pts[count*3+1] = curr_x;
 			ctrl_pts[count*3+2] = pt1_y;
-			ctrl_pts[count*3+3] = 0; //pt1_z
+			ctrl_pts[count*3+3] = pt1_z;
 			weights[count+1] = weight;
 			count++;
 		}
@@ -1154,11 +1158,13 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			
 			prev_x = ret[1];
 			prev_y = ret[2];
+			prev_z = ret[3];
 			
 			for(i =4 ; i <= 3*num_ret; i = i+3){
-				line_add(curr_graph, prev_x, prev_y, ret[i], ret[i+1]);
+				line_add(curr_graph, prev_x, prev_y, prev_z, ret[i], ret[i+1], ret[i+2]);
 				prev_x = ret[i];
 				prev_y = ret[i+1];
+				prev_z = ret[i+2];
 				/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
 			}
 		}
@@ -1428,16 +1434,20 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 					line_add(curr_graph, 
 						curr_graph->ext_min_x,
 						(double)fnt_size * -0.1,
+						pt1_z,
 						curr_graph->ext_max_x, 
-						(double)fnt_size * -0.1);
+						(double)fnt_size * -0.1,
+						pt1_z);
 				}
 				if (over_l){
 					/* add the over line */
 					line_add(curr_graph, 
 						curr_graph->ext_min_x,
 						(double)fnt_size * 1.1,
+						pt1_z,
 						curr_graph->ext_max_x, 
-						(double)fnt_size * 1.1);
+						(double)fnt_size * 1.1,
+						pt1_z);
 				}
 				
 				/* find the insert point of text, in function of its aling */
