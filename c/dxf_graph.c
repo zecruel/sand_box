@@ -526,12 +526,6 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 				/* add the graph */
 				graph_ellipse(curr_graph, pt1_x, pt1_y, pt2_x, pt2_y, minor_ax, start_ang, end_ang);
-				
-				/* convert OCS to WCS */
-				normal[0] = extru_x;
-				normal[1] = extru_y;
-				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
 			}
 			return curr_graph;
 		}
@@ -1167,11 +1161,6 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				prev_y = ret[i+1];
 				/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
 			}
-			/* convert OCS to WCS */
-			normal[0] = extru_x;
-			normal[1] = extru_y;
-			normal[2] = extru_z;
-			graph_mod_axis(curr_graph, normal);
 		}
 		return curr_graph;
 	}

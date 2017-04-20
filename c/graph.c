@@ -805,7 +805,7 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 			
 			point[2] = 0.0; /*TODO: z cordinates of graph */
 			
-			unit_vector(normal);
+			//unit_vector(normal);
 			if ((fabs(normal[0] < 0.015625)) && (fabs(normal[1] < 0.015625))){
 				cross_product(wy_axis, normal, x_axis);
 			}

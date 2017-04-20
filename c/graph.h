@@ -28,7 +28,7 @@ struct Graph_pool_slot{
 typedef struct Graph_pool_slot graph_pool_slot;
 
 struct Line_node{
-	double x0, y0, x1, y1;
+	double x0, y0, z0, x1, y1, z1;
 	struct Line_node * next;
 };
 typedef struct Line_node line_node;
@@ -36,7 +36,7 @@ typedef struct Line_node line_node;
 struct Graph_obj{
 	dxf_node * owner;
 	bmp_color color;
-	double rot, scale, ofs_x, ofs_y;
+	double rot, scale, ofs_x, ofs_y, ofs_z;
 	int tick;
 	/* pattern information */
 	double pattern[20];
