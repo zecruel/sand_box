@@ -1707,6 +1707,181 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
+graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+	if(ent){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+		double pt3_x = 0, pt3_y = 0, pt3_z = 0;
+		double pt4_x = 0, pt4_y = 0, pt4_z = 0;
+		double tick = 0, elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
+		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
+		
+		int color = 256, paper = 0;
+		int lay_idx, ltype_idx, i;
+		
+		/*flags*/
+		int pt1 = 0, pt2 = 0, pt3 = 0, pt4 = 0;
+		
+		/* clear the strings */
+		handle[0] = 0;
+		l_type[0] = 0;
+		layer[0] = 0;
+		comment[0] = 0;
+		
+		if (ent->type == DXF_ENT){
+			if (ent->obj.content){
+				current = ent->obj.content->next;
+				//printf("%s\n", ent->obj.name);
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 5:
+						strcpy(handle, current->value.s_data);
+						break;
+					case 6:
+						strcpy(l_type, current->value.s_data);
+						break;
+					case 8:
+						strcpy(layer, current->value.s_data);
+						break;
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 11:
+						pt2_x = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 21:
+						pt2_y = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 31:
+						pt2_z = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 12:
+						pt3_x = current->value.d_data;
+						pt3 = 1; /* set flag */
+						break;
+					case 22:
+						pt3_y = current->value.d_data;
+						pt3 = 1; /* set flag */
+						break;
+					case 32:
+						pt3_z = current->value.d_data;
+						pt3 = 1; /* set flag */
+						break;
+					case 13:
+						pt4_x = current->value.d_data;
+						pt4 = 1; /* set flag */
+						break;
+					case 23:
+						pt4_y = current->value.d_data;
+						pt4 = 1; /* set flag */
+						break;
+					case 33:
+						pt4_z = current->value.d_data;
+						pt4 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 39:
+						tick = current->value.d_data;
+						break;
+					case 62:
+						color = current->value.i_data;
+						break;
+					case 67:
+						paper = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+					case 999:
+						strcpy(comment, current->value.s_data);
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
+			graph_obj *curr_graph = graph_new();
+			if (curr_graph){
+				/* find the layer index */
+				lay_idx = dxf_lay_idx(drawing, layer);
+				
+				/* check if  object's color  is definied by layer,
+				then look for layer's color */
+				if (color >= 256){
+					color = drawing.layers[lay_idx].color;
+				}
+				
+				/* check if  object's ltype  is definied by layer,
+				then look for layer's ltype */
+				if ((strcmp(l_type, "BYLAYER") == 0) ||
+					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
+					strcpy(l_type, drawing.layers[lay_idx].ltype);
+				}
+				
+				/* find the ltype index */
+				ltype_idx = dxf_ltype_idx(drawing, l_type);
+				
+				/* change the graph line pattern */
+				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
+				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				}
+				
+				/*change the color */
+				curr_graph->color = dxf_colors[color];
+				
+				/* add the graph */
+				line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
+				
+				if (pt4){
+					line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt3_x, pt3_y, pt3_z);
+					line_add(curr_graph, pt3_x, pt3_y, pt3_z, pt4_x, pt4_y, pt4_z);
+					line_add(curr_graph, pt2_x, pt2_y, pt2_z, pt4_x, pt4_y, pt4_z);
+				}
+				else{
+					line_add(curr_graph, pt2_x, pt2_y, pt2_z, pt3_x, pt3_y, pt3_z);
+					line_add(curr_graph, pt3_x, pt3_y, pt3_z, pt1_x, pt1_y, pt1_z);
+				}
+				
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal);
+			}
+			return curr_graph;
+		}
+	}
+	return NULL;
+}
+
 vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	/* this function is non recursive */
 	
@@ -1827,6 +2002,11 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "SOLID") == 0){
 				ent_type = DXF_SOLID;
+				curr_graph = dxf_solid_parse(drawing, current, p_space);
+				if (curr_graph){
+					/* store the graph in the return vector */
+					stack_push(v_return, curr_graph);
+				}
 				
 				
 			}
@@ -1918,10 +2098,15 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "DIMENSION") == 0){
 				ent_type = DXF_DIMENSION;
+				/* a dimension will draw as a insert entity */
+				insert_ent = current;
+				ins_flag = 1;
 				
 				if (current->obj.content){
 					/* starts the content sweep */
-					//current = current->obj.content->next;
+					current = current->obj.content->next;
+					prev = current;
+					continue;
 				}
 			}
 		}
@@ -2018,16 +2203,31 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				ins_stack_pos++;
 				ins_stack[ins_stack_pos].ins_ent = blk;
 				ins_stack[ins_stack_pos].prev = prev;
-				ins_stack[ins_stack_pos].ofs_x = pt1_x;
-				ins_stack[ins_stack_pos].ofs_y = pt1_y;
-				ins_stack[ins_stack_pos].ofs_z = pt1_z;
-				ins_stack[ins_stack_pos].scale_x = scale_x;
-				ins_stack[ins_stack_pos].scale_y = scale_y;
-				ins_stack[ins_stack_pos].scale_z = scale_z;
-				ins_stack[ins_stack_pos].rot = t_rot;
-				ins_stack[ins_stack_pos].normal[0] = extru_x;
-				ins_stack[ins_stack_pos].normal[1] = extru_y;
-				ins_stack[ins_stack_pos].normal[2] = extru_z;
+				
+				if (ent_type == DXF_INSERT){
+					ins_stack[ins_stack_pos].ofs_x = pt1_x;
+					ins_stack[ins_stack_pos].ofs_y = pt1_y;
+					ins_stack[ins_stack_pos].ofs_z = pt1_z;
+					ins_stack[ins_stack_pos].scale_x = scale_x;
+					ins_stack[ins_stack_pos].scale_y = scale_y;
+					ins_stack[ins_stack_pos].scale_z = scale_z;
+					ins_stack[ins_stack_pos].rot = t_rot;
+					ins_stack[ins_stack_pos].normal[0] = extru_x;
+					ins_stack[ins_stack_pos].normal[1] = extru_y;
+					ins_stack[ins_stack_pos].normal[2] = extru_z;
+				}
+				else{ /* to draw dimmensions */
+					ins_stack[ins_stack_pos].ofs_x = 0.0;
+					ins_stack[ins_stack_pos].ofs_y = 0.0;
+					ins_stack[ins_stack_pos].ofs_z = 0.0;
+					ins_stack[ins_stack_pos].scale_x = 1.0;
+					ins_stack[ins_stack_pos].scale_y = 1.0;
+					ins_stack[ins_stack_pos].scale_z = 1.0;
+					ins_stack[ins_stack_pos].rot = 0.0;
+					ins_stack[ins_stack_pos].normal[0] = 0.0;
+					ins_stack[ins_stack_pos].normal[1] = 0.0;
+					ins_stack[ins_stack_pos].normal[2] = 1.0;
+				}
 				if (v_return->size > 0){
 					ins_stack[ins_stack_pos].start_idx = v_return->size;
 				}
