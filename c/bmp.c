@@ -18,6 +18,71 @@ rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax
 	return code;
 }
 
+int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
+
+	/* 
+	clip the line on the window area
+	
+	from: https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
+	Cohen–Sutherland clipping algorithm clips a line from
+	P0 = (*x0, *y0) to P1 = (*x1, *y1) against a rectangle of bitmap image */
+	
+	/* compute outcodes for P0, P1, and whatever point lies outside the clip rectangle */
+	rect_pos pos_p0 = rect_find_pos(*x0, *y0, 0, 0, img->width, img->height);
+	rect_pos pos_p1 = rect_find_pos(*x1, *y1, 0, 0, img->width, img->height);
+	
+	int accept = 0;
+
+	while (1) {
+		if (!(pos_p0 | pos_p1)) { /* Bitwise OR is 0. Trivially accept and get out of loop */
+			accept = 1;
+			break;
+		}
+		else if (pos_p0 & pos_p1) { /* Bitwise AND is not 0. 
+			(implies both end points are in the same region outside the 
+			window). Reject and get out of loop */
+			break;
+		}
+		else {
+			/* failed both tests, so calculate the line segment to clip
+			from an outside point to an intersection with clip edge*/
+			double x, y;
+
+			/* At least one endpoint is outside the clip rectangle; pick it. */
+			rect_pos pos_out = pos_p0 ? pos_p0 : pos_p1;
+
+			/* Now find the intersection point;
+			use formulas y = *y0 + slope * (x - *x0), x = *x0 + (1 / slope) * (y - *y0) */
+			if (pos_out & TOP) {           /* point is above the clip rectangle */
+				x = *x0 + (*x1 - *x0) * (img->height - *y0) / (*y1 - *y0);
+				y = img->height;
+			} else if (pos_out & BOTTOM) { /* point is below the clip rectangle*/
+				x = *x0 + (*x1 - *x0) * (0 - *y0) / (*y1 - *y0);
+				y = 0;
+			} else if (pos_out & RIGHT) {  /* point is to the right of clip rectangle */
+				y = *y0 + (*y1 - *y0) * (img->width - *x0) / (*x1 - *x0);
+				x = img->width;
+			} else if (pos_out & LEFT) {   /* point is to the left of clip rectangle */
+				y = *y0 + (*y1 - *y0) * (0 - *x0) / (*x1 - *x0);
+				x = 0;
+			}
+
+			/* Now we move outside point to intersection point to clip
+			and get ready for next pass.*/
+			if (pos_out == pos_p0) {
+				*x0 = x;
+				*y0 = y;
+				pos_p0 = rect_find_pos(*x0, *y0, 0, 0, img->width, img->height);
+			} else {
+				*x1 = x;
+				*y1 = y;
+				pos_p1 = rect_find_pos(*x1, *y1, 0, 0, img->width, img->height);
+			}
+		}
+	}
+	return accept;
+}
+
 int bmp_fill (bmp_img *img, bmp_color color){
 	/* fill the bmp image with passed color */
 	
@@ -156,28 +221,93 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 	}
 }
 
+void bmp_define_brush(bmp_img *img, int x0, int y0, int x1, int y1) {
+	double x, y, modulus, p_error_x, p_error_y;
+	int dx, dy, sx, sy, err, e2, i;
+	int xb, yb, x_end, y_end; 
+	int half_x, half_y; /* to determine line's center*/
+
+	/* get the vector of line */
+	x = x1 - x0;
+	y = y1 - y0;
+	modulus = sqrt(pow(x, 2) + pow(y, 2));
+	if (modulus > 0){ /* change to unit */
+		x /= modulus;
+		y /= modulus;
+	}
+	/* normal vector is xn = -y, yn = x */
+	x_end = (int)(round((double)img->tick * -y));
+	y_end = (int)(round((double)img->tick * x));
+	
+	p_error_x = fabs(fabs(x) - fabs(y_end));
+	p_error_y = fabs(fabs(y) - fabs(x_end));
+	
+	
+	half_x = x_end/2;
+	half_y = y_end/2;
+	
+	
+	/* generate the image brush by Bresenham's line algorithm*/
+	dx = abs(x_end);
+	dy = abs(y_end);
+	
+	sx = x_end>=0 ? 1 : -1;
+	sy = y_end>=0 ? 1 : -1;
+	err = (dx>dy ? dx : -dy)/2;
+	
+	xb = 0;
+	yb = 0;
+
+	for(i = 0; i < BMP_MAX_BRUSH; i++){
+		/* index of brush pixels */
+		img->brush_x[i] = xb - half_x;
+		img->brush_y[i] = yb - half_y;
+		
+		if (xb==x_end && yb==y_end) break;
+		e2 = err;
+		if (e2 >-dx) { err -= dy; xb += sx; }
+		if (e2 < dy) { err += dx; yb += sy; }
+	}
+	img->brush_size = i +1;
+	
+	/*repeat */
+	if ((p_error_x > 0) || (p_error_x > 0)){
+		if (fabs(x)>fabs(y)){
+			xb = 1;
+			yb = 0;
+			x_end++;
+		}
+		else{
+			yb = 1;
+			xb = 0;
+			y_end++;
+		}
+
+		for(; i < BMP_MAX_BRUSH; i++){
+			/* index of brush pixels */
+			img->brush_x[i] = xb - half_x;
+			img->brush_y[i] = yb - half_y;
+			
+			if (xb==x_end && yb==y_end) break;
+			e2 = err;
+			if (e2 >-dx) { err -= dy; xb += sx; }
+			if (e2 < dy) { err += dx; yb += sy; }
+		}
+
+		img->brush_size = i +1;
+	}
+}
+
 void bmp_point (bmp_img *img, int xc, int yc){
 	/* Draw a point on image. The coordinates xc,yc indicates the center of point.
 	the tickness is specified in image */
 	
 	if(img != NULL){
 		if (img->tick > 1){ /* if the point have a tickness */
-			unsigned int i, j, half;
-			int x, y;
+			unsigned int i;
 			
-			/*aproximate the point with a rectangle */
-			/* TODO : better aproximation */
-			
-			/* find the initial coordinates */
-			half = img->tick/2;
-			x = xc - half;
-			y = yc - half;
-			
-			/* fill the rectangle */
-			for (i = 0; i < img->tick; i++){
-				for (j = 0; j < img->tick; j++){
-					bmp_point_raw (img, x+i, y+j);
-				}
+			for (i = 0; i < img->brush_size; i++){
+				bmp_point_raw (img, xc+img->brush_x[i], yc+img->brush_y[i]);
 			}
 		}
 		else{ /* a skinny point */
@@ -234,6 +364,61 @@ int patt_check(bmp_img *img){
 	return pen;
 }
 
+void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius){
+	int x = radius;
+	int y = 0;
+	int err = 0;
+	int x_start, x_end, i, signal;
+
+	while (x >= y){
+		//putpixel(x0 + x, y0 + y);
+		//putpixel(x0 - x, y0 + y);
+		x_start = x0 + x;
+		x_end = x0 - x;
+		signal = x_start < x_end ? 1 : -1;
+		for(i = x_start; i != x_end; i += signal){
+			bmp_point_raw (img, i, y0 + y);
+		}
+		
+		//putpixel(x0 + y, y0 + x);
+		//putpixel(x0 - y, y0 + x);
+		x_start = x0 + y;
+		x_end = x0 - y;
+		signal = x_start < x_end ? 1 : -1;
+		for(i = x_start; i != x_end; i += signal){
+			bmp_point_raw (img, i, y0 + x);
+		}
+		
+		//putpixel(x0 + x, y0 - y);
+		//putpixel(x0 - x, y0 - y);
+		x_start = x0 + x;
+		x_end = x0 - x;
+		signal = x_start < x_end ? 1 : -1;
+		for(i = x_start; i != x_end; i += signal){
+			bmp_point_raw (img, i, y0 - y);
+		}
+		
+		//putpixel(x0 - y, y0 - x);
+		//putpixel(x0 + y, y0 - x);
+		x_start = x0 + y;
+		x_end = x0 - y;
+		signal = x_start < x_end ? 1 : -1;
+		for(i = x_start; i != x_end; i += signal){
+			bmp_point_raw (img, i, y0 - x);
+		}
+		
+
+		if (err <= 0){
+			y += 1;
+			err += 2*y + 1;
+		}
+		if (err > 0){
+			x -= 1;
+			err -= 2*x + 1;
+		}
+	}
+}
+
 void bmp_line_raw(bmp_img *img, int x0, int y0, int x1, int y1) {
 /* Draw a line on bmp image
 Bitmap/Bresenham's line algorithm
@@ -252,74 +437,44 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 		if (e2 >-dx) { err -= dy; x0 += sx; }
 		if (e2 < dy) { err += dx; y0 += sy; }
 	}
+	
+	
+	/* at end of line, draw a circle */
+	if (img->tick > 1){ /* if the point have a tickness*/
+		bmp_circle_fill(img, x1, y1, (int)round(img->tick /2));
+	}
+	/*
+		unsigned int i, j, half;
+		int x, y;
+		/* TODO : better aproximation insted of a rectangle
+		
+		/* find the initial coordinates
+		half = img->tick/2;
+		x = x1 - half;
+		y = y1 - half;
+		
+		/* fill the rectangle 
+		for (i = 0; i < img->tick; i++){
+			for (j = 0; j < img->tick; j++){
+				bmp_point_raw (img, x+i, y+j);
+			}
+		}
+	}*/
 }
 
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 
 	/* 
 	Draw a line on bmp image - clip the line on the window area
+	*/
 	
-	from: https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
-	Cohen–Sutherland clipping algorithm clips a line from
-	P0 = (x0, y0) to P1 = (x1, y1) against a rectangle of bitmap image */
-	
-	/* compute outcodes for P0, P1, and whatever point lies outside the clip rectangle */
-	rect_pos pos_p0 = rect_find_pos(x0, y0, 0, 0, img->width, img->height);
-	rect_pos pos_p1 = rect_find_pos(x1, y1, 0, 0, img->width, img->height);
-	
-	int accept = 0;
-
-	while (1) {
-		if (!(pos_p0 | pos_p1)) { /* Bitwise OR is 0. Trivially accept and get out of loop */
-			accept = 1;
-			break;
-		}
-		else if (pos_p0 & pos_p1) { /* Bitwise AND is not 0. 
-			(implies both end points are in the same region outside the 
-			window). Reject and get out of loop */
-			break;
-		}
-		else {
-			/* failed both tests, so calculate the line segment to clip
-			from an outside point to an intersection with clip edge*/
-			double x, y;
-
-			/* At least one endpoint is outside the clip rectangle; pick it. */
-			rect_pos pos_out = pos_p0 ? pos_p0 : pos_p1;
-
-			/* Now find the intersection point;
-			use formulas y = y0 + slope * (x - x0), x = x0 + (1 / slope) * (y - y0) */
-			if (pos_out & TOP) {           /* point is above the clip rectangle */
-				x = x0 + (x1 - x0) * (img->height - y0) / (y1 - y0);
-				y = img->height;
-			} else if (pos_out & BOTTOM) { /* point is below the clip rectangle*/
-				x = x0 + (x1 - x0) * (0 - y0) / (y1 - y0);
-				y = 0;
-			} else if (pos_out & RIGHT) {  /* point is to the right of clip rectangle */
-				y = y0 + (y1 - y0) * (img->width - x0) / (x1 - x0);
-				x = img->width;
-			} else if (pos_out & LEFT) {   /* point is to the left of clip rectangle */
-				y = y0 + (y1 - y0) * (0 - x0) / (x1 - x0);
-				x = 0;
-			}
-
-			/* Now we move outside point to intersection point to clip
-			and get ready for next pass.*/
-			if (pos_out == pos_p0) {
-				x0 = x;
-				y0 = y;
-				pos_p0 = rect_find_pos(x0, y0, 0, 0, img->width, img->height);
-			} else {
-				x1 = x;
-				y1 = y;
-				pos_p1 = rect_find_pos(x1, y1, 0, 0, img->width, img->height);
-			}
-		}
-	}
-	if (accept) {
+	if (line_clip(img, &x0, &y0, &x1, &y1)) {
+		bmp_define_brush(img, (int) x0, (int) y0, (int) x1, (int) y1);
 		bmp_line_raw(img, (int) x0, (int) y0, (int) x1, (int) y1);
 	}
 }
+
+
 
 void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 	

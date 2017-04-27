@@ -37,7 +37,7 @@ struct Graph_obj{
 	dxf_node * owner;
 	bmp_color color;
 	double rot, scale, ofs_x, ofs_y, ofs_z;
-	int tick;
+	double tick;
 	/* pattern information */
 	double pattern[20];
 	int patt_size;

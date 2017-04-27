@@ -119,6 +119,10 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				/*change the color */
 				curr_graph->color = dxf_colors[color];
 				
+				/*change tickness */
+				curr_graph->tick = tick;
+				//printf ("%0.2f\n", curr_graph->tick);
+				
 				/* add the line */
 				line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
 			}
@@ -666,6 +670,9 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						/*change the color */
 						curr_graph->color = dxf_colors[color];
 						
+						/*change tickness */
+						curr_graph->tick = start_w;
+						
 						pt1_x = 0; pt1_y = 0; pt1_z = 0;
 						bulge =0;
 						
@@ -758,7 +765,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
-		double start_w = 0, end_w = 0;
+		double start_w = 0, end_w = 0, fix_w = 0;
 		double tick = 0, elev = 0, bulge = 0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
@@ -821,6 +828,9 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						break;
 					case 42:
 						bulge = current->value.d_data;
+						break;
+					case 43:
+						fix_w = current->value.d_data;
 						break;
 					case 70:
 						pline_flag = current->value.i_data;
@@ -898,6 +908,9 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 						
 						/*change the color */
 						curr_graph->color = dxf_colors[color];
+						
+						/*change tickness */
+						curr_graph->tick = fix_w;
 						
 						//pt1_x = 0; pt1_y = 0; pt1_z = 0;
 						//bulge =0;
