@@ -222,6 +222,59 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 }
 
 void bmp_define_brush(bmp_img *img, int x0, int y0, int x1, int y1) {
+	double x, y, modulus;
+	int dx, dy, sx, sy, err, e2, i;
+	int xb, yb, x_end, y_end; 
+	int half_x, half_y; /* to determine line's center*/
+
+	/* get the vector of line */
+	x = x1 - x0;
+	y = y1 - y0;
+	modulus = sqrt(pow(x, 2) + pow(y, 2));
+	if (modulus > 0){ /* change to unit */
+		x /= modulus;
+		y /= modulus;
+	}
+	/* normal vector is xn = -y, yn = x */
+	x_end = (int)(round((double)img->tick * -y));
+	y_end = (int)(round((double)img->tick * x));
+	
+	
+	half_x = x_end/2;
+	half_y = y_end/2;
+	
+	
+	/* generate the image brush by Bresenham's line algorithm*/
+	dx = abs(x_end);
+	dy = abs(y_end);
+	
+	sx = x_end>=0 ? 1 : -1;
+	sy = y_end>=0 ? 1 : -1;
+	err = (dx>dy ? dx : -dy)/2;
+	
+	xb = 0;
+	yb = 0;
+
+	for(i = 0; i < BMP_MAX_BRUSH; i++){
+		/* index of brush pixels */
+		img->brush_x[i] = xb - half_x;
+		img->brush_y[i] = yb - half_y;
+		
+		if (xb==x_end && yb==y_end) break;
+		e2 = err;
+		if (e2 >-dx) {
+			err -= dy;
+			xb += sx;
+		}
+		if (e2 < dy) {
+			err += dx;
+			yb += sy;
+		}
+	}
+	img->brush_size = i +1;
+}
+
+void bmp_define_brush2(bmp_img *img, int x0, int y0, int x1, int y1) {
 	double x, y, modulus, p_error_x, p_error_y;
 	int dx, dy, sx, sy, err, e2, i;
 	int xb, yb, x_end, y_end; 
@@ -271,7 +324,7 @@ void bmp_define_brush(bmp_img *img, int x0, int y0, int x1, int y1) {
 	img->brush_size = i +1;
 	
 	/*repeat */
-	if ((p_error_x > 0) || (p_error_x > 0)){
+	if ((p_error_x > 0) || (p_error_y > 0)){
 		if (fabs(x)>fabs(y)){
 			xb = 1;
 			yb = 0;
@@ -419,6 +472,44 @@ void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius){
 	}
 }
 
+void bmp_line_raw2(bmp_img *img, int x0, int y0, int x1, int y1) {
+	int dx = abs(x1-x0), sx = x0 < x1 ? 1 : -1; 
+	int dy = abs(y1-y0), sy = y0 < y1 ? 1 : -1; 
+	int err = dx-dy, e2, x2, y2;                          /* error value e_xy */
+	double ed = dx+dy == 0 ? 1 : sqrt((double)dx*dx+(double)dy*dy);
+	double wd = ((double)img->tick+1)/2;
+	int draw = 0;
+
+	for ( ; ; ) {                                   /* pixel loop */
+		if (patt_check(img)){ /* image's line pattern generation*/
+			draw = 1;
+		}
+		else {
+			draw = 0;
+		}
+		//setPixelColor(x0,y0,max(0,255*(abs(err-dx+dy)/ed-wd+1)));
+		if (draw) bmp_point_raw(img, x0, y0);
+		
+		e2 = err; x2 = x0;
+		if (2*e2 >= -dx) {                                           /* x step */
+			for (e2 += dy, y2 = y0; e2 < ed*wd && (y1 != y2 || dx > dy); e2 += dx){
+				//setPixelColor(x0, y2 += sy, max(0,255*(abs(e2)/ed-wd+1)));
+				if (draw) bmp_point_raw(img, x0, y2 += sy);
+			}
+			if (x0 == x1) break;
+			e2 = err; err -= dy; x0 += sx; 
+		}
+		if (2*e2 <= dy) {                                            /* y step */
+			for (e2 = dx-e2; e2 < ed*wd && (x1 != x2 || dx < dy); e2 += dy){
+				//setPixelColor(x2 += sx, y0, max(0,255*(abs(e2)/ed-wd+1)));
+				if (draw) bmp_point_raw(img, x2 += sx, y0);
+			}
+			if (y0 == y1) break;
+			err += dx; y0 += sy; 
+		}
+	}
+}
+
 void bmp_line_raw(bmp_img *img, int x0, int y0, int x1, int y1) {
 /* Draw a line on bmp image
 Bitmap/Bresenham's line algorithm
@@ -462,7 +553,104 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	}*/
 }
 
+void bmp_thick_line(bmp_img *img, int x0, int y0, int x1, int y1) {
+/* Draw a line on bmp image
+Bitmap/Bresenham's line algorithm
+from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
+	
+	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+	int err = (dx>dy ? dx : -dy)/2, e2;
+	int half_x, half_y; /* to determine line's center*/
+	double x, y, modulus;
+	int normal_x, normal_y, start_x, start_y, end_x, end_y;
+	
+	/* get the vector of line */
+	x = x1 - x0;
+	y = y1 - y0;
+	modulus = sqrt(pow(x, 2) + pow(y, 2));
+	if (modulus > 0){ /* change to unit */
+		x /= modulus;
+		y /= modulus;
+	}
+	/* normal vector is xn = -y, yn = x */
+	normal_x = (int)(round((double)img->tick * -y));
+	normal_y = (int)(round((double)img->tick * x));
+	
+	
+	half_x = normal_x/2;
+	half_y = normal_y/2;
+
+	for(;;){
+		e2 = err;
+		if (patt_check(img)){ /* image's line pattern generation*/
+			if (img->tick > 1){ /* if the point have a tickness */
+				/* draw a normal line (with length of thickness)
+				in each point of main line */
+				start_x = x0 - half_x;
+				start_y = y0 - half_y;
+				end_x = start_x + normal_x;
+				end_y = start_y + normal_y;
+				bmp_thin_line(img, start_x, start_y, end_x, end_y);
+				
+				if ((e2 >-dx) && (e2 < dy)) { /* diagonal movement */
+					/* in this case, a new line is draw to fill blank spaces */
+					if (dx>dy){
+						start_x += sx;
+						end_x += sx;
+					}
+					else{
+						start_y += sy;
+						end_y += sy;
+					}
+					bmp_thin_line(img, start_x, start_y, end_x, end_y);
+				}
+			}
+			else{ /* a skinny point */
+				bmp_point_raw (img, x0, y0);
+			}
+		}
+		if (x0==x1 && y0==y1) break;
+		if (e2 >-dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
+	}
+	
+	/* at end of line, draw a circle */
+	if (img->tick > 1){ /* if the point have a tickness*/
+		bmp_circle_fill(img, x1, y1, (int)round(img->tick /2)+1);
+	}
+}
+
+void bmp_thin_line(bmp_img *img, int x0, int y0, int x1, int y1) {
+/* Draw a line on bmp image
+Bitmap/Bresenham's line algorithm
+from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
+	
+	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+	int err = (dx>dy ? dx : -dy)/2, e2;
+
+	for(;;){
+		if (x0==x1 && y0==y1) break;
+		bmp_point_raw(img, x0, y0);
+		e2 = err;
+		if (e2 >-dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
+	}
+}
+
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
+
+	/* 
+	Draw a line on bmp image - clip the line on the window area
+	*/
+	
+	if (line_clip(img, &x0, &y0, &x1, &y1)) {
+		bmp_thick_line(img, (int) x0, (int) y0, (int) x1, (int) y1);
+	}
+}
+
+void bmp_line2(bmp_img *img, double x0, double y0, double x1, double y1) {
 
 	/* 
 	Draw a line on bmp image - clip the line on the window area
