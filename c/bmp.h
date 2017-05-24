@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define BMP_MAX_BRUSH 10000
 
 /* position of a point in rectangle */
 enum Rect_pos{  /* is bit coded */
@@ -37,12 +36,6 @@ struct Bmp_img {
 
 	unsigned int tick; /* current brush tickness */
 	
-	/* current brush shape */
-	unsigned int brush_size;
-	int brush_x[BMP_MAX_BRUSH];
-	int brush_y[BMP_MAX_BRUSH];
-	
-	
 	/* index of each color component in buffer order */
 	unsigned int r_i, g_i, b_i, a_i;
 	
@@ -64,13 +57,9 @@ int bmp_save (char *path, bmp_img *img);
 
 void bmp_point_raw (bmp_img *img, int x, int y);
 
-void bmp_point (bmp_img *img, int xc, int yc);
-
 int patt_change(bmp_img *img, double patt[], int size);
 
 int patt_check(bmp_img *img);
-
-void bmp_line_raw(bmp_img *img, int x0, int y0, int x1, int y1);
 
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1);
 
