@@ -324,6 +324,92 @@ void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius){
 	}
 }
 
+void bmp_poly_fill(bmp_img *img, int num_corners, double corners_x[], double corners_y[]){
+	int i;
+	double x0, y0, x1, y1;
+	int vert_x[1000], vert_y[1000], verts = 0;
+	int min_y, max_y;
+	int nodes = 0, node_x[1000], swap;
+	int pix_x, pix_y;
+	
+	x0 = corners_x[num_corners - 1];
+	y0 = corners_y[num_corners - 1];
+	
+	for (i = 0; i < num_corners; i++){
+		/* create a list of vertices after clipping */
+		x1 = corners_x[i];
+		y1 = corners_y[i];
+		/*verify and clip corners in image */
+		if (line_clip(img, &x0, &y0, &x1, &y1) && verts < 1000) {
+			if(verts == 0){ /* initialize the min and max vars */
+				min_y = (int) y0;
+				max_y = (int) y0;
+			}
+			/* add last vertice to list */
+			vert_x[verts] = (int) x0;
+			vert_y[verts] = (int) y0;
+			verts++;
+			/* update min and max in y coordinate*/
+			min_y = (min_y < (int) y0) ? min_y : (int) y0;
+			max_y = (max_y > (int) y0) ? max_y : (int) y0;
+			
+			if ((x1 != corners_x[i]) && (y1 != corners_y[i]) && (verts < 1000)) {
+				/* case new vertice was created by clipping */
+				vert_x[verts] = (int) x1;
+				vert_y[verts] = (int) y1;
+				verts++;
+				/* update min and max in y coordinate*/
+				min_y = (min_y < (int) y1) ? min_y : (int) y1;
+				max_y = (max_y > (int) y1) ? max_y : (int) y1;
+			}
+		}
+		x0 = corners_x[i];
+		y0 = corners_y[i];
+	}
+	
+	if(verts >0){
+		
+		for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
+			nodes = 0;
+			x0 = vert_x[verts - 1];
+			y0 = vert_y[verts - 1];
+			for (i = 0; i < verts; i++){
+				/* create a list of nodes (intersections on polygon) */
+				x1 = vert_x[i];
+				y1 = vert_y[i];
+				/* verify intersection */
+				if (((y0 < pix_y) && (y1 >= pix_y)) || ((y1 < pix_y) && (y0 >= pix_y))){
+					/* find x coord of intersection and add to list */
+					node_x[nodes] = (int) (x1 + (pix_y - y1)/(y0 - y1)*(x0 - x1));
+					nodes++;
+				}
+				x0 = vert_x[i];
+				y0 = vert_y[i];
+			}
+			/* sort the nodes, via simple "Buble" sort */
+			i = 0;
+			while (i < nodes - 1){
+				if (node_x[i] > node_x[i + 1]){
+					swap = node_x[i];
+					node_x[i] = node_x[i + 1];
+					node_x[i + 1] = swap;
+					if (i) i--;
+				}
+				else{
+					i++;
+				}
+			}
+				
+			/*fill the pixels between node pairs*/
+			for (i = 0; i < nodes ; i += 2){
+				for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+					bmp_point_raw(img, pix_x, pix_y);
+				}
+			}
+		}
+	}
+}
+
 
 void bmp_thick_line(bmp_img *img, int p1x, int p1y, int p2x, int p2y) {
 /* Draw a line on bmp image

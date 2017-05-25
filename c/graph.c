@@ -134,6 +134,7 @@ graph_obj * graph_new(void){
 		new_obj->ofs_x = 0;
 		new_obj->ofs_y = 0;
 		new_obj->tick = 0;
+		new_obj->fill = 0;
 		
 		/* initialize with a solid line pattern */
 		new_obj->patt_size = 1;
@@ -212,8 +213,10 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
-			int x0, y0, x1, y1;			
+			int x0, y0, x1, y1;
 			line_node *current = master->list->next;
+			int corners = 0, prev_x, prev_y; /* for fill */
+			double corner_x[1000], corner_y[1000];
 			
 			/* set the pattern */
 			patt_change(img, master->pattern, master->patt_size);
@@ -233,7 +236,27 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				bmp_line(img, x0, y0, x1, y1);
 				//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
 				
+				if (master->fill && (corners < 1000)){ /* check if object is filled */
+					/*build the lists of corners */
+					if (((x0 != prev_x)&&(y0 != prev_y))||(corners == 0)){
+						corner_x[corners] = (double) x0;
+						corner_y[corners] = (double) y0;
+						corners++;
+					}
+					corner_x[corners] = (double) x1;
+					corner_y[corners] = (double) y1;
+					corners++;
+					
+					prev_x = x1;
+					prev_y = y1;
+				}
+				
 				current = current->next; /* go to next */
+			}
+			
+			if (master->fill && corners){ /* check if object is filled */
+				/* draw a filled polygon */
+				bmp_poly_fill(img, corners, corner_x, corner_y);
 			}
 		}
 	}

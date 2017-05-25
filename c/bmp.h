@@ -68,4 +68,6 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y);
 void bmp_thick_line(bmp_img *img, int x0, int y0, int x1, int y1);
 void bmp_thin_line(bmp_img *img, int x0, int y0, int x1, int y1) ;
 
+void bmp_poly_fill(bmp_img *img, int num_corners, double corners_x[], double corners_y[]);
+
 #endif

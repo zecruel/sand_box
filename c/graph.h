@@ -45,6 +45,8 @@ struct Graph_obj{
 	double ext_min_x, ext_min_y;
 	double ext_max_x, ext_max_y;
 	int ext_ini;
+	/*fill flag*/
+	int fill;
 	
 	line_node * list;
 };

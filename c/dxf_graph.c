@@ -1869,13 +1869,16 @@ graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				/*change the color */
 				curr_graph->color = dxf_colors[color];
 				
+				/* mark as filled object */
+				curr_graph->fill = 1;
+				
 				/* add the graph */
-				line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
+				//line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
 				
 				if (pt4){
 					line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt3_x, pt3_y, pt3_z);
 					line_add(curr_graph, pt3_x, pt3_y, pt3_z, pt4_x, pt4_y, pt4_z);
-					line_add(curr_graph, pt2_x, pt2_y, pt2_z, pt4_x, pt4_y, pt4_z);
+					line_add(curr_graph, pt4_x, pt4_y, pt4_z, pt2_x, pt2_y, pt2_z);
 				}
 				else{
 					line_add(curr_graph, pt2_x, pt2_y, pt2_z, pt3_x, pt3_y, pt3_z);
