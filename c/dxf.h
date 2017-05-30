@@ -6,8 +6,10 @@
 #include <string.h>
 
 
+
 #define DXF_MAX_LAYERS 50
 #define DXF_MAX_LTYPES 50
+#define DXF_MAX_FONTS 50
 #define DXF_MAX_CHARS 250
 #define DXF_MAX_PAT 10
 
@@ -87,6 +89,12 @@ struct Dxf_ltype{
 };
 typedef struct Dxf_ltype dxf_ltype;
 
+struct Dxf_tfont{
+	char name[DXF_MAX_CHARS];
+	void *shx_font;
+};
+typedef struct Dxf_tfont dxf_tfont;
+
 struct Dxf_drawing{
 	/* DXF main sections */
 	dxf_node 	
@@ -114,10 +122,14 @@ struct Dxf_drawing{
 	
 	dxf_ltype ltypes[DXF_MAX_LTYPES];
 	int num_ltypes;
+	
+	dxf_tfont text_fonts[DXF_MAX_FONTS];
+	int num_fonts;
+	
 };
 typedef struct Dxf_drawing dxf_drawing;
 
-/* structure to store vectors (arrarys) */
+/* structure to store vectors (arrays) */
 struct Vector_p{
 	int size;
 	void *data;

@@ -131,6 +131,8 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		img->pattern[0] = 1;
 		img->pat_scale = 15;
 		
+		img->zero_tl = 0; /* zero in botton left corner */
+		
 		/*order of color components in buffer. Init with ARGB */
 		img->r_i = 2;
 		img->g_i = 1;
@@ -210,13 +212,46 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 			(y >= 0) && (y < img->height)){
 			/* find the initial position on image buffer */
 			/* (y = img->height - y) emulate the cartesian coordinates */
-			ofs = 4 * (((img->height - 1 - y) * img->width) + x);
-			/* store each component in memory buffer 
-			with the image´s foreground color*/
-			img->buf[ofs+r_i] = img->frg.r;
-			img->buf[ofs+g_i] = img->frg.g;
-			img->buf[ofs+b_i] = img->frg.b;
-			img->buf[ofs+a_i] = img->frg.a;
+			if (img->zero_tl != 0){
+				ofs = 4 * ((y* img->width) + x);
+			}
+			else{
+				ofs = 4 * (((img->height - 1 - y) * img->width) + x);
+			}
+			
+			if (img->frg.a < 255){
+				/* Alpha compositing */
+				struct {double r,g,b,a;} out;
+				double dst_a, src_a;
+				
+				/*normalize alfa channels */
+				src_a = (double) img->frg.a / 255;
+				dst_a = ((double)img->buf[ofs+a_i] / 255)*(1 - src_a);
+				
+				out.a = src_a + dst_a;
+				if (out.a == 0){
+					out.r = 0;
+					out.g = 0;
+					out.b = 0;
+				}
+				else{
+					out.r = (img->frg.r*src_a + img->buf[ofs+r_i]*dst_a)/out.a;
+					out.g = (img->frg.g*src_a + img->buf[ofs+g_i]*dst_a)/out.a;
+					out.b = (img->frg.b*src_a + img->buf[ofs+b_i]*dst_a)/out.a;
+				}
+				img->buf[ofs+r_i] = (unsigned char) (out.r);
+				img->buf[ofs+g_i] = (unsigned char) (out.g );
+				img->buf[ofs+b_i] = (unsigned char) (out.b );
+				img->buf[ofs+a_i] = (unsigned char) (out.a );
+			}
+			else{
+				/* store each component in memory buffer 
+				with the image´s foreground color*/
+				img->buf[ofs+r_i] = img->frg.r;
+				img->buf[ofs+g_i] = img->frg.g;
+				img->buf[ofs+b_i] = img->frg.b;
+				img->buf[ofs+a_i] = 255;
+			}
 		}
 	}
 }

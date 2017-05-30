@@ -39,6 +39,9 @@ struct Bmp_img {
 	/* index of each color component in buffer order */
 	unsigned int r_i, g_i, b_i, a_i;
 	
+	unsigned int zero_tl; /* flag of zero in top left corner of image */
+	
+	
 	/* the pixmap */
 	unsigned char * buf; /* the color depth is 8 bit per component */
 };
