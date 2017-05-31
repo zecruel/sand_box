@@ -133,6 +133,12 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		
 		img->zero_tl = 0; /* zero in botton left corner */
 		
+		/*clipping rectangle */
+		img->clip_x = 0;
+		img->clip_y = 0;
+		img->clip_w = width;
+		img->clip_h = height;
+		
 		/*order of color components in buffer. Init with ARGB */
 		img->r_i = 2;
 		img->g_i = 1;
@@ -209,7 +215,10 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 		
 		/* check if point is in image bounds */
 		if((x >= 0) && (x < img->width) && 
-			(y >= 0) && (y < img->height)){
+		(y >= 0) && (y < img->height) &&
+		/*and in clip rectangle*/
+		(x >= img->clip_x) && (x < (img->clip_x + img->clip_w)) && 
+		(y >= img->clip_y) && (y < (img->clip_y + img->clip_h))){
 			/* find the initial position on image buffer */
 			/* (y = img->height - y) emulate the cartesian coordinates */
 			if (img->zero_tl != 0){
@@ -302,6 +311,40 @@ int patt_check(bmp_img *img){
 		}
 	}
 	return pen;
+}
+
+void bmp_circle(bmp_img *img, int x0, int y0, int radius){
+	int x = radius;
+	int y = 0;
+	int err = 0;
+	int x_start, x_end, i, signal;
+
+	while (x >= y){
+		bmp_point_raw (img, x0 + x, y0 + y);
+		bmp_point_raw (img, x0 - x, y0 + y);
+		
+		bmp_point_raw (img, x0 + y, y0 + x);
+		bmp_point_raw (img, x0 - y, y0 + x);
+		
+		
+		bmp_point_raw (img, x0 + x, y0 - y);
+		bmp_point_raw (img, x0 - x, y0 - y);
+		
+		
+		bmp_point_raw (img, x0 - y, y0 - x);
+		bmp_point_raw (img, x0 + y, y0 - x);
+		
+		
+
+		if (err <= 0){
+			y += 1;
+			err += 2*y + 1;
+		}
+		if (err > 0){
+			x -= 1;
+			err -= 2*x + 1;
+		}
+	}
 }
 
 void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius){
@@ -576,3 +619,64 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 		}
 	}
 }
+
+	
+/*If you scan along octants as explained for the Midpoint circle algorithm, your major coordinate y will always increase by one. You can then draw two circles at once, because their major coordinates are in sync.
+
+Instead of placing pixels, you draw horizontal (and vertical) lines between the points of the inner and outer circle, which have the same y (or x) coordinate. You do so until the outer circle reaches the diagonal.
+
+You keep the state with x and err for two circles, the inner circle i and the outer circle o. After the inner circle has reached the diagonal, the inner point lies on that diagonal. This means you are drawing eight adjoining octant sectors.
+
+This idea is very similar to what @oakad proposed in the comments, but without the need for keeping a list. The Midpoint circle algorithm might be slower than the Bresenham algorithm, so there's probably room for improvement, but the low memory footprint is an advantage.
+
+The code below will draw a hollow circle with the given inner and outer radii. The line width is ro - ri + 1, so that even equal radii will print a circle that is one pixel wide. It won't print anything if the inner radius is smaller than the outer radius.
+
+void xLine(int x1, int x2, int y, int colour)
+{
+    while (x1 <= x2) setPixel(x1++, y, colour);
+}
+
+void yLine(int x, int y1, int y2, int colour)
+{
+    while (y1 <= y2) setPixel(x, y1++, colour);
+}
+
+void circle2(int xc, int yc, int inner, int outer, int colour)
+{
+    int xo = outer;
+    int xi = inner;
+    int y = 0;
+    int erro = 1 - xo;
+    int erri = 1 - xi;
+
+    while(xo >= y) {
+        xLine(xc + xi, xc + xo, yc + y,  colour);
+        yLine(xc + y,  yc + xi, yc + xo, colour);
+        xLine(xc - xo, xc - xi, yc + y,  colour);
+        yLine(xc - y,  yc + xi, yc + xo, colour);
+        xLine(xc - xo, xc - xi, yc - y,  colour);
+        yLine(xc - y,  yc - xo, yc - xi, colour);
+        xLine(xc + xi, xc + xo, yc - y,  colour);
+        yLine(xc + y,  yc - xo, yc - xi, colour);
+
+        y++;
+
+        if (erro < 0) {
+            erro += 2 * y + 1;
+        } else {
+            xo--;
+            erro += 2 * (y - xo + 1);
+        }
+
+        if (y > inner) {
+            xi = y;
+        } else {
+            if (erri < 0) {
+                erri += 2 * y + 1;
+            } else {
+                xi--;
+                erri += 2 * (y - xi + 1);
+            }
+        }
+    }
+}*/

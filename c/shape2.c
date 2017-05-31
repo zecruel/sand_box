@@ -213,10 +213,10 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 	int pen = 1;
 	int exec = 0;
 	graph_obj * line_list = NULL;
-	//double max_x = 0;
-	//double max_y = 0;
-	//double min_x = 0;
-	//double min_y = 0;
+	double max_x = 0;
+	double max_y = 0;
+	double min_x = 0;
+	double min_y = 0;
 	double stack_x[50];
 	double stack_y[50];
 	int stk_size = 0;
@@ -551,6 +551,13 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 						}
 						pre_x += px;
 						pre_y += py;
+						
+						/*calcula os valores maximo e minimo de cada coordenada*/
+						
+						max_x = (max_x > pre_x) ? max_x : pre_x;
+						max_y = (max_y > pre_y) ? max_y : pre_y;
+						min_x = (min_x < pre_x) ? min_x : pre_x;
+						min_y = (min_y < pre_y) ? min_y : pre_y;
 						//print [pre_x,pre_y]
 					}
 				}
@@ -565,6 +572,12 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 	//printf("Altura = %3.2f, largura = %3.2f\n", height, weigth);
 	
 	//return line_list, max_x, max_y
+	if (line_list){
+		line_list->ext_max_x = max_x;
+		line_list->ext_max_y = max_y;
+		line_list->ext_min_x = min_x;
+		line_list->ext_min_y = min_y;
+	}
 	return(line_list);
 }
 /*

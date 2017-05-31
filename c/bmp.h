@@ -44,6 +44,13 @@ struct Bmp_img {
 	
 	/* the pixmap */
 	unsigned char * buf; /* the color depth is 8 bit per component */
+	
+	/*clipping rectangle */
+	int clip_x;
+	int clip_y;
+	int clip_w;
+	int clip_h;
+	
 };
 typedef struct Bmp_img bmp_img;
 

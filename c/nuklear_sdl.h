@@ -50,7 +50,15 @@ nk_user_font_get_text_width(nk_handle handle, float height, const char *text, in
 {
     shape *font = (shape*)handle.ptr;
     if ((text!= NULL) && (font!=NULL)) {
-	graph_obj *curr_graph = shx_font_parse(font, text);
+	    
+	/* We must copy into a new buffer with exact length null-terminated
+       as nuklear uses variable size buffers and shx_fonts routines doesn't
+       accept a length, it infers length from null-termination */
+	    char txt_cpy[len+1];
+	    strncpy((char*)&txt_cpy, text, len);
+	    txt_cpy[len] = '\0';
+	    
+	graph_obj *curr_graph = shx_font_parse(font, txt_cpy);
 	if (curr_graph){
 		double txt_w;
 		txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -338,6 +346,205 @@ nk_sdl_render(vector_g *v_ret)
         }
     }
 	
+	nk_clear(&sdl.ctx); /*IMPORTANT */
+}
+
+NK_API void nk_sdl_render2(bmp_img *img){
+	const struct nk_command *cmd;
+	bmp_color color = {.r = 255, .g = 255, .b =255, .a = 255};
+	static int one_time = 0;
+	
+	if (img){
+		/* initialize the image with a solid line pattern */
+		img->patt_i = 0;
+		img->pix_count = 0;
+		img->patt_size = 1;
+		img->pattern[0] = 1;
+
+		nk_foreach(cmd, &sdl.ctx){
+			switch (cmd->type) {
+				case NK_COMMAND_NOP: break;
+				
+				case NK_COMMAND_SCISSOR: {
+					const struct nk_command_scissor *s =(const struct nk_command_scissor*)cmd;
+					img->clip_x = (unsigned int)s->x;
+					img->clip_y = (unsigned int)s->y;
+					img->clip_w = (unsigned int)s->w;
+					img->clip_h = (unsigned int)s->h;
+				} break;
+				
+				case NK_COMMAND_LINE: {
+					const struct nk_command_line *l = (const struct nk_command_line *)cmd;
+					color = nk_to_bmp_color(l->color);
+					/*change the color */
+					img->frg = color;
+					/*change tickness */
+					img->tick = (unsigned int) l->line_thickness;
+					
+					bmp_line(img, l->begin.x, l->begin.y, l->end.x,l->end.y);
+				} break;
+				
+				case NK_COMMAND_RECT: {
+					const struct nk_command_rect *r = (const struct nk_command_rect *)cmd;
+					color = nk_to_bmp_color(r->color);
+					/*change the color */
+					img->frg = color;
+					/*change tickness */
+					img->tick = (unsigned int) r->line_thickness;
+
+					bmp_line(img, r->x,r->y, r->x + r->w, r->y);
+					bmp_line(img, r->x + r->w, r->y, r->x + r->w, r->y + r->h);
+					bmp_line(img, r->x + r->w, r->y + r->h, r->x, r->y + r->h);
+					bmp_line(img, r->x, r->y + r->h, r->x, r->y);
+				} break;
+				
+				case NK_COMMAND_RECT_FILLED: {
+					const struct nk_command_rect_filled *r = (const struct nk_command_rect_filled *)cmd;
+					int vert_x[4] = {r->x, r->x + r->w, r->x + r->w, r->x};
+					int vert_y[4] = {r->y, r->y, r->y + r->h, r->y + r->h};
+					
+					color = nk_to_bmp_color(r->color);
+					/*change the color */
+					img->frg = color;
+					
+					bmp_poly_fill(img, 4, vert_x, vert_y);
+				} break;
+				
+				case NK_COMMAND_CIRCLE: {
+					const struct nk_command_circle *c = (const struct nk_command_circle *)cmd;
+					color = nk_to_bmp_color(c->color);
+					/*change the color */
+					img->frg = color;
+					/*change tickness */
+					img->tick = c->line_thickness;
+					int xr = c->w/2;
+					
+					bmp_circle(img, c->x + xr, c->y + xr, xr);
+				} break;
+				
+				case NK_COMMAND_CIRCLE_FILLED: {
+					const struct nk_command_circle_filled *c = (const struct nk_command_circle_filled *)cmd;
+					color = nk_to_bmp_color(c->color);
+					/*change the color */
+					img->frg = color;
+					int xr = c->w/2;
+					
+					bmp_circle_fill(img, c->x + xr, c->y + xr, xr);
+				} break;
+				
+				case NK_COMMAND_TRIANGLE: {
+					const struct nk_command_triangle*t = (const struct nk_command_triangle*)cmd;
+					color = nk_to_bmp_color(t->color);
+					/*change the color */
+					img->frg = color;
+					/*change tickness */
+					img->tick = t->line_thickness;
+					bmp_line(img, t->a.x, t->a.y, t->b.x, t->b.y);
+					bmp_line(img, t->b.x, t->b.y, t->c.x, t->c.y);
+					bmp_line(img, t->c.x, t->c.y, t->a.x, t->a.y);
+				} break;
+				
+				case NK_COMMAND_TRIANGLE_FILLED: {
+					const struct nk_command_triangle_filled *t = (const struct nk_command_triangle_filled *)cmd;
+					int vert_x[3] = {t->a.x, t->b.x, t->c.x};
+					int vert_y[3] = {t->a.y, t->b.y, t->c.y};
+					
+					color = nk_to_bmp_color(t->color);
+					/*change the color */
+					img->frg = color;
+					
+					bmp_poly_fill(img, 3, vert_x, vert_y);
+				} break;
+				
+				case NK_COMMAND_POLYGON: {
+					const struct nk_command_polygon *p = (const struct nk_command_polygon*)cmd;
+					color = nk_to_bmp_color(p->color);
+					//int i;
+					//float vertices[p->point_count * 2];
+					//for (i = 0; i < p->point_count; i++) {
+					// vertices[i*2] = p->points[i].x;
+					// vertices[(i*2) + 1] = p->points[i].y;
+					//}
+					//al_draw_polyline((const float*)&vertices, (2 * sizeof(float)),
+					//    (int)p->point_count, ALLEGRO_LINE_JOIN_ROUND, ALLEGRO_LINE_CAP_CLOSED,
+					//  color, (float)p->line_thickness, 0.0);
+					//printf("polygon ");//------------------------------------teste
+				} break;
+				
+				case NK_COMMAND_POLYGON_FILLED: {
+					const struct nk_command_polygon_filled *p = (const struct nk_command_polygon_filled *)cmd;
+					color = nk_to_bmp_color(p->color);
+					//int i;
+					//float vertices[p->point_count * 2];
+					// for (i = 0; i < p->point_count; i++) {
+					//    vertices[i*2] = p->points[i].x;
+					//     vertices[(i*2) + 1] = p->points[i].y;
+					// }
+					//  al_draw_filled_polygon((const float*)&vertices, (int)p->point_count, color);
+					//printf("fill_polygon ");//------------------------------------teste
+				} break;
+				
+				case NK_COMMAND_POLYLINE: {
+					const struct nk_command_polyline *p = (const struct nk_command_polyline *)cmd;
+					color = nk_to_bmp_color(p->color);
+					//int i;
+					//float vertices[p->point_count * 2];
+					//  for (i = 0; i < p->point_count; i++) {
+					//      vertices[i*2] = p->points[i].x;
+					//      vertices[(i*2) + 1] = p->points[i].y;
+					//  }
+					//  al_draw_polyline((const float*)&vertices, (2 * sizeof(float)),
+					//      (int)p->point_count, ALLEGRO_LINE_JOIN_ROUND, ALLEGRO_LINE_CAP_ROUND,
+					//      color, (float)p->line_thickness, 0.0);
+					//printf("polyline ");//------------------------------------teste
+				} break;
+				
+				case NK_COMMAND_TEXT: {
+					const struct nk_command_text *t = (const struct nk_command_text*)cmd;
+					color = nk_to_bmp_color(t->foreground);
+					shape *font = (shape*)t->font->userdata.ptr;
+					graph_obj *curr_graph = shx_font_parse(font, (const char*)t->string);
+					/*change the color */
+					curr_graph->color = color;
+
+					/* apply the scales, offsets and rotation to graphs */
+					graph_modify(curr_graph, t->x, t->y + t->font->height, 1, -1, 0);
+					graph_draw(curr_graph, img, 0, 0, 1);
+				} break;
+				
+				case NK_COMMAND_CURVE: {
+					const struct nk_command_curve *q = (const struct nk_command_curve *)cmd;
+					color = nk_to_bmp_color(q->color);
+					// float points[8];
+					// points[0] = (float)q->begin.x;
+					// points[1] = (float)q->begin.y;
+					// points[2] = (float)q->ctrl[0].x;
+					// points[3] = (float)q->ctrl[0].y;
+					//points[4] = (float)q->ctrl[1].x;
+					// points[5] = (float)q->ctrl[1].y;
+					// points[6] = (float)q->end.x;
+					// points[7] = (float)q->end.y;
+					// al_draw_spline(points, color, (float)q->line_thickness);
+					//printf("curve ");//------------------------------------teste
+				} break;
+				
+				case NK_COMMAND_ARC: {
+					const struct nk_command_arc *a = (const struct nk_command_arc *)cmd;
+					color = nk_to_bmp_color(a->color);
+					//    al_draw_arc((float)a->cx, (float)a->cy, (float)a->r, a->a[0],
+					//       a->a[1], color, (float)a->line_thickness);
+					//printf("arc ");//------------------------------------teste
+				} break;
+				
+				case NK_COMMAND_RECT_MULTI_COLOR:
+				//printf("multi_c ");//------------------------------------teste
+				case NK_COMMAND_IMAGE:
+				//printf("image ");//------------------------------------teste
+				case NK_COMMAND_ARC_FILLED:
+				default: break;
+			}
+		}
+	}
 	nk_clear(&sdl.ctx); /*IMPORTANT */
 }
 

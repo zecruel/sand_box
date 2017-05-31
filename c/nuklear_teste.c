@@ -153,16 +153,19 @@ main(int argc, char* argv[])
 
         /* -------------- EXAMPLES ---------------- */
         //calculator(ctx);
-        //overview(ctx);
-        node_editor(ctx);
+        overview(ctx);
+        //node_editor(ctx);
         /* ----------------------------------------- */
 
         /* Draw */
         SDL_GetWindowSize(win, &win_width, &win_height);
+	
+	nk_sdl_render2(img);
+	/*
 	nk_sdl_render(&v_ret);
 	for(i = 0; i < v_ret.size; i++){
 		graph_draw((v_ret.data)[i], img, 0, 0, 1);
-	}
+	}*/
         
 	SDL_UpdateTexture(canvas, NULL, img->buf, WINDOW_WIDTH * 4);
 	SDL_RenderClear(renderer);
