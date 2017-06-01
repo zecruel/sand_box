@@ -67,8 +67,6 @@ main(int argc, char* argv[])
 	
 	int i;
 	
-	vector_g v_ret;
-	
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
 	
@@ -160,7 +158,7 @@ main(int argc, char* argv[])
         /* Draw */
         SDL_GetWindowSize(win, &win_width, &win_height);
 	
-	nk_sdl_render2(img);
+	nk_sdl_render(img);
 	/*
 	nk_sdl_render(&v_ret);
 	for(i = 0; i < v_ret.size; i++){
