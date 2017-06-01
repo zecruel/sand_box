@@ -9,6 +9,7 @@
 #include "bmp.h"
 
 #define MAX_SPLINE_PTS 1000
+#define GRAPH_POOL_PAGES 1000
 
 enum graph_pool_action{
 	ADD_GRAPH,
@@ -19,7 +20,7 @@ enum graph_pool_action{
 };
 
 struct Graph_pool_slot{
-	void *pool[1000];
+	void *pool[GRAPH_POOL_PAGES];
 	/* the pool is a vector of pages. The size of each page is out of this definition */
 	int pos; /* current position in current page vector */
 	int page; /* current page index */
@@ -34,6 +35,7 @@ struct Line_node{
 typedef struct Line_node line_node;
 
 struct Graph_obj{
+	int pool_idx;
 	dxf_node * owner;
 	bmp_color color;
 	double rot, scale, ofs_x, ofs_y, ofs_z;
@@ -52,9 +54,10 @@ struct Graph_obj{
 };
 typedef struct Graph_obj graph_obj;
 
-void * graph_mem_pool(enum graph_pool_action action);
+void * graph_mem_pool2(enum graph_pool_action action);
+void * graph_mem_pool(enum graph_pool_action action, int idx);
 
-graph_obj * graph_new(void);
+graph_obj * graph_new(int pool_idx);
 
 void line_add(graph_obj * master, double x0, double y0, double z0, double x1, double y1, double z1);
 

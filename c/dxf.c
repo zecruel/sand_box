@@ -157,8 +157,8 @@ void dxf_ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 				free(ent->obj.name);  /* free the string of entity's name */
 				//---------------------------------------
 				//vec_graph_free(ent->obj.graphics);
-				graph_mem_pool(ZERO_GRAPH);
-				graph_mem_pool(ZERO_LINE);
+				//graph_mem_pool(ZERO_GRAPH);
+				//graph_mem_pool(ZERO_LINE);
 			}
 		}
 		else if (ent->type == DXF_ATTR){

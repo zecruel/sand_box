@@ -58,7 +58,7 @@ nk_user_font_get_text_width(nk_handle handle, float height, const char *text, in
 	    strncpy((char*)&txt_cpy, text, len);
 	    txt_cpy[len] = '\0';
 	    
-	graph_obj *curr_graph = shx_font_parse(font, txt_cpy);
+	graph_obj *curr_graph = shx_font_parse(font, 0, txt_cpy);
 	if (curr_graph){
 		double txt_w;
 		txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -97,7 +97,7 @@ nk_sdl_render(vector_g *v_ret)
         case NK_COMMAND_LINE: {
             const struct nk_command_line *l = (const struct nk_command_line *)cmd;
             color = nk_to_bmp_color(l->color);
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		
@@ -117,7 +117,7 @@ nk_sdl_render(vector_g *v_ret)
             const struct nk_command_rect *r = (const struct nk_command_rect *)cmd;
             color = nk_to_bmp_color(r->color);
 		color = nk_to_bmp_color(r->color);
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		
@@ -144,7 +144,7 @@ nk_sdl_render(vector_g *v_ret)
         case NK_COMMAND_RECT_FILLED: {
             const struct nk_command_rect_filled *r = (const struct nk_command_rect_filled *)cmd;
             color = nk_to_bmp_color(r->color);
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		/* mark as filled object */
@@ -167,7 +167,7 @@ nk_sdl_render(vector_g *v_ret)
             const struct nk_command_circle *c = (const struct nk_command_circle *)cmd;
             color = nk_to_bmp_color(c->color);
 		
-	curr_graph = graph_new();
+	curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		
@@ -192,7 +192,7 @@ nk_sdl_render(vector_g *v_ret)
             const struct nk_command_circle_filled *c = (const struct nk_command_circle_filled *)cmd;
             color = nk_to_bmp_color(c->color);
 		
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		
@@ -217,7 +217,7 @@ nk_sdl_render(vector_g *v_ret)
         case NK_COMMAND_TRIANGLE: {
             const struct nk_command_triangle*t = (const struct nk_command_triangle*)cmd;
             color = nk_to_bmp_color(t->color);
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		/*change tickness */
@@ -237,7 +237,7 @@ nk_sdl_render(vector_g *v_ret)
         case NK_COMMAND_TRIANGLE_FILLED: {
             const struct nk_command_triangle_filled *t = (const struct nk_command_triangle_filled *)cmd;
             color = nk_to_bmp_color(t->color);
-		curr_graph = graph_new();
+		curr_graph = graph_new(0);
 		/*change the color */
 		curr_graph->color = color;
 		/* mark as filled object */
@@ -299,7 +299,7 @@ nk_sdl_render(vector_g *v_ret)
             const struct nk_command_text *t = (const struct nk_command_text*)cmd;
             color = nk_to_bmp_color(t->foreground);
            shape *font = (shape*)t->font->userdata.ptr;
-		curr_graph = shx_font_parse(font, (const char*)t->string);
+		curr_graph = shx_font_parse(font, 0, (const char*)t->string);
 		/*change the color */
 		curr_graph->color = color;
 		
@@ -503,7 +503,7 @@ NK_API void nk_sdl_render2(bmp_img *img){
 					const struct nk_command_text *t = (const struct nk_command_text*)cmd;
 					color = nk_to_bmp_color(t->foreground);
 					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, (const char*)t->string);
+					graph_obj *curr_graph = shx_font_parse(font, 0, (const char*)t->string);
 					/*change the color */
 					curr_graph->color = color;
 

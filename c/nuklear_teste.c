@@ -172,8 +172,8 @@ main(int argc, char* argv[])
 	SDL_RenderCopy(renderer, canvas, NULL, NULL);
 	SDL_RenderPresent(renderer);
 	
-	graph_mem_pool(ZERO_GRAPH);
-	graph_mem_pool(ZERO_LINE);
+	graph_mem_pool(ZERO_GRAPH, 0);
+	graph_mem_pool(ZERO_LINE, 0);
 	bmp_fill(img, img->bkg); /* clear bitmap */
         
     }
@@ -184,7 +184,7 @@ cleanup:
 	SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(win);
     SDL_Quit();
-    graph_mem_pool(FREE_ALL);
+    graph_mem_pool(FREE_ALL, 0);
 	bmp_free(img);
 	shx_font_free(shx_font);
     return 0;

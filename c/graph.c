@@ -1,8 +1,9 @@
 #include "graph.h"
 #define GRAPH_PAGE 10000
 #define LINE_PAGE 10000
+#define GRAPH_NUM_POOL 5
 
-void * graph_mem_pool(enum graph_pool_action action){
+void * graph_mem_pool2(enum graph_pool_action action){
 	
 	static graph_pool_slot graph, line;
 	int i;
@@ -36,7 +37,7 @@ void * graph_mem_pool(enum graph_pool_action action){
 			//printf("change graph page\n");
 		}
 		/* or then allocatte a new page */
-		else if(graph.page < 1000-1){
+		else if(graph.page < GRAPH_POOL_PAGES-1){
 			graph.pool[graph.page + 1] = malloc(GRAPH_PAGE * sizeof(graph_obj));
 			if (graph.pool[graph.page + 1]){
 				graph.page++;
@@ -56,7 +57,7 @@ void * graph_mem_pool(enum graph_pool_action action){
 			//printf("change line page\n");
 		}
 		/* or then allocatte a new page */
-		else if(line.page < 1000-1){
+		else if(line.page < GRAPH_POOL_PAGES-1){
 			line.pool[line.page + 1] = malloc(LINE_PAGE * sizeof(line_node));
 			if (line.pool[line.page + 1]){
 				line.page++;
@@ -112,17 +113,131 @@ void * graph_mem_pool(enum graph_pool_action action){
 	return ret_ptr;
 }
 
-graph_obj * graph_new(void){
+void * graph_mem_pool(enum graph_pool_action action, int idx){
+	
+	static graph_pool_slot graph[GRAPH_NUM_POOL], line[GRAPH_NUM_POOL];
+	int i;
+	
+	void *ret_ptr = NULL;
+	
+	if ((idx >= 0) && (idx < GRAPH_NUM_POOL)){ /* check if index is valid */
+		
+		/* initialize the graph pool, the first allocation */
+		if (graph[idx].size < 1){
+			graph[idx].pool[0] = malloc(GRAPH_PAGE * sizeof(graph_obj));
+			if (graph[idx].pool){
+				graph[idx].size = 1;
+				//printf("Init graph\n");
+			}
+		}
+		
+		/* initialize the lines pool, the first allocation */
+		if (line[idx].size < 1){
+			line[idx].pool[0] = malloc(LINE_PAGE * sizeof(line_node));
+			if (line[idx].pool){
+				line[idx].size = 1;
+				//printf("Init line\n");
+			}
+		}
+		
+		/* if current page is full */
+		if ((graph[idx].pos >= GRAPH_PAGE) && (graph[idx].size > 0)){
+			/* try to change to page previuosly allocated */
+			if (graph[idx].page < graph[idx].size - 1){
+				graph[idx].page++;
+				graph[idx].pos = 0;
+				//printf("change graph page\n");
+			}
+			/* or then allocatte a new page */
+			else if(graph[idx].page < GRAPH_POOL_PAGES-1){
+				graph[idx].pool[graph[idx].page + 1] = malloc(GRAPH_PAGE * sizeof(graph_obj));
+				if (graph[idx].pool[graph[idx].page + 1]){
+					graph[idx].page++;
+					graph[idx].size ++;
+					graph[idx].pos = 0;
+					//printf("Realloc graph\n");
+				}
+			}
+		}
+		
+		/* if current page is full */
+		if ((line[idx].pos >= LINE_PAGE) && (line[idx].size > 0)){
+			/* try to change to page previuosly allocated */
+			if (line[idx].page < line[idx].size - 1){
+				line[idx].page++;
+				line[idx].pos = 0;
+				//printf("change line page\n");
+			}
+			/* or then allocatte a new page */
+			else if(line[idx].page < GRAPH_POOL_PAGES-1){
+				line[idx].pool[line[idx].page + 1] = malloc(LINE_PAGE * sizeof(line_node));
+				if (line[idx].pool[line[idx].page + 1]){
+					line[idx].page++;
+					line[idx].size ++;
+					line[idx].pos = 0;
+					//printf("Realloc line\n");
+				}
+			}
+		}
+		
+		ret_ptr = NULL;
+		
+		if ((graph[idx].pool[graph[idx].page] != NULL) &&  (line[idx].pool[line[idx].page] != NULL)){
+			switch (action){
+				case ADD_GRAPH:
+					if (graph[idx].pos < GRAPH_PAGE){
+						ret_ptr = &(((graph_obj *)graph[idx].pool[graph[idx].page])[graph[idx].pos]);
+						graph[idx].pos++;
+					}
+					break;
+				case ADD_LINE:
+					if (line[idx].pos < LINE_PAGE){
+						ret_ptr = &(((line_node *)line[idx].pool[line[idx].page])[line[idx].pos]);
+						line[idx].pos++;
+					}
+					break;
+				case ZERO_GRAPH:
+					graph[idx].pos = 0;
+					graph[idx].page = 0;
+					break;
+				case ZERO_LINE:
+					line[idx].pos = 0;
+					line[idx].page = 0;
+					break;
+				case FREE_ALL:
+					for (i = 0; i < graph[idx].size; i++){
+						free(graph[idx].pool[i]);
+						graph[idx].pool[i] = NULL;
+					}
+					graph[idx].pos = 0;
+					graph[idx].page = 0;
+					graph[idx].size = 0;
+					for (i = 0; i < line[idx].size; i++){
+						free(line[idx].pool[i]);
+						line[idx].pool[i] = NULL;
+					}
+					line[idx].pos = 0;
+					line[idx].page = 0;
+					line[idx].size = 0;
+					break;
+			}
+		}
+	}
+	return ret_ptr;
+}
+
+graph_obj * graph_new(int pool_idx){
 	/* create new graphics object */
 	
 	/* allocate the main struct */
 	//graph_obj * new_obj = malloc(sizeof(graph_obj));
-	graph_obj * new_obj = graph_mem_pool(ADD_GRAPH);
+	graph_obj * new_obj = graph_mem_pool(ADD_GRAPH, pool_idx);
 	
 	if (new_obj){
 		
 		/* initialize */
 		new_obj->owner = NULL;
+		new_obj->pool_idx = pool_idx;
 		/* initialize with a black color */
 		new_obj->color.r = 0;
 		new_obj->color.g = 0;
@@ -145,7 +260,7 @@ graph_obj * graph_new(void){
 		
 		/* allocate the line list */
 		//new_obj->list = malloc(sizeof(line_node));
-		new_obj->list = graph_mem_pool(ADD_LINE);
+		new_obj->list = graph_mem_pool(ADD_LINE, pool_idx);
 		
 		if(new_obj->list){
 			/* the list is empty */
@@ -164,7 +279,7 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 	
 	if (master){
 		//line_node *new_line = malloc(sizeof(line_node));
-		line_node *new_line = graph_mem_pool(ADD_LINE);
+		line_node *new_line = graph_mem_pool(ADD_LINE, master->pool_idx);
 		
 		if (new_line){
 			new_line->x0 = x0;

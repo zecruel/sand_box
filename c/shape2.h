@@ -27,6 +27,6 @@ shape *shx_font_find(shape *shx_font, long num);
 
 shape *shx_font_open(char *path);
 
-graph_obj *shx_font_parse(shape *shx_font, const char *txt);
+graph_obj *shx_font_parse(shape *shx_font, int pool_idx, const char *txt);
 
 #endif

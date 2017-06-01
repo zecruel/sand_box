@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -89,7 +89,7 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			graph_obj *curr_graph = graph_new();
+			graph_obj *curr_graph = graph_new(pool_idx);
 			if (curr_graph){
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
@@ -132,7 +132,7 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -215,7 +215,7 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			graph_obj *curr_graph = graph_new();
+			graph_obj *curr_graph = graph_new(pool_idx);
 			if (curr_graph){
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
@@ -260,7 +260,7 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -350,7 +350,7 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			graph_obj *curr_graph = graph_new();
+			graph_obj *curr_graph = graph_new(pool_idx);
 			if (curr_graph){
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
@@ -395,7 +395,7 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -498,7 +498,7 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			graph_obj *curr_graph = graph_new();
+			graph_obj *curr_graph = graph_new(pool_idx);
 			if (curr_graph){
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
@@ -537,7 +537,7 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -639,7 +639,7 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				(((p_space == 0) && (paper == 0)) || 
 				((p_space != 0) && (paper != 0)))){
 					init = 1;
-					curr_graph = graph_new();
+					curr_graph = graph_new(pool_idx);
 					if (curr_graph){
 						//printf("primeiro\n");
 						/* find the layer index */
@@ -760,7 +760,7 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -878,7 +878,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				(((p_space == 0) && (paper == 0)) || 
 				((p_space != 0) && (paper != 0)))){
 					init = 1;
-					curr_graph = graph_new();
+					curr_graph = graph_new(pool_idx);
 					if (curr_graph){
 						//printf("primeiro\n");
 						/* find the layer index */
@@ -980,7 +980,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 }
 
 
-graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -1120,7 +1120,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			count++;
 		}
 		
-		curr_graph = graph_new();
+		curr_graph = graph_new(pool_idx);
 		if ((curr_graph)&&((count + order)*5 < MAX_SPLINE_PTS)){
 			//printf("primeiro\n");
 			/* find the layer index */
@@ -1188,7 +1188,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 
 
 
-graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		graph_obj *curr_graph = NULL;
@@ -1405,7 +1405,7 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			strcpy(pos_tmp, pos_st);
 			//printf("%s\n", tmp_str);
 			
-			curr_graph = shx_font_parse(shx_font, tmp_str);
+			curr_graph = shx_font_parse(shx_font, pool_idx, tmp_str);
 			
 			
 			if (curr_graph){
@@ -1504,7 +1504,7 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		graph_obj *curr_graph = NULL;
@@ -1648,7 +1648,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			
 			
-			curr_graph = shx_font_parse(shx_font, text);
+			curr_graph = shx_font_parse(shx_font, pool_idx, text);
 			
 			
 			if (curr_graph){
@@ -1720,7 +1720,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -1839,7 +1839,7 @@ graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			graph_obj *curr_graph = graph_new();
+			graph_obj *curr_graph = graph_new(pool_idx);
 			if (curr_graph){
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
@@ -1898,7 +1898,7 @@ graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 	return NULL;
 }
 
-vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
+vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* this function is non recursive */
 	
 	vector_p *v_return = NULL, v_search;
@@ -1962,7 +1962,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			ent_type = DXF_NONE;
 			if (strcmp(current->obj.name, "LINE") == 0){
 				ent_type = DXF_LINE;
-				curr_graph = dxf_line_parse(drawing, current, p_space);
+				curr_graph = dxf_line_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -1970,7 +1970,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 				
 			}
 			else if (strcmp(current->obj.name, "TEXT") == 0){
-				curr_graph = dxf_text_parse(drawing, current, p_space);
+				curr_graph = dxf_text_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -1981,7 +1981,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "CIRCLE") == 0){
 				ent_type = DXF_CIRCLE;
-				curr_graph = dxf_circle_parse(drawing, current, p_space);
+				curr_graph = dxf_circle_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -1990,7 +1990,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "ARC") == 0){
 				ent_type = DXF_ARC;
-				curr_graph = dxf_arc_parse(drawing, current, p_space);
+				curr_graph = dxf_arc_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -1999,7 +1999,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "POLYLINE") == 0){
 				ent_type = DXF_POLYLINE;
-				curr_graph = dxf_pline_parse(drawing, current, p_space);
+				curr_graph = dxf_pline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2018,7 +2018,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "SOLID") == 0){
 				ent_type = DXF_SOLID;
-				curr_graph = dxf_solid_parse(drawing, current, p_space);
+				curr_graph = dxf_solid_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2028,7 +2028,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "LWPOLYLINE") == 0){
 				ent_type = DXF_LWPOLYLINE;
-				curr_graph = dxf_lwpline_parse(drawing, current, p_space);
+				curr_graph = dxf_lwpline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2036,7 +2036,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "SPLINE") == 0){
 				//ent_type = DXF_LWPOLYLINE;
-				curr_graph = dxf_spline_parse(drawing, current, p_space);
+				curr_graph = dxf_spline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2044,7 +2044,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "ATTRIB") == 0){
 				ent_type = DXF_ATTRIB;
-				curr_graph = dxf_attrib_parse(drawing, current, p_space);
+				curr_graph = dxf_attrib_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2075,7 +2075,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space){
 			}
 			else if (strcmp(current->obj.name, "ELLIPSE") == 0){
 				ent_type = DXF_ELLIPSE;
-				curr_graph = dxf_ellipse_parse(drawing, current, p_space);
+				curr_graph = dxf_ellipse_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
 					stack_push(v_return, curr_graph);
@@ -2370,7 +2370,7 @@ int dxf_ents_parse(dxf_drawing drawing){
 			if (current->type == DXF_ENT){ // DXF entity 
 				
 				// -------------------------------------------
-				vec_graph = dxf_graph_parse(drawing, current, 0);
+				vec_graph = dxf_graph_parse(drawing, current, 0, 0);
 				if (vec_graph){
 					current->obj.graphics = vec_graph;
 				}

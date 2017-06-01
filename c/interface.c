@@ -86,7 +86,7 @@ void wdg_free(widget * wdg){
 };
 
 widget * wdg_new_txt2(char * txt, shape *shx_font, int x, int y, int w, int h, char *action){
-	graph_obj *graph = shx_font_parse(shx_font, txt);
+	graph_obj *graph = shx_font_parse(shx_font, 0, txt);
 	widget * wdg = wdg_new(graph, x, y, w, h, action);
 	return wdg;
 }
@@ -107,7 +107,7 @@ widget * wdg_new_txt(char * txt, shape *shx_font, int x, int y, int w, int h, ch
 			}
 		}
 	}
-	graph_obj *graph = shx_font_parse(shx_font, txt);
+	graph_obj *graph = shx_font_parse(shx_font, 0, txt);
 	
 	if (graph){
 		/* find the dimentions of text */
@@ -267,9 +267,9 @@ int main(int argc, char** argv){
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	double prev_zoom;
 	
-	drawing = dxf_open(url);
-	dxf_ents_parse(drawing);
-	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	//drawing = dxf_open(url);
+	//dxf_ents_parse(drawing);
+	//dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 	
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
@@ -422,6 +422,8 @@ int main(int argc, char** argv){
 				0);
 				if (url){
 					dxf_ent_clear(drawing.main_struct);
+					graph_mem_pool(ZERO_GRAPH, 0);
+					graph_mem_pool(ZERO_LINE, 0);
 					
 					time_start = SDL_GetTicks();
 					drawing = dxf_open(url);
@@ -487,7 +489,7 @@ int main(int argc, char** argv){
 	
 	/*=======================*/
 	dxf_ent_clear(drawing.main_struct);
-	graph_mem_pool(FREE_ALL);
+	graph_mem_pool(FREE_ALL, 0);
 	bmp_free(img);
 	shx_font_free(shx_font);
 	for (i = 0; i<drawing.num_fonts; i++){

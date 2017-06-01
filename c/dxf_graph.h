@@ -2,7 +2,7 @@
 #include "bmp.h"
 #include "graph.h"
 
-vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space);
+vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx);
 
 int dxf_ents_parse(dxf_drawing drawing);
 

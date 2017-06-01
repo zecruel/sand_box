@@ -205,7 +205,7 @@ shape *shx_font_open(char *path){
 	return(shx_font); // retorna a shx_font
 }
 
-graph_obj *shx_font_parse(shape *shx_font, const char *txt){
+graph_obj *shx_font_parse(shape *shx_font, int pool_idx, const char *txt){
 	double pre_x = 0;
 	double pre_y = 0;
 	double px = 0;
@@ -243,7 +243,7 @@ graph_obj *shx_font_parse(shape *shx_font, const char *txt){
 	//double height, weigth;
 	
 	//cria a lista de retorno
-	line_list = graph_new();
+	line_list = graph_new(pool_idx);
 	/*
 	line_list = (line_node *) malloc(sizeof(line_node));
 	if (line_list){
