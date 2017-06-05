@@ -73,6 +73,13 @@ main(int argc, char* argv[])
 	bmp_img * img = bmp_new(WINDOW_WIDTH, WINDOW_HEIGHT, grey, red);
 	img->zero_tl =1;	
 	bmp_fill(img, img->bkg); /* clear bitmap */
+	/*
+	bmp_img * img2 = bmp_new(20, 20, green, red);
+	struct nk_image teste_img = nk_image_ptr(img2);
+	teste_img.w = 500;
+	teste_img.h = 20;*/
+	
+	struct nk_rect total_space = nk_rect(0, 0, 200, 100);
 	
     /* Platform */
     SDL_Window *win;
@@ -103,7 +110,7 @@ main(int argc, char* argv[])
     ctx = nk_sdl_init(win, shx_font);
     
 
-    background = nk_rgb(28,48,62);
+    background = nk_rgba(28,48,62,100);
     while (running)
     {
         /* Input */
@@ -146,6 +153,14 @@ main(int argc, char* argv[])
                 background.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, background.a, 255, 1,1);
                 nk_combo_end(ctx);
             }
+	    
+	    struct nk_command_buffer* out = nk_window_get_canvas(ctx);
+	    nk_layout_row_dynamic(ctx, total_space.h, 1);
+	    nk_widget(&total_space, ctx);
+	    total_space = nk_window_get_content_region(ctx);
+	    nk_stroke_line(out, total_space.x, total_space.y, total_space.x+100, total_space.y+150, 1.0f, nk_rgb(0,250,0));
+	    
+	    //nk_image(ctx, teste_img);
         }
         nk_end(ctx);
 
