@@ -47,9 +47,10 @@ int main(int argc, char** argv){
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	double prev_zoom;
 	
-	//drawing = dxf_open(url);
-	//dxf_ents_parse(drawing);
-	//dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	/* init the drawing */
+	drawing = dxf_open(url);
+	dxf_ents_parse(drawing);
+	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 	
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
@@ -84,6 +85,14 @@ int main(int argc, char** argv){
 	
 	SDL_Event event;
 	int mouse_x, mouse_y;
+	double pos_x, pos_y;
+	
+	enum Action {
+		NONE,
+		FILE_OPEN,
+		FILE_SAVE,
+		EXIT
+	} action;
 
 	SDL_Init(SDL_INIT_VIDEO);
 
@@ -163,6 +172,8 @@ int main(int argc, char** argv){
 					}
 					break;
 				case SDL_MOUSEMOTION:
+					pos_x = (double) event.motion.x/zoom + ofs_x;
+					pos_y = (double) (height - event.motion.y)/zoom + ofs_y;
 					//if (leftMouseButtonDown){
 						//int mouseX = event.motion.x;
 						//int mouseY = event.motion.y;
@@ -191,46 +202,40 @@ int main(int argc, char** argv){
 		
 		/* ===============================*/
 		/* GUI */
-		if (nk_begin(gui->ctx, "Demo", nk_rect(50, 50, 210, 250),
+		if (nk_begin(gui->ctx, "Main", nk_rect(50, 50, 120, 150),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-		{
-			enum {EASY, HARD};
-			static int op = EASY;
-			static int property = 20;
-
+		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){	
 			nk_layout_row_static(gui->ctx, 30, 80, 1);
-			if (nk_button_label(gui->ctx, "button"))
-			printf("button pressed\n");
-			nk_layout_row_dynamic(gui->ctx, 30, 2);
-			if (nk_option_label(gui->ctx, "easy", op == EASY)) op = EASY;
-			if (nk_option_label(gui->ctx, "hard", op == HARD)) op = HARD;
-			nk_layout_row_dynamic(gui->ctx, 25, 1);
-			nk_property_int(gui->ctx, "Compression:", 0, &property, 100, 10, 1);
-
-			nk_layout_row_dynamic(gui->ctx, 20, 1);
-			nk_label(gui->ctx, "background:", NK_TEXT_LEFT);
-			nk_layout_row_dynamic(gui->ctx, 25, 1);
-			if (nk_combo_begin_color(gui->ctx, background, nk_vec2(nk_widget_width(gui->ctx),400))) {
-				nk_layout_row_dynamic(gui->ctx, 120, 1);
-				background = nk_color_picker(gui->ctx, background, NK_RGBA);
-				nk_layout_row_dynamic(gui->ctx, 25, 1);
-				background.r = (nk_byte)nk_propertyi(gui->ctx, "#R:", 0, background.r, 255, 1,1);
-				background.g = (nk_byte)nk_propertyi(gui->ctx, "#G:", 0, background.g, 255, 1,1);
-				background.b = (nk_byte)nk_propertyi(gui->ctx, "#B:", 0, background.b, 255, 1,1);
-				background.a = (nk_byte)nk_propertyi(gui->ctx, "#A:", 0, background.a, 255, 1,1);
-				nk_combo_end(gui->ctx);
+			if (nk_button_label(gui->ctx, "Open")){
+				action = FILE_OPEN;
 			}
-
-			struct nk_command_buffer* out = nk_window_get_canvas(gui->ctx);
-			nk_layout_row_dynamic(gui->ctx, total_space.h, 1);
-			nk_widget(&total_space, gui->ctx);
-			total_space = nk_window_get_content_region(gui->ctx);
-			//nk_stroke_line(out, total_space.x, total_space.y, total_space.x+100, total_space.y+150, 1.0f, nk_rgb(0,250,0));
-
-			//nk_image(gui->ctx, teste_img);
+			if (nk_button_label(gui->ctx, "Save")){
+				action = FILE_SAVE;
+			}
+			if (nk_button_label(gui->ctx, "Exit")){
+				action = EXIT;
+				quit = 1;
+			}
 		}
 		nk_end(gui->ctx);
+		
+		if (nk_begin(gui->ctx, "POS", nk_rect(5, height - 45, 400, 40),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		{
+			static char text[64];
+			static int text_len;
+			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
+			nk_layout_row(gui->ctx, NK_DYNAMIC, 30, 4, ratio);
+			nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
+			text_len = snprintf(text, 63, "%f", pos_x);
+			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, text, &text_len, 64, nk_filter_float);
+			nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
+			text_len = snprintf(text, 63, "%f", pos_y);
+			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, text, &text_len, 64, nk_filter_float);
+		}
+		nk_end(gui->ctx);
+		
 		
 		if ((gui_check_draw(gui) != 0) || (draw != 0)){
 		
@@ -254,7 +259,8 @@ int main(int argc, char** argv){
 		SDL_RenderPresent(renderer);
 	
 		
-		if(leftMouseButtonDown) {	
+		if(action == FILE_OPEN) {
+			action = NONE;
 			url = (char *) tinyfd_openFileDialog(
 			"Open a Drawing",
 			"",
@@ -301,16 +307,17 @@ int main(int argc, char** argv){
 				
 				draw = 1;
 			}
-			else if( 0) {	
-				url = (char *) tinyfd_saveFileDialog(
-				"Save Drawing",
-				"save.txt",
-				2,
-				lFilterPatterns,
-				NULL);
-				if ((url != NULL) && (drawing.main_struct != NULL)){
-					dxf_ent_print_f (drawing.main_struct, url);
-				}
+		}
+		else if(action == FILE_SAVE) {
+		action = NONE;	
+			url = (char *) tinyfd_saveFileDialog(
+			"Save Drawing",
+			"save.txt",
+			2,
+			lFilterPatterns,
+			NULL);
+			if ((url != NULL) && (drawing.main_struct != NULL)){
+				dxf_ent_print_f (drawing.main_struct, url);
 			}
 		}
 	}
@@ -324,6 +331,8 @@ int main(int argc, char** argv){
 	/*=======================*/
 	dxf_ent_clear(drawing.main_struct);
 	graph_mem_pool(FREE_ALL, 0);
+	graph_mem_pool(FREE_ALL, 1);
+	
 	bmp_free(img);
 	for (i = 0; i<drawing.num_fonts; i++){
 		shx_font_free(drawing.text_fonts[i].shx_font);

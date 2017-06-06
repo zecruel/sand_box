@@ -301,7 +301,12 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 				default: break;
 			}
 		}
-		img->zero_tl =0;
+		/* reset image parameters */
+		img->zero_tl = 0;
+		img->clip_x = 0;
+		img->clip_y = 0;
+		img->clip_w = img->width;
+		img->clip_h = img->height;
 	}
 }
 
