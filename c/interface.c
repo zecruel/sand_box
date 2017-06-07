@@ -6,6 +6,8 @@
 #include "shape2.h"
 #include "dxf_graph.h"
 
+#include "dxf_colors.h"
+
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
@@ -86,6 +88,8 @@ int main(int argc, char** argv){
 	SDL_Event event;
 	int mouse_x, mouse_y;
 	double pos_x, pos_y;
+	int color_idx = 0;
+	int layer_idx = 0;
 	
 	enum Action {
 		NONE,
@@ -202,10 +206,11 @@ int main(int argc, char** argv){
 		
 		/* ===============================*/
 		/* GUI */
-		if (nk_begin(gui->ctx, "Main", nk_rect(50, 50, 120, 150),
+		/* main toolbox, for open files, save or exit */
+		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 120, 150),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){	
-			nk_layout_row_static(gui->ctx, 30, 80, 1);
+			nk_layout_row_dynamic(gui->ctx, 30, 1);
 			if (nk_button_label(gui->ctx, "Open")){
 				action = FILE_OPEN;
 			}
@@ -219,6 +224,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		/* view coordinates of mouse in drawing units */
 		if (nk_begin(gui->ctx, "POS", nk_rect(5, height - 45, 400, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
 		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
@@ -236,6 +242,69 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		if (nk_begin(gui->ctx, "Prop", nk_rect(125, 5, 400, 40),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		{
+			/*layer*/
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 3);
+			nk_layout_row_push(gui->ctx, 200);
+			
+			if (nk_combo_begin_label(gui->ctx, drawing.layers[layer_idx].name, nk_vec2(200,200))){
+				nk_layout_row_dynamic(gui->ctx, 25, 1);
+				for (i = 0; i < drawing.num_layers; i++){
+					//strcpy(layer_nam[i], drawing.layers[i].name);
+					if (nk_button_label(gui->ctx, drawing.layers[i].name)){
+						layer_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+				}
+				
+				nk_combo_end(gui->ctx);
+			}
+			/*color picker */
+			int c_idx = color_idx;
+			if (c_idx >255){
+				c_idx = drawing.layers[layer_idx].color;
+				if (c_idx >255){
+					c_idx = 0;
+				}
+			}
+			struct nk_color combo_color = {
+				.r = dxf_colors[c_idx].r,
+				.g = dxf_colors[c_idx].g,
+				.b = dxf_colors[c_idx].b,
+				.a = dxf_colors[c_idx].a
+			};
+			nk_layout_row_push(gui->ctx, 25);
+			if(nk_button_color(gui->ctx, combo_color)){
+				//
+			}
+			nk_layout_row_push(gui->ctx, 25);
+			if (nk_combo_begin_color(gui->ctx, combo_color, nk_vec2(180,320))) {
+				nk_layout_row_static(gui->ctx, 15, 15, 8);
+				for (i = 0; i < 256; i++){
+					struct nk_color b_color = {
+						.r = dxf_colors[i].r,
+						.g = dxf_colors[i].g,
+						.b = dxf_colors[i].b,
+						.a = dxf_colors[i].a
+					};
+					if(nk_button_color(gui->ctx, b_color)){
+						color_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+				}
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+					if (nk_button_label(gui->ctx, "By Layer")){
+						color_idx = 256;
+						nk_combo_close(gui->ctx);
+					}
+				nk_combo_end(gui->ctx);
+			}
+			nk_layout_row_end(gui->ctx);
+		}
+		nk_end(gui->ctx);
 		
 		if ((gui_check_draw(gui) != 0) || (draw != 0)){
 		
@@ -306,6 +375,8 @@ int main(int argc, char** argv){
 				printf("Draw = %d\n\n", time_end - time_start);
 				
 				draw = 1;
+				layer_idx = 0;
+				color_idx = 0;
 			}
 		}
 		else if(action == FILE_SAVE) {
