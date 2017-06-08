@@ -663,6 +663,7 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 			drawing->layers[i+1].lock = lock;
 			drawing->layers[i+1].off = off;
 		}
+		//printf("Num Layers = %d\n", drawing->num_layers);
 		free(v_search.data);
 	}
 }
@@ -767,7 +768,7 @@ void dxf_fonts_assemb (dxf_drawing *drawing){
 	
 	v_search = dxf_find_obj(drawing->t_style, "STYLE"); /* get the list of fonts */
 	if (v_search.data){
-		drawing->num_layers += v_search.size;
+		drawing->num_fonts += v_search.size;
 		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_FONTS-1)); i++){
 			name[0] = 0;
 			file_name[0] = 0;
@@ -799,338 +800,343 @@ void dxf_fonts_assemb (dxf_drawing *drawing){
 	}
 }
 
-int dxf_lay_idx (dxf_drawing drawing, char *name){
+int dxf_lay_idx (dxf_drawing *drawing, char *name){
 	int i;
-	
-	for (i=1; i < drawing.num_layers; i++){
-		if (strcmp(drawing.layers[i].name, name) == 0){
-			return i;
+	if (drawing){
+		for (i=1; i < drawing->num_layers; i++){
+			if (strcmp(drawing->layers[i].name, name) == 0){
+				return i;
+			}
 		}
 	}
 	
 	return 0; /*if search fails, return the standard layer */
 }
 
-int dxf_ltype_idx (dxf_drawing drawing, char *name){
+int dxf_ltype_idx (dxf_drawing *drawing, char *name){
 	int i;
-	
-	for (i=1; i < drawing.num_ltypes; i++){
-		if (strcmp(drawing.ltypes[i].name, name) == 0){
-			return i;
+	if (drawing){
+		for (i=1; i < drawing->num_ltypes; i++){
+			if (strcmp(drawing->ltypes[i].name, name) == 0){
+				return i;
+			}
 		}
 	}
 	
 	return 0; /*if search fails, return the standard layer */
 }
 
-int dxf_font_idx (dxf_drawing drawing, char *name){
+int dxf_font_idx (dxf_drawing *drawing, char *name){
 	int i;
-	
-	for (i=1; i < drawing.num_fonts; i++){
-		if (strcmp(drawing.text_fonts[i].name, name) == 0){
-			return i;
+	if (drawing){
+		for (i=1; i < drawing->num_fonts; i++){
+			if (strcmp(drawing->text_fonts[i].name, name) == 0){
+				return i;
+			}
 		}
 	}
 	
 	return 0; /*if search fails, return the standard font */
 }
 
-dxf_drawing dxf_open (char *path){
-	dxf_drawing drawing;
-	char buf[255], *line;
-	FILE *file;
-	long f_index = 0;  /*  indexes the file´s lines */
-	dxf_node *new_node = NULL;
-	dxf_node *master, *prev, *next, *tmp, *last_obj;
-	dxf_node *main_struct = NULL;
-	int group = 0; /* current group */
-	int t_data = DXF_STR; /* current type of data */
-	double d_data;
-	int i_data;
-	vector_p part;
+void dxf_open (dxf_drawing *drawing, char *path){
+	if (drawing){
+		char buf[255], *line;
+		FILE *file;
+		long f_index = 0;  /*  indexes the file´s lines */
+		dxf_node *new_node = NULL;
+		dxf_node *master, *prev, *next, *tmp, *last_obj;
+		dxf_node *main_struct = NULL;
+		int group = 0; /* current group */
+		int t_data = DXF_STR; /* current type of data */
+		double d_data;
+		int i_data;
+		vector_p part;
 
-	/* init the drawing */
-	drawing.head = NULL;
-	drawing.tabs = NULL;
-	drawing.blks = NULL;
-	drawing.ents = NULL; 
-	drawing.t_ltype = NULL;
-	drawing.t_layer = NULL;
-	drawing.t_style = NULL;
-	drawing.t_view = NULL;
-	drawing.t_ucs = NULL;
-	drawing.t_vport = NULL;
-	drawing.t_dimst = NULL;
-	drawing.t_appid = NULL;
-	drawing.main_struct = NULL;
-	
-	/* create a new main_struct */
-	main_struct = dxf_obj_new(NULL);
-	
-	file = fopen(path, "r");
-	if(file == NULL){
-		free(main_struct);
-		main_struct = NULL;
-	}
-	else if (main_struct){
+		/* init the drawing */
+		drawing->head = NULL;
+		drawing->tabs = NULL;
+		drawing->blks = NULL;
+		drawing->ents = NULL; 
+		drawing->t_ltype = NULL;
+		drawing->t_layer = NULL;
+		drawing->t_style = NULL;
+		drawing->t_view = NULL;
+		drawing->t_ucs = NULL;
+		drawing->t_vport = NULL;
+		drawing->t_dimst = NULL;
+		drawing->t_appid = NULL;
+		drawing->main_struct = NULL;
 		
-		master = main_struct; /* current master is the main struct */
-		last_obj = main_struct;
-		prev = main_struct->obj.content; /* the list starts on main_struct's content */
-		next = NULL; /* end of list (empty list) */
+		/* create a new main_struct */
+		main_struct = dxf_obj_new(NULL);
 		
-		while((fgets(buf, sizeof(buf), file))!=NULL ){
+		file = fopen(path, "r");
+		if(file == NULL){
+			free(main_struct);
+			main_struct = NULL;
+		}
+		else if (main_struct){
 			
-			/* trim leading/trailing whitespace of line */
-			line = trimwhitespace(buf);
+			master = main_struct; /* current master is the main struct */
+			last_obj = main_struct;
+			prev = main_struct->obj.content; /* the list starts on main_struct's content */
+			next = NULL; /* end of list (empty list) */
 			
-			if((f_index % 2) == 0){ /* check if the line is even */
-				/* in DXF files, the even lines identify the groups */
-				group = atoi(line);
+			while((fgets(buf, sizeof(buf), file))!=NULL ){
 				
-				/* Identifies the data type of the next line,  */
-				/* according to the value of the group. (DXF ranges) */
+				/* trim leading/trailing whitespace of line */
+				line = trimwhitespace(buf);
 				
-				if ((group >= 0) && (group < 10)){
-					t_data = DXF_STR; /* string */
-				}
-				else if( (group >= 10) && (group < 60)){
-					t_data = DXF_FLOAT; /* float */
-				}
-				else if( (group >= 60) && (group < 80)){
-					t_data = DXF_INT; /* integer */
-				}
-				else if( (group >= 140) && (group < 148)){
-					t_data = DXF_FLOAT; /* float */
-				}
-				else if( (group >= 170) && (group < 176)){
-					t_data = DXF_INT; /* integer */
-				}
-				else if( (group >= 210) && (group < 240)){
-					t_data = DXF_FLOAT; /*  float */
-				}
-				else if( (group >= 999) && (group < 1010)){
-					t_data = DXF_STR; /* string */
-				}
-				else if( (group >= 1010) && (group < 1060)){
-					t_data = DXF_FLOAT; /* float */
-				}
-				else if( (group >= 1060) && (group < 1080)){
-					t_data = DXF_INT; /* integer */
-				}
-				else{ /* not defined type */
-					t_data = DXF_STR; /* default type is string */
-				}
-				
-			}
-			else {
-				/* strips \n of line string */
-				//line[strcspn(line, "\r\n")] = 0; /* strips \n or \r of line string */
-				
-				switch(group){
-					case 0:
-						str_upp(line); /* upper case the line */
+				if((f_index % 2) == 0){ /* check if the line is even */
+					/* in DXF files, the even lines identify the groups */
+					group = atoi(line);
 					
-						/* Find the end of the master's content list */
-						tmp = master->obj.content;
-						while(tmp->next != NULL)
-							tmp = tmp->next;
-						prev = tmp; /* new objs will append here */
-						
-						/* new level of hierarchy  */
-						if((strcmp(line, "SECTION") == 0) ||
-							(strcmp(line, "TABLE") == 0) ||
-							(strcmp(line, "BLOCK") == 0)){
-							new_node = dxf_obj_new (line); /* new object */
-							if (new_node){
-								/*  append new to master's list */
-								new_node->master = master;
-								new_node->prev = prev;
-								if (prev){
-									prev->next = new_node;
-								}
-								new_node->next = NULL; /* at end of list */
-								last_obj = new_node;
-								
-								/* the new becomes the master */
-								master = new_node;
-								prev = new_node->obj.content; /* new objs will append here */
-							}
-						}
-						/* back to the previous level on hierarchy */
-						else if((strcmp(line, "ENDSEC") == 0) ||
-							(strcmp(line, "ENDTAB") == 0) ||
-							(strcmp(line, "ENDBLK") == 0)||
-							(strcmp(line, "SEQEND") == 0)){
-							if(master->master){
-								/* back to master's master ;) */
-								master = master->master;
-								last_obj = master;
-								/* Find the end of the master's content list */
-								tmp = master->obj.content;
-								while(tmp->next != NULL)
-									tmp = tmp->next;
-								prev = tmp; /* new items will append here */
-							}
-						}
-						
-						/*  new ordinary DXF object */
-						else {
-							new_node = dxf_obj_new (line); /* new object */
-							if (new_node){
-								/*  append new to master's list */
-								new_node->master = master;
-								new_node->prev = prev;
-								if (prev){
-									prev->next = new_node;
-								}
-								new_node->next = NULL; /* append at end of list */
-								prev = new_node->obj.content; /* new attrs will append here */
-								last_obj = new_node;
-							}
-						}
-						//new_node = NULL;
-						break;
-						
-					case 66: /* Entities follow flag */
-						i_data = atoi(line);
-						new_node = dxf_attr_new (group, t_data, (void *) &i_data);
-						if (new_node){
-							/*  append new to last obj's list */
-							new_node->master = last_obj;
-							new_node->prev = prev;
-							if (prev){
-								prev->next = new_node;
-							}
-							new_node->next = NULL; /* append at end of list */
-						}
+					/* Identifies the data type of the next line,  */
+					/* according to the value of the group. (DXF ranges) */
 					
-						if (i_data != 0){
-							/* new level of hierarchy */
-							master = last_obj; /*  the last obj becomes the master */
-							
+					if ((group >= 0) && (group < 10)){
+						t_data = DXF_STR; /* string */
+					}
+					else if( (group >= 10) && (group < 60)){
+						t_data = DXF_FLOAT; /* float */
+					}
+					else if( (group >= 60) && (group < 80)){
+						t_data = DXF_INT; /* integer */
+					}
+					else if( (group >= 140) && (group < 148)){
+						t_data = DXF_FLOAT; /* float */
+					}
+					else if( (group >= 170) && (group < 176)){
+						t_data = DXF_INT; /* integer */
+					}
+					else if( (group >= 210) && (group < 240)){
+						t_data = DXF_FLOAT; /*  float */
+					}
+					else if( (group >= 999) && (group < 1010)){
+						t_data = DXF_STR; /* string */
+					}
+					else if( (group >= 1010) && (group < 1060)){
+						t_data = DXF_FLOAT; /* float */
+					}
+					else if( (group >= 1060) && (group < 1080)){
+						t_data = DXF_INT; /* integer */
+					}
+					else{ /* not defined type */
+						t_data = DXF_STR; /* default type is string */
+					}
+					
+				}
+				else {
+					/* strips \n of line string */
+					//line[strcspn(line, "\r\n")] = 0; /* strips \n or \r of line string */
+					
+					switch(group){
+						case 0:
+							str_upp(line); /* upper case the line */
+						
 							/* Find the end of the master's content list */
 							tmp = master->obj.content;
 							while(tmp->next != NULL)
 								tmp = tmp->next;
 							prev = tmp; /* new objs will append here */
-						}
-						break;
-					default:
-						switch(t_data) {
-							case DXF_FLOAT :
-								d_data = atof(line);
-								new_node = dxf_attr_new (group, t_data, (void *) &d_data);
-								break;
-							case DXF_INT :
-								i_data = atoi(line);
-								new_node = dxf_attr_new (group, t_data, (void *) &i_data);
-								break;
-							case DXF_STR :
-								new_node = dxf_attr_new (group, t_data, (void *) line);
-						}
-						
-						if (new_node){
-							/*  append new to last obj's list */
-							new_node->master = last_obj;
-							new_node->prev = prev;
-							if (prev){
-								prev->next = new_node;
+							
+							/* new level of hierarchy  */
+							if((strcmp(line, "SECTION") == 0) ||
+								(strcmp(line, "TABLE") == 0) ||
+								(strcmp(line, "BLOCK") == 0)){
+								new_node = dxf_obj_new (line); /* new object */
+								if (new_node){
+									/*  append new to master's list */
+									new_node->master = master;
+									new_node->prev = prev;
+									if (prev){
+										prev->next = new_node;
+									}
+									new_node->next = NULL; /* at end of list */
+									last_obj = new_node;
+									
+									/* the new becomes the master */
+									master = new_node;
+									prev = new_node->obj.content; /* new objs will append here */
+								}
 							}
-							new_node->next = NULL; /* append at end of list */
-							prev = new_node;
-						}
-					
+							/* back to the previous level on hierarchy */
+							else if((strcmp(line, "ENDSEC") == 0) ||
+								(strcmp(line, "ENDTAB") == 0) ||
+								(strcmp(line, "ENDBLK") == 0)||
+								(strcmp(line, "SEQEND") == 0)){
+								if(master->master){
+									/* back to master's master ;) */
+									master = master->master;
+									last_obj = master;
+									/* Find the end of the master's content list */
+									tmp = master->obj.content;
+									while(tmp->next != NULL)
+										tmp = tmp->next;
+									prev = tmp; /* new items will append here */
+								}
+							}
+							
+							/*  new ordinary DXF object */
+							else {
+								new_node = dxf_obj_new (line); /* new object */
+								if (new_node){
+									/*  append new to master's list */
+									new_node->master = master;
+									new_node->prev = prev;
+									if (prev){
+										prev->next = new_node;
+									}
+									new_node->next = NULL; /* append at end of list */
+									prev = new_node->obj.content; /* new attrs will append here */
+									last_obj = new_node;
+								}
+							}
+							//new_node = NULL;
+							break;
+							
+						case 66: /* Entities follow flag */
+							i_data = atoi(line);
+							new_node = dxf_attr_new (group, t_data, (void *) &i_data);
+							if (new_node){
+								/*  append new to last obj's list */
+								new_node->master = last_obj;
+								new_node->prev = prev;
+								if (prev){
+									prev->next = new_node;
+								}
+								new_node->next = NULL; /* append at end of list */
+							}
+						
+							if (i_data != 0){
+								/* new level of hierarchy */
+								master = last_obj; /*  the last obj becomes the master */
+								
+								/* Find the end of the master's content list */
+								tmp = master->obj.content;
+								while(tmp->next != NULL)
+									tmp = tmp->next;
+								prev = tmp; /* new objs will append here */
+							}
+							break;
+						default:
+							switch(t_data) {
+								case DXF_FLOAT :
+									d_data = atof(line);
+									new_node = dxf_attr_new (group, t_data, (void *) &d_data);
+									break;
+								case DXF_INT :
+									i_data = atoi(line);
+									new_node = dxf_attr_new (group, t_data, (void *) &i_data);
+									break;
+								case DXF_STR :
+									new_node = dxf_attr_new (group, t_data, (void *) line);
+							}
+							
+							if (new_node){
+								/*  append new to last obj's list */
+								new_node->master = last_obj;
+								new_node->prev = prev;
+								if (prev){
+									prev->next = new_node;
+								}
+								new_node->next = NULL; /* append at end of list */
+								prev = new_node;
+							}
+						
+					}
+					new_node = NULL;
 				}
-				new_node = NULL;
+				
+				f_index++; /* next line index */
 			}
 			
-			f_index++; /* next line index */
+		}
+		fclose(file);
+		
+		drawing->main_struct = main_struct;
+		
+		/* disassembly the drawing structure */
+		/* the main sections */
+		part = dxf_find_obj_descr(main_struct, "SECTION", "HEADER");
+		if (part.data){
+			drawing->head = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(main_struct, "SECTION", "TABLES");
+		if (part.data){
+			drawing->tabs = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(main_struct, "SECTION", "BLOCKS");
+		if (part.data){
+			drawing->blks = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(main_struct, "SECTION", "ENTITIES");
+		if (part.data){
+			drawing->ents = ((dxf_node **) part.data)[0]; 
+			free(part.data);
 		}
 		
+		/* the tables */
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "LTYPE");
+		if (part.data){
+			drawing->t_ltype = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "LAYER");
+		if (part.data){
+			drawing->t_layer = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "STYLE");
+		if (part.data){
+			drawing->t_style = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "VIEW");
+		if (part.data){
+			drawing->t_view = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "UCS");
+		if (part.data){
+			drawing->t_ucs = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "VPORT");
+		if (part.data){
+			drawing->t_vport = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "DIMSTYLE");
+		if (part.data){
+			drawing->t_dimst = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "APPID");
+		if (part.data){
+			drawing->t_appid = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		
+		/* assemble the layers list */
+		dxf_layer_assemb (drawing);
+		
+		/* assemble the ltypes list */
+		dxf_ltype_assemb (drawing);
+		
+		/* assemble the fonts list */
+		dxf_fonts_assemb(drawing);
+		
+		//return drawing;
 	}
-	fclose(file);
-	
-	drawing.main_struct = main_struct;
-	
-	/* disassembly the drawing structure */
-	/* the main sections */
-	part = dxf_find_obj_descr(main_struct, "SECTION", "HEADER");
-	if (part.data){
-		drawing.head = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(main_struct, "SECTION", "TABLES");
-	if (part.data){
-		drawing.tabs = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(main_struct, "SECTION", "BLOCKS");
-	if (part.data){
-		drawing.blks = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(main_struct, "SECTION", "ENTITIES");
-	if (part.data){
-		drawing.ents = ((dxf_node **) part.data)[0]; 
-		free(part.data);
-	}
-	
-	/* the tables */
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "LTYPE");
-	if (part.data){
-		drawing.t_ltype = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "LAYER");
-	if (part.data){
-		drawing.t_layer = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "STYLE");
-	if (part.data){
-		drawing.t_style = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "VIEW");
-	if (part.data){
-		drawing.t_view = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "UCS");
-	if (part.data){
-		drawing.t_ucs = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "VPORT");
-	if (part.data){
-		drawing.t_vport = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "DIMSTYLE");
-	if (part.data){
-		drawing.t_dimst = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	part = dxf_find_obj_descr(drawing.tabs, "TABLE", "APPID");
-	if (part.data){
-		drawing.t_appid = ((dxf_node **) part.data)[0];
-		free(part.data);
-	}
-	
-	/* assemble the layers list */
-	dxf_layer_assemb (&drawing);
-	
-	/* assemble the ltypes list */
-	dxf_ltype_assemb (&drawing);
-	
-	/* assemble the fonts list */
-	dxf_fonts_assemb(&drawing);
-	
-	return drawing;
 }
 
-int dxf_save (char *path, dxf_drawing drawing){
+int dxf_save (char *path, dxf_drawing *drawing){
+	
 	FILE *file;
 	vector_p stack, attr;
 	dxf_node *current;
@@ -1141,69 +1147,70 @@ int dxf_save (char *path, dxf_drawing drawing){
 	stack.data = NULL;
 	
 	ret_success = 0;
-	file = fopen(path, "w"); /* open the file */
-	
-	
-	if ((file != NULL) && (drawing.main_struct != NULL)){
-		current = drawing.main_struct->obj.content->next;
-		while ((current != NULL) || (stack.size > 0)){
-			if (current == NULL){ /* end of list sweeping */
-				/* try to up in the structure hierarchy */
-				current = stack_pop (&stack);
-				if (current){
-					/* write the end of complex entities, acording its type */
-					if(strcmp(current->obj.name, "SECTION") == 0){
-						fprintf(file, "0\nENDSEC\n");
-					}
-					else if(strcmp(current->obj.name, "TABLE") == 0){
-						fprintf(file, "0\nENDTAB\n");
-					}
-					else if(strcmp(current->obj.name, "BLOCK") == 0){
-						fprintf(file, "0\nENDBLK\n");
-					}
-					else{
-						attr = dxf_find_attr(current, 66); /* look for entities folow flag*/
-						if (attr.data){ /* if flag is found and */
-							if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero */
-								fprintf(file, "0\nSEQEND\n");
-							}
-							free(attr.data);
+	if (drawing){
+		file = fopen(path, "w"); /* open the file */
+		
+		
+		if ((file != NULL) && (drawing->main_struct != NULL)){
+			current = drawing->main_struct->obj.content->next;
+			while ((current != NULL) || (stack.size > 0)){
+				if (current == NULL){ /* end of list sweeping */
+					/* try to up in the structure hierarchy */
+					current = stack_pop (&stack);
+					if (current){
+						/* write the end of complex entities, acording its type */
+						if(strcmp(current->obj.name, "SECTION") == 0){
+							fprintf(file, "0\nENDSEC\n");
 						}
+						else if(strcmp(current->obj.name, "TABLE") == 0){
+							fprintf(file, "0\nENDTAB\n");
+						}
+						else if(strcmp(current->obj.name, "BLOCK") == 0){
+							fprintf(file, "0\nENDBLK\n");
+						}
+						else{
+							attr = dxf_find_attr(current, 66); /* look for entities folow flag*/
+							if (attr.data){ /* if flag is found and */
+								if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero */
+									fprintf(file, "0\nSEQEND\n");
+								}
+								free(attr.data);
+							}
+						}
+						current = current->next; /* go to the next in the list */
+					}
+				}
+				else if (current->type == DXF_ENT){ /* DXF entity */
+					/* down in the structure hierarchy */
+					stack_push (&stack, current);
+					if (current->obj.name){
+						fprintf(file, "0\n%s\n", current->obj.name); /* write the start of entity */
+					}
+					if (current->obj.content){
+						/* starts the content sweep */
+						current = current->obj.content->next;
+					}
+				}
+				else if (current->type == DXF_ATTR){ /* DXF attribute */
+					fprintf(file, "%d\n",  current->value.group); /* write the DFX group */
+					/* write the value of attribute, acording its type */
+					switch (current->value.t_data) {
+						case DXF_STR:
+							fprintf(file, "%s\n", current->value.s_data);
+							break;
+						case DXF_FLOAT:
+							fprintf(file, "%f\n", current->value.d_data);
+							break;
+						case DXF_INT:
+							fprintf(file, "%d\n",  current->value.i_data);
 					}
 					current = current->next; /* go to the next in the list */
 				}
 			}
-			else if (current->type == DXF_ENT){ /* DXF entity */
-				/* down in the structure hierarchy */
-				stack_push (&stack, current);
-				if (current->obj.name){
-					fprintf(file, "0\n%s\n", current->obj.name); /* write the start of entity */
-				}
-				if (current->obj.content){
-					/* starts the content sweep */
-					current = current->obj.content->next;
-				}
-			}
-			else if (current->type == DXF_ATTR){ /* DXF attribute */
-				fprintf(file, "%d\n",  current->value.group); /* write the DFX group */
-				/* write the value of attribute, acording its type */
-				switch (current->value.t_data) {
-					case DXF_STR:
-						fprintf(file, "%s\n", current->value.s_data);
-						break;
-					case DXF_FLOAT:
-						fprintf(file, "%f\n", current->value.d_data);
-						break;
-					case DXF_INT:
-						fprintf(file, "%d\n",  current->value.i_data);
-				}
-				current = current->next; /* go to the next in the list */
-			}
+			ret_success = 1; /* return success */
 		}
-		ret_success = 1; /* return success */
+		
+		fclose(file);
 	}
-	
-	fclose(file);
-	
 	return ret_success;
 }

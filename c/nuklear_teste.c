@@ -9,6 +9,7 @@
 #include <math.h>
 #include <limits.h>
 #include <time.h>
+#include <locale.h>
 
 #include <SDL.h>
 
@@ -56,7 +57,7 @@
 int
 main(int argc, char* argv[])
 {
-	
+	setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	shape *shx_font = shx_font_open("txt.shx");
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};

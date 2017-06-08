@@ -167,12 +167,12 @@ void dxf_layer_assemb (dxf_drawing *drawing);
 
 void dxf_ltype_assemb (dxf_drawing *drawing);
 
-int dxf_lay_idx (dxf_drawing drawing, char *name);
+int dxf_lay_idx (dxf_drawing *drawing, char *name);
 
-int dxf_ltype_idx (dxf_drawing drawing, char *name);
+int dxf_ltype_idx (dxf_drawing *drawing, char *name);
 
-dxf_drawing dxf_open (char *path);
+void dxf_open (dxf_drawing *drawing, char *path);
 
-int dxf_save (char *path, dxf_drawing drawing);
+int dxf_save (char *path, dxf_drawing *drawing);
 
 #endif

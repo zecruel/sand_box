@@ -11,6 +11,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
+//#include <locale.h>
 
 #include "tinyfiledialogs.h"
 
@@ -24,6 +25,7 @@
 #include "gui.h"
 
 int main(int argc, char** argv){
+	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	unsigned int width = 1024;
 	unsigned int height = 720;
 	unsigned int quit = 0;
@@ -43,14 +45,14 @@ int main(int argc, char** argv){
 	
 	
 	//char url[]="teste.dxf";
-	dxf_drawing drawing;
+	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
 	int i;
 	double min_x, min_y, max_x, max_y;
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	double prev_zoom;
 	
 	/* init the drawing */
-	drawing = dxf_open(url);
+	dxf_open(drawing, url);
 	dxf_ents_parse(drawing);
 	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 	
@@ -88,7 +90,7 @@ int main(int argc, char** argv){
 	SDL_Event event;
 	int mouse_x, mouse_y;
 	double pos_x, pos_y;
-	int color_idx = 0;
+	int color_idx = 256;
 	int layer_idx = 0;
 	
 	enum Action {
@@ -246,15 +248,22 @@ int main(int argc, char** argv){
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
 		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
-			/*layer*/
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 3);
-			nk_layout_row_push(gui->ctx, 200);
+			static char text[64];
+			int text_len;
 			
-			if (nk_combo_begin_label(gui->ctx, drawing.layers[layer_idx].name, nk_vec2(200,200))){
+			/*layer*/
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 4);
+			nk_layout_row_push(gui->ctx, 60);
+			text_len = snprintf(text, 63, "%d", drawing->num_layers);
+			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			
+			nk_layout_row_push(gui->ctx, 200);
+			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
 				nk_layout_row_dynamic(gui->ctx, 25, 1);
-				for (i = 0; i < drawing.num_layers; i++){
-					//strcpy(layer_nam[i], drawing.layers[i].name);
-					if (nk_button_label(gui->ctx, drawing.layers[i].name)){
+				int num_layers = drawing->num_layers;
+				for (i = 0; i < num_layers; i++){
+					//strcpy(layer_nam[i], drawing->layers[i].name);
+					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
 						layer_idx = i;
 						nk_combo_close(gui->ctx);
 					}
@@ -265,7 +274,7 @@ int main(int argc, char** argv){
 			/*color picker */
 			int c_idx = color_idx;
 			if (c_idx >255){
-				c_idx = drawing.layers[layer_idx].color;
+				c_idx = drawing->layers[layer_idx].color;
 				if (c_idx >255){
 					c_idx = 0;
 				}
@@ -276,10 +285,23 @@ int main(int argc, char** argv){
 				.b = dxf_colors[c_idx].b,
 				.a = dxf_colors[c_idx].a
 			};
-			nk_layout_row_push(gui->ctx, 25);
-			if(nk_button_color(gui->ctx, combo_color)){
-				//
+			nk_layout_row_push(gui->ctx, 40);
+			struct nk_style_button b_style = gui->ctx->style.button;
+			b_style.normal.data.color = combo_color;
+			combo_color.a = 120;
+			b_style.hover.data.color = combo_color;
+			
+			if (color_idx <256){
+				text_len = snprintf(text, 63, "%d", color_idx);
 			}
+			else{
+				text_len = snprintf(text, 63, "%s", "ByL");
+			}
+			
+			nk_button_text_styled(gui->ctx, &b_style, text, text_len);
+			//if(nk_button_color(gui->ctx, combo_color)){
+				//
+			//}
 			nk_layout_row_push(gui->ctx, 25);
 			if (nk_combo_begin_color(gui->ctx, combo_color, nk_vec2(180,320))) {
 				nk_layout_row_static(gui->ctx, 15, 15, 8);
@@ -313,11 +335,13 @@ int main(int argc, char** argv){
 			
 			nk_sdl_render(gui, img);
 			
-			graph_mem_pool(ZERO_GRAPH, 1);
-			graph_mem_pool(ZERO_LINE, 1);
+			
 			draw = 0;
 			
 		}
+		
+		graph_mem_pool(ZERO_GRAPH, 1);
+		graph_mem_pool(ZERO_LINE, 1);
 		
 		nk_clear(gui->ctx); /*IMPORTANT */
 		/*===============================*/
@@ -338,14 +362,16 @@ int main(int argc, char** argv){
 			NULL,
 			0);
 			if (url){
-				dxf_ent_clear(drawing.main_struct);
+				dxf_ent_clear(drawing->main_struct);
 				graph_mem_pool(ZERO_GRAPH, 0);
 				graph_mem_pool(ZERO_LINE, 0);
 				
 				time_start = SDL_GetTicks();
-				drawing = dxf_open(url);
+				dxf_open(drawing, url);
 				time_end = SDL_GetTicks();
 				printf("Open = %d\n", time_end - time_start);
+				
+				//printf("Num Layers = %d\n", drawing->num_layers);
 				
 				time_start = SDL_GetTicks();
 				dxf_ents_parse(drawing);
@@ -376,7 +402,8 @@ int main(int argc, char** argv){
 				
 				draw = 1;
 				layer_idx = 0;
-				color_idx = 0;
+				color_idx = 256;
+				//printf("Num Layers = %d\n\n", drawing->num_layers);
 			}
 		}
 		else if(action == FILE_SAVE) {
@@ -387,8 +414,8 @@ int main(int argc, char** argv){
 			2,
 			lFilterPatterns,
 			NULL);
-			if ((url != NULL) && (drawing.main_struct != NULL)){
-				dxf_ent_print_f (drawing.main_struct, url);
+			if ((url != NULL) && (drawing->main_struct != NULL)){
+				dxf_ent_print_f (drawing->main_struct, url);
 			}
 		}
 	}
@@ -400,17 +427,18 @@ int main(int argc, char** argv){
 	SDL_Quit();
 	
 	/*=======================*/
-	dxf_ent_clear(drawing.main_struct);
+	dxf_ent_clear(drawing->main_struct);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
 	
 	bmp_free(img);
-	for (i = 0; i<drawing.num_fonts; i++){
-		shx_font_free(drawing.text_fonts[i].shx_font);
+	for (i = 0; i<drawing->num_fonts; i++){
+		shx_font_free(drawing->text_fonts[i].shx_font);
 	}
 	//----------------------------
 	nk_sdl_shutdown(gui);
 	shx_font_free(shx_font);
+	free(drawing);
 		
 	return 0;
 }

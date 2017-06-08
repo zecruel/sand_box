@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -97,23 +97,23 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -132,7 +132,7 @@ graph_obj * dxf_line_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 	return NULL;
 }
 
-graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_circle_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -223,23 +223,23 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -260,7 +260,7 @@ graph_obj * dxf_circle_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 	return NULL;
 }
 
-graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_arc_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -358,23 +358,23 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int 
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -395,7 +395,7 @@ graph_obj * dxf_arc_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int 
 	return NULL;
 }
 
-graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_ellipse_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -506,23 +506,23 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space, 
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -537,7 +537,7 @@ graph_obj * dxf_ellipse_parse(dxf_drawing drawing, dxf_node * ent, int p_space, 
 	return NULL;
 }
 
-graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -648,23 +648,23 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, in
 						/* check if  object's color  is definied by layer,
 						then look for layer's color */
 						if (color >= 256){
-							color = drawing.layers[lay_idx].color;
+							color = drawing->layers[lay_idx].color;
 						}
 						
 						/* check if  object's ltype  is definied by layer,
 						then look for layer's ltype */
 						if ((strcmp(l_type, "BYLAYER") == 0) ||
 							((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-							strcpy(l_type, drawing.layers[lay_idx].ltype);
+							strcpy(l_type, drawing->layers[lay_idx].ltype);
 						}
 						
 						/* find the ltype index */
 						ltype_idx = dxf_ltype_idx(drawing, l_type);
 						
 						/* change the graph line pattern */
-						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+						for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 						}
 						
 						/*change the color */
@@ -760,7 +760,7 @@ graph_obj * dxf_pline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, in
 	return NULL;
 }
 
-graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_lwpline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -887,23 +887,23 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, 
 						/* check if  object's color  is definied by layer,
 						then look for layer's color */
 						if (color >= 256){
-							color = drawing.layers[lay_idx].color;
+							color = drawing->layers[lay_idx].color;
 						}
 						
 						/* check if  object's ltype  is definied by layer,
 						then look for layer's ltype */
 						if ((strcmp(l_type, "BYLAYER") == 0) ||
 							((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-							strcpy(l_type, drawing.layers[lay_idx].ltype);
+							strcpy(l_type, drawing->layers[lay_idx].ltype);
 						}
 						
 						/* find the ltype index */
 						ltype_idx = dxf_ltype_idx(drawing, l_type);
 						
 						/* change the graph line pattern */
-						curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-						for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-							curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+						curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+						for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+							curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 						}
 						
 						/*change the color */
@@ -980,7 +980,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, 
 }
 
 
-graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_spline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL, *prev;
 		graph_obj *curr_graph = NULL;
@@ -1129,23 +1129,23 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 			/* check if  object's color  is definied by layer,
 			then look for layer's color */
 			if (color >= 256){
-				color = drawing.layers[lay_idx].color;
+				color = drawing->layers[lay_idx].color;
 			}
 			
 			/* check if  object's ltype  is definied by layer,
 			then look for layer's ltype */
 			if ((strcmp(l_type, "BYLAYER") == 0) ||
 				((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-				strcpy(l_type, drawing.layers[lay_idx].ltype);
+				strcpy(l_type, drawing->layers[lay_idx].ltype);
 			}
 			
 			/* find the ltype index */
 			ltype_idx = dxf_ltype_idx(drawing, l_type);
 			
 			/* change the graph line pattern */
-			curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-			for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-				curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+			curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+			for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+				curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 			}
 			
 			/*change the color */
@@ -1188,7 +1188,7 @@ graph_obj * dxf_spline_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 
 
 
-graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		graph_obj *curr_graph = NULL;
@@ -1325,11 +1325,11 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 			
 			/* find the font index and font*/
 			fnt_idx = dxf_font_idx(drawing, t_style);
-			shx_font = drawing.text_fonts[fnt_idx].shx_font;
+			shx_font = drawing->text_fonts[fnt_idx].shx_font;
 			
 			if(shx_font == NULL){ /* if font not loaded*/
 				/* use the deafault font*/
-				shx_font = drawing.text_fonts[0].shx_font;
+				shx_font = drawing->text_fonts[0].shx_font;
 			}
 			
 			/* find the dimentions of SHX font */
@@ -1415,23 +1415,23 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -1504,7 +1504,7 @@ graph_obj * dxf_text_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 	return NULL;
 }
 
-graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_attrib_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		graph_obj *curr_graph = NULL;
@@ -1627,11 +1627,11 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 			
 			/* find the font index and font*/
 			fnt_idx = dxf_font_idx(drawing, t_style);
-			shx_font = drawing.text_fonts[fnt_idx].shx_font;
+			shx_font = drawing->text_fonts[fnt_idx].shx_font;
 			
 			if(shx_font == NULL){ /* if font not loaded*/
 				/* use the deafault font*/
-				shx_font = drawing.text_fonts[0].shx_font;
+				shx_font = drawing->text_fonts[0].shx_font;
 			}
 			
 			/* find the dimentions of SHX font */
@@ -1658,23 +1658,23 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -1720,7 +1720,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing drawing, dxf_node * ent, int p_space, i
 	return NULL;
 }
 
-graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -1847,23 +1847,23 @@ graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space, in
 				/* check if  object's color  is definied by layer,
 				then look for layer's color */
 				if (color >= 256){
-					color = drawing.layers[lay_idx].color;
+					color = drawing->layers[lay_idx].color;
 				}
 				
 				/* check if  object's ltype  is definied by layer,
 				then look for layer's ltype */
 				if ((strcmp(l_type, "BYLAYER") == 0) ||
 					((l_type[0] == 0))){ /* if the value is omitted, the ltype is BYLAYER too */
-					strcpy(l_type, drawing.layers[lay_idx].ltype);
+					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
 				/* change the graph line pattern */
-				curr_graph->patt_size = drawing.ltypes[ltype_idx].size;
-				for (i = 0; i < drawing.ltypes[ltype_idx].size; i++){
-					curr_graph->pattern[i] = drawing.ltypes[ltype_idx].pat[i];
+				curr_graph->patt_size = drawing->ltypes[ltype_idx].size;
+				for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+					curr_graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
 				}
 				
 				/*change the color */
@@ -1898,7 +1898,7 @@ graph_obj * dxf_solid_parse(dxf_drawing drawing, dxf_node * ent, int p_space, in
 	return NULL;
 }
 
-vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int pool_idx){
+vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* this function is non recursive */
 	
 	vector_p *v_return = NULL, v_search;
@@ -2207,7 +2207,7 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 			((ins_flag != 0) && (current != NULL) && (current != insert_ent) && (current->type == DXF_ENT))){
 			ins_flag = 0;
 			/* look for block */
-			v_search = dxf_find_obj_descr(drawing.blks, "BLOCK", name1);
+			v_search = dxf_find_obj_descr(drawing->blks, "BLOCK", name1);
 			if ((v_search.data) && /* block found */
 			/* Also check the paper space parameter */
 			(((p_space == 0) && (paper == 0)) || 
@@ -2358,12 +2358,12 @@ vector_p * dxf_graph_parse(dxf_drawing drawing, dxf_node * ent, int p_space, int
 	return v_return;
 }
 
-int dxf_ents_parse(dxf_drawing drawing){
+int dxf_ents_parse(dxf_drawing *drawing){
 	dxf_node *current = NULL;
 	vector_p *vec_graph;
 		
-	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
-		current = drawing.ents->obj.content->next;
+	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
+		current = drawing->ents->obj.content->next;
 		
 		// starts the content sweep 
 		while (current != NULL){
@@ -2385,11 +2385,11 @@ int dxf_ents_parse(dxf_drawing drawing){
 	}
 }
 
-int dxf_ents_draw(dxf_drawing drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){
+int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	dxf_node *current = NULL;
 		
-	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
-		current = drawing.ents->obj.content->next;
+	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
+		current = drawing->ents->obj.content->next;
 		
 		// starts the content sweep 
 		while (current != NULL){
@@ -2405,12 +2405,12 @@ int dxf_ents_draw(dxf_drawing drawing, bmp_img * img, double ofs_x, double ofs_y
 	}
 }
 
-int dxf_ents_ext(dxf_drawing drawing, double * min_x, double * min_y, double * max_x, double * max_y){
+int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * max_x, double * max_y){
 	dxf_node *current = NULL;
 	int ext_ini = 0;
 		
-	if ((drawing.ents != NULL) && (drawing.main_struct != NULL)){
-		current = drawing.ents->obj.content->next;
+	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
+		current = drawing->ents->obj.content->next;
 		
 		// starts the content sweep 
 		while (current != NULL){
