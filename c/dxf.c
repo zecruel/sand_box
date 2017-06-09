@@ -1,6 +1,8 @@
 #include "dxf.h"
 #include <math.h>
 #include "shape2.h"
+#define DXF_NUM_POOL 5
+#define DXF_PAGE 500000
 
 void str_upp(char *str) { /* upper case the string */
 	while (*str= toupper(*str)) str++;
@@ -147,14 +149,83 @@ void * stack_pop (vector_p *stack){
 	return NULL; /* return fail */
 }
 
+void * dxf_mem_pool(enum dxf_pool_action action, int idx){
+	
+	static dxf_pool_slot mem_pool[DXF_NUM_POOL], line[DXF_NUM_POOL];
+	int i;
+	
+	void *ret_ptr = NULL;
+	
+	if ((idx >= 0) && (idx < DXF_NUM_POOL)){ /* check if index is valid */
+		
+		/* initialize the pool, the first allocation */
+		if (mem_pool[idx].size < 1){
+			mem_pool[idx].pool[0] = malloc(DXF_PAGE * sizeof(dxf_node));
+			if (mem_pool[idx].pool){
+				mem_pool[idx].size = 1;
+				//printf("Init mem_pool\n");
+			}
+		}
+		
+		/* if current page is full */
+		if ((mem_pool[idx].pos >= DXF_PAGE) && (mem_pool[idx].size > 0)){
+			/* try to change to page previuosly allocated */
+			if (mem_pool[idx].page < mem_pool[idx].size - 1){
+				mem_pool[idx].page++;
+				mem_pool[idx].pos = 0;
+				//printf("change mem_pool page\n");
+			}
+			/* or then allocatte a new page */
+			else if(mem_pool[idx].page < DXF_POOL_PAGES-1){
+				mem_pool[idx].pool[mem_pool[idx].page + 1] = malloc(DXF_PAGE * sizeof(dxf_node));
+				if (mem_pool[idx].pool[mem_pool[idx].page + 1]){
+					mem_pool[idx].page++;
+					mem_pool[idx].size ++;
+					mem_pool[idx].pos = 0;
+					//printf("Realloc mem_pool\n");
+				}
+			}
+		}
+		
+		ret_ptr = NULL;
+		
+		if ((mem_pool[idx].pool[mem_pool[idx].page] != NULL)){
+			switch (action){
+				case ADD_DXF:
+					if (mem_pool[idx].pos < DXF_PAGE){
+						ret_ptr = &(((dxf_node *)mem_pool[idx].pool[mem_pool[idx].page])[mem_pool[idx].pos]);
+						mem_pool[idx].pos++;
+					}
+					break;
+				case ZERO_DXF:
+					mem_pool[idx].pos = 0;
+					mem_pool[idx].page = 0;
+					break;
+				case FREE_DXF:
+					for (i = 0; i < mem_pool[idx].size; i++){
+						//free(mem_pool[idx].pool[i]);
+						dxf_ent_clear (mem_pool[idx].pool[i]);
+						mem_pool[idx].pool[i] = NULL;
+					}
+					mem_pool[idx].pos = 0;
+					mem_pool[idx].page = 0;
+					mem_pool[idx].size = 0;
+					break;
+			}
+		}
+	}
+	return ret_ptr;
+}
+
+
 void dxf_ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 	if (ent){
 		if (ent->type == DXF_ENT){
 			if (ent->obj.content){
-				dxf_ent_clear(ent->obj.content); /* recursive call */
+				//dxf_ent_clear(ent->obj.content); /* recursive call */
 			}
 			if (ent->obj.name){
-				free(ent->obj.name);  /* free the string of entity's name */
+				//free(ent->obj.name);  /* free the string of entity's name */
 				//---------------------------------------
 				//vec_graph_free(ent->obj.graphics);
 				//graph_mem_pool(ZERO_GRAPH);
@@ -164,13 +235,13 @@ void dxf_ent_clear (dxf_node *ent){ /* free the memory of list or entity */
 		else if (ent->type == DXF_ATTR){
 			if (ent->value.t_data == DXF_STR){
 				if(ent->value.s_data){
-					free(ent->value.s_data); /* free the string of data */
+					//free(ent->value.s_data); /* free the string of data */
 				}
 			}
 		}
 		
 		if (ent->next){
-			dxf_ent_clear(ent->next); /* recursive call */
+			//dxf_ent_clear(ent->next); /* recursive call */
 		}
 		//printf("limpa %d", ent);
 		free(ent); /* free the memory of structure */
@@ -426,25 +497,28 @@ void dxf_ent_print_f (dxf_node *ent, char *path){ /* print the entity structure 
 }
 
 dxf_node * dxf_obj_new (char *name){
-	char *new_name = NULL;
-	
-	if(name){
-		new_name = malloc(strlen(name)+1);  /* create new string */
-		if (new_name) strcpy(new_name,name); /* and copy the name */
-	}
+	//char *new_name = NULL;
 	
 	/* create a new DXF Object */
-	dxf_node *new_obj = (dxf_node *) malloc(sizeof(dxf_node));
+	//dxf_node *new_obj = (dxf_node *) malloc(sizeof(dxf_node));
+	//dxf_mem_pool(enum dxf_pool_action action, int idx)
+	dxf_node *new_obj = dxf_mem_pool(ADD_DXF, 0);
 	if (new_obj){
+		new_obj->obj.name[0] = 0;
+		if(name){
+			//new_name = malloc(strlen(name)+1);  /* create new string */
+			strncpy(new_obj->obj.name, name, DXF_MAX_CHARS); /* and copy the name */
+		}
 		new_obj->master = NULL;
 		new_obj->prev = NULL;
 		new_obj->next = NULL;
 		new_obj->type = DXF_ENT;
-		new_obj->obj.name = new_name;
+		//new_obj->obj.name = new_name;
 		new_obj->obj.graphics = NULL;
 		
 		/* create head of content's list */
-		new_obj->obj.content = (dxf_node *) malloc(sizeof(dxf_node));
+		//new_obj->obj.content = (dxf_node *) malloc(sizeof(dxf_node));
+		new_obj->obj.content = (dxf_node *) dxf_mem_pool(ADD_DXF, 0);
 		if(new_obj->obj.content){
 			new_obj->obj.content->master = new_obj;
 			new_obj->obj.content->prev = NULL;
@@ -453,8 +527,8 @@ dxf_node * dxf_obj_new (char *name){
 			new_obj->obj.content->value.t_data = DXF_INT;
 		}
 		else { /* if error, free the memory */
-			free(new_name);
-			free(new_obj);
+			//free(new_name);
+			//free(new_obj);
 			new_obj = NULL;
 		}
 	}
@@ -463,7 +537,8 @@ dxf_node * dxf_obj_new (char *name){
 
 dxf_node * dxf_attr_new (int group, int type, void *value){
 	/* create a new DXF attribute */
-	dxf_node *new_attr = (dxf_node *) malloc(sizeof(dxf_node));
+	//dxf_node *new_attr = (dxf_node *) malloc(sizeof(dxf_node));
+	dxf_node *new_attr = (dxf_node *) dxf_mem_pool(ADD_DXF, 0);
 	if (new_attr){
 		new_attr->master = NULL;
 		new_attr->prev = NULL;
@@ -481,8 +556,9 @@ dxf_node * dxf_attr_new (int group, int type, void *value){
 				new_attr->value.i_data = *((int *)value);
 				break;
 			case DXF_STR :
-				new_attr->value.s_data = malloc(strlen((char *) value)+1);  /* create new string */
-				if (new_attr->value.s_data) strcpy(new_attr->value.s_data,(char *) value); /* and copy the string */
+				//new_attr->value.s_data = malloc(strlen((char *) value)+1);  /* create new string */
+				new_attr->value.s_data[0] = 0;
+				strncpy(new_attr->value.s_data,(char *) value, DXF_MAX_CHARS); /* and copy the string */
 		}
 	}
 	return new_attr;
@@ -841,7 +917,7 @@ int dxf_font_idx (dxf_drawing *drawing, char *name){
 
 void dxf_open (dxf_drawing *drawing, char *path){
 	if (drawing){
-		char buf[255], *line;
+		char *buf, *line, *cur_line, *next_line;
 		FILE *file;
 		long f_index = 0;  /*  indexes the file´s lines */
 		dxf_node *new_node = NULL;
@@ -871,22 +947,38 @@ void dxf_open (dxf_drawing *drawing, char *path){
 		/* create a new main_struct */
 		main_struct = dxf_obj_new(NULL);
 		
-		file = fopen(path, "r");
+		file = fopen(path, "rb");
 		if(file == NULL){
-			free(main_struct);
+			//free(main_struct);
 			main_struct = NULL;
 		}
 		else if (main_struct){
+			
+			fseek(file, 0, SEEK_END);
+			long fsize = ftell(file); /* size of file*/
+			fseek(file, 0, SEEK_SET);  //same as rewind(f);
+			printf("file size = %d\n", fsize);
+			
+			char *buf = malloc(fsize + 1);
+			fread(buf, fsize, 1, file);
+			fclose(file);
+			file = NULL;
+			buf[fsize] = 0;
+			
+			cur_line = buf;
 			
 			master = main_struct; /* current master is the main struct */
 			last_obj = main_struct;
 			prev = main_struct->obj.content; /* the list starts on main_struct's content */
 			next = NULL; /* end of list (empty list) */
 			
-			while((fgets(buf, sizeof(buf), file))!=NULL ){
+			while(cur_line){
+				next_line = strchr(cur_line, '\n');
+				if (next_line) *next_line = '\0';  /*terminate the current line*/
 				
 				/* trim leading/trailing whitespace of line */
-				line = trimwhitespace(buf);
+				line = trimwhitespace(cur_line);
+				
 				
 				if((f_index % 2) == 0){ /* check if the line is even */
 					/* in DXF files, the even lines identify the groups */
@@ -1050,10 +1142,15 @@ void dxf_open (dxf_drawing *drawing, char *path){
 				}
 				
 				f_index++; /* next line index */
+				cur_line = next_line ? (next_line+1) : NULL;
 			}
-			
+			free(buf);
+			buf = NULL;
 		}
-		fclose(file);
+		if (file){
+			fclose(file);
+			file = NULL;
+		}
 		
 		drawing->main_struct = main_struct;
 		

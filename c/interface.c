@@ -362,7 +362,8 @@ int main(int argc, char** argv){
 			NULL,
 			0);
 			if (url){
-				dxf_ent_clear(drawing->main_struct);
+				//dxf_ent_clear(drawing->main_struct);
+				dxf_mem_pool(ZERO_DXF, 0);
 				graph_mem_pool(ZERO_GRAPH, 0);
 				graph_mem_pool(ZERO_LINE, 0);
 				
@@ -427,7 +428,8 @@ int main(int argc, char** argv){
 	SDL_Quit();
 	
 	/*=======================*/
-	dxf_ent_clear(drawing->main_struct);
+	//dxf_ent_clear(drawing->main_struct);
+	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
 	

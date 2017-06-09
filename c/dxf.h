@@ -12,6 +12,7 @@
 #define DXF_MAX_FONTS 50
 #define DXF_MAX_CHARS 250
 #define DXF_MAX_PAT 10
+#define DXF_POOL_PAGES 1000
 
 /* supportable graphic entities */
 enum dxf_graph {
@@ -35,7 +36,22 @@ enum dxf_graph {
 	DXF_ELLIPSE,
 	DXF_MTEXT,
 	DXF_BLK
-}; 
+};
+
+enum dxf_pool_action{
+	ADD_DXF,
+	ZERO_DXF,
+	FREE_DXF
+};
+
+struct Dxf_pool_slot{
+	void *pool[DXF_POOL_PAGES];
+	/* the pool is a vector of pages. The size of each page is out of this definition */
+	int pos; /* current position in current page vector */
+	int page; /* current page index */
+	int size; /* number of pages available in slot */
+};
+typedef struct Dxf_pool_slot dxf_pool_slot;
 
 struct Dxf_node{
 	struct Dxf_node *master; /* entity to which it is contained */
@@ -48,7 +64,7 @@ struct Dxf_node{
 	union{
 		struct {
 			/* == entity dxf especific */
-			char *name; /* standardized DXF name of entity */
+			char name[DXF_MAX_CHARS]; /* standardized DXF name of entity */
 			
 			void * graphics; /* graphics information */
 			
@@ -63,7 +79,7 @@ struct Dxf_node{
 			union {
 				double d_data; /* a float number, */
 				int i_data; /* a integer number, */
-				char *s_data; /* or a string. */
+				char s_data[DXF_MAX_CHARS]; /* or a string. */
 			};
 		} value;
 	};
