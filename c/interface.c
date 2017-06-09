@@ -226,6 +226,19 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		/* status */
+		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 45, 400, 40),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		{
+			static char text[64];
+			static int text_len;
+			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
+			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+		}
+		nk_end(gui->ctx);
+		
 		/* view coordinates of mouse in drawing units */
 		if (nk_begin(gui->ctx, "POS", nk_rect(5, height - 45, 400, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
@@ -252,10 +265,8 @@ int main(int argc, char** argv){
 			int text_len;
 			
 			/*layer*/
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 4);
-			nk_layout_row_push(gui->ctx, 60);
-			text_len = snprintf(text, 63, "%d", drawing->num_layers);
-			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 3);
+			
 			
 			nk_layout_row_push(gui->ctx, 200);
 			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
@@ -404,6 +415,7 @@ int main(int argc, char** argv){
 				draw = 1;
 				layer_idx = 0;
 				color_idx = 256;
+				SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 				//printf("Num Layers = %d\n\n", drawing->num_layers);
 			}
 		}
