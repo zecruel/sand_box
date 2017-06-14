@@ -29,6 +29,10 @@ int main(int argc, char** argv){
 	unsigned int width = 1024;
 	unsigned int height = 720;
 	unsigned int quit = 0;
+	unsigned int wait_open = 0;
+	
+	int open_prg = 0;
+	int progress = 0;
 	
 	int time_start, time_end;
 	
@@ -234,7 +238,7 @@ int main(int argc, char** argv){
 			static char text[64];
 			static int text_len;
 			nk_layout_row_dynamic(gui->ctx, 20, 1);
-			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
+			text_len = snprintf(text, 63, "Layers=%d", progress);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
 		}
 		nk_end(gui->ctx);
@@ -339,29 +343,84 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if ((gui_check_draw(gui) != 0) || (draw != 0)){
+		if (((gui_check_draw(gui) != 0) || (draw != 0))&&(wait_open == 0)){
 		
 			bmp_fill(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
 			nk_sdl_render(gui, img);
 			
+			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+			SDL_RenderClear(renderer);
+			SDL_RenderCopy(renderer, canvas, NULL, NULL);
+			SDL_RenderPresent(renderer);
 			
 			draw = 0;
 			
 		}
 		
+		else if (wait_open != 0){
+		
+			bmp_fill(img, img->bkg); /* clear bitmap */
+			//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			
+			nk_sdl_render(gui, img);
+			
+			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+			SDL_RenderClear(renderer);
+			SDL_RenderCopy(renderer, canvas, NULL, NULL);
+			SDL_RenderPresent(renderer);
+			
+			open_prg = dxf_open2(drawing, url, &progress);
+			//printf(" == %d\n", open_prg);
+			
+			if(open_prg <= 0){
+				//time_end = SDL_GetTicks();
+				//printf("Open = %d\n", time_end - time_start);
+				
+				printf("Num Layers = %d\n", drawing->num_layers);
+				
+				//time_start = SDL_GetTicks();
+				dxf_ents_parse(drawing);
+				//time_end = SDL_GetTicks();
+				//printf("Parse = %d\n", time_end - time_start);
+				
+				dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+				zoom_x = (max_x - min_x)/img->width;
+				zoom_y = (max_y - min_y)/img->height;
+				zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+				if (zoom <= 0){ zoom =1;}
+				else{ zoom = 1/(1.1 * zoom);}
+				
+				ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
+				ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
+				
+				//bmp_fill(img, img->bkg); /* clear bitmap */
+				
+				//time_start = SDL_GetTicks();
+				//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
+				
+				//SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+				//SDL_RenderClear(renderer);
+				//SDL_RenderCopy(renderer, canvas, NULL, NULL);
+				//SDL_RenderPresent(renderer);
+				//time_end = SDL_GetTicks();
+				//printf("Draw = %d\n\n", time_end - time_start);
+				
+				draw = 1;
+				layer_idx = 0;
+				color_idx = 256;
+				wait_open = 0;
+			}
+			
+		}
+		
 		graph_mem_pool(ZERO_GRAPH, 1);
 		graph_mem_pool(ZERO_LINE, 1);
+	
 		
 		nk_clear(gui->ctx); /*IMPORTANT */
 		/*===============================*/
-		
-		SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, canvas, NULL, NULL);
-		SDL_RenderPresent(renderer);
-	
 		
 		if(action == FILE_OPEN) {
 			action = NONE;
@@ -378,46 +437,56 @@ int main(int argc, char** argv){
 				graph_mem_pool(ZERO_GRAPH, 0);
 				graph_mem_pool(ZERO_LINE, 0);
 				
-				time_start = SDL_GetTicks();
-				dxf_open(drawing, url);
-				time_end = SDL_GetTicks();
-				printf("Open = %d\n", time_end - time_start);
-				
-				//printf("Num Layers = %d\n", drawing->num_layers);
-				
-				time_start = SDL_GetTicks();
-				dxf_ents_parse(drawing);
-				time_end = SDL_GetTicks();
-				printf("Parse = %d\n", time_end - time_start);
-				
-				dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-				zoom_x = (max_x - min_x)/img->width;
-				zoom_y = (max_y - min_y)/img->height;
-				zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-				if (zoom <= 0){ zoom =1;}
-				else{ zoom = 1/(1.1 * zoom);}
-				
-				ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-				ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-				
-				bmp_fill(img, img->bkg); /* clear bitmap */
-				
-				time_start = SDL_GetTicks();
-				dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-				
-				//SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-				//SDL_RenderClear(renderer);
-				//SDL_RenderCopy(renderer, canvas, NULL, NULL);
-				//SDL_RenderPresent(renderer);
-				time_end = SDL_GetTicks();
-				printf("Draw = %d\n\n", time_end - time_start);
-				
-				draw = 1;
-				layer_idx = 0;
-				color_idx = 256;
-				SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+				//time_start = SDL_GetTicks();
+				wait_open = 1;
+				progress = 0;
+				open_prg = dxf_open2(drawing, NULL, &progress);
+				progress = 0;
+				//open_prg = dxf_open2(drawing, url);
+				/*
+				if (open_prg <= 0){
+					//time_end = SDL_GetTicks();
+					//printf("Open = %d\n", time_end - time_start);
+					
+					printf("Num Layers = %d\n", drawing->num_layers);
+					
+					//time_start = SDL_GetTicks();
+					dxf_ents_parse(drawing);
+					//time_end = SDL_GetTicks();
+					//printf("Parse = %d\n", time_end - time_start);
+					
+					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+					zoom_x = (max_x - min_x)/img->width;
+					zoom_y = (max_y - min_y)/img->height;
+					zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+					if (zoom <= 0){ zoom =1;}
+					else{ zoom = 1/(1.1 * zoom);}
+					
+					ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
+					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
+					
+					//bmp_fill(img, img->bkg); /* clear bitmap 
+					
+					//time_start = SDL_GetTicks();
+					//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
+					
+					//SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+					//SDL_RenderClear(renderer);
+					//SDL_RenderCopy(renderer, canvas, NULL, NULL);
+					//SDL_RenderPresent(renderer);
+					//time_end = SDL_GetTicks();
+					//printf("Draw = %d\n\n", time_end - time_start);
+					
+					draw = 1;
+					layer_idx = 0;
+					color_idx = 256;
+					wait_open = 0;
+					
+				}
+				*/
 				//printf("Num Layers = %d\n\n", drawing->num_layers);
 			}
+			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 		}
 		else if(action == FILE_SAVE) {
 		action = NONE;	

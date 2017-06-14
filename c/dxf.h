@@ -57,6 +57,7 @@ struct Dxf_node{
 	struct Dxf_node *master; /* entity to which it is contained */
 	struct Dxf_node *next;    /* next node (double linked list) */
 	struct Dxf_node *prev;    /* previous node (double linked list) */
+	struct Dxf_node *end; /*last object in list*/
 	
 	/* defines whether it is an DXF entity (obj) or an attribute (value) */
 	enum {DXF_ENT, DXF_ATTR} type;
