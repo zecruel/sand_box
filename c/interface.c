@@ -102,7 +102,7 @@ int main(int argc, char** argv){
 		FILE_OPEN,
 		FILE_SAVE,
 		EXIT
-	} action;
+	} action = NONE;
 
 	SDL_Init(SDL_INIT_VIDEO);
 
@@ -230,6 +230,24 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		if (wait_open != 0){
+			/* opening */
+			if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+			NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
+			{
+				static char text[64];
+				static int text_len;
+				nk_layout_row_dynamic(gui->ctx, 20, 2);
+				text_len = snprintf(text, 63, "Opening...");
+				nk_label(gui->ctx, text, NK_TEXT_LEFT);
+				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
+				//nk_popup_end(gui->ctx);
+			}
+			nk_end(gui->ctx);
+		}
+		
 		/* status */
 		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 45, 400, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
@@ -238,7 +256,7 @@ int main(int argc, char** argv){
 			static char text[64];
 			static int text_len;
 			nk_layout_row_dynamic(gui->ctx, 20, 1);
-			text_len = snprintf(text, 63, "Layers=%d", progress);
+			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
 		}
 		nk_end(gui->ctx);
@@ -499,6 +517,10 @@ int main(int argc, char** argv){
 			if ((url != NULL) && (drawing->main_struct != NULL)){
 				dxf_ent_print_f (drawing->main_struct, url);
 			}
+		}
+		
+		if (wait_open == 0){
+			SDL_Delay(80);
 		}
 	}
 	
