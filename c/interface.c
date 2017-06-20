@@ -213,9 +213,9 @@ int main(int argc, char** argv){
 		/* ===============================*/
 		/* GUI */
 		/* main toolbox, for open files, save or exit */
-		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 120, 150),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){	
+		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE)){
+			/*
 			nk_layout_row_dynamic(gui->ctx, 30, 1);
 			if (nk_button_label(gui->ctx, "Open")){
 				action = FILE_OPEN;
@@ -226,16 +226,68 @@ int main(int argc, char** argv){
 			if (nk_button_label(gui->ctx, "Exit")){
 				action = EXIT;
 				quit = 1;
+			}*/
+			/*main menu */
+			nk_menubar_begin(gui->ctx);
+			nk_layout_row_dynamic(gui->ctx, 15, 3);
+			/* new menu*/
+			if (nk_menu_begin_label(gui->ctx, "FILE", NK_TEXT_LEFT, nk_vec2(120, 200))){
+				nk_layout_row_dynamic(gui->ctx, 15, 1);
+				if (nk_menu_item_label(gui->ctx, "Open", NK_TEXT_LEFT)){
+					action = FILE_OPEN;
+				}
+				if (nk_menu_item_label(gui->ctx, "Save", NK_TEXT_LEFT)){
+					action = FILE_SAVE;
+				}
+				if (nk_menu_item_label(gui->ctx, "Exit", NK_TEXT_LEFT)){
+					action = EXIT;
+					quit = 1;
+				}
+				
+				nk_menu_end(gui->ctx);
 			}
+			/* new menu*/
+			if (nk_menu_begin_label(gui->ctx, "VIEW", NK_TEXT_LEFT, nk_vec2(120, 200))){
+				nk_layout_row_dynamic(gui->ctx, 15, 1);
+				if (nk_menu_item_label(gui->ctx, "Extend", NK_TEXT_LEFT)){
+					
+					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+					zoom_x = (max_x - min_x)/img->width;
+					zoom_y = (max_y - min_y)/img->height;
+					zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+					if (zoom <= 0){ zoom =1;}
+					else{ zoom = 1/(1.1 * zoom);}
+					
+					ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
+					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
+					draw = 1;
+				}
+				if (nk_menu_item_label(gui->ctx, "Zoom in", NK_TEXT_LEFT)){
+					//action = FILE_OPEN;
+				}
+				nk_menu_end(gui->ctx);
+			}
+			/* new menu*/
+			if (nk_menu_begin_label(gui->ctx, "HELP", NK_TEXT_LEFT, nk_vec2(120, 200))){
+				nk_layout_row_dynamic(gui->ctx, 15, 1);
+				if (nk_menu_item_label(gui->ctx, "About", NK_TEXT_LEFT)){
+					//action = FILE_OPEN;
+				}
+				
+				nk_menu_end(gui->ctx);
+			}
+			
+			nk_menubar_end(gui->ctx);
 		}
 		nk_end(gui->ctx);
 		
-		if (wait_open != 0){
-			/* opening */
-			if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-			NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
-			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
+		
+		/*if (wait_open != 0){
+			/* opening 
+			//if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
+			//NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+			//NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
 			{
 				static char text[64];
 				static int text_len;
@@ -243,10 +295,10 @@ int main(int argc, char** argv){
 				text_len = snprintf(text, 63, "Opening...");
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
 				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
-				//nk_popup_end(gui->ctx);
+				nk_popup_end(gui->ctx);
 			}
-			nk_end(gui->ctx);
-		}
+			//nk_end(gui->ctx);
+		}*/
 		
 		/* status */
 		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 45, 400, 40),
@@ -255,9 +307,14 @@ int main(int argc, char** argv){
 		{
 			static char text[64];
 			static int text_len;
-			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			nk_layout_row_dynamic(gui->ctx, 15, 3);
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			if (wait_open != 0){
+				text_len = snprintf(text, 63, "Opening...");
+				nk_label(gui->ctx, text, NK_TEXT_LEFT);
+				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
+			}
 		}
 		nk_end(gui->ctx);
 		
@@ -279,7 +336,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Prop", nk_rect(125, 5, 400, 40),
+		if (nk_begin(gui->ctx, "Prop", nk_rect(205, 5, 400, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
 		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
@@ -396,7 +453,7 @@ int main(int argc, char** argv){
 				//time_end = SDL_GetTicks();
 				//printf("Open = %d\n", time_end - time_start);
 				
-				printf("Num Layers = %d\n", drawing->num_layers);
+				//printf("Num Layers = %d\n", drawing->num_layers);
 				
 				//time_start = SDL_GetTicks();
 				dxf_ents_parse(drawing);
@@ -429,6 +486,7 @@ int main(int argc, char** argv){
 				layer_idx = 0;
 				color_idx = 256;
 				wait_open = 0;
+				printf("Num Layers = %d\n", drawing->num_layers);
 			}
 			
 		}
@@ -520,7 +578,7 @@ int main(int argc, char** argv){
 		}
 		
 		if (wait_open == 0){
-			SDL_Delay(80);
+			SDL_Delay(60);
 		}
 	}
 	

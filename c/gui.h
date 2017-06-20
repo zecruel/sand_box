@@ -31,6 +31,7 @@
 //#ifdef NK_SDL_IMPLEMENTATION
 
 #define FONT_SCALE 1.4
+#define FIXED_MEM 128*1024
 
 struct Gui_obj {
 	struct nk_context *ctx;
@@ -71,14 +72,18 @@ bmp_color nk_to_bmp_color(struct nk_color color){
 int gui_check_draw(gui_obj *gui){
 	int draw = 0;
 	
+	draw = 0;
 	if (gui){
 		gui->draw = 0;
-		
-		void *cmds = nk_buffer_memory(&(gui->ctx->memory));
-		if (memcmp(cmds, gui->last, gui->ctx->memory.allocated)) {
-			memcpy(gui->last, cmds, gui->ctx->memory.allocated);
-			gui->draw = 1;
-			draw = 1;
+		if (gui->ctx){
+			void *cmds = nk_buffer_memory(&(gui->ctx->memory));
+			if (cmds){
+				if (memcmp(cmds, gui->last, gui->ctx->memory.allocated)) {
+					memcpy(gui->last, cmds, gui->ctx->memory.allocated);
+					gui->draw = 1;
+					draw = 1;
+				}
+			}
 		}
 	}
 	return draw;
@@ -246,7 +251,9 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					shape *font = (shape*)t->font->userdata.ptr;
 					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)t->string);
 					/*change the color */
-					curr_graph->color = color;
+					if(curr_graph){
+						curr_graph->color = color;
+					}
 
 					/* apply the scales, offsets and rotation to graphs */
 					graph_modify(curr_graph, t->x, t->y + t->font->height, FONT_SCALE, -FONT_SCALE, 0);
@@ -335,8 +342,8 @@ NK_API gui_obj* nk_sdl_init(shape *shx_font){
 	if (gui){
 		gui->ctx = malloc(sizeof(struct nk_context));
 		gui->font = malloc(sizeof(struct nk_user_font));
-		gui->buf = calloc(1,64*1024);
-		gui->last = calloc(1,64*1024);
+		gui->buf = calloc(1,FIXED_MEM);
+		gui->last = calloc(1,FIXED_MEM);
 		if((gui->ctx == NULL) || (gui->font == NULL) || (gui->buf == NULL) || (gui->last == NULL)){
 			return NULL;
 		}
@@ -365,7 +372,7 @@ NK_API gui_obj* nk_sdl_init(shape *shx_font){
 	nk_style_set_font(gui->ctx, font);
 	
 	//nk_init_default(gui->ctx, font);
-	nk_init_fixed(gui->ctx, gui->buf, 64*1024, font);
+	nk_init_fixed(gui->ctx, gui->buf, FIXED_MEM, font);
 	gui->ctx->clip.copy = nk_sdl_clipbard_copy;
 	gui->ctx->clip.paste = nk_sdl_clipbard_paste;
 	gui->ctx->clip.userdata = nk_handle_ptr(0);
