@@ -40,6 +40,15 @@ static struct nk_sdl {
     struct nk_user_font font;
 } sdl;
 
+struct Gui_obj {
+	struct nk_context ctx;
+	struct nk_user_font font;
+	void *buf; /*for fixed memory */
+	void *last_buf; /* to verify if needs to draw */
+	int draw;
+	int focus;
+};
+
 static float nk_user_font_get_text_width(nk_handle handle, float height, const char *text, int len){
 	shape *font = (shape*)handle.ptr;
 	if ((text!= NULL) && (font!=NULL)) {
@@ -51,7 +60,39 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 		strncpy((char*)&txt_cpy, text, len);
 		txt_cpy[len] = '\0';
 		
-		graph_obj *curr_graph = shx_font_parse(font, 0, txt_cpy);
+		
+		nk_rune str_uni[255];
+		char str[255];
+		int glyph_size, char_size, pos = 0;
+		
+		char *curr = 0, *curr_pos =0;
+		
+		curr = (char *)txt_cpy;
+		curr_pos = str;
+		pos = 0;
+		
+		while ((*curr != 0) && (pos < 254)){
+		
+			glyph_size = nk_utf_decode(curr, str_uni, 10);
+			if (glyph_size){
+				char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
+				curr += glyph_size;
+				pos += char_size;
+				curr_pos += char_size;
+			}
+			else {
+				curr = 0;
+			}
+		}
+		
+		if(pos<255){
+			str[pos] = 0;
+		}
+		else{
+			str[254] = 0;
+		}
+		
+		graph_obj *curr_graph = shx_font_parse(font, 0, str);
 		if (curr_graph){
 			double txt_w;
 			txt_w = FONT_SCALE*fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -69,7 +110,12 @@ bmp_color nk_to_bmp_color(struct nk_color color){
 NK_API void nk_sdl_render(bmp_img *img){
 	const struct nk_command *cmd;
 	bmp_color color = {.r = 255, .g = 255, .b =255, .a = 255};
+	
+	
 	static int one_time = 0;
+	if (!one_time){
+		//one_time =1;
+	}
 	
 	if (img){
 		/* initialize the image with a solid line pattern */
@@ -219,8 +265,40 @@ NK_API void nk_sdl_render(bmp_img *img){
 				case NK_COMMAND_TEXT: {
 					const struct nk_command_text *t = (const struct nk_command_text*)cmd;
 					color = nk_to_bmp_color(t->foreground);
+					
+					nk_rune str_uni[255];
+					char str[255];
+					int glyph_size, char_size, pos = 0;
+					
+					char *curr = 0, *curr_pos =0;
+					
+					curr = (char *)t->string;
+					curr_pos = str;
+					pos = 0;
+					
+					while ((*curr != 0) && (pos < 254)){
+					
+						glyph_size = nk_utf_decode(curr, str_uni, 10);
+						if (glyph_size){
+							char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
+							curr += glyph_size;
+							pos += char_size;
+							curr_pos += char_size;
+						}
+						else {
+							curr = 0;
+						}
+					}
+					
+					if(pos<255){
+						str[pos] = 0;
+					}
+					else{
+						str[254] = 0;
+					}
+					
 					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, 0, (const char*)t->string);
+					graph_obj *curr_graph = shx_font_parse(font, 0, (const char*)str);
 					/*change the color */
 					curr_graph->color = color;
 
@@ -253,11 +331,27 @@ NK_API void nk_sdl_render(bmp_img *img){
 					//printf("arc ");//------------------------------------teste
 				} break;
 				
-				case NK_COMMAND_RECT_MULTI_COLOR:
-				//printf("multi_c ");//------------------------------------teste
-				case NK_COMMAND_IMAGE:
-				//printf("image ");//------------------------------------teste
-				case NK_COMMAND_ARC_FILLED:
+				case NK_COMMAND_RECT_MULTI_COLOR: {
+					if (!one_time){
+						one_time =1;
+						printf("multi_c ");//------------------------------------teste
+					}
+				} break;
+				
+				case NK_COMMAND_IMAGE: {
+					const struct nk_command_image *i = (struct nk_command_image *)cmd;
+					bmp_img *img = (bmp_img *)i->img.handle.ptr;
+					if (!one_time){
+						one_time =1;
+						printf("image ");//------------------------------------teste
+						printf("%d,%d", img->width, img->height);
+					}
+				} break;
+				
+				case NK_COMMAND_ARC_FILLED: {
+					
+				} break;
+				
 				default: break;
 			}
 		}

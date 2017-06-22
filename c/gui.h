@@ -54,7 +54,39 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 		strncpy((char*)&txt_cpy, text, len);
 		txt_cpy[len] = '\0';
 		
-		graph_obj *curr_graph = shx_font_parse(font, 1, txt_cpy);
+		
+		nk_rune str_uni[255];
+		char str[255];
+		int glyph_size, char_size, pos = 0;
+		
+		char *curr = 0, *curr_pos =0;
+		
+		curr = (char *)txt_cpy;
+		curr_pos = str;
+		pos = 0;
+		
+		while ((*curr != 0) && (pos < 254)){
+		
+			glyph_size = nk_utf_decode(curr, str_uni, 10);
+			if (glyph_size){
+				char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
+				curr += glyph_size;
+				pos += char_size;
+				curr_pos += char_size;
+			}
+			else {
+				curr = 0;
+			}
+		}
+		
+		if(pos<255){
+			str[pos] = 0;
+		}
+		else{
+			str[254] = 0;
+		}
+		
+		graph_obj *curr_graph = shx_font_parse(font, 0, str);
 		if (curr_graph){
 			double txt_w;
 			txt_w = FONT_SCALE*fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -248,8 +280,39 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 				case NK_COMMAND_TEXT: {
 					const struct nk_command_text *t = (const struct nk_command_text*)cmd;
 					color = nk_to_bmp_color(t->foreground);
+					nk_rune str_uni[255];
+					char str[255];
+					int glyph_size, char_size, pos = 0;
+					
+					char *curr = 0, *curr_pos =0;
+					
+					curr = (char *)t->string;
+					curr_pos = str;
+					pos = 0;
+					
+					while ((*curr != 0) && (pos < 254)){
+					
+						glyph_size = nk_utf_decode(curr, str_uni, 10);
+						if (glyph_size){
+							char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
+							curr += glyph_size;
+							pos += char_size;
+							curr_pos += char_size;
+						}
+						else {
+							curr = 0;
+						}
+					}
+					
+					if(pos<255){
+						str[pos] = 0;
+					}
+					else{
+						str[254] = 0;
+					}
+					
 					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)t->string);
+					graph_obj *curr_graph = shx_font_parse(font, 0, (const char*)str);
 					/*change the color */
 					if(curr_graph){
 						curr_graph->color = color;
