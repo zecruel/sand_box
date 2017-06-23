@@ -2439,3 +2439,30 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 		}
 	}
 }
+
+dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_pt2[2]){
+	dxf_node *current = NULL;
+		
+	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
+		current = drawing->ents->obj.content->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->type == DXF_ENT){ // DXF entity 
+				
+				// -------------------------------------------
+				//vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
+				
+				//graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
+				if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+					return current;
+				}
+				
+				
+				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
+	return NULL;
+}

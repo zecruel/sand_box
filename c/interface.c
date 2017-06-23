@@ -66,6 +66,7 @@ int main(int argc, char** argv){
 	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
 	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
 	bmp_color grey = {.r = 100, .g = 100, .b = 100, .a = 255};
+	bmp_color hilite = {.r = 255, .g = 0, .b = 255, .a = 150};
 	
 	int center [] = {12, -6, 2 , -6};
 	int dash [] = {8, -8};
@@ -94,8 +95,10 @@ int main(int argc, char** argv){
 	SDL_Event event;
 	int mouse_x, mouse_y;
 	double pos_x, pos_y;
+	double rect_pt1[2], rect_pt2[2];
 	int color_idx = 256;
 	int layer_idx = 0;
+	dxf_node *element = NULL;
 	
 	enum Action {
 		NONE,
@@ -181,14 +184,29 @@ int main(int argc, char** argv){
 						
 					}
 					break;
-				case SDL_MOUSEMOTION:
+				case SDL_MOUSEMOTION:{
+					
+					
 					pos_x = (double) event.motion.x/zoom + ofs_x;
 					pos_y = (double) (height - event.motion.y)/zoom + ofs_y;
+					
+					rect_pt1[0] = (double) (event.motion.x - 5)/zoom + ofs_x;
+					rect_pt1[1] = (double) (height - event.motion.y - 5)/zoom + ofs_y;
+					rect_pt2[0] = (double) (event.motion.x + 5)/zoom + ofs_x;
+					rect_pt2[1] = (double) (height - event.motion.y + 5)/zoom + ofs_y;
+					
+					
+					/* for hilite test */
+					element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+					draw = 1;
+					
+				
 					//if (leftMouseButtonDown){
 						//int mouseX = event.motion.x;
 						//int mouseY = event.motion.y;
 						//pixels[mouseY * 640 + mouseX] = 0;
 					//}
+					}
 					break;
 				case SDL_MOUSEWHEEL:
 					prev_zoom = zoom;
@@ -313,7 +331,13 @@ int main(int argc, char** argv){
 			
 			nk_layout_row_dynamic(gui->ctx, 25, 4);
 			
-			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, comm, &comm_len, 64, nk_filter_default);
+			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
+			//NK_EDIT_ACTIVE
+			if (res & NK_EDIT_COMMITED){
+				comm[comm_len] = 0;
+				printf("%s\n", comm);
+				comm_len = 0;
+			}
 			
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
@@ -430,6 +454,11 @@ int main(int argc, char** argv){
 		
 			bmp_fill(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			
+			/*hilite test */
+			if(element){
+				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
+			}
 			
 			nk_sdl_render(gui, img);
 			

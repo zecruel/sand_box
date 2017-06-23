@@ -377,11 +377,74 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 	}
 }
 
+void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
+	if ((master != NULL) && (img != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			int x0, y0, x1, y1;
+			line_node *current = master->list->next;
+			int corners = 0, prev_x, prev_y; /* for fill */
+			int corner_x[1000], corner_y[1000];
+			
+			/* set the pattern */
+			patt_change(img, master->pattern, master->patt_size);
+			/* set the color */
+			img->frg = color;
+			/* set the tickness */
+			img->tick = (int) round(master->tick * scale) + 4;
+			
+			/* draw the lines */
+			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				x0 = (int) round((current->x0 - ofs_x) * scale);
+				y0 = (int) round((current->y0 - ofs_y) * scale);
+				x1 = (int) round((current->x1 - ofs_x) * scale);
+				y1 = (int) round((current->y1 - ofs_y) * scale);
+				
+				bmp_line(img, x0, y0, x1, y1);
+				//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
+				
+				if (master->fill && (corners < 1000)){ /* check if object is filled */
+					/*build the lists of corners */
+					if (((x0 != prev_x)&&(y0 != prev_y))||(corners == 0)){
+						corner_x[corners] = x0;
+						corner_y[corners] = y0;
+						corners++;
+					}
+					corner_x[corners] = x1;
+					corner_y[corners] = y1;
+					corners++;
+					
+					prev_x = x1;
+					prev_y = y1;
+				}
+				
+				current = current->next; /* go to next */
+			}
+			
+			if (master->fill && corners){ /* check if object is filled */
+				/* draw a filled polygon */
+				bmp_poly_fill(img, corners, corner_x, corner_y);
+			}
+		}
+	}
+}
+
 void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	int i;
 	if (vec){
 		for(i = 0; i < vec->size; i++){
 			graph_draw(((graph_obj **)vec->data)[i], img, ofs_x, ofs_y, scale);
+			//printf("%f\n", scale);
+			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
+		}
+	}
+}
+
+void vec_graph_draw_fix(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			graph_draw_fix(((graph_obj **)vec->data)[i], img, ofs_x, ofs_y, scale, color);
 			//printf("%f\n", scale);
 			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
 		}
@@ -1013,84 +1076,73 @@ void vec_graph_mod_ax(vector_p * vec, double normal[3], int start_idx, int end_i
 		}
 	}
 }
-/*
-//  Globals which should be set before calling this function:
-//
-//  int    polyCorners  =  how many corners the polygon has (no repeats)
-//  float  polyX[]      =  horizontal coordinates of corners
-//  float  polyY[]      =  vertical coordinates of corners
-//  float  x, y         =  point to be tested
-//
-//  (Globals are used in this example for purposes of speed.  Change as
-//  desired.)
-//
-//  The function will return YES if the point x,y is inside the polygon, or
-//  NO if it is not.  If the point is exactly on the edge of the polygon,
-//  then the function may return YES or NO.
-//
-//  Note that division by zero is avoided because the division is protected
-//  by the "if" clause which surrounds it.
 
-//improvement provided by Nathan Mercer
-//source : http://alienryderflex.com/polygon/
-//Author: Darel Rex Finley
-
-bool pointInPolygon() {
-
-  int   i, j=polyCorners-1 ;
-  bool  oddNodes=NO      ;
-
-  for (i=0; i<polyCorners; i++) {
-    if ((polyY[i]< y && polyY[j]>=y
-    ||   polyY[j]< y && polyY[i]>=y)
-    &&  (polyX[i]<=x || polyX[j]<=x)) {
-      if (polyX[i]+(y-polyY[i])/(polyY[j]-polyY[i])*(polyX[j]-polyX[i])<x) {
-        oddNodes=!oddNodes; }}
-    j=i; }
-
-  return oddNodes; }
-  
-  
-  //  public-domain code by Darel Rex Finley, 2007 (Bug fix by Gilbert Maréchal.)
-
-int fill_polygon(void){
-
-	int  nodes, nodeX[MAX_POLY_CORNERS], pixelX, pixelY, i, j, swap ;
-
-	//  Loop through the rows of the image.
-	for (pixelY=IMAGE_TOP; pixelY<IMAGE_BOT; pixelY++) {
-
-		//  Build a list of nodes.
-		nodes=0; j=polyCorners-1;
-		for (i=0; i<polyCorners; i++) {
-			if (polyY[i]<(double) pixelY
-				&& polyY[j]>=(double) pixelY
-				||  polyY[j]<(double) pixelY
-				&& polyY[i]>=(double) pixelY) {
-					
-				nodeX[nodes++]=(int) (polyX[i]+
-					(pixelY-polyY[i])/(polyY[j]-polyY[i])
-					*(polyX[j]-polyX[i])); 
-			}
-			j=i;
-		}
-
-		//  Sort the nodes, via a simple “Bubble” sort.
-		i=0;
-		while (i<nodes-1) {
-		if (nodeX[i]>nodeX[i+1]) {
-		swap=nodeX[i]; nodeX[i]=nodeX[i+1]; nodeX[i+1]=swap; if (i) i--; }
-		else {
-		i++; }}
-
-		//  Fill the pixels between node pairs.
-		for (i=0; i<nodes; i+=2) {
-		if   (nodeX[i  ]>=IMAGE_RIGHT) break;
-		if   (nodeX[i+1]> IMAGE_LEFT ) {
-		if (nodeX[i  ]< IMAGE_LEFT ) nodeX[i  ]=IMAGE_LEFT ;
-		if (nodeX[i+1]> IMAGE_RIGHT) nodeX[i+1]=IMAGE_RIGHT;
-		for (pixelX=nodeX[i]; pixelX<nodeX[i+1]; pixelX++) fillPixel(pixelX,pixelY); }}
+int l_r_isect(double lin_pt1[2], double lin_pt2[2], double rect_pt1[2], double rect_pt2[2]){
+	/* check if a line instersect a rectangle */
+	
+	double r_bl_x, r_bl_y, r_tr_x,r_tr_y;
+	double a, b, c, pol1, pol2, pol3, pol4;
+	
+	/* sort the rectangle corners */
+	r_bl_x = (rect_pt1[0] < rect_pt2[0]) ? rect_pt1[0] : rect_pt2[0];
+	r_bl_y = (rect_pt1[1] < rect_pt2[1]) ? rect_pt1[1] : rect_pt2[1];
+	r_tr_x = (rect_pt1[0] > rect_pt2[0]) ? rect_pt1[0] : rect_pt2[0];
+	r_tr_y = (rect_pt1[1] > rect_pt2[1]) ? rect_pt1[1] : rect_pt2[1];
+	
+	/* check if line is out of bounds of rectangle */
+	if (((lin_pt1[0] > r_tr_x) && (lin_pt2[0] > r_tr_x)) || ( /* line in right side */
+	(lin_pt1[1] > r_tr_y) && (lin_pt2[1] > r_tr_y)) || (  /* line in up side */
+	(lin_pt1[0] < r_bl_x) && (lin_pt2[0] < r_bl_x)) || ( /* line in left side */
+	(lin_pt1[1] < r_bl_y) && (lin_pt2[1] < r_bl_y))){ /* line in down side */
+		return 0;}
+	else{ /* compute the triangle polarizations in each corner of rectangle,
+		relative to line*/
+		a = lin_pt2[1]-lin_pt1[1];
+		b = lin_pt1[0]-lin_pt2[0];
+		c = lin_pt2[0]*lin_pt1[1] - lin_pt1[0]*lin_pt2[1];
+		
+		pol1 = a*rect_pt1[0] + b*rect_pt1[1] + c;
+		pol2 = a*rect_pt1[0] + b*rect_pt2[1] + c;
+		pol3 = a*rect_pt2[0] + b*rect_pt1[1] + c;
+		pol4 = a*rect_pt2[0] + b*rect_pt2[1] + c;
+		if (((pol1>=0) && (pol2>=0) && (pol3>=0) && (pol4>=0)) ||(
+		(pol1<0) && (pol2<0) && (pol3<0) && (pol4<0))){
+			return 0;}
+		return 1;
 	}
 }
-*/
 
+int graph_isect(graph_obj * master, double rect_pt1[2], double rect_pt2[2]){
+	if ((master != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			double lin_pt1[2], lin_pt2[2];
+			line_node *current = master->list->next;
+			
+			while(current){ /*sweep the list content */
+				/* update the graph */
+				lin_pt1[0] = current->x0;
+				lin_pt1[1] = current->y0;
+				lin_pt2[0] = current->x1;
+				lin_pt2[1] = current->y1;
+				if(l_r_isect(lin_pt1, lin_pt2, rect_pt1, rect_pt2)){
+					return 1;
+				}
+				
+				current = current->next; /* go to next */
+			}
+		}
+	}
+	return 0;
+}
+
+graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			if(graph_isect(((graph_obj **)vec->data)[i], rect_pt1, rect_pt2)){
+				return ((graph_obj **)vec->data)[i];
+			}
+		}
+	}
+	return NULL;
+}
