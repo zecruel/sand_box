@@ -86,7 +86,7 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 			str[254] = 0;
 		}
 		
-		graph_obj *curr_graph = shx_font_parse(font, 0, str);
+		graph_obj *curr_graph = shx_font_parse(font, 1, str);
 		if (curr_graph){
 			double txt_w;
 			txt_w = FONT_SCALE*fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -312,7 +312,7 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					}
 					
 					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, 0, (const char*)str);
+					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)str);
 					/*change the color */
 					if(curr_graph){
 						curr_graph->color = color;

@@ -390,7 +390,7 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 			/* set the color */
 			img->frg = color;
 			/* set the tickness */
-			img->tick = (int) round(master->tick * scale) + 4;
+			img->tick = (int) round(master->tick * scale) + 3;
 			
 			/* draw the lines */
 			while(current){ /*sweep the list content */

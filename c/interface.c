@@ -34,6 +34,8 @@ int main(int argc, char** argv){
 	int open_prg = 0;
 	int progress = 0;
 	
+	int present = 0;
+	
 	int time_start, time_end;
 	
 	shape *shx_font = shx_font_open("txt.shx");
@@ -67,11 +69,20 @@ int main(int argc, char** argv){
 	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
 	bmp_color grey = {.r = 100, .g = 100, .b = 100, .a = 255};
 	bmp_color hilite = {.r = 255, .g = 0, .b = 255, .a = 150};
+	bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+	bmp_color cursor = {.r = 255, .g = 255, .b = 255, .a = 100};
 	
-	int center [] = {12, -6, 2 , -6};
-	int dash [] = {8, -8};
+	double center [] = {12, -6, 2 , -6};
+	double dash [] = {8, -8};
+	double continuous[] = {1};
+	
+	
 	
 	bmp_img * img = bmp_new(width, height, grey, red);
+	bmp_img * tmp_img = bmp_new(width, height, transp, hilite);
+	//bmp_img * screen_img = bmp_new(width, height, white, black);
+	
+	
 	
 	
 	//zoom_x = (max_x - min_x)/img->width;
@@ -98,7 +109,7 @@ int main(int argc, char** argv){
 	double rect_pt1[2], rect_pt2[2];
 	int color_idx = 256;
 	int layer_idx = 0;
-	dxf_node *element = NULL;
+	dxf_node *element = NULL, *prev_el = NULL;
 	
 	enum Action {
 		NONE,
@@ -148,6 +159,16 @@ int main(int argc, char** argv){
 		SDL_TEXTUREACCESS_STATIC, 
 		width, /* width */
 		height); /* height */
+		
+	SDL_Texture * tmp_tex = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STATIC, 
+		width, /* width */
+		height); /* height */
+		
+	SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+	SDL_SetTextureBlendMode(tmp_tex, SDL_BLENDMODE_BLEND);
 	
 	int ev_type, draw = 0;
 	
@@ -156,6 +177,10 @@ int main(int argc, char** argv){
 		
 		
 		ev_type = 0;
+		
+		//SDL_ShowCursor(SDL_DISABLE);
+		
+		
 		nk_input_begin(gui->ctx);
 		if(SDL_PollEvent(&event)){
 			if (event.type == SDL_QUIT) quit = 1;
@@ -166,6 +191,7 @@ int main(int argc, char** argv){
 		nk_input_end(gui->ctx);
 		
 		if ((nk_window_is_any_hovered(gui->ctx) == 0) && (ev_type != 0)){
+			
 			switch (event.type){
 				case SDL_QUIT:
 					quit = 1;
@@ -195,11 +221,34 @@ int main(int argc, char** argv){
 					rect_pt2[0] = (double) (event.motion.x + 5)/zoom + ofs_x;
 					rect_pt2[1] = (double) (height - event.motion.y + 5)/zoom + ofs_y;
 					
+					bmp_fill(tmp_img, tmp_img->bkg); /* clear bitmap */
 					
 					/* for hilite test */
 					element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
-					draw = 1;
+					/*hilite test */
+					//if(element != prev_el){
+						if(element != NULL){
+							vec_graph_draw_fix(element->obj.graphics, tmp_img, ofs_x, ofs_y, zoom, hilite);
+						}
+					//	prev_el = element;
+					//}
 					
+					/* draw cursor */
+					/* set the pattern */
+					patt_change(tmp_img, continuous, 1);
+					/* set the color */
+					tmp_img->frg = cursor;
+					/* set the tickness */
+					tmp_img->tick = 3;
+					bmp_line(tmp_img, 0, (height - event.motion.y), width, (height - event.motion.y));
+					bmp_line(tmp_img, event.motion.x, 0, event.motion.x, height);
+					tmp_img->tick = 1;
+					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)+5, event.motion.x+5, (height - event.motion.y)+5);
+					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)-5, event.motion.x+5, (height - event.motion.y)-5);
+					bmp_line(tmp_img, event.motion.x+5, (height - event.motion.y)-5, event.motion.x+5, (height - event.motion.y)+5);
+					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)-5, event.motion.x-5, (height - event.motion.y)+5);
+					
+					present = 1;
 				
 					//if (leftMouseButtonDown){
 						//int mouseX = event.motion.x;
@@ -450,22 +499,20 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		
+		if (nk_window_is_any_hovered(gui->ctx)) {
+			//SDL_ShowCursor(SDL_ENABLE);
+		}
+		
 		if (((gui_check_draw(gui) != 0) || (draw != 0))&&(wait_open == 0)){
 		
 			bmp_fill(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			/*hilite test */
-			if(element){
-				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
-			}
 			
-			nk_sdl_render(gui, img);
+			nk_sdl_render(gui, tmp_img);
 			
-			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-			SDL_RenderClear(renderer);
-			SDL_RenderCopy(renderer, canvas, NULL, NULL);
-			SDL_RenderPresent(renderer);
+			present = 1;
 			
 			draw = 0;
 			
@@ -476,12 +523,9 @@ int main(int argc, char** argv){
 			bmp_fill(img, img->bkg); /* clear bitmap */
 			//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			nk_sdl_render(gui, img);
+			nk_sdl_render(gui, tmp_img);
 			
-			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-			SDL_RenderClear(renderer);
-			SDL_RenderCopy(renderer, canvas, NULL, NULL);
-			SDL_RenderPresent(renderer);
+			present = 1;
 			
 			open_prg = dxf_open2(drawing, url, &progress);
 			//printf(" == %d\n", open_prg);
@@ -528,8 +572,7 @@ int main(int argc, char** argv){
 			
 		}
 		
-		graph_mem_pool(ZERO_GRAPH, 1);
-		graph_mem_pool(ZERO_LINE, 1);
+		
 	
 		
 		nk_clear(gui->ctx); /*IMPORTANT */
@@ -612,6 +655,23 @@ int main(int argc, char** argv){
 			if ((url != NULL) && (drawing->main_struct != NULL)){
 				dxf_ent_print_f (drawing->main_struct, url);
 			}
+		}
+		
+		graph_mem_pool(ZERO_GRAPH, 1);
+		graph_mem_pool(ZERO_LINE, 1);
+		
+		if (present){
+			//bmp_copy(img, screen_img, 0, 0);
+			//bmp_copy(tmp_img, screen_img, 0, 0);
+			
+			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+			SDL_UpdateTexture(tmp_tex, NULL, tmp_img->buf, width * 4);
+			SDL_RenderClear(renderer);
+			//SDL_SetRenderTarget(renderer, NULL);
+			SDL_RenderCopy(renderer, canvas, NULL, NULL);
+			SDL_RenderCopy(renderer, tmp_tex, NULL, NULL);
+			SDL_RenderPresent(renderer);
+			present = 0;
 		}
 		
 		if (wait_open == 0){

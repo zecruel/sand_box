@@ -247,6 +247,7 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 					out.r = (img->frg.r*src_a + img->buf[ofs+r_i]*dst_a)/out.a;
 					out.g = (img->frg.g*src_a + img->buf[ofs+g_i]*dst_a)/out.a;
 					out.b = (img->frg.b*src_a + img->buf[ofs+b_i]*dst_a)/out.a;
+					out.a *= 255;
 				}
 				img->buf[ofs+r_i] = (unsigned char) (out.r);
 				img->buf[ofs+g_i] = (unsigned char) (out.g );
@@ -585,6 +586,8 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 	
 	unsigned int i, j, ofs_src, ofs_dst, src_r, src_g, src_b, src_a, dst_r, dst_g, dst_b, dst_a;
 	int ofs_x, ofs_y;
+	double alpha_d, alpha_s;
+	struct {double r,g,b,a;} out;
 	
 	if((src != NULL) && (dst != NULL)){
 		/* get the order of color components */
@@ -609,11 +612,37 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 					/* (y = dst->height - y) emulate the cartesian coordinates */
 					ofs_dst = 4 * (((dst->height - 1 - ofs_y) * dst->width) + ofs_x);
 					ofs_src = 4 * (((src->height - 1 - j) * src->width) + i);
-					/* store each component in memory buffer */
-					dst->buf[ofs_dst + dst_r] = src->buf[ofs_src + src_r];
-					dst->buf[ofs_dst + dst_g] = src->buf[ofs_src + src_g];
-					dst->buf[ofs_dst + dst_b] = src->buf[ofs_src + src_b];
-					dst->buf[ofs_dst + dst_a] = src->buf[ofs_src + src_a];
+					
+					if (src->buf[ofs_src + src_a] < 255){
+						/* Alpha compositing */
+						/*normalize alfa channels */
+						alpha_s = (double) src->buf[ofs_src + src_a] / 255;
+						alpha_d = ((double)dst->buf[ofs_dst + dst_a] / 255)*(1 - alpha_s);
+						
+						out.a = alpha_s + alpha_d;
+						if (out.a == 0){
+							out.r = 0;
+							out.g = 0;
+							out.b = 0;
+						}
+						else{
+							out.r = (src->buf[ofs_src + src_r]*alpha_s + dst->buf[ofs_dst + dst_r]*alpha_d)/out.a;
+							out.g = (src->buf[ofs_src + src_g]*alpha_s + dst->buf[ofs_dst + dst_g]*alpha_d)/out.a;
+							out.b = (src->buf[ofs_src + src_b]*alpha_s + dst->buf[ofs_dst + dst_b]*alpha_d)/out.a;
+							out.a *= 255;
+						}
+						dst->buf[ofs_dst + dst_r] = (unsigned char) (out.r);
+						dst->buf[ofs_dst + dst_g] = (unsigned char) (out.g);
+						dst->buf[ofs_dst + dst_b] = (unsigned char) (out.b);
+						dst->buf[ofs_dst + dst_a] = (unsigned char) (out.a);
+					}
+					else{
+						/* store each component in memory buffer */
+						dst->buf[ofs_dst + dst_r] = src->buf[ofs_src + src_r];
+						dst->buf[ofs_dst + dst_g] = src->buf[ofs_src + src_g];
+						dst->buf[ofs_dst + dst_b] = src->buf[ofs_src + src_b];
+						dst->buf[ofs_dst + dst_a] = src->buf[ofs_src + src_a];
+					}
 				}
 			}
 		}
