@@ -24,44 +24,65 @@
 #include "nuklear.h"
 #include "gui.h"
 
+void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
+	/* draw cursor */
+	/* set the pattern */
+	double pat = 1;
+	patt_change(img, &pat, 1);
+	/* set the color */
+	img->frg = color;
+	/* set the tickness */
+	img->tick = 3;
+	bmp_line(img, 0, y, img->width, y);
+	bmp_line(img, x, 0, x, img->height);
+	img->tick = 1;
+	bmp_line(img, x-5, y+5, x+5, y+5);
+	bmp_line(img, x-5, y-5, x+5, y-5);
+	bmp_line(img, x+5, y-5, x+5, y+5);
+	bmp_line(img, x-5, y-5, x-5, y+5);
+}
+
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
-	unsigned int width = 1024;
-	unsigned int height = 720;
-	unsigned int quit = 0;
-	unsigned int wait_open = 0;
 	
-	int open_prg = 0;
-	int progress = 0;
-	
-	int present = 0;
-	
-	int time_start, time_end;
-	
-	shape *shx_font = shx_font_open("txt.shx");
-	gui_obj *gui = nk_sdl_init(shx_font);
-	struct nk_color background;
-	background = nk_rgba(28,48,62,100);
-	struct nk_rect total_space = nk_rect(0, 0, 200, 100);
-	
-	
-	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
-	//tinyfd_messageBox("DXF Viewer", "click OK to continue", "ok", "info", 0);
-	char *url = NULL;
-	
-	
-	//char url[]="teste.dxf";
-	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
-	int i;
 	double min_x, min_y, max_x, max_y;
 	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
 	double prev_zoom;
+	int color_idx = 256;
+	int layer_idx = 0;
+	dxf_node *element = NULL, *prev_el = NULL;
+	double pos_x, pos_y;
 	
-	/* init the drawing */
-	dxf_open(drawing, url);
-	dxf_ents_parse(drawing);
-	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	unsigned int width = 1024;
+	unsigned int height = 720;
+	int open_prg = 0;
+	int progress = 0;
+	unsigned int quit = 0;
+	unsigned int wait_open = 0;
+	int i;
+	int ev_type, draw = 0;
+	int present = 1, draw_gui = 1, draw_canvas = 1, draw_motion = 1;
+	struct nk_color background;
 	
+	int leftMouseButtonDown = 0;
+	
+	SDL_Event event;
+	int mouse_x, mouse_y;
+	
+	double rect_pt1[2], rect_pt2[2];
+	int low_proc = 1;
+	
+	enum Action {
+		NONE,
+		FILE_OPEN,
+		FILE_SAVE,
+		EXIT
+	} action = NONE;
+	
+	char *url = NULL;
+	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
+	
+	/* Colors in use */
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
 	bmp_color black = {.r = 0, .g = 0, .b =0, .a = 255};
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
@@ -71,53 +92,29 @@ int main(int argc, char** argv){
 	bmp_color hilite = {.r = 255, .g = 0, .b = 255, .a = 150};
 	bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
 	bmp_color cursor = {.r = 255, .g = 255, .b = 255, .a = 100};
+	background = nk_rgb(28,48,62);
 	
+	/* line types in use */
 	double center [] = {12, -6, 2 , -6};
 	double dash [] = {8, -8};
 	double continuous[] = {1};
 	
-	
-	
+	/* init the main images */
 	bmp_img * img = bmp_new(width, height, grey, red);
 	bmp_img * tmp_img = bmp_new(width, height, transp, hilite);
-	//bmp_img * screen_img = bmp_new(width, height, white, black);
 	
+	/* init Nuklear GUI */
+	shape *shx_font = shx_font_open("txt.shx");
+	gui_obj *gui = nk_sdl_init(shx_font);
 	
-	
-	
-	//zoom_x = (max_x - min_x)/img->width;
-	//zoom_y = (max_y - min_y)/img->height;
-	//zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-	//if (zoom <= 0){ zoom =1;}
-	//else{ zoom = 1/(1.1 * zoom);}
-	
-	//ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-	//ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-	
-	//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-	
-	//bmp_fill(status_img, status_img->bkg); /* clear bitmap */
-	//graph_draw(t_open, status_img, 0, 0, 1);
-	//bmp_copy(w_open->img, status_img, 300, 5);
-	//bmp_save("teste.ppm", img);
-	
-	/*============================*/
-	
-	SDL_Event event;
-	int mouse_x, mouse_y;
-	double pos_x, pos_y;
-	double rect_pt1[2], rect_pt2[2];
-	int color_idx = 256;
-	int layer_idx = 0;
-	dxf_node *element = NULL, *prev_el = NULL;
-	
-	enum Action {
-		NONE,
-		FILE_OPEN,
-		FILE_SAVE,
-		EXIT
-	} action = NONE;
+	/* init the drawing */
+	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
+	url = NULL; /* pass a null file only for initialize the drawing structure */
+	dxf_open(drawing, url);
+	dxf_ents_parse(drawing);
+	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 
+	/* init the SDL2 */
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_Window * window = SDL_CreateWindow(
@@ -133,20 +130,24 @@ int main(int argc, char** argv){
 	/*
 	SDL_RendererInfo info;
 	if (SDL_GetRenderDriverInfo(0, &info) == 0){
-		printf("Driver num pix format = %d\n", info.num_texture_formats);
+		//printf("Driver num pix format = %d\n", info.num_texture_formats);
 		for (i = 0; i < info.num_texture_formats; i++){
 			switch (info.texture_formats[i]){
 				case SDL_PIXELFORMAT_ARGB8888:
-					printf("pix format ARGB8888\n");
+					//printf("pix format ARGB8888\n");
+					//img->r_i = 2;
+					//img->g_i = 1;
+					//img->b_i = 0;
+					//img->a_i = 3;
 					break;
 				case SDL_PIXELFORMAT_RGBA8888:
-					printf("pix format RGBA8888\n");
+					//printf("pix format RGBA8888\n");
 					break;
 				case SDL_PIXELFORMAT_ABGR8888:
-					printf("pix format ABGR8888\n");
+					//printf("pix format ABGR8888\n");
 					break;
 				case SDL_PIXELFORMAT_BGRA8888:
-					printf("pix format BGRA8888\n");
+					//printf("pix format BGRA8888\n");
 					break;
 			}
 		}
@@ -170,114 +171,23 @@ int main(int argc, char** argv){
 	SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	SDL_SetTextureBlendMode(tmp_tex, SDL_BLENDMODE_BLEND);
 	
-	int ev_type, draw = 0;
-	
+	/* main loop */
 	while (quit == 0){
-		int leftMouseButtonDown = 0;
-		
-		
 		ev_type = 0;
+		low_proc = 1;
 		
 		//SDL_ShowCursor(SDL_DISABLE);
 		
-		
+		/* get events for Nuklear GUI input */
 		nk_input_begin(gui->ctx);
 		if(SDL_PollEvent(&event)){
 			if (event.type == SDL_QUIT) quit = 1;
 			nk_sdl_handle_event(gui, window, &event);
 			ev_type = event.type;
 		}
-			
 		nk_input_end(gui->ctx);
-		
-		if ((nk_window_is_any_hovered(gui->ctx) == 0) && (ev_type != 0)){
-			
-			switch (event.type){
-				case SDL_QUIT:
-					quit = 1;
-					break;
-				case SDL_MOUSEBUTTONUP:
-					if (event.button.button == SDL_BUTTON_LEFT){
-						leftMouseButtonDown = 0;
-						
-					}
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					if (event.button.button == SDL_BUTTON_LEFT){
-						leftMouseButtonDown = 1;
-						SDL_GetMouseState(&mouse_x, &mouse_y);
-						mouse_y = height - mouse_y;
-						
-					}
-					break;
-				case SDL_MOUSEMOTION:{
-					
-					
-					pos_x = (double) event.motion.x/zoom + ofs_x;
-					pos_y = (double) (height - event.motion.y)/zoom + ofs_y;
-					
-					rect_pt1[0] = (double) (event.motion.x - 5)/zoom + ofs_x;
-					rect_pt1[1] = (double) (height - event.motion.y - 5)/zoom + ofs_y;
-					rect_pt2[0] = (double) (event.motion.x + 5)/zoom + ofs_x;
-					rect_pt2[1] = (double) (height - event.motion.y + 5)/zoom + ofs_y;
-					
-					bmp_fill(tmp_img, tmp_img->bkg); /* clear bitmap */
-					
-					/* for hilite test */
-					element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
-					/*hilite test */
-					//if(element != prev_el){
-						if(element != NULL){
-							vec_graph_draw_fix(element->obj.graphics, tmp_img, ofs_x, ofs_y, zoom, hilite);
-						}
-					//	prev_el = element;
-					//}
-					
-					/* draw cursor */
-					/* set the pattern */
-					patt_change(tmp_img, continuous, 1);
-					/* set the color */
-					tmp_img->frg = cursor;
-					/* set the tickness */
-					tmp_img->tick = 3;
-					bmp_line(tmp_img, 0, (height - event.motion.y), width, (height - event.motion.y));
-					bmp_line(tmp_img, event.motion.x, 0, event.motion.x, height);
-					tmp_img->tick = 1;
-					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)+5, event.motion.x+5, (height - event.motion.y)+5);
-					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)-5, event.motion.x+5, (height - event.motion.y)-5);
-					bmp_line(tmp_img, event.motion.x+5, (height - event.motion.y)-5, event.motion.x+5, (height - event.motion.y)+5);
-					bmp_line(tmp_img, event.motion.x-5, (height - event.motion.y)-5, event.motion.x-5, (height - event.motion.y)+5);
-					
-					present = 1;
-				
-					//if (leftMouseButtonDown){
-						//int mouseX = event.motion.x;
-						//int mouseY = event.motion.y;
-						//pixels[mouseY * 640 + mouseX] = 0;
-					//}
-					}
-					break;
-				case SDL_MOUSEWHEEL:
-					prev_zoom = zoom;
-					zoom = zoom + event.wheel.y * 0.2 * zoom;
-					
-					SDL_GetMouseState(&mouse_x, &mouse_y);
-					mouse_y = height - mouse_y;
-					//ofs_x -= ((double) mouse_x)*(1/zoom - 1/prev_zoom);
-					//ofs_y -= ((double) mouse_y)*(1/zoom - 1/prev_zoom);
-					ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
-					ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
-					
-					//bmp_fill(img, img->bkg); /* clear bitmap */
-					//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
-					//graph_draw(t_open, img, 0, 0, 1);
-					draw = 1;
-					break;
-			}
-			
-		}
-		
 		/* ===============================*/
+		
 		/* GUI */
 		/* main toolbox, for open files, save or exit */
 		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
@@ -501,13 +411,75 @@ int main(int argc, char** argv){
 		
 		
 		if (nk_window_is_any_hovered(gui->ctx)) {
-			//SDL_ShowCursor(SDL_ENABLE);
+			SDL_ShowCursor(SDL_ENABLE);
+		}
+		else{
+			SDL_ShowCursor(SDL_DISABLE);
+			if (ev_type != 0){
+				
+				switch (event.type){
+					case SDL_MOUSEBUTTONUP:
+						if (event.button.button == SDL_BUTTON_LEFT){
+							leftMouseButtonDown = 0;
+							
+						}
+						break;
+					case SDL_MOUSEBUTTONDOWN:
+						if (event.button.button == SDL_BUTTON_LEFT){
+							leftMouseButtonDown = 1;
+							SDL_GetMouseState(&mouse_x, &mouse_y);
+							mouse_y = height - mouse_y;
+							
+						}
+						break;
+					case SDL_MOUSEMOTION:{
+						
+						mouse_x = event.motion.x;
+						mouse_y = event.motion.y;
+						mouse_y = height - mouse_y;
+						pos_x = (double) mouse_x/zoom + ofs_x;
+						pos_y = (double) mouse_y/zoom + ofs_y;
+						
+						rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
+						rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
+						rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
+						rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
+						
+						/* for hilite test */
+						element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+						draw = 1;
+					
+						//if (leftMouseButtonDown){
+							//int mouseX = event.motion.x;
+							//int mouseY = event.motion.y;
+							//pixels[mouseY * 640 + mouseX] = 0;
+						//}
+						}
+						break;
+					case SDL_MOUSEWHEEL:
+						prev_zoom = zoom;
+						zoom = zoom + event.wheel.y * 0.2 * zoom;
+						
+						SDL_GetMouseState(&mouse_x, &mouse_y);
+						mouse_y = height - mouse_y;
+						//ofs_x -= ((double) mouse_x)*(1/zoom - 1/prev_zoom);
+						//ofs_y -= ((double) mouse_y)*(1/zoom - 1/prev_zoom);
+						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
+						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
+						
+						//bmp_fill(img, img->bkg); /* clear bitmap */
+						//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+						//graph_draw(t_open, img, 0, 0, 1);
+						draw = 1;
+						break;
+				}
+			}
 		}
 		
-		if (((gui_check_draw(gui) != 0) || (draw != 0))&&(wait_open == 0)){
+		/*if (((gui_check_draw(gui) != 0) || (draw != 0))&&(wait_open == 0)){
 		
-			bmp_fill(img, img->bkg); /* clear bitmap */
-			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			bmp_fill(img, img->bkg); /* clear bitmap 
+			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw 
 			
 			
 			nk_sdl_render(gui, tmp_img);
@@ -516,16 +488,16 @@ int main(int argc, char** argv){
 			
 			draw = 0;
 			
-		}
+		}*/
 		
-		else if (wait_open != 0){
-		
-			bmp_fill(img, img->bkg); /* clear bitmap */
+		if (wait_open != 0){
+			low_proc = 0;
+			//bmp_fill(img, img->bkg); /* clear bitmap */
 			//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			nk_sdl_render(gui, tmp_img);
+			//nk_sdl_render(gui, tmp_img);
 			
-			present = 1;
+			draw = 1;
 			
 			open_prg = dxf_open2(drawing, url, &progress);
 			//printf(" == %d\n", open_prg);
@@ -575,7 +547,7 @@ int main(int argc, char** argv){
 		
 	
 		
-		nk_clear(gui->ctx); /*IMPORTANT */
+		
 		/*===============================*/
 		
 		if(action == FILE_OPEN) {
@@ -588,59 +560,16 @@ int main(int argc, char** argv){
 			NULL,
 			0);
 			if (url){
-				//dxf_ent_clear(drawing->main_struct);
 				dxf_mem_pool(ZERO_DXF, 0);
 				graph_mem_pool(ZERO_GRAPH, 0);
 				graph_mem_pool(ZERO_LINE, 0);
 				
-				//time_start = SDL_GetTicks();
 				wait_open = 1;
 				progress = 0;
+				/* clear drawing structure */
 				open_prg = dxf_open2(drawing, NULL, &progress);
 				progress = 0;
-				//open_prg = dxf_open2(drawing, url);
-				/*
-				if (open_prg <= 0){
-					//time_end = SDL_GetTicks();
-					//printf("Open = %d\n", time_end - time_start);
-					
-					printf("Num Layers = %d\n", drawing->num_layers);
-					
-					//time_start = SDL_GetTicks();
-					dxf_ents_parse(drawing);
-					//time_end = SDL_GetTicks();
-					//printf("Parse = %d\n", time_end - time_start);
-					
-					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-					zoom_x = (max_x - min_x)/img->width;
-					zoom_y = (max_y - min_y)/img->height;
-					zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-					if (zoom <= 0){ zoom =1;}
-					else{ zoom = 1/(1.1 * zoom);}
-					
-					ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-					
-					//bmp_fill(img, img->bkg); /* clear bitmap 
-					
-					//time_start = SDL_GetTicks();
-					//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-					
-					//SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-					//SDL_RenderClear(renderer);
-					//SDL_RenderCopy(renderer, canvas, NULL, NULL);
-					//SDL_RenderPresent(renderer);
-					//time_end = SDL_GetTicks();
-					//printf("Draw = %d\n\n", time_end - time_start);
-					
-					draw = 1;
-					layer_idx = 0;
-					color_idx = 256;
-					wait_open = 0;
-					
-				}
-				*/
-				//printf("Num Layers = %d\n\n", drawing->num_layers);
+				low_proc = 0;
 			}
 			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 		}
@@ -657,24 +586,44 @@ int main(int argc, char** argv){
 			}
 		}
 		
-		graph_mem_pool(ZERO_GRAPH, 1);
-		graph_mem_pool(ZERO_LINE, 1);
+		
+		
+		if ((gui_check_draw(gui) != 0) || (draw != 0)){
+		
+			bmp_fill(img, img->bkg); /* clear bitmap */
+			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			
+			draw_cursor(img, mouse_x, mouse_y, cursor);
+			/*hilite test */
+			if(element != NULL){
+				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
+			}
+			nk_sdl_render(gui, img);
+			
+			present = 1;
+			
+			draw = 0;
+			
+		}
 		
 		if (present){
 			//bmp_copy(img, screen_img, 0, 0);
 			//bmp_copy(tmp_img, screen_img, 0, 0);
 			
 			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-			SDL_UpdateTexture(tmp_tex, NULL, tmp_img->buf, width * 4);
+			//SDL_UpdateTexture(tmp_tex, NULL, tmp_img->buf, width * 4);
 			SDL_RenderClear(renderer);
 			//SDL_SetRenderTarget(renderer, NULL);
 			SDL_RenderCopy(renderer, canvas, NULL, NULL);
-			SDL_RenderCopy(renderer, tmp_tex, NULL, NULL);
+			//SDL_RenderCopy(renderer, tmp_tex, NULL, NULL);
 			SDL_RenderPresent(renderer);
 			present = 0;
 		}
 		
-		if (wait_open == 0){
+		graph_mem_pool(ZERO_GRAPH, 1);
+		graph_mem_pool(ZERO_LINE, 1);
+		nk_clear(gui->ctx); /*IMPORTANT */
+		if (low_proc){
 			SDL_Delay(60);
 		}
 	}
