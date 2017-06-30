@@ -42,11 +42,24 @@ void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
 	bmp_line(img, x-5, y-5, x-5, y+5);
 }
 
+void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, double *ofs_y){
+	double min_x, min_y, max_x, max_y;
+	double zoom_x, zoom_y;
+	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	zoom_x = (max_x - min_x)/img->width;
+	zoom_y = (max_y - min_y)/img->height;
+	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+	if (*zoom <= 0){ *zoom =1;}
+	else{ *zoom = 1/(1.1 * (*zoom));}
+	
+	*ofs_x = min_x - (fabs((max_x - min_x)*(*zoom) - img->width)/2)/(*zoom);
+	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2)/(*zoom);
+}
+
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
-	double min_x, min_y, max_x, max_y;
-	double zoom_x, zoom_y, zoom, ofs_x, ofs_y;
+	double zoom, ofs_x, ofs_y;
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0;
@@ -61,7 +74,6 @@ int main(int argc, char** argv){
 	unsigned int wait_open = 0;
 	int i;
 	int ev_type, draw = 0;
-	int present = 1, draw_gui = 1, draw_canvas = 1, draw_motion = 1;
 	struct nk_color background;
 	
 	int leftMouseButtonDown = 0;
@@ -76,6 +88,7 @@ int main(int argc, char** argv){
 		NONE,
 		FILE_OPEN,
 		FILE_SAVE,
+		VIEW_ZOOM_EXT,
 		EXIT
 	} action = NONE;
 	
@@ -99,9 +112,8 @@ int main(int argc, char** argv){
 	double dash [] = {8, -8};
 	double continuous[] = {1};
 	
-	/* init the main images */
+	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
-	bmp_img * tmp_img = bmp_new(width, height, transp, hilite);
 	
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
@@ -112,7 +124,6 @@ int main(int argc, char** argv){
 	url = NULL; /* pass a null file only for initialize the drawing structure */
 	dxf_open(drawing, url);
 	dxf_ents_parse(drawing);
-	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
 
 	/* init the SDL2 */
 	SDL_Init(SDL_INIT_VIDEO);
@@ -161,15 +172,7 @@ int main(int argc, char** argv){
 		width, /* width */
 		height); /* height */
 		
-	SDL_Texture * tmp_tex = SDL_CreateTexture(
-		renderer,
-		SDL_PIXELFORMAT_ARGB8888,
-		SDL_TEXTUREACCESS_STATIC, 
-		width, /* width */
-		height); /* height */
-		
-	SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
-	SDL_SetTextureBlendMode(tmp_tex, SDL_BLENDMODE_BLEND);
+	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	
 	/* main loop */
 	while (quit == 0){
@@ -227,17 +230,7 @@ int main(int argc, char** argv){
 			if (nk_menu_begin_label(gui->ctx, "VIEW", NK_TEXT_LEFT, nk_vec2(120, 200))){
 				nk_layout_row_dynamic(gui->ctx, 15, 1);
 				if (nk_menu_item_label(gui->ctx, "Extend", NK_TEXT_LEFT)){
-					
-					dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-					zoom_x = (max_x - min_x)/img->width;
-					zoom_y = (max_y - min_y)/img->height;
-					zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-					if (zoom <= 0){ zoom =1;}
-					else{ zoom = 1/(1.1 * zoom);}
-					
-					ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-					ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-					draw = 1;
+					action = VIEW_ZOOM_EXT;
 				}
 				if (nk_menu_item_label(gui->ctx, "Zoom in", NK_TEXT_LEFT)){
 					//action = FILE_OPEN;
@@ -462,90 +455,29 @@ int main(int argc, char** argv){
 						
 						SDL_GetMouseState(&mouse_x, &mouse_y);
 						mouse_y = height - mouse_y;
-						//ofs_x -= ((double) mouse_x)*(1/zoom - 1/prev_zoom);
-						//ofs_y -= ((double) mouse_y)*(1/zoom - 1/prev_zoom);
 						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
 						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
-						
-						//bmp_fill(img, img->bkg); /* clear bitmap */
-						//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
-						//graph_draw(t_open, img, 0, 0, 1);
 						draw = 1;
 						break;
 				}
 			}
 		}
 		
-		/*if (((gui_check_draw(gui) != 0) || (draw != 0))&&(wait_open == 0)){
-		
-			bmp_fill(img, img->bkg); /* clear bitmap 
-			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw 
-			
-			
-			nk_sdl_render(gui, tmp_img);
-			
-			present = 1;
-			
-			draw = 0;
-			
-		}*/
-		
 		if (wait_open != 0){
 			low_proc = 0;
-			//bmp_fill(img, img->bkg); /* clear bitmap */
-			//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
-			
-			//nk_sdl_render(gui, tmp_img);
-			
 			draw = 1;
 			
 			open_prg = dxf_open2(drawing, url, &progress);
-			//printf(" == %d\n", open_prg);
 			
 			if(open_prg <= 0){
-				//time_end = SDL_GetTicks();
-				//printf("Open = %d\n", time_end - time_start);
-				
-				//printf("Num Layers = %d\n", drawing->num_layers);
-				
-				//time_start = SDL_GetTicks();
-				dxf_ents_parse(drawing);
-				//time_end = SDL_GetTicks();
-				//printf("Parse = %d\n", time_end - time_start);
-				
-				dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-				zoom_x = (max_x - min_x)/img->width;
-				zoom_y = (max_y - min_y)/img->height;
-				zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-				if (zoom <= 0){ zoom =1;}
-				else{ zoom = 1/(1.1 * zoom);}
-				
-				ofs_x = min_x - (fabs((max_x - min_x)*zoom - img->width)/2)/zoom;
-				ofs_y = min_y - (fabs((max_y - min_y)*zoom - img->height)/2)/zoom;
-				
-				//bmp_fill(img, img->bkg); /* clear bitmap */
-				
-				//time_start = SDL_GetTicks();
-				//dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom);
-				
-				//SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-				//SDL_RenderClear(renderer);
-				//SDL_RenderCopy(renderer, canvas, NULL, NULL);
-				//SDL_RenderPresent(renderer);
-				//time_end = SDL_GetTicks();
-				//printf("Draw = %d\n\n", time_end - time_start);
-				
-				draw = 1;
+				dxf_ents_parse(drawing);				
+				action = VIEW_ZOOM_EXT;
 				layer_idx = 0;
 				color_idx = 256;
 				wait_open = 0;
-				printf("Num Layers = %d\n", drawing->num_layers);
 			}
 			
 		}
-		
-		
-	
 		
 		
 		/*===============================*/
@@ -574,7 +506,7 @@ int main(int argc, char** argv){
 			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 		}
 		else if(action == FILE_SAVE) {
-		action = NONE;	
+			action = NONE;
 			url = (char *) tinyfd_saveFileDialog(
 			"Save Drawing",
 			"save.txt",
@@ -585,7 +517,11 @@ int main(int argc, char** argv){
 				dxf_ent_print_f (drawing->main_struct, url);
 			}
 		}
-		
+		else if(action == VIEW_ZOOM_EXT){
+			action = NONE;
+			zoom_ext(drawing, img, &zoom, &ofs_x, &ofs_y);
+			draw = 1;
+		}
 		
 		
 		if ((gui_check_draw(gui) != 0) || (draw != 0)){
@@ -600,24 +536,13 @@ int main(int argc, char** argv){
 			}
 			nk_sdl_render(gui, img);
 			
-			present = 1;
-			
-			draw = 0;
-			
-		}
-		
-		if (present){
-			//bmp_copy(img, screen_img, 0, 0);
-			//bmp_copy(tmp_img, screen_img, 0, 0);
-			
 			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
-			//SDL_UpdateTexture(tmp_tex, NULL, tmp_img->buf, width * 4);
 			SDL_RenderClear(renderer);
-			//SDL_SetRenderTarget(renderer, NULL);
 			SDL_RenderCopy(renderer, canvas, NULL, NULL);
-			//SDL_RenderCopy(renderer, tmp_tex, NULL, NULL);
 			SDL_RenderPresent(renderer);
-			present = 0;
+			
+			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+			draw = 0;
 		}
 		
 		graph_mem_pool(ZERO_GRAPH, 1);
@@ -634,8 +559,6 @@ int main(int argc, char** argv){
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	
-	/*=======================*/
-	//dxf_ent_clear(drawing->main_struct);
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
@@ -644,7 +567,6 @@ int main(int argc, char** argv){
 	for (i = 0; i<drawing->num_fonts; i++){
 		shx_font_free(drawing->text_fonts[i].shx_font);
 	}
-	//----------------------------
 	nk_sdl_shutdown(gui);
 	shx_font_free(shx_font);
 	free(drawing);
