@@ -124,6 +124,7 @@ int gui_check_draw(gui_obj *gui){
 NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 	const struct nk_command *cmd;
 	bmp_color color = {.r = 255, .g = 255, .b =255, .a = 255};
+	int iter = 0;
 	
 	static int one_time = 0;
 	if (!one_time){
@@ -140,6 +141,13 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 		img->zero_tl =1;
 
 		nk_foreach(cmd, gui->ctx){
+			
+			/* break the loop, if more then 10000 iterations */
+			iter += 1;
+			if (iter > 10000){
+				break;
+			}
+			
 			switch (cmd->type) {
 				case NK_COMMAND_NOP: break;
 				

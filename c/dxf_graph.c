@@ -1,5 +1,6 @@
 #include "dxf_graph.h"
 #include "shape2.h"
+#include "list.h"
 
 #include "dxf_colors.h"
 #include <string.h>
@@ -2399,6 +2400,28 @@ int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_
 				vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
 				
 				//---------------------------------------
+			}
+			current = current->next;
+		}
+	}
+}
+
+int dxf_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
+	list_node *current = NULL;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->data){
+				if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+					
+					// -------------------------------------------
+					vec_graph_draw_fix(((dxf_node *)current->data)->obj.graphics, img, ofs_x, ofs_y, scale, color);
+					
+					//---------------------------------------
+				}
 			}
 			current = current->next;
 		}

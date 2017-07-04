@@ -5,6 +5,7 @@
 #include "graph.h"
 #include "shape2.h"
 #include "dxf_graph.h"
+#include "list.h"
 
 #include "dxf_colors.h"
 
@@ -56,13 +57,27 @@ void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, d
 	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2)/(*zoom);
 }
 
+void sel_list_append(list_node *list, dxf_node *ent){
+	if (list && ent){
+		list_node * new_el = (list_node *)list_new(ent, 0);
+		if (new_el){
+			if (list_find_data(list, ent)){
+				//printf ("ja existe!\n");
+			}
+			else{
+				list_push(list, new_el);
+			}
+		}
+	}
+}
+
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
 	double zoom, ofs_x, ofs_y;
 	double prev_zoom;
 	int color_idx = 256;
-	int layer_idx = 0;
+	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL;
 	double pos_x, pos_y;
 	
@@ -111,6 +126,9 @@ int main(int argc, char** argv){
 	double center [] = {12, -6, 2 , -6};
 	double dash [] = {8, -8};
 	double continuous[] = {1};
+	
+	/* initialize the selection list */
+	list_node * sel_list = (list_node *)list_new(NULL, 0);
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
@@ -320,17 +338,15 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Prop", nk_rect(205, 5, 400, 40),
+		if (nk_begin(gui->ctx, "Prop", nk_rect(205, 5, 700, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
 		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			static char text[64];
 			int text_len;
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 4);
 			
 			/*layer*/
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 3);
-			
-			
 			nk_layout_row_push(gui->ctx, 200);
 			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
 				nk_layout_row_dynamic(gui->ctx, 25, 1);
@@ -345,6 +361,7 @@ int main(int argc, char** argv){
 				
 				nk_combo_end(gui->ctx);
 			}
+			
 			/*color picker */
 			int c_idx = color_idx;
 			if (c_idx >255){
@@ -398,6 +415,26 @@ int main(int argc, char** argv){
 					}
 				nk_combo_end(gui->ctx);
 			}
+			
+			/*line type*/
+			nk_layout_row_push(gui->ctx, 200);
+			if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
+				nk_layout_row_dynamic(gui->ctx, 25, 2);
+				int num_ltypes = drawing->num_ltypes;
+				
+				for (i = 0; i < num_ltypes; i++){
+					
+					if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
+						ltypes_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+					nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
+				}
+				
+				nk_combo_end(gui->ctx);
+			}
+			
+			
 			nk_layout_row_end(gui->ctx);
 		}
 		nk_end(gui->ctx);
@@ -422,7 +459,11 @@ int main(int argc, char** argv){
 							leftMouseButtonDown = 1;
 							SDL_GetMouseState(&mouse_x, &mouse_y);
 							mouse_y = height - mouse_y;
-							
+							sel_list_append(sel_list, element);
+						}
+						else if(event.button.button == SDL_BUTTON_RIGHT){
+							list_clear(sel_list);
+							draw = 1;
 						}
 						break;
 					case SDL_MOUSEMOTION:{
@@ -473,8 +514,10 @@ int main(int argc, char** argv){
 				dxf_ents_parse(drawing);				
 				action = VIEW_ZOOM_EXT;
 				layer_idx = 0;
+				ltypes_idx = 0;
 				color_idx = 256;
 				wait_open = 0;
+				list_clear(sel_list);
 			}
 			
 		}
@@ -534,6 +577,8 @@ int main(int argc, char** argv){
 			if(element != NULL){
 				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
 			}
+			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
+			
 			nk_sdl_render(gui, img);
 			
 			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
@@ -559,6 +604,7 @@ int main(int argc, char** argv){
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	
+	list_mem_pool(FREE_LIST, 0);
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);

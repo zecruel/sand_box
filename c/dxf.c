@@ -750,7 +750,7 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	int i, j, pat_idx;
 	dxf_node *current;
 	
-	char name[DXF_MAX_CHARS];
+	char name[DXF_MAX_CHARS], descr[DXF_MAX_CHARS];
 	int size;
 	double pat[DXF_MAX_PAT];
 	double length, max;
@@ -758,6 +758,7 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	/* always set the index 0 as the default ltype*/
 	drawing->num_ltypes = 1;
 	drawing->ltypes[0].name[0] = 0;
+	drawing->ltypes[0].descr[0] = 0;
 	drawing->ltypes[0].size = 1;
 	drawing->ltypes[0].pat[0] = 0;
 	drawing->ltypes[0].length = 0;
@@ -767,6 +768,7 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 		drawing->num_ltypes += v_search.size;
 		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LTYPES-1)); i++){
 			name[0] = 0;
+			descr[0] = 0;
 			size = 0;
 			pat[0] = 0;
 			pat_idx = 0;
@@ -780,6 +782,9 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 					switch (current->value.group){
 						case 2: /* ltype name */
 							strcpy(name, current->value.s_data);
+							break;
+						case 3: /* ltype descriptive text */
+							strcpy(descr, current->value.s_data);
 							break;
 						case 40: /* pattern length */
 							length = current->value.d_data;
@@ -815,6 +820,7 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 			
 			/* set the variables on the current ltype in drawing structure */
 			strcpy(drawing->ltypes[i+1].name, name);
+			strcpy(drawing->ltypes[i+1].descr, descr);
 			memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));
 			drawing->ltypes[i+1].size = size;
 			drawing->ltypes[i+1].length = length;
@@ -917,6 +923,7 @@ int dxf_font_idx (dxf_drawing *drawing, char *name){
 }
 
 void dxf_open (dxf_drawing *drawing, char *path){
+	/*deprecated*/
 	if (drawing){
 		char *buf, *line, *cur_line, *next_line;
 		FILE *file;
@@ -1666,4 +1673,37 @@ int dxf_open2 (dxf_drawing *drawing, char *path, int *prog){
 quit_error:
 	state = INIT;
 	return -1;
+}
+
+void dxf_append(dxf_node *master, dxf_node *new_node){
+	if (master && new_node){
+		dxf_node *prev = master->end;
+		/*  append new to master's list */
+		new_node->master = master;
+		new_node->prev = prev;
+		if (prev){
+			prev->next = new_node;
+		}
+		new_node->next = NULL; /* append at end of list */
+		master->end = new_node;
+	}
+}
+
+void dxf_list_clear (dxf_node *list){
+	if (list){
+		list->obj.name[0] = 0;
+		list->master = NULL;
+		list->prev = NULL;
+		list->next = NULL;
+		list->type = DXF_ENT;
+		list->obj.graphics = NULL;
+		if(list->obj.content){
+			list->end = list->obj.content;
+			list->obj.content->master = list;
+			list->obj.content->prev = NULL;
+			list->obj.content->next = NULL;
+			list->obj.content->type = DXF_ATTR;
+			list->obj.content->value.t_data = DXF_INT;
+		}
+	}
 }

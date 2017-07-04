@@ -100,6 +100,7 @@ typedef struct Dxf_layer dxf_layer;
 
 struct Dxf_ltype{
 	char name[DXF_MAX_CHARS];
+	char descr[DXF_MAX_CHARS];
 	int size;
 	double pat[DXF_MAX_PAT];
 	double length;
