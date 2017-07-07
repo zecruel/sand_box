@@ -78,8 +78,8 @@ int main(int argc, char** argv){
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
-	dxf_node *element = NULL, *prev_el = NULL;
-	double pos_x, pos_y;
+	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
+	double pos_x, pos_y, x0, y0, x1, y1;
 	
 	unsigned int width = 1024;
 	unsigned int height = 720;
@@ -88,10 +88,17 @@ int main(int argc, char** argv){
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int i;
-	int ev_type, draw = 0;
+	int ev_type, draw = 0, draw_tmp = 0;
 	struct nk_color background;
 	
 	int leftMouseButtonDown = 0;
+	int rightMouseButtonDown = 0;
+	int leftMouseButtonClick = 0;
+	int rightMouseButtonClick = 0;
+	int MouseMotion = 0;
+	
+	int init_line = 0;
+	graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
 	int mouse_x, mouse_y;
@@ -106,6 +113,14 @@ int main(int argc, char** argv){
 		VIEW_ZOOM_EXT,
 		EXIT
 	} action = NONE;
+	
+	enum Modal {
+		SELECT,
+		LINE
+	}modal = SELECT;
+	
+	char recv_comm[64];
+	int recv_comm_flag = 0;
 	
 	char *url = NULL;
 	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
@@ -136,6 +151,9 @@ int main(int argc, char** argv){
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
 	gui_obj *gui = nk_sdl_init(shx_font);
+	
+	/* init comands */
+	recv_comm[0] = 0;
 	
 	/* init the drawing */
 	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
@@ -305,7 +323,9 @@ int main(int argc, char** argv){
 			//NK_EDIT_ACTIVE
 			if (res & NK_EDIT_COMMITED){
 				comm[comm_len] = 0;
-				printf("%s\n", comm);
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s", comm);
+				//printf("%s\n", comm);
 				comm_len = 0;
 			}
 			
@@ -449,46 +469,37 @@ int main(int argc, char** argv){
 				
 				switch (event.type){
 					case SDL_MOUSEBUTTONUP:
+						mouse_x = event.button.x;
+						mouse_y = event.button.y;
+						mouse_y = height - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 0;
-							
+						}
+						else if(event.button.button == SDL_BUTTON_RIGHT){
+							rightMouseButtonDown = 0;
 						}
 						break;
 					case SDL_MOUSEBUTTONDOWN:
+						mouse_x = event.button.x;
+						mouse_y = event.button.y;
+						mouse_y = height - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 1;
-							SDL_GetMouseState(&mouse_x, &mouse_y);
-							mouse_y = height - mouse_y;
-							sel_list_append(sel_list, element);
+							leftMouseButtonClick = 1;
 						}
 						else if(event.button.button == SDL_BUTTON_RIGHT){
-							list_clear(sel_list);
-							draw = 1;
+							rightMouseButtonDown = 1;
+							rightMouseButtonClick = 1;
 						}
 						break;
-					case SDL_MOUSEMOTION:{
-						
+					case SDL_MOUSEMOTION:
+						MouseMotion = 1;
 						mouse_x = event.motion.x;
 						mouse_y = event.motion.y;
 						mouse_y = height - mouse_y;
 						pos_x = (double) mouse_x/zoom + ofs_x;
 						pos_y = (double) mouse_y/zoom + ofs_y;
-						
-						rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
-						rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
-						rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
-						rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
-						
-						/* for hilite test */
-						element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
 						draw = 1;
-					
-						//if (leftMouseButtonDown){
-							//int mouseX = event.motion.x;
-							//int mouseY = event.motion.y;
-							//pixels[mouseY * 640 + mouseX] = 0;
-						//}
-						}
 						break;
 					case SDL_MOUSEWHEEL:
 						prev_zoom = zoom;
@@ -566,6 +577,83 @@ int main(int argc, char** argv){
 			draw = 1;
 		}
 		
+		if(recv_comm_flag){
+			recv_comm_flag =0;
+			str_upp(recv_comm);
+			if (strcmp(recv_comm, "SELECT") == 0){
+				modal = SELECT;
+			}
+			if (strcmp(recv_comm, "LINE") == 0){
+				modal = LINE;
+			}
+			
+		}
+		
+		if (modal == SELECT){
+			if (leftMouseButtonClick){
+				sel_list_append(sel_list, element);
+			}
+			if (rightMouseButtonClick){
+				list_clear(sel_list);
+				draw = 1;
+			}
+			if (MouseMotion){
+				rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
+				rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
+				rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
+				rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
+				
+				/* for hilite test */
+				element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+				draw = 1;
+			}
+		}
+		if (modal == LINE){
+			if (!init_line){
+				if (leftMouseButtonClick){
+					init_line = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					draw_tmp = 1;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
+					new_el = (dxf_node *) dxf_new_line (
+						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
+						1.0, 0.0, /* thickness, elevation */
+						color_idx, drawing->layers[layer_idx].name, /* color, layer */
+						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					//dxf_ent_print2(new_el);
+					drawing_ent_append(drawing, new_el);
+					
+					x0 = x1;
+					y0 = y1;
+				}
+				else if (rightMouseButtonClick){
+					init_line = 0;
+					draw_tmp = 0;
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					tmp_graph = graph_new(2);
+					line_add(tmp_graph, x0, y0, 0, x1, y1, 0);
+				}
+			}
+		}
+		
 		
 		if ((gui_check_draw(gui) != 0) || (draw != 0)){
 		
@@ -579,6 +667,10 @@ int main(int argc, char** argv){
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
 			
+			if(draw_tmp){
+				graph_draw_fix(tmp_graph, img, ofs_x, ofs_y, zoom, hilite);
+			}
+			
 			nk_sdl_render(gui, img);
 			
 			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
@@ -589,6 +681,13 @@ int main(int argc, char** argv){
 			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 			draw = 0;
 		}
+		
+		leftMouseButtonClick = 0;
+		rightMouseButtonClick = 0;
+		MouseMotion = 0;
+		
+		graph_mem_pool(ZERO_GRAPH, 2);
+		graph_mem_pool(ZERO_LINE, 2);
 		
 		graph_mem_pool(ZERO_GRAPH, 1);
 		graph_mem_pool(ZERO_LINE, 1);
@@ -608,6 +707,7 @@ int main(int argc, char** argv){
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
+	graph_mem_pool(FREE_ALL, 2);
 	
 	bmp_free(img);
 	for (i = 0; i<drawing->num_fonts; i++){
