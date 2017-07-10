@@ -597,6 +597,26 @@ vector_p dxf_find_attr(dxf_node * obj, int attr){
 	return list;
 }
 
+dxf_node * dxf_find_attr2(dxf_node * obj, int attr){
+	/* return the first match */
+	dxf_node *current;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				if (current->type == DXF_ATTR){
+					if(current->value.group == attr){ /* success */
+						return current;
+					}
+				}
+				current = current->next;
+			}
+		}
+	}
+	return NULL;
+}
+
 vector_p dxf_find_obj(dxf_node * obj, char *name){
 	int size = 0;
 	dxf_node **data = NULL;

@@ -80,6 +80,7 @@ int main(int argc, char** argv){
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1;
+	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
 	unsigned int width = 1024;
 	unsigned int height = 720;
@@ -98,7 +99,7 @@ int main(int argc, char** argv){
 	int MouseMotion = 0;
 	
 	int init_line = 0;
-	graph_obj *tmp_graph = NULL;
+	//graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
 	int mouse_x, mouse_y;
@@ -225,7 +226,62 @@ int main(int argc, char** argv){
 			ev_type = event.type;
 		}
 		nk_input_end(gui->ctx);
+		
 		/* ===============================*/
+		if (nk_window_is_any_hovered(gui->ctx)) {
+			SDL_ShowCursor(SDL_ENABLE);
+		}
+		else{
+			SDL_ShowCursor(SDL_DISABLE);
+			if (ev_type != 0){
+				
+				switch (event.type){
+					case SDL_MOUSEBUTTONUP:
+						mouse_x = event.button.x;
+						mouse_y = event.button.y;
+						mouse_y = height - mouse_y;
+						if (event.button.button == SDL_BUTTON_LEFT){
+							leftMouseButtonDown = 0;
+						}
+						else if(event.button.button == SDL_BUTTON_RIGHT){
+							rightMouseButtonDown = 0;
+						}
+						break;
+					case SDL_MOUSEBUTTONDOWN:
+						mouse_x = event.button.x;
+						mouse_y = event.button.y;
+						mouse_y = height - mouse_y;
+						if (event.button.button == SDL_BUTTON_LEFT){
+							leftMouseButtonDown = 1;
+							leftMouseButtonClick = 1;
+						}
+						else if(event.button.button == SDL_BUTTON_RIGHT){
+							rightMouseButtonDown = 1;
+							rightMouseButtonClick = 1;
+						}
+						break;
+					case SDL_MOUSEMOTION:
+						MouseMotion = 1;
+						mouse_x = event.motion.x;
+						mouse_y = event.motion.y;
+						mouse_y = height - mouse_y;
+						pos_x = (double) mouse_x/zoom + ofs_x;
+						pos_y = (double) mouse_y/zoom + ofs_y;
+						draw = 1;
+						break;
+					case SDL_MOUSEWHEEL:
+						prev_zoom = zoom;
+						zoom = zoom + event.wheel.y * 0.2 * zoom;
+						
+						SDL_GetMouseState(&mouse_x, &mouse_y);
+						mouse_y = height - mouse_y;
+						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
+						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
+						draw = 1;
+						break;
+				}
+			}
+		}
 		
 		/* GUI */
 		/* main toolbox, for open files, save or exit */
@@ -288,12 +344,12 @@ int main(int argc, char** argv){
 		nk_end(gui->ctx);
 		
 		
-		/*if (wait_open != 0){
-			/* opening 
-			//if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
-			//NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-			//NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
-			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
+		if (wait_open != 0){
+			/* opening */
+			if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
+			NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
 			{
 				static char text[64];
 				static int text_len;
@@ -301,10 +357,10 @@ int main(int argc, char** argv){
 				text_len = snprintf(text, 63, "Opening...");
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
 				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
-				nk_popup_end(gui->ctx);
+				//nk_popup_end(gui->ctx);
 			}
-			//nk_end(gui->ctx);
-		}*/
+			nk_end(gui->ctx);
+		}
 		
 		/* status */
 		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 45, 600, 40),
@@ -332,11 +388,11 @@ int main(int argc, char** argv){
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
 			
-			if (wait_open != 0){
+			/*if (wait_open != 0){
 				text_len = snprintf(text, 63, "Opening...");
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
 				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
-			}
+			}*/
 		}
 		nk_end(gui->ctx);
 		
@@ -460,61 +516,6 @@ int main(int argc, char** argv){
 		nk_end(gui->ctx);
 		
 		
-		if (nk_window_is_any_hovered(gui->ctx)) {
-			SDL_ShowCursor(SDL_ENABLE);
-		}
-		else{
-			SDL_ShowCursor(SDL_DISABLE);
-			if (ev_type != 0){
-				
-				switch (event.type){
-					case SDL_MOUSEBUTTONUP:
-						mouse_x = event.button.x;
-						mouse_y = event.button.y;
-						mouse_y = height - mouse_y;
-						if (event.button.button == SDL_BUTTON_LEFT){
-							leftMouseButtonDown = 0;
-						}
-						else if(event.button.button == SDL_BUTTON_RIGHT){
-							rightMouseButtonDown = 0;
-						}
-						break;
-					case SDL_MOUSEBUTTONDOWN:
-						mouse_x = event.button.x;
-						mouse_y = event.button.y;
-						mouse_y = height - mouse_y;
-						if (event.button.button == SDL_BUTTON_LEFT){
-							leftMouseButtonDown = 1;
-							leftMouseButtonClick = 1;
-						}
-						else if(event.button.button == SDL_BUTTON_RIGHT){
-							rightMouseButtonDown = 1;
-							rightMouseButtonClick = 1;
-						}
-						break;
-					case SDL_MOUSEMOTION:
-						MouseMotion = 1;
-						mouse_x = event.motion.x;
-						mouse_y = event.motion.y;
-						mouse_y = height - mouse_y;
-						pos_x = (double) mouse_x/zoom + ofs_x;
-						pos_y = (double) mouse_y/zoom + ofs_y;
-						draw = 1;
-						break;
-					case SDL_MOUSEWHEEL:
-						prev_zoom = zoom;
-						zoom = zoom + event.wheel.y * 0.2 * zoom;
-						
-						SDL_GetMouseState(&mouse_x, &mouse_y);
-						mouse_y = height - mouse_y;
-						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
-						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
-						draw = 1;
-						break;
-				}
-			}
-		}
-		
 		if (wait_open != 0){
 			low_proc = 0;
 			draw = 1;
@@ -617,10 +618,21 @@ int main(int argc, char** argv){
 					x1 = x0;
 					y1 = y0;
 					draw_tmp = 1;
+					/* create a new DXF line */
+					new_el = (dxf_node *) dxf_new_line (
+						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
+						1.0, 0.0, /* thickness, elevation */
+						color_idx, drawing->layers[layer_idx].name, /* color, layer */
+						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					x1_attr = dxf_find_attr2(new_el, 11);
+					y1_attr = dxf_find_attr2(new_el, 21);
+					element = new_el;
 				}
 				else if (rightMouseButtonClick){
 					modal = SELECT;
 					draw_tmp = 0;
+					element = NULL;
 				}
 			}
 			else{
@@ -628,28 +640,48 @@ int main(int argc, char** argv){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
 					
+					if(x1_attr){
+						x1_attr->value.d_data = x1;
+					}
+					if(y1_attr){
+						y1_attr->value.d_data = y1;
+					}
+					
 					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
+					
+					//dxf_ent_print2(new_el);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					drawing_ent_append(drawing, new_el);
+					
+					x0 = x1;
+					y0 = y1;
+					
 					new_el = (dxf_node *) dxf_new_line (
 						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
 						1.0, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-					//dxf_ent_print2(new_el);
-					drawing_ent_append(drawing, new_el);
-					
-					x0 = x1;
-					y0 = y1;
+					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					x1_attr = dxf_find_attr2(new_el, 11);
+					y1_attr = dxf_find_attr2(new_el, 21);
+					element = new_el;
 				}
 				else if (rightMouseButtonClick){
 					init_line = 0;
 					draw_tmp = 0;
+					element = NULL;
 				}
 				if (MouseMotion){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
-					tmp_graph = graph_new(2);
-					line_add(tmp_graph, x0, y0, 0, x1, y1, 0);
+					
+					if(x1_attr){
+						x1_attr->value.d_data = x1;
+					}
+					if(y1_attr){
+						y1_attr->value.d_data = y1;
+					}
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -661,15 +693,17 @@ int main(int argc, char** argv){
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
+			
+			
+			
 			/*hilite test */
+			if(draw_tmp){
+				element->obj.graphics = dxf_graph_parse(drawing, element, 0 , 1);
+			}
 			if(element != NULL){
 				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
-			
-			if(draw_tmp){
-				graph_draw_fix(tmp_graph, img, ofs_x, ofs_y, zoom, hilite);
-			}
 			
 			nk_sdl_render(gui, img);
 			
@@ -686,8 +720,8 @@ int main(int argc, char** argv){
 		rightMouseButtonClick = 0;
 		MouseMotion = 0;
 		
-		graph_mem_pool(ZERO_GRAPH, 2);
-		graph_mem_pool(ZERO_LINE, 2);
+		//graph_mem_pool(ZERO_GRAPH, 2);
+		//graph_mem_pool(ZERO_LINE, 2);
 		
 		graph_mem_pool(ZERO_GRAPH, 1);
 		graph_mem_pool(ZERO_LINE, 1);
