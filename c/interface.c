@@ -172,6 +172,9 @@ int main(int argc, char** argv){
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
 	gui_obj *gui = nk_sdl_init(shx_font);
+	//if (gui){
+	//	gui->ctx->style.button.image_padding = nk_vec2(0.0, -4.0);
+	//}
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -363,6 +366,23 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
+		if (nk_begin(gui->ctx, "Tool", nk_rect(5, 50, 950, 55),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE)){
+			struct nk_image tool;
+			nk_layout_row_static(gui->ctx, 30, 30, 26);
+			for (i = 0; i < 26; i++){
+				tool = nk_image_ptr(tool_vec[i]);
+				tool.w = tool_vec[0]->width;
+				tool.h = tool_vec[0]->height;
+				tool.region[2] = (unsigned short)tool_vec[0]->width;
+				tool.region[3] = (unsigned short)tool_vec[0]->height;
+				
+				if (nk_button_image(gui->ctx, tool)){
+					printf("i = %d\n", i);
+				}
+			}
+		}
+		nk_end(gui->ctx);
 		
 		if (wait_open != 0){
 			/* opening */
@@ -383,7 +403,7 @@ int main(int argc, char** argv){
 		}
 		
 		/* status */
-		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 45, 600, 40),
+		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 55, 600, 50),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
 		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
@@ -393,7 +413,7 @@ int main(int argc, char** argv){
 			static char text[64];
 			static int text_len;
 			
-			nk_layout_row_dynamic(gui->ctx, 25, 4);
+			nk_layout_row_dynamic(gui->ctx, 30, 4);
 			
 			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
 			//NK_EDIT_ACTIVE
@@ -407,16 +427,6 @@ int main(int argc, char** argv){
 			
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
-			
-			struct nk_image tool = nk_image_ptr(tool_vec[0]);
-			tool.w = tool_vec[0]->width;
-			tool.h = tool_vec[0]->height;
-			tool.region[2] = (unsigned short)tool_vec[0]->width;
-			tool.region[3] = (unsigned short)tool_vec[0]->height;
-			
-			if (nk_button_image(gui->ctx, tool)){
-				printf("teste");
-			}
 			
 			/*if (wait_open != 0){
 				text_len = snprintf(text, 63, "Opening...");
@@ -734,13 +744,6 @@ int main(int argc, char** argv){
 				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
-			
-			if (tool_img){
-				bmp_copy(tool_img, img, 100, 100);
-				for(i = 0; i < 40; i++){
-					bmp_copy(tool_vec[i], img, i*30, 200);
-				}
-			}
 			
 			nk_sdl_render(gui, img);
 			
