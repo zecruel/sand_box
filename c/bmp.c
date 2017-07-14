@@ -649,6 +649,49 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 	}
 }
 
+bmp_img * bmp_sub_img(bmp_img *orig, int x, int y, int w, int h){
+	
+	if (orig){
+		bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+		bmp_img *ret = bmp_new (w, h, transp, transp);
+		if (ret){
+			/* get the order of color components */
+			int r_r= ret->r_i;
+			int r_g = ret->g_i;
+			int r_b = ret->b_i;
+			int r_a = ret->a_i;
+			int o_r= orig->r_i;
+			int o_g = orig->g_i;
+			int o_b = orig->b_i;
+			int o_a = orig->a_i;
+			
+			int i, j, ofs_x, ofs_y, ofs_dst, ofs_src;
+			
+			/* sweep the new image */
+			for (i=0; i < w; i++){
+				for (j=0; j < h; j++){
+					ofs_x = i + x;
+					ofs_y = j + y;
+					if((ofs_x >= 0) && (ofs_x < orig->width) && 
+					(ofs_y >= 0) && (ofs_y < orig->height)){
+						/* find the position on destination buffer */
+						ofs_src = 4 * ((ofs_y * orig->width) + ofs_x);
+						ofs_dst = 4 * ((j * w) + i);
+						/* store each component in memory buffer */
+						ret->buf[ofs_dst + r_r] = orig->buf[ofs_src + o_r];
+						ret->buf[ofs_dst + r_g] = orig->buf[ofs_src + o_g];
+						ret->buf[ofs_dst + r_b] = orig->buf[ofs_src + o_b];
+						ret->buf[ofs_dst + r_a] = orig->buf[ofs_src + o_a];
+					}
+				}
+			}
+		}
+		
+		return ret;
+	}
+	return NULL;
+}
+
 	
 /*If you scan along octants as explained for the Midpoint circle algorithm, your major coordinate y will always increase by one. You can then draw two circles at once, because their major coordinates are in sync.
 
