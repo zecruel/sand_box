@@ -25,6 +25,21 @@
 #include "nuklear.h"
 #include "gui.h"
 
+void toolbox_get_imgs(bmp_img *img, int w, int h, bmp_img *vec[], int num){
+	if (vec){
+		int i, col = 0, lin = 0;
+		for (i = 0; i < num; i++){
+			vec[i] = NULL;
+			vec[i] = bmp_sub_img(img, col * w, lin * h, w, h);
+			col++;
+			if ((col * w) + w > (int) img->width){
+				col = 0;
+				lin++;
+			}
+		}
+	}
+}
+
 void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
 	/* draw cursor */
 	/* set the pattern */
@@ -148,6 +163,11 @@ int main(int argc, char** argv){
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
+	
+	/* init the toolbox image */
+	bmp_img * tool_img = bmp_load_img("tool3.png");
+	bmp_img * tool_vec[40];
+	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 40);
 	
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
@@ -387,6 +407,16 @@ int main(int argc, char** argv){
 			
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			
+			struct nk_image tool = nk_image_ptr(tool_vec[0]);
+			tool.w = tool_vec[0]->width;
+			tool.h = tool_vec[0]->height;
+			tool.region[2] = (unsigned short)tool_vec[0]->width;
+			tool.region[3] = (unsigned short)tool_vec[0]->height;
+			
+			if (nk_button_image(gui->ctx, tool)){
+				printf("teste");
+			}
 			
 			/*if (wait_open != 0){
 				text_len = snprintf(text, 63, "Opening...");
@@ -705,6 +735,13 @@ int main(int argc, char** argv){
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
 			
+			if (tool_img){
+				bmp_copy(tool_img, img, 100, 100);
+				for(i = 0; i < 40; i++){
+					bmp_copy(tool_vec[i], img, i*30, 200);
+				}
+			}
+			
 			nk_sdl_render(gui, img);
 			
 			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
@@ -744,6 +781,10 @@ int main(int argc, char** argv){
 	graph_mem_pool(FREE_ALL, 2);
 	
 	bmp_free(img);
+	bmp_free(tool_img);
+	for(i = 0; i < 40; i++){
+		bmp_free(tool_vec[i]);
+	}
 	for (i = 0; i<drawing->num_fonts; i++){
 		shx_font_free(drawing->text_fonts[i].shx_font);
 	}

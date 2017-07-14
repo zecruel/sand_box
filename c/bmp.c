@@ -1,4 +1,6 @@
 #include "bmp.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax){
 /* Compute the bit code for a point (x, y) using the clip rectangle
@@ -610,8 +612,19 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 					(ofs_y >= 0) && (ofs_y < dst->height)){
 					/* find the position on destination buffer */
 					/* (y = dst->height - y) emulate the cartesian coordinates */
-					ofs_dst = 4 * (((dst->height - 1 - ofs_y) * dst->width) + ofs_x);
-					ofs_src = 4 * (((src->height - 1 - j) * src->width) + i);
+						
+					if (dst->zero_tl != 0){
+						ofs_dst = 4 * ((ofs_y * dst->width) + ofs_x);
+					}
+					else{
+						ofs_dst = 4 * (((dst->height - 1 - ofs_y) * dst->width) + ofs_x);
+					}
+					if (src->zero_tl != 0){
+						ofs_src = 4 * ((j * src->width) + i);
+					}
+					else{
+						ofs_src = 4 * (((src->height - 1 - j) * src->width) + i);
+					}
 					
 					if (src->buf[ofs_src + src_a] < 255){
 						/* Alpha compositing */
@@ -688,6 +701,55 @@ bmp_img * bmp_sub_img(bmp_img *orig, int x, int y, int w, int h){
 		}
 		
 		return ret;
+	}
+	return NULL;
+}
+
+bmp_img * bmp_load_img(char *url){
+	int num_ch, w, h;
+	/* use the stb_image to load file in buffer */
+	unsigned char *data = stbi_load(url, &w, &h, &num_ch, 4);
+	if (data){
+		bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+		/* alloc the structure */
+		bmp_img * img = (bmp_img *) malloc (sizeof (bmp_img));
+		if (img){
+			/* initialize */
+			img->buf = data;
+			/* dimensions */
+			img->width = w;
+			img->height = h;
+			/* colors */
+			img->bkg = transp;
+			img->frg = transp;
+			/* line pattern generation vars  */
+			img->tick = 0;
+			img->patt_i = 0;
+			img->pix_count = 0;
+			/* line pattern */
+			/* initialize the image with a solid line pattern */
+			img->patt_size = 1;
+			img->pattern[0] = 1;
+			img->pat_scale = 15;
+			
+			img->zero_tl = 0; /* zero in botton left corner */
+			
+			/*clipping rectangle */
+			img->clip_x = 0;
+			img->clip_y = 0;
+			img->clip_w = w;
+			img->clip_h = h;
+	
+			/*order of color components in buffer. Init with RGBA */
+			img->r_i = 0;
+			img->g_i = 1;
+			img->b_i = 2;
+			img->a_i = 3;
+		}
+		else{
+			free(data);
+		}
+		return img;
 	}
 	return NULL;
 }

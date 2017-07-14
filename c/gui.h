@@ -364,11 +364,11 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 				
 				case NK_COMMAND_IMAGE: {
 					const struct nk_command_image *i = (struct nk_command_image *)cmd;
-					bmp_img *img = (bmp_img *)i->img.handle.ptr;
-					if (!one_time){
-						one_time =1;
-						//printf("image ");//------------------------------------teste
-						//printf("%d,%d", img->width, img->height);
+					bmp_img *w_img = (bmp_img *)i->img.handle.ptr;
+					if (w_img){
+						w_img->zero_tl = 1;
+						bmp_copy(w_img, img, i->x, i->y);
+						w_img->zero_tl = 0;
 					}
 				} break;
 				
