@@ -89,7 +89,7 @@ void sel_list_append(list_node *list, dxf_node *ent){
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
-	double zoom, ofs_x, ofs_y;
+	double zoom = 1.0 , ofs_x = 0.0, ofs_y = 0.0;
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
@@ -98,7 +98,7 @@ int main(int argc, char** argv){
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
 	unsigned int width = 1024;
-	unsigned int height = 720;
+	unsigned int height = 600;
 	int open_prg = 0;
 	int progress = 0;
 	unsigned int quit = 0;
@@ -164,17 +164,61 @@ int main(int argc, char** argv){
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
 	
-	/* init the toolbox image */
-	bmp_img * tool_img = bmp_load_img("tool3.png");
-	bmp_img * tool_vec[40];
-	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 40);
-	
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
 	gui_obj *gui = nk_sdl_init(shx_font);
-	//if (gui){
-	//	gui->ctx->style.button.image_padding = nk_vec2(0.0, -4.0);
-	//}
+	
+	/* init the toolbox image */
+	bmp_img * tool_img = bmp_load_img("tool2.png");
+	bmp_img * tool_vec[40];
+	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 40);
+	struct nk_image i_new = nk_image_ptr(tool_vec[0]);
+	struct nk_image i_open = nk_image_ptr(tool_vec[1]);
+	struct nk_image i_save = nk_image_ptr(tool_vec[2]);
+	struct nk_image i_close = nk_image_ptr(tool_vec[3]);
+	struct nk_image i_export = nk_image_ptr(tool_vec[4]);
+	struct nk_image i_import = nk_image_ptr(tool_vec[5]);
+	struct nk_image i_print = nk_image_ptr(tool_vec[6]);
+	struct nk_image i_help = nk_image_ptr(tool_vec[7]);
+	struct nk_image i_copy = nk_image_ptr(tool_vec[8]);
+	struct nk_image i_cut = nk_image_ptr(tool_vec[9]);
+	struct nk_image i_paste = nk_image_ptr(tool_vec[10]);
+	struct nk_image i_undo = nk_image_ptr(tool_vec[11]);
+	struct nk_image i_redo = nk_image_ptr(tool_vec[12]);
+	struct nk_image i_view = nk_image_ptr(tool_vec[13]);
+	struct nk_image i_unview = nk_image_ptr(tool_vec[14]);
+	struct nk_image i_unlock = nk_image_ptr(tool_vec[15]);
+	struct nk_image i_lock = nk_image_ptr(tool_vec[16]);
+	struct nk_image i_select = nk_image_ptr(tool_vec[17]);
+	struct nk_image i_move = nk_image_ptr(tool_vec[18]);
+	struct nk_image i_dupli = nk_image_ptr(tool_vec[19]);
+	struct nk_image i_rotate = nk_image_ptr(tool_vec[20]);
+	struct nk_image i_mirror = nk_image_ptr(tool_vec[21]);
+	struct nk_image i_group = nk_image_ptr(tool_vec[22]);
+	struct nk_image i_ungroup = nk_image_ptr(tool_vec[23]);
+	struct nk_image i_delete = nk_image_ptr(tool_vec[24]);
+	struct nk_image i_line = nk_image_ptr(tool_vec[25]);
+	struct nk_image i_poly = nk_image_ptr(tool_vec[26]);
+	struct nk_image i_block = nk_image_ptr(tool_vec[27]);
+	struct nk_image i_circle = nk_image_ptr(tool_vec[28]);
+	struct nk_image i_arc = nk_image_ptr(tool_vec[29]);
+	struct nk_image i_text = nk_image_ptr(tool_vec[30]);
+	struct nk_image i_spline = nk_image_ptr(tool_vec[31]);
+	struct nk_image i_z_plus = nk_image_ptr(tool_vec[32]);
+	struct nk_image i_z_minus = nk_image_ptr(tool_vec[33]);
+	struct nk_image i_z_win = nk_image_ptr(tool_vec[34]);
+	struct nk_image i_z_all = nk_image_ptr(tool_vec[35]);
+	struct nk_image i_meas = nk_image_ptr(tool_vec[36]);
+	struct nk_image i_layer = nk_image_ptr(tool_vec[37]);
+	struct nk_image i_image = nk_image_ptr(tool_vec[38]);
+	struct nk_image i_lib = nk_image_ptr(tool_vec[39]);
+	
+	struct nk_style_button b_icon_style;
+	if (gui){
+		b_icon_style = gui->ctx->style.button;
+	}
+	b_icon_style.image_padding.x = -4;
+	b_icon_style.image_padding.y = -4;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -308,7 +352,7 @@ int main(int argc, char** argv){
 		
 		/* GUI */
 		/* main toolbox, for open files, save or exit */
-		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
+		/*if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE)){
 			/*
 			nk_layout_row_dynamic(gui->ctx, 30, 1);
@@ -322,10 +366,10 @@ int main(int argc, char** argv){
 				action = EXIT;
 				quit = 1;
 			}*/
-			/*main menu */
+			/*main menu 
 			nk_menubar_begin(gui->ctx);
 			nk_layout_row_dynamic(gui->ctx, 15, 3);
-			/* new menu*/
+			/* new menu
 			if (nk_menu_begin_label(gui->ctx, "FILE", NK_TEXT_LEFT, nk_vec2(120, 200))){
 				nk_layout_row_dynamic(gui->ctx, 15, 1);
 				if (nk_menu_item_label(gui->ctx, "Open", NK_TEXT_LEFT)){
@@ -341,7 +385,7 @@ int main(int argc, char** argv){
 				
 				nk_menu_end(gui->ctx);
 			}
-			/* new menu*/
+			/* new menu
 			if (nk_menu_begin_label(gui->ctx, "VIEW", NK_TEXT_LEFT, nk_vec2(120, 200))){
 				nk_layout_row_dynamic(gui->ctx, 15, 1);
 				if (nk_menu_item_label(gui->ctx, "Extend", NK_TEXT_LEFT)){
@@ -352,7 +396,7 @@ int main(int argc, char** argv){
 				}
 				nk_menu_end(gui->ctx);
 			}
-			/* new menu*/
+			/* new menu
 			if (nk_menu_begin_label(gui->ctx, "HELP", NK_TEXT_LEFT, nk_vec2(120, 200))){
 				nk_layout_row_dynamic(gui->ctx, 15, 1);
 				if (nk_menu_item_label(gui->ctx, "About", NK_TEXT_LEFT)){
@@ -364,20 +408,46 @@ int main(int argc, char** argv){
 			
 			nk_menubar_end(gui->ctx);
 		}
+		nk_end(gui->ctx);*/
+		
+		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
+			nk_layout_row_static(gui->ctx, 20, 20, 10);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_new)){
+				printf("NEW\n");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_open)){
+				action = FILE_OPEN;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_save)){
+				action = FILE_SAVE;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_close)){
+				printf("CLOSE\n");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_help)){
+				printf("HELP\n");
+			}
+			
+		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(5, 50, 950, 55),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE)){
+		if (nk_begin(gui->ctx, "Tool", nk_rect(5, 50, 270, 120),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
 			struct nk_image tool;
-			nk_layout_row_static(gui->ctx, 30, 30, 26);
-			for (i = 0; i < 26; i++){
+			
+			
+			
+			nk_layout_row_static(gui->ctx, 20, 20, 10);
+			
+			for (i = 0; i < 40; i++){
 				tool = nk_image_ptr(tool_vec[i]);
 				tool.w = tool_vec[0]->width;
 				tool.h = tool_vec[0]->height;
 				tool.region[2] = (unsigned short)tool_vec[0]->width;
 				tool.region[3] = (unsigned short)tool_vec[0]->height;
 				
-				if (nk_button_image(gui->ctx, tool)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, tool)){
 					printf("i = %d\n", i);
 				}
 			}
@@ -465,13 +535,34 @@ int main(int argc, char** argv){
 			/*layer*/
 			nk_layout_row_push(gui->ctx, 200);
 			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
-				nk_layout_row_dynamic(gui->ctx, 25, 1);
+				float wid[] = {120, 20, 20};
+				nk_layout_row(gui->ctx, NK_STATIC, 20, 3, wid);
 				int num_layers = drawing->num_layers;
 				for (i = 0; i < num_layers; i++){
 					//strcpy(layer_nam[i], drawing->layers[i].name);
 					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
 						layer_idx = i;
 						nk_combo_close(gui->ctx);
+					}
+					if (drawing->layers[i].off){
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unview)){
+							drawing->layers[i].off = 0;
+						}
+					}
+					else{
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_view)){
+							drawing->layers[i].off = 1;
+						}
+					}
+					if (drawing->layers[i].lock){
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lock)){
+							drawing->layers[i].lock = 0;
+						}
+					}
+					else{
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unlock)){
+							drawing->layers[i].lock = 1;
+						}
 					}
 				}
 				
