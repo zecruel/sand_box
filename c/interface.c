@@ -95,6 +95,7 @@ int main(int argc, char** argv){
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1;
+	double thick = 1.0;
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
 	unsigned int width = 1024;
@@ -167,6 +168,8 @@ int main(int argc, char** argv){
 	/* init Nuklear GUI */
 	shape *shx_font = shx_font_open("txt.shx");
 	gui_obj *gui = nk_sdl_init(shx_font);
+	
+	gui->ctx->style.edit.padding = nk_vec2(4, -6);
 	
 	/* init the toolbox image */
 	bmp_img * tool_img = bmp_load_img("tool2.png");
@@ -297,6 +300,7 @@ int main(int argc, char** argv){
 		/* ===============================*/
 		if (nk_window_is_any_hovered(gui->ctx)) {
 			SDL_ShowCursor(SDL_ENABLE);
+			//printf("show\n");
 		}
 		else{
 			SDL_ShowCursor(SDL_DISABLE);
@@ -410,7 +414,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);*/
 		
-		if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
+		if (nk_begin(gui->ctx, "Main", nk_rect(0, 0, 200, 32),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
 			nk_layout_row_static(gui->ctx, 20, 20, 10);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_new)){
@@ -432,8 +436,9 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(5, 50, 270, 120),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
+		if (nk_begin(gui->ctx, "Tool", nk_rect(2, 50, 270, 90),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			struct nk_image tool;
 			
 			
@@ -457,8 +462,7 @@ int main(int argc, char** argv){
 		if (wait_open != 0){
 			/* opening */
 			if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-			NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
 			{
 				static char text[64];
@@ -473,9 +477,8 @@ int main(int argc, char** argv){
 		}
 		
 		/* status */
-		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 55, 600, 50),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 32, 600, 32),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			static char comm[64];
 			static int comm_len;
@@ -483,7 +486,7 @@ int main(int argc, char** argv){
 			static char text[64];
 			static int text_len;
 			
-			nk_layout_row_dynamic(gui->ctx, 30, 4);
+			nk_layout_row_dynamic(gui->ctx, 20, 4);
 			
 			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
 			//NK_EDIT_ACTIVE
@@ -507,14 +510,13 @@ int main(int argc, char** argv){
 		nk_end(gui->ctx);
 		
 		/* view coordinates of mouse in drawing units */
-		if (nk_begin(gui->ctx, "POS", nk_rect(5, height - 45, 400, 40),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		if (nk_begin(gui->ctx, "POS", nk_rect(0, height - 32, 400, 32),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			static char text[64];
 			static int text_len;
 			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
-			nk_layout_row(gui->ctx, NK_DYNAMIC, 30, 4, ratio);
+			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 4, ratio);
 			nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
 			text_len = snprintf(text, 63, "%f", pos_x);
 			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, text, &text_len, 64, nk_filter_float);
@@ -524,13 +526,12 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Prop", nk_rect(205, 5, 700, 40),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|
-		NK_WINDOW_SCALABLE|NK_WINDOW_NO_SCROLLBAR))
+		if (nk_begin(gui->ctx, "Prop", nk_rect(200, 0, 700, 32),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			static char text[64];
 			int text_len;
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 4);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 5);
 			
 			/*layer*/
 			nk_layout_row_push(gui->ctx, 200);
@@ -641,10 +642,19 @@ int main(int argc, char** argv){
 				nk_combo_end(gui->ctx);
 			}
 			
+			/* thickness */
+			nk_layout_row_push(gui->ctx, 200);
+			//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
+			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
+			
+			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
+			thick = nk_propertyd(gui->ctx, "Thick:", 0.0d, thick, 20.0d, 0.1d, 0.1d);
+			
 			
 			nk_layout_row_end(gui->ctx);
+			nk_end(gui->ctx);
 		}
-		nk_end(gui->ctx);
+		
 		
 		
 		if (wait_open != 0){
@@ -752,7 +762,7 @@ int main(int argc, char** argv){
 					/* create a new DXF line */
 					new_el = (dxf_node *) dxf_new_line (
 						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
-						1.0, 0.0, /* thickness, elevation */
+						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -789,7 +799,7 @@ int main(int argc, char** argv){
 					
 					new_el = (dxf_node *) dxf_new_line (
 						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
-						1.0, 0.0, /* thickness, elevation */
+						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -817,8 +827,11 @@ int main(int argc, char** argv){
 			}
 		}
 		
+		if (gui_check_draw(gui) != 0){
+			draw = 1;
+		}
 		
-		if ((gui_check_draw(gui) != 0) || (draw != 0)){
+		if (draw != 0){
 		
 			bmp_fill(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */

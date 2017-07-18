@@ -35,6 +35,7 @@
 
 struct Gui_obj {
 	struct nk_context *ctx;
+	double pad;
 	struct nk_user_font *font;
 	void *buf; /*for fixed memory */
 	void *last; /* to verify if needs to draw */
@@ -122,7 +123,7 @@ int gui_check_draw(gui_obj *gui){
 }
 
 NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
-	const struct nk_command *cmd;
+	const struct nk_command *cmd = NULL;
 	bmp_color color = {.r = 255, .g = 255, .b =255, .a = 255};
 	int iter = 0;
 	
@@ -145,6 +146,7 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 			/* break the loop, if more then 10000 iterations */
 			iter += 1;
 			if (iter > 10000){
+				printf("error render\n");
 				break;
 			}
 			
@@ -455,7 +457,7 @@ nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt)
 {
 	struct nk_context *ctx = gui->ctx;
 
-	/* optional grabbing behavior */
+	/* optional grabbing behavior 
 	if (ctx->input.mouse.grab) {
 		SDL_SetRelativeMouseMode(SDL_TRUE);
 		ctx->input.mouse.grab = 0;
@@ -465,7 +467,7 @@ nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt)
 		SDL_SetRelativeMouseMode(SDL_FALSE);
 		SDL_WarpMouseInWindow(win, x, y);
 		ctx->input.mouse.ungrab = 0;
-	}
+	}*/
 	if (evt->type == SDL_KEYUP || evt->type == SDL_KEYDOWN) {
 	/* key events */
 		int down = evt->type == SDL_KEYDOWN;

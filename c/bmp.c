@@ -609,7 +609,10 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 				ofs_x = i + x;
 				ofs_y = j + y;
 				if((ofs_x >= 0) && (ofs_x < dst->width) && 
-					(ofs_y >= 0) && (ofs_y < dst->height)){
+					(ofs_y >= 0) && (ofs_y < dst->height) &&
+					/*and in clip rectangle*/
+					(ofs_x >= dst->clip_x) && (ofs_x < (dst->clip_x + dst->clip_w)) && 
+					(ofs_y >= dst->clip_y) && (ofs_y < (dst->clip_y + dst->clip_h))){
 					/* find the position on destination buffer */
 					/* (y = dst->height - y) emulate the cartesian coordinates */
 						
