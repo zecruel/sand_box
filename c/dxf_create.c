@@ -37,17 +37,56 @@ int ident_attr_type (int group){
 
 int dxf_attr_append(dxf_node *master, int group, void *value){
 	if (master){
-		int type = ident_attr_type(group);
-		dxf_node *new_attr = dxf_attr_new(group, type, value);
-		if (new_attr){
-			/*  append new to last obj's list */
-			new_attr->master = master;
-			new_attr->prev = master->end;
-			if (master->end){
-				master->end->next = new_attr;
+		if (master->type == DXF_ENT){
+			int type = ident_attr_type(group);
+			dxf_node *new_attr = dxf_attr_new(group, type, value);
+			if (new_attr){
+				new_attr->master = master;
+				/* start search at end of master's list */
+				dxf_node *next = NULL, *prev = master->end;
+				/*  find the last attribute*/
+				if (prev){
+					while (prev->type == DXF_ENT){
+						next = prev;
+						prev = prev->prev;
+						if (!prev) break;
+					}
+				}	
+				
+				/* append new attr between prev and next nodes */
+				new_attr->prev = prev;
+				if (prev){
+					prev->next = new_attr;
+				}
+				new_attr->next = next;
+				
+				if (prev == master->end){
+					master->end = new_attr;
+				}
+				
+				return 1;
 			}
-			new_attr->next = NULL; /* append at end of list */
-			master->end = new_attr;
+		}
+	}
+	return 0;
+}
+
+int dxf_attr_change(dxf_node *master, int group, void *value){
+	if (master){
+		dxf_node *found_attr = dxf_find_attr2(master, group);
+		if (found_attr){
+			int type = ident_attr_type(group);
+			switch(type) {
+				case DXF_FLOAT :
+					found_attr->value.d_data = *((double *)value);
+					break;
+				case DXF_INT :
+					found_attr->value.i_data = *((int *)value);
+					break;
+				case DXF_STR :
+					found_attr->value.s_data[0] = 0;
+					strncpy(found_attr->value.s_data,(char *) value, DXF_MAX_CHARS); /* and copy the string */
+			}
 			return 1;
 		}
 	}

@@ -8,6 +8,7 @@
 #include "list.h"
 
 #include "dxf_colors.h"
+#include "dxf_seed.h"
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -95,13 +96,15 @@ int main(int argc, char** argv){
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1;
-	double thick = 1.0;
+	double thick = 0.0;
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
 	unsigned int width = 1024;
 	unsigned int height = 600;
 	int open_prg = 0;
 	int progress = 0;
+	int progr_win = 0;
+	int progr_end = 0;
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int i;
@@ -141,6 +144,8 @@ int main(int argc, char** argv){
 	
 	char *url = NULL;
 	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
+	
+	char* dropped_filedir;                  /* Pointer for directory of dropped file */
 	
 	/* Colors in use */
 	bmp_color white = {.r = 255, .g = 255, .b =255, .a = 255};
@@ -229,7 +234,11 @@ int main(int argc, char** argv){
 	/* init the drawing */
 	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
 	url = NULL; /* pass a null file only for initialize the drawing structure */
-	dxf_open(drawing, url);
+	//dxf_open(drawing, url);
+	while (dxf_read (drawing, dxf_seed_r12, strlen(dxf_seed_r12), &progress) > 0){
+		
+	}
+	//printf(dxf_seed_r12);
 	dxf_ents_parse(drawing);
 
 	/* init the SDL2 */
@@ -279,6 +288,8 @@ int main(int argc, char** argv){
 		width, /* width */
 		height); /* height */
 		
+	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+	
 	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	
 	/* main loop */
@@ -350,6 +361,18 @@ int main(int argc, char** argv){
 						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
 						draw = 1;
 						break;
+					
+					case (SDL_DROPFILE): {      // In case if dropped file
+						dropped_filedir = event.drop.file;
+						// Shows directory of dropped file
+						SDL_ShowSimpleMessageBox(
+							SDL_MESSAGEBOX_INFORMATION,
+							"File dropped on window",
+							dropped_filedir,
+							window);
+						SDL_free(dropped_filedir);    // Free dropped_filedir memory
+						break;
+					}
 				}
 			}
 		}
@@ -459,9 +482,9 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (wait_open != 0){
+		if (progr_win){
 			/* opening */
-			if (nk_begin(gui->ctx, "opening", nk_rect(200, 200, 400, 40),
+			if (nk_begin(gui->ctx, "Progress", nk_rect(200, 200, 400, 40),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "opening", 0, nk_rect(200, 200, 400, 40)))
 			{
@@ -472,8 +495,14 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
 				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
 				//nk_popup_end(gui->ctx);
+				nk_end(gui->ctx);
 			}
-			nk_end(gui->ctx);
+			
+			if (progr_end){
+				progr_win = 0;
+				progr_end = 0;
+				nk_window_close(gui->ctx, "Progress");
+			}
 		}
 		
 		/* status */
@@ -526,12 +555,13 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Prop", nk_rect(200, 0, 700, 32),
+		/* */
+		if (nk_begin(gui->ctx, "Prop", nk_rect(200, 0, 750, 32),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			static char text[64];
 			int text_len;
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 5);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 9);
 			
 			/*layer*/
 			nk_layout_row_push(gui->ctx, 200);
@@ -602,8 +632,8 @@ int main(int argc, char** argv){
 				//
 			//}
 			nk_layout_row_push(gui->ctx, 25);
-			if (nk_combo_begin_color(gui->ctx, combo_color, nk_vec2(180,320))) {
-				nk_layout_row_static(gui->ctx, 15, 15, 8);
+			if (nk_combo_begin_color(gui->ctx, combo_color, nk_vec2(215,320))) {
+				nk_layout_row_static(gui->ctx, 15, 15, 10);
 				for (i = 0; i < 256; i++){
 					struct nk_color b_color = {
 						.r = dxf_colors[i].r,
@@ -643,13 +673,32 @@ int main(int argc, char** argv){
 			}
 			
 			/* thickness */
-			nk_layout_row_push(gui->ctx, 200);
+			nk_layout_row_push(gui->ctx, 150);
 			//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
 			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
 			
 			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
-			thick = nk_propertyd(gui->ctx, "Thick:", 0.0d, thick, 20.0d, 0.1d, 0.1d);
+			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick, 20.0d, 0.1d, 0.1d);
 			
+			
+			/* zoom*/
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_plus)){
+				printf("ZOOM +\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_minus)){
+				printf("ZOOM -\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
+				printf("ZOOM win\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
+				printf("ZOOM all\n");
+				action = VIEW_ZOOM_EXT;
+			}
 			
 			nk_layout_row_end(gui->ctx);
 			nk_end(gui->ctx);
@@ -670,6 +719,7 @@ int main(int argc, char** argv){
 				ltypes_idx = 0;
 				color_idx = 256;
 				wait_open = 0;
+				progr_end = 1;
 				list_clear(sel_list);
 			}
 			
@@ -698,6 +748,7 @@ int main(int argc, char** argv){
 				open_prg = dxf_open2(drawing, NULL, &progress);
 				progress = 0;
 				low_proc = 0;
+				progr_win = 1;
 			}
 			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 		}
@@ -710,7 +761,8 @@ int main(int argc, char** argv){
 			lFilterPatterns,
 			NULL);
 			if ((url != NULL) && (drawing->main_struct != NULL)){
-				dxf_ent_print_f (drawing->main_struct, url);
+				//dxf_ent_print_f (drawing->main_struct, url);
+				dxf_save (url, drawing);
 			}
 		}
 		else if(action == VIEW_ZOOM_EXT){
@@ -766,8 +818,8 @@ int main(int argc, char** argv){
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
-					x1_attr = dxf_find_attr2(new_el, 11);
-					y1_attr = dxf_find_attr2(new_el, 21);
+					//x1_attr = dxf_find_attr2(new_el, 11);
+					//y1_attr = dxf_find_attr2(new_el, 21);
 					element = new_el;
 				}
 				else if (rightMouseButtonClick){
@@ -781,12 +833,16 @@ int main(int argc, char** argv){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
 					
+					/*
 					if(x1_attr){
 						x1_attr->value.d_data = x1;
 					}
 					if(y1_attr){
 						y1_attr->value.d_data = y1;
-					}
+					}*/
+					
+					dxf_attr_change(new_el, 11, &x1);
+					dxf_attr_change(new_el, 21, &y1);
 					
 					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
 					
@@ -803,8 +859,8 @@ int main(int argc, char** argv){
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
-					x1_attr = dxf_find_attr2(new_el, 11);
-					y1_attr = dxf_find_attr2(new_el, 21);
+					//x1_attr = dxf_find_attr2(new_el, 11);
+					//y1_attr = dxf_find_attr2(new_el, 21);
 					element = new_el;
 				}
 				else if (rightMouseButtonClick){
@@ -816,12 +872,14 @@ int main(int argc, char** argv){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
 					
-					if(x1_attr){
-						x1_attr->value.d_data = x1;
-					}
-					if(y1_attr){
-						y1_attr->value.d_data = y1;
-					}
+					
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 11, &x1);
+					dxf_attr_change(new_el, 21, &y1);
+					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 62, &color_idx);
+					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 				}
 			}
