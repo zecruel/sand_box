@@ -811,6 +811,32 @@ int main(int argc, char** argv){
 		if (modal == SELECT){
 			if (leftMouseButtonClick){
 				sel_list_append(sel_list, element);
+				/*-------------------------------test-------------- */
+				dxf_node *current, *start, *end;
+				if(dxf_find_ext_appid(element, "ZECRUEL", &start, &end)){
+					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
+					current = start;
+					while ((current != NULL)&&(current != end)){
+						printf ("%d = ", current->value.group); /* print the DFX group */
+						/* print the value of atrribute, acording its type */
+						switch (current->value.t_data) {
+							case DXF_STR:
+								if(current->value.s_data){
+									printf(current->value.s_data);
+								}
+								break;
+							case DXF_FLOAT:
+								printf("%f", current->value.d_data);
+								break;
+							case DXF_INT:
+								printf("%d", current->value.i_data);
+						}
+						printf("\n");
+						//printf ("%x\n", current);
+						current = current->next;
+					}
+				}
+				/*-------------------------------test-------------- */
 			}
 			if (rightMouseButtonClick){
 				list_clear(sel_list);

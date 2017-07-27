@@ -1,4 +1,5 @@
 #include "dxf.h"
+#include "list.h"
 
 int dxf_attr_append(dxf_node *master, int group, void *value){
 	if (master){
@@ -57,6 +58,45 @@ int dxf_attr_change(dxf_node *master, int group, void *value){
 	}
 	return 0;
 }
+
+int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **end){
+	dxf_node *current;
+	int found = 0;
+	
+	*start = NULL;
+	*end = NULL;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				if (!found){
+					if (current->type == DXF_ATTR){
+						if(current->value.group == 1001){
+							if(strcmp((char*) current->value.s_data, appid) == 0){
+								found = 1; /* appid found */
+								*start = current;
+							}
+						}
+					}
+				}
+				else{
+					if (current->type == DXF_ATTR){
+						if(current->value.group == 1001){
+							break;
+						}
+					}
+					else break;
+				}
+				current = current->next;
+			}
+			*end = current;
+		}
+	}
+	return found;
+}
+
+
 
 dxf_node * dxf_new_line (double x0, double y0, double z0,
 double x1, double y1, double z1,
