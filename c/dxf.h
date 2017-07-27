@@ -121,19 +121,22 @@ struct Dxf_drawing{
 	*blks, /* blocks definitions */
 	*ents; /* entities - grahics elements */
 	
-	/* DXF table types */
+	/* DXF tables */
 	dxf_node 
 	*t_ltype, /* line types */ 
 	*t_layer,  /* layers */
-	*t_style,  /*text styles, text fonts */
+	*t_style,  /* text styles, text fonts */
 	*t_view,  /* views */
-	*t_ucs,   /*UCS - coordinate systems */
-	*t_vport,  /*viewports (useful in layout mode) */
-	*t_dimst, /*dimension styles*/
-	*t_appid; /*third part application indentifier */
+	*t_ucs,   /* UCS - coordinate systems */
+	*t_vport,  /* viewports (useful in layout mode) */
+	*t_dimst, /* dimension styles*/
+	*blks_rec, /* blocks records */
+	*t_appid; /* third part application indentifier */
 	
 	/* complete structure access */
 	dxf_node *main_struct;
+	
+	dxf_node *hand_seed; /* handle generator */
 	
 	dxf_layer layers[DXF_MAX_LAYERS];
 	int num_layers;
@@ -165,13 +168,13 @@ int stack_push (vector_p *stack, void *new_ptr);
 
 void * stack_pop (vector_p *stack);
 
-void dxf_ent_clear (dxf_node *ent);
-
-void dxf_ent_print (dxf_node *ent, int indent);
+void dxf_ent_print2 (dxf_node *ent);
 
 void dxf_ent_print_f (dxf_node *ent, char *path);
 
 dxf_node * dxf_obj_new (char *name);
+
+int dxf_ident_attr_type (int group);
 
 dxf_node * dxf_attr_new (int group, int type, void *value);
 
@@ -191,8 +194,12 @@ int dxf_lay_idx (dxf_drawing *drawing, char *name);
 
 int dxf_ltype_idx (dxf_drawing *drawing, char *name);
 
-void dxf_open (dxf_drawing *drawing, char *path);
-
 int dxf_save (char *path, dxf_drawing *drawing);
+
+char * dxf_load_file(char *path, long *fsize);
+
+int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog);
+
+
 
 #endif

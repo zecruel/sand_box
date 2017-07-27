@@ -130,6 +130,7 @@ int main(int argc, char** argv){
 		NONE,
 		FILE_OPEN,
 		FILE_SAVE,
+		EXPORT,
 		VIEW_ZOOM_EXT,
 		EXIT
 	} action = NONE;
@@ -144,6 +145,9 @@ int main(int argc, char** argv){
 	
 	char *url = NULL;
 	char const * lFilterPatterns[2] = { "*.dxf", "*.txt" };
+	
+	char *file_buf = NULL;
+	long file_size = 0;
 	
 	char* dropped_filedir;                  /* Pointer for directory of dropped file */
 	
@@ -235,7 +239,7 @@ int main(int argc, char** argv){
 	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
 	url = NULL; /* pass a null file only for initialize the drawing structure */
 	//dxf_open(drawing, url);
-	while (dxf_read (drawing, dxf_seed_r12, strlen(dxf_seed_r12), &progress) > 0){
+	while (dxf_read (drawing, (char *)dxf_seed_2007, strlen(dxf_seed_2007), &progress) > 0){
 		
 	}
 	//printf(dxf_seed_r12);
@@ -448,6 +452,9 @@ int main(int argc, char** argv){
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_save)){
 				action = FILE_SAVE;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_export)){
+				action = EXPORT;
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_close)){
 				printf("CLOSE\n");
@@ -710,9 +717,13 @@ int main(int argc, char** argv){
 			low_proc = 0;
 			draw = 1;
 			
-			open_prg = dxf_open2(drawing, url, &progress);
+			open_prg = dxf_read(drawing, file_buf, file_size, &progress);
 			
 			if(open_prg <= 0){
+				free(file_buf);
+				file_buf = NULL;
+				file_size = 0;
+				
 				dxf_ents_parse(drawing);				
 				action = VIEW_ZOOM_EXT;
 				layer_idx = 0;
@@ -744,9 +755,10 @@ int main(int argc, char** argv){
 				
 				wait_open = 1;
 				progress = 0;
-				/* clear drawing structure */
-				open_prg = dxf_open2(drawing, NULL, &progress);
-				progress = 0;
+				
+				file_buf = dxf_load_file(url, &file_size);
+				open_prg = dxf_read(drawing, file_buf, file_size, &progress);
+				
 				low_proc = 0;
 				progr_win = 1;
 			}
@@ -763,6 +775,19 @@ int main(int argc, char** argv){
 			if ((url != NULL) && (drawing->main_struct != NULL)){
 				//dxf_ent_print_f (drawing->main_struct, url);
 				dxf_save (url, drawing);
+			}
+		}
+		else if(action == EXPORT) {
+			action = NONE;
+			url = (char *) tinyfd_saveFileDialog(
+			"Save Drawing",
+			"save.txt",
+			2,
+			lFilterPatterns,
+			NULL);
+			if ((url != NULL) && (drawing->main_struct != NULL)){
+				dxf_ent_print_f (drawing->main_struct, url);
+				//dxf_save (url, drawing);
 			}
 		}
 		else if(action == VIEW_ZOOM_EXT){
