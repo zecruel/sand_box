@@ -837,6 +837,61 @@ int main(int argc, char** argv){
 					}
 				}
 				/*-------------------------------test-------------- */
+				current = dxf_find_attr3(element, 10, 0);
+				if (current){
+					printf ("First: %d = ", current->value.group); /* print the DFX group */
+					/* print the value of atrribute, acording its type */
+					switch (current->value.t_data) {
+						case DXF_STR:
+							if(current->value.s_data){
+								printf(current->value.s_data);
+							}
+							break;
+						case DXF_FLOAT:
+							printf("%f", current->value.d_data);
+							break;
+						case DXF_INT:
+							printf("%d", current->value.i_data);
+					}
+					printf("\n");
+				}
+				current = dxf_find_attr3(element, 10, 1);
+				if (current){
+					printf ("Second: %d = ", current->value.group); /* print the DFX group */
+					/* print the value of atrribute, acording its type */
+					switch (current->value.t_data) {
+						case DXF_STR:
+							if(current->value.s_data){
+								printf(current->value.s_data);
+							}
+							break;
+						case DXF_FLOAT:
+							printf("%f", current->value.d_data);
+							break;
+						case DXF_INT:
+							printf("%d", current->value.i_data);
+					}
+					printf("\n");
+				}
+				current = dxf_find_attr3(element, 10, -1);
+				if (current){
+					printf ("Last: %d = ", current->value.group); /* print the DFX group */
+					/* print the value of atrribute, acording its type */
+					switch (current->value.t_data) {
+						case DXF_STR:
+							if(current->value.s_data){
+								printf(current->value.s_data);
+							}
+							break;
+						case DXF_FLOAT:
+							printf("%f", current->value.d_data);
+							break;
+						case DXF_INT:
+							printf("%d", current->value.i_data);
+					}
+					printf("\n\n");
+				}
+				/*-------------------------------test-------------- */
 			}
 			if (rightMouseButtonClick){
 				list_clear(sel_list);
