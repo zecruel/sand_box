@@ -182,6 +182,8 @@ vector_p dxf_find_attr(dxf_node * obj, int attr);
 
 dxf_node * dxf_find_attr2(dxf_node * obj, int attr);
 
+dxf_node * dxf_find_attr_i(dxf_node * obj, int attr, int idx);
+
 vector_p dxf_find_obj(dxf_node * obj, char *name);
 
 vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr);

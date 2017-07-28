@@ -13,7 +13,6 @@ int dxf_attr_append(dxf_node *master, int group, void *value){
 				/*  find the last attribute*/
 				if (prev){
 					while (prev->type == DXF_ENT){
-						next = prev;
 						prev = prev->prev;
 						if (!prev) break;
 					}
@@ -22,9 +21,13 @@ int dxf_attr_append(dxf_node *master, int group, void *value){
 				/* append new attr between prev and next nodes */
 				new_attr->prev = prev;
 				if (prev){
+					next = prev->next;
 					prev->next = new_attr;
 				}
 				new_attr->next = next;
+				if (next){
+					next->prev = new_attr;
+				}
 				
 				if (prev == master->end){
 					master->end = new_attr;
@@ -76,6 +79,7 @@ int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **
 							if(strcmp((char*) current->value.s_data, appid) == 0){
 								found = 1; /* appid found */
 								*start = current;
+								*end = current;
 							}
 						}
 					}
@@ -85,15 +89,50 @@ int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **
 						if(current->value.group == 1001){
 							break;
 						}
+						*end = current;
 					}
 					else break;
 				}
 				current = current->next;
 			}
-			*end = current;
 		}
 	}
 	return found;
+}
+
+int dxf_ext_append(dxf_node *master, char *appid, int group, void *value){
+	if (master){
+		if (master->type == DXF_ENT){
+			dxf_node *start, *end, *prev = NULL, *next = NULL;
+			/* look for appid in master */
+			if(dxf_find_ext_appid(master, appid, &start, &end)){
+				int type = dxf_ident_attr_type(group);
+				dxf_node *new_attr = dxf_attr_new(group, type, value);
+				if (new_attr){
+					new_attr->master = master;
+					
+					prev = end;
+					/* append new attr between prev and next nodes */
+					new_attr->prev = prev;
+					if (prev){
+						next = prev->next;
+						prev->next = new_attr;
+					}
+					new_attr->next = next;
+					if (next){
+						next->prev = new_attr;
+					}
+					
+					if (prev == master->end){
+						master->end = new_attr;
+					}
+					
+					return 1;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 
@@ -125,13 +164,17 @@ double thick, double elev, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_line, 31, (void *) &z1);
 	
 	/* test */
+	/* -------------------------------------------  */
+	ok &= dxf_attr_append(new_line, 1001, (void *) "ZECRUEL");
+	ok &= dxf_attr_append(new_line, 1001, (void *) "ACAD");
 	
-	//ok &= dxf_attr_append(new_line, 1001, (void *) "ZECRUEL");
-	//ok &= dxf_attr_append(new_line, 1002, (void *) "{");
-	//ok &= dxf_attr_append(new_line, 1000, (void *) "test");
-	
-	
-	
+	ok &= dxf_ext_append(new_line, "ZECRUEL", 1002, (void *) "{");
+	ok &= dxf_ext_append(new_line, "ACAD", 1002, (void *) "{");
+	ok &= dxf_ext_append(new_line, "ACAD", 1000, (void *) "test1");
+	ok &= dxf_ext_append(new_line, "ZECRUEL", 1000, (void *) "test2");
+	ok &= dxf_ext_append(new_line, "ACAD", 1002, (void *) "}");
+	ok &= dxf_ext_append(new_line, "ZECRUEL", 1002, (void *) "}");
+	/* -------------------------------------------  */
 	if(ok){
 		return new_line;
 	}
@@ -148,8 +191,8 @@ void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
 			
 			if (drawing->hand_seed){
 				handle = strtol(drawing->hand_seed->value.s_data, NULL, 16); /* get the last handle value and convert to integer */
-				snprintf(hdl_str, DXF_MAX_CHARS, "%x", handle); /* convert back to hexadecimal string, to write in element */
-				snprintf(drawing->hand_seed->value.s_data, DXF_MAX_CHARS, "%x", handle + 1); /* increment value of seed and write back */
+				snprintf(hdl_str, DXF_MAX_CHARS, "%X", handle); /* convert back to hexadecimal string, to write in element */
+				snprintf(drawing->hand_seed->value.s_data, DXF_MAX_CHARS, "%X", handle + 1); /* increment value of seed and write back */
 			}
 			
 			/* change element handle */

@@ -548,7 +548,7 @@ dxf_node * dxf_find_attr2(dxf_node * obj, int attr){
 	return NULL;
 }
 
-dxf_node * dxf_find_attr3(dxf_node * obj, int attr, int idx){
+dxf_node * dxf_find_attr_i(dxf_node * obj, int attr, int idx){
 	/* return the match of  index (idx) */
 	/* if the idx is zero, will return the first occurency. If is negative, will return the last occurency.*/
 	dxf_node *current;

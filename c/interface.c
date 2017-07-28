@@ -816,7 +816,7 @@ int main(int argc, char** argv){
 				if(dxf_find_ext_appid(element, "ZECRUEL", &start, &end)){
 					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
 					current = start;
-					while ((current != NULL)&&(current != end)){
+					while (current != NULL){
 						printf ("%d = ", current->value.group); /* print the DFX group */
 						/* print the value of atrribute, acording its type */
 						switch (current->value.t_data) {
@@ -833,11 +833,12 @@ int main(int argc, char** argv){
 						}
 						printf("\n");
 						//printf ("%x\n", current);
+						if (current == end) break;
 						current = current->next;
 					}
 				}
 				/*-------------------------------test-------------- */
-				current = dxf_find_attr3(element, 10, 0);
+				current = dxf_find_attr_i(element, 10, 0);
 				if (current){
 					printf ("First: %d = ", current->value.group); /* print the DFX group */
 					/* print the value of atrribute, acording its type */
@@ -855,7 +856,7 @@ int main(int argc, char** argv){
 					}
 					printf("\n");
 				}
-				current = dxf_find_attr3(element, 10, 1);
+				current = dxf_find_attr_i(element, 10, 1);
 				if (current){
 					printf ("Second: %d = ", current->value.group); /* print the DFX group */
 					/* print the value of atrribute, acording its type */
@@ -873,7 +874,7 @@ int main(int argc, char** argv){
 					}
 					printf("\n");
 				}
-				current = dxf_find_attr3(element, 10, -1);
+				current = dxf_find_attr_i(element, 10, -1);
 				if (current){
 					printf ("Last: %d = ", current->value.group); /* print the DFX group */
 					/* print the value of atrribute, acording its type */
