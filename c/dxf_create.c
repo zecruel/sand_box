@@ -62,6 +62,28 @@ int dxf_attr_change(dxf_node *master, int group, void *value){
 	return 0;
 }
 
+int dxf_attr_change_i(dxf_node *master, int group, void *value, int idx){
+	if (master){
+		dxf_node *found_attr = dxf_find_attr_i(master, group, idx);
+		if (found_attr){
+			int type = dxf_ident_attr_type(group);
+			switch(type) {
+				case DXF_FLOAT :
+					found_attr->value.d_data = *((double *)value);
+					break;
+				case DXF_INT :
+					found_attr->value.i_data = *((int *)value);
+					break;
+				case DXF_STR :
+					found_attr->value.s_data[0] = 0;
+					strncpy(found_attr->value.s_data,(char *) value, DXF_MAX_CHARS); /* and copy the string */
+			}
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **end){
 	dxf_node *current;
 	int found = 0;
@@ -180,6 +202,56 @@ double thick, double elev, int color, char *layer, char *ltype, int paper){
 	}
 
 	return NULL;
+}
+
+dxf_node * dxf_new_polyline (double x0, double y0, double z0,
+double bulge, double thick, int color, char *layer, char *ltype, int paper){
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbPolyline";
+	int ok = 1;
+	int verts = 1, flags = 0;
+	dxf_node * new_poly = dxf_obj_new ("LWPOLYLINE");
+	
+	ok &= dxf_attr_append(new_poly, 5, (void *) handle);
+	//ok &= dxf_attr_append(new_poly, 330, (void *) handle);
+	ok &= dxf_attr_append(new_poly, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(new_poly, 67, (void *) &paper);
+	ok &= dxf_attr_append(new_poly, 8, (void *) layer);
+	ok &= dxf_attr_append(new_poly, 6, (void *) ltype);
+	ok &= dxf_attr_append(new_poly, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(new_poly, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(new_poly, 90, (void *) &verts);
+	ok &= dxf_attr_append(new_poly, 70, (void *) &flags);
+	ok &= dxf_attr_append(new_poly, 39, (void *) &thick);
+	ok &= dxf_attr_append(new_poly, 10, (void *) &x0);
+	ok &= dxf_attr_append(new_poly, 20, (void *) &y0);
+	ok &= dxf_attr_append(new_poly, 30, (void *) &z0);
+	ok &= dxf_attr_append(new_poly, 42, (void *) &bulge);
+	
+	if(ok){
+		return new_poly;
+	}
+
+	return NULL;
+}
+
+int dxf_poly_append (dxf_node * poly,
+double x0, double y0, double z0, double bulge){
+	int ok = 1;
+	dxf_node * verts = dxf_find_attr_i(poly, 90, 0);
+	if (verts){
+		ok &= dxf_attr_append(poly, 10, (void *) &x0);
+		ok &= dxf_attr_append(poly, 20, (void *) &y0);
+		ok &= dxf_attr_append(poly, 30, (void *) &z0);
+		ok &= dxf_attr_append(poly, 42, (void *) &bulge);
+		
+		if (ok) verts->value.i_data++;
+		
+		return ok;
+	}
+	return 0;
 }
 
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){

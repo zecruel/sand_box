@@ -137,7 +137,8 @@ int main(int argc, char** argv){
 	
 	enum Modal {
 		SELECT,
-		LINE
+		LINE,
+		POLYLINE
 	}modal = SELECT;
 	
 	char recv_comm[64];
@@ -466,15 +467,12 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(2, 50, 270, 90),
+		if (nk_begin(gui->ctx, "Tool", nk_rect(2, 50, 100, 300),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
+			
+			/*
 			struct nk_image tool;
-			
-			
-			
-			nk_layout_row_static(gui->ctx, 20, 20, 10);
-			
 			for (i = 0; i < 40; i++){
 				tool = nk_image_ptr(tool_vec[i]);
 				tool.w = tool_vec[0]->width;
@@ -485,9 +483,69 @@ int main(int argc, char** argv){
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, tool)){
 					printf("i = %d\n", i);
 				}
+			}*/
+			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Place", NK_MAXIMIZED)) {
+				nk_layout_row_static(gui->ctx, 20, 20, 2);
+				
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_select)){
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","SELECT");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_line)){
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","LINE");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_poly)){
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","POLYLINE");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_block)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_text)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_circle)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_arc)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_spline)){
+					
+				}
+				nk_tree_pop(gui->ctx);
 			}
+			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Modify", NK_MAXIMIZED)) {
+				nk_layout_row_static(gui->ctx, 20, 20, 2);
+				
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_move)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_dupli)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_rotate)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_mirror)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_ungroup)){
+					
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_delete)){
+					
+				}
+				nk_tree_pop(gui->ctx);
+			}
+			
+			nk_end(gui->ctx);
 		}
-		nk_end(gui->ctx);
+		
 		
 		if (progr_win){
 			/* opening */
@@ -805,6 +863,9 @@ int main(int argc, char** argv){
 			if (strcmp(recv_comm, "LINE") == 0){
 				modal = LINE;
 			}
+			if (strcmp(recv_comm, "POLYLINE") == 0){
+				modal = POLYLINE;
+			}
 			
 		}
 		
@@ -984,6 +1045,83 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change(new_el, 11, &x1);
 					dxf_attr_change(new_el, 21, &y1);
+					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 62, &color_idx);
+					
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+			}
+		}
+		if (modal == POLYLINE){
+			if (!init_line){
+				if (leftMouseButtonClick){
+					init_line = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					draw_tmp = 1;
+					/* create a new DXF polyline */
+					new_el = (dxf_node *) dxf_new_polyline (
+						x0, y0, 0.0, /* pt1, */
+						0.0, (double) thick, /* bulge, thickness, */
+						color_idx, drawing->layers[layer_idx].name, /* color, layer */
+						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					//x1_attr = dxf_find_attr2(new_el, 11);
+					//y1_attr = dxf_find_attr2(new_el, 21);
+					dxf_poly_append (new_el, x1, y1, 0.0, 0.0);
+					element = new_el;
+					drawing_ent_append(drawing, new_el);
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					/*
+					if(x1_attr){
+						x1_attr->value.d_data = x1;
+					}
+					if(y1_attr){
+						y1_attr->value.d_data = y1;
+					}*/
+					
+					dxf_attr_change_i(new_el, 10, &x1, -1);
+					dxf_attr_change_i(new_el, 20, &y1, -1);
+					
+					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
+					
+					//dxf_ent_print2(new_el);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					
+					
+					x0 = x1;
+					y0 = y1;
+					
+					dxf_poly_append (new_el, x1, y1, 0.0, 0.0);
+				}
+				else if (rightMouseButtonClick){
+					init_line = 0;
+					draw_tmp = 0;
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					element = NULL;
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change_i(new_el, 10, &x1, -1);
+					dxf_attr_change_i(new_el, 20, &y1, -1);
 					dxf_attr_change(new_el, 39, &thick);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
