@@ -1,6 +1,29 @@
 #include "dxf.h"
 #include "list.h"
 
+int dxf_obj_detach(dxf_node *obj){
+	if (obj){
+		dxf_node *master = obj->master;
+		dxf_node *prev = obj->prev;
+		dxf_node *next = obj->next;
+		if (prev){
+			prev->next = next;
+			obj->prev = NULL;
+		}
+		if (next){
+			next->prev = prev;
+			obj->next = NULL;
+		}
+		if (master){
+			if (obj == master->end){
+				master->end = prev;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
 int dxf_attr_append(dxf_node *master, int group, void *value){
 	if (master){
 		if (master->type == DXF_ENT){
@@ -248,6 +271,29 @@ double x0, double y0, double z0, double bulge){
 		ok &= dxf_attr_append(poly, 42, (void *) &bulge);
 		
 		if (ok) verts->value.i_data++;
+		
+		return ok;
+	}
+	return 0;
+}
+
+int dxf_poly_remove (dxf_node * poly, int idx){
+	int ok = 1;
+	dxf_node * verts = dxf_find_attr_i(poly, 90, 0);
+	if (verts){
+		dxf_node * x = dxf_find_attr_i(poly, 10, idx);
+		dxf_node * y = dxf_find_attr_i(poly, 20, idx);
+		dxf_node * z = dxf_find_attr_i(poly, 30, idx);
+		dxf_node * bulge = dxf_find_attr_i(poly, 42, idx);
+		
+		ok &= dxf_obj_detach(x);
+		ok &= dxf_obj_detach(y);
+		ok &= dxf_obj_detach(z);
+		
+		if (ok) {
+			dxf_obj_detach(bulge);
+			verts->value.i_data--;
+		}
 		
 		return ok;
 	}

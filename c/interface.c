@@ -90,7 +90,7 @@ void sel_list_append(list_node *list, dxf_node *ent){
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
-	double zoom = 1.0 , ofs_x = 0.0, ofs_y = 0.0;
+	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
@@ -117,7 +117,7 @@ int main(int argc, char** argv){
 	int rightMouseButtonClick = 0;
 	int MouseMotion = 0;
 	
-	int init_line = 0;
+	int init_line = 0, init_polyline = 0;
 	//graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
@@ -1072,7 +1072,7 @@ int main(int argc, char** argv){
 					//y1_attr = dxf_find_attr2(new_el, 21);
 					dxf_poly_append (new_el, x1, y1, 0.0, 0.0);
 					element = new_el;
-					drawing_ent_append(drawing, new_el);
+					
 				}
 				else if (rightMouseButtonClick){
 					modal = SELECT;
@@ -1084,6 +1084,7 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
+					init_polyline = 1;
 					
 					/*
 					if(x1_attr){
@@ -1110,7 +1111,12 @@ int main(int argc, char** argv){
 				else if (rightMouseButtonClick){
 					init_line = 0;
 					draw_tmp = 0;
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					if (init_polyline){
+						dxf_poly_remove (new_el, -1);
+						new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+						drawing_ent_append(drawing, new_el);
+						init_polyline = 0;
+					}
 					element = NULL;
 				}
 				if (MouseMotion){
