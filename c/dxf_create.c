@@ -326,6 +326,37 @@ int dxf_lwpoly_remove (dxf_node * poly, int idx){
 	return 0;
 }
 
+dxf_node * dxf_new_circle (double x0, double y0, double z0,
+double r, double thick, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF CIRCLE */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbCircle";
+	int ok = 1;
+	dxf_node * new_circle = dxf_obj_new ("CIRCLE");
+	
+	ok &= dxf_attr_append(new_circle, 5, (void *) handle);
+	ok &= dxf_attr_append(new_circle, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(new_circle, 67, (void *) &paper);
+	ok &= dxf_attr_append(new_circle, 8, (void *) layer);
+	ok &= dxf_attr_append(new_circle, 6, (void *) ltype);
+	ok &= dxf_attr_append(new_circle, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(new_circle, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(new_circle, 39, (void *) &thick);
+	/* place the first vertice */
+	ok &= dxf_attr_append(new_circle, 10, (void *) &x0);
+	ok &= dxf_attr_append(new_circle, 20, (void *) &y0);
+	ok &= dxf_attr_append(new_circle, 30, (void *) &z0);
+	ok &= dxf_attr_append(new_circle, 40, (void *) &r);
+	
+	if(ok){
+		return new_circle;
+	}
+
+	return NULL;
+}
+
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
 	if (drawing && element){
 		if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){

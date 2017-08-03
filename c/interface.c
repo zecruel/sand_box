@@ -95,7 +95,7 @@ int main(int argc, char** argv){
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
-	double pos_x, pos_y, x0, y0, x1, y1;
+	double pos_x, pos_y, x0, y0, x1, y1, bulge = 0.0;
 	double thick = 0.0;
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
@@ -117,7 +117,7 @@ int main(int argc, char** argv){
 	int rightMouseButtonClick = 0;
 	int MouseMotion = 0;
 	
-	int init_line = 0, init_polyline = 0;
+	int step = 0;
 	//graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
@@ -139,7 +139,10 @@ int main(int argc, char** argv){
 	enum Modal {
 		SELECT,
 		LINE,
-		POLYLINE
+		POLYLINE,
+		CIRCLE,
+		RECT,
+		ARC
 	}modal = SELECT;
 	
 	char recv_comm[64];
@@ -512,7 +515,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(2, 50, 100, 300),
+		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 300),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			
@@ -545,13 +548,15 @@ int main(int argc, char** argv){
 					snprintf(recv_comm, 64, "%s","POLYLINE");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_block)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","RECT");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_text)){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_circle)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","CIRCLE");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_arc)){
 					
@@ -588,10 +593,61 @@ int main(int argc, char** argv){
 				}
 				nk_tree_pop(gui->ctx);
 			}
-			
-			nk_end(gui->ctx);
 		}
+		nk_end(gui->ctx);
 		
+		if (nk_begin(gui->ctx, "Tool", nk_rect(110, 50, 200, 100),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
+			switch (modal) {
+				case SELECT:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Select an object", NK_TEXT_LEFT);
+					break;
+				case LINE:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place a single line", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
+					}
+					break;
+				case POLYLINE:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place a poly line", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter next point", NK_TEXT_LEFT);
+					}
+					bulge = nk_propertyd(gui->ctx, "Bulge", 0.0d, bulge, 1.0d, 0.1d, 0.1d);
+					break;
+				case CIRCLE:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place a circle", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter center point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
+					}
+					break;
+				case RECT:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place a rectangle", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
+					}
+					break;
+				case ARC:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place an arc", NK_TEXT_LEFT);
+					break;
+			}
+		}
+		nk_end(gui->ctx);
 		
 		if (progr_win){
 			/* opening */
@@ -941,6 +997,12 @@ int main(int argc, char** argv){
 			else if (strcmp(recv_comm, "DELETE") == 0){
 				action = DELETE;
 			}
+			else if (strcmp(recv_comm, "CIRCLE") == 0){
+				modal = CIRCLE;
+			}
+			else if (strcmp(recv_comm, "RECT") == 0){
+				modal = RECT;
+			}
 		}
 		
 		if (modal == SELECT){
@@ -1045,9 +1107,9 @@ int main(int argc, char** argv){
 			}
 		}
 		if (modal == LINE){
-			if (!init_line){
+			if (step == 0){
 				if (leftMouseButtonClick){
-					init_line = 1;
+					step = 1;
 					x0 = (double) mouse_x/zoom + ofs_x;
 					y0 = (double) mouse_y/zoom + ofs_y;
 					x1 = x0;
@@ -1106,7 +1168,7 @@ int main(int argc, char** argv){
 					element = new_el;
 				}
 				else if (rightMouseButtonClick){
-					init_line = 0;
+					step = 0;
 					draw_tmp = 0;
 					element = NULL;
 					draw = 1;
@@ -1128,9 +1190,9 @@ int main(int argc, char** argv){
 			}
 		}
 		if (modal == POLYLINE){
-			if (!init_line){
+			if (step == 0){
 				if (leftMouseButtonClick){
-					init_line = 1;
+					step = 1;
 					x0 = (double) mouse_x/zoom + ofs_x;
 					y0 = (double) mouse_y/zoom + ofs_y;
 					x1 = x0;
@@ -1139,13 +1201,13 @@ int main(int argc, char** argv){
 					/* create a new DXF lwpolyline */
 					new_el = (dxf_node *) dxf_new_lwpolyline (
 						x0, y0, 0.0, /* pt1, */
-						0.0, (double) thick, /* bulge, thickness, */
+						bulge, (double) thick, /* bulge, thickness, */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 					//x1_attr = dxf_find_attr2(new_el, 11);
 					//y1_attr = dxf_find_attr2(new_el, 21);
-					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, bulge);
 					element = new_el;
 					
 				}
@@ -1159,7 +1221,7 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
-					init_polyline = 1;
+					step = 2;
 					
 					/*
 					if(x1_attr){
@@ -1171,6 +1233,7 @@ int main(int argc, char** argv){
 					
 					dxf_attr_change_i(new_el, 10, &x1, -1);
 					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 42, &bulge, -1);
 					
 					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
 					
@@ -1181,16 +1244,16 @@ int main(int argc, char** argv){
 					x0 = x1;
 					y0 = y1;
 					
-					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, bulge);
 				}
 				else if (rightMouseButtonClick){
-					init_line = 0;
+					//step = 0;
 					draw_tmp = 0;
-					if (init_polyline){
+					if (step == 2){
 						dxf_lwpoly_remove (new_el, -1);
 						new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 						drawing_ent_append(drawing, new_el);
-						init_polyline = 0;
+						step = 0;
 					}
 					element = NULL;
 					draw = 1;
@@ -1204,6 +1267,121 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change_i(new_el, 10, &x1, -1);
 					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 42, &bulge, -1);
+					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 62, &color_idx);
+					
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+			}
+		}
+		if (modal == CIRCLE){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					step = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					draw_tmp = 1;
+					/* create a new DXF circle */
+					new_el = (dxf_node *) dxf_new_circle (
+						x0, y0, 0.0, 0.0, /* pt1, radius */
+						(double) thick, /* thickness, elevation */
+						color_idx, drawing->layers[layer_idx].name, /* color, layer */
+						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					element = new_el;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					double radius = sqrt(pow((x1 - x0), 2) + pow((y1 - y0), 2));
+					
+					dxf_attr_change(new_el, 40, &radius);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					drawing_ent_append(drawing, new_el);
+					
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					double radius = sqrt(pow((x1 - x0), 2) + pow((y1 - y0), 2));
+					
+					dxf_attr_change(new_el, 40, &radius);
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 62, &color_idx);
+					
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+			}
+		}
+		if (modal == RECT){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					step = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					draw_tmp = 1;
+					int closed = 1;
+					/* create a new DXF lwpolyline */
+					new_el = (dxf_node *) dxf_new_lwpolyline (
+						x0, y0, 0.0, /* pt1, */
+						0.0, (double) thick, /* bulge, thickness, */
+						color_idx, drawing->layers[layer_idx].name, /* color, layer */
+						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_attr_change_i(new_el, 70, (void *) &closed, 0);
+					element = new_el;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					dxf_attr_change_i(new_el, 10, (void *) &x1, 1);
+					dxf_attr_change_i(new_el, 10, (void *) &x1, 2);
+					dxf_attr_change_i(new_el, 20, (void *) &y1, 2);
+					dxf_attr_change_i(new_el, 20, (void *) &y1, 3);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					drawing_ent_append(drawing, new_el);
+					
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					dxf_attr_change_i(new_el, 10, (void *) &x1, 1);
+					dxf_attr_change_i(new_el, 10, (void *) &x1, 2);
+					dxf_attr_change_i(new_el, 20, (void *) &y1, 2);
+					dxf_attr_change_i(new_el, 20, (void *) &y1, 3);
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change(new_el, 39, &thick);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
