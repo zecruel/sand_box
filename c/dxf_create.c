@@ -2,10 +2,12 @@
 #include "list.h"
 
 int dxf_obj_detach(dxf_node *obj){
+	/* remove the object from its list */
 	if (obj){
 		dxf_node *master = obj->master;
 		dxf_node *prev = obj->prev;
 		dxf_node *next = obj->next;
+		/* rebuilt the insertion point */
 		if (prev){
 			prev->next = next;
 			obj->prev = NULL;
@@ -14,6 +16,7 @@ int dxf_obj_detach(dxf_node *obj){
 			next->prev = prev;
 			obj->next = NULL;
 		}
+		/* verify if the object is at end of master list */
 		if (master){
 			if (obj == master->end){
 				master->end = prev;
@@ -34,7 +37,7 @@ int dxf_attr_append(dxf_node *master, int group, void *value){
 				/* start search at end of master's list */
 				dxf_node *next = NULL, *prev = master->end;
 				/*  find the last attribute*/
-				if (prev){
+				if (prev){ /*skip if is an entity */
 					while (prev->type == DXF_ENT){
 						prev = prev->prev;
 						if (!prev) break;
@@ -65,10 +68,13 @@ int dxf_attr_append(dxf_node *master, int group, void *value){
 
 int dxf_attr_change(dxf_node *master, int group, void *value){
 	if (master){
+		/* find the first attribute*/
 		dxf_node *found_attr = dxf_find_attr2(master, group);
 		if (found_attr){
+			/* identify the type of attrib, according DXF group specification */
 			int type = dxf_ident_attr_type(group);
 			switch(type) {
+				/* change the data */
 				case DXF_FLOAT :
 					found_attr->value.d_data = *((double *)value);
 					break;
@@ -87,10 +93,13 @@ int dxf_attr_change(dxf_node *master, int group, void *value){
 
 int dxf_attr_change_i(dxf_node *master, int group, void *value, int idx){
 	if (master){
+		/* find the attribute, indicated by index */
 		dxf_node *found_attr = dxf_find_attr_i(master, group, idx);
 		if (found_attr){
+			/* identify the type of attrib, according DXF group specification */
 			int type = dxf_ident_attr_type(group);
 			switch(type) {
+				/* change the data */
 				case DXF_FLOAT :
 					found_attr->value.d_data = *((double *)value);
 					break;
@@ -108,6 +117,7 @@ int dxf_attr_change_i(dxf_node *master, int group, void *value, int idx){
 }
 
 int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **end){
+	/* find the range of attributes of extended data, indicated by APPID */
 	dxf_node *current;
 	int found = 0;
 	
@@ -118,6 +128,7 @@ int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **
 		if (obj->type == DXF_ENT){
 			current = obj->obj.content->next;
 			while (current){
+				/* try to find the first entry, by matching the APPID */
 				if (!found){
 					if (current->type == DXF_ATTR){
 						if(current->value.group == 1001){
@@ -130,12 +141,16 @@ int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **
 					}
 				}
 				else{
+					/* after the first entry, look by end */
 					if (current->type == DXF_ATTR){
+						/* breaks if is found a new APPID entry */
 						if(current->value.group == 1001){
 							break;
 						}
+						/* update the end mark */
 						*end = current;
 					}
+					/* breaks if is found a entity */
 					else break;
 				}
 				current = current->next;
@@ -146,6 +161,7 @@ int dxf_find_ext_appid(dxf_node *obj, char *appid, dxf_node **start, dxf_node **
 }
 
 int dxf_ext_append(dxf_node *master, char *appid, int group, void *value){
+	/* appdend new attrib on extended data, indicated by APPID */
 	if (master){
 		if (master->type == DXF_ENT){
 			dxf_node *start, *end, *prev = NULL, *next = NULL;
@@ -155,8 +171,9 @@ int dxf_ext_append(dxf_node *master, char *appid, int group, void *value){
 				dxf_node *new_attr = dxf_attr_new(group, type, value);
 				if (new_attr){
 					new_attr->master = master;
-					
+					/* append at end mark */
 					prev = end;
+					
 					/* append new attr between prev and next nodes */
 					new_attr->prev = prev;
 					if (prev){
@@ -185,6 +202,7 @@ int dxf_ext_append(dxf_node *master, char *appid, int group, void *value){
 dxf_node * dxf_new_line (double x0, double y0, double z0,
 double x1, double y1, double z1,
 double thick, double elev, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF LINE */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
 	const char *dxf_subclass = "AcDbLine";
@@ -227,8 +245,9 @@ double thick, double elev, int color, char *layer, char *ltype, int paper){
 	return NULL;
 }
 
-dxf_node * dxf_new_polyline (double x0, double y0, double z0,
+dxf_node * dxf_new_lwpolyline (double x0, double y0, double z0,
 double bulge, double thick, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF LWPOLYLINE */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
 	const char *dxf_subclass = "AcDbPolyline";
@@ -248,6 +267,7 @@ double bulge, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_poly, 90, (void *) &verts);
 	ok &= dxf_attr_append(new_poly, 70, (void *) &flags);
 	ok &= dxf_attr_append(new_poly, 39, (void *) &thick);
+	/* place the first vertice */
 	ok &= dxf_attr_append(new_poly, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_poly, 20, (void *) &y0);
 	ok &= dxf_attr_append(new_poly, 30, (void *) &z0);
@@ -260,39 +280,45 @@ double bulge, double thick, int color, char *layer, char *ltype, int paper){
 	return NULL;
 }
 
-int dxf_poly_append (dxf_node * poly,
+int dxf_lwpoly_append (dxf_node * poly,
 double x0, double y0, double z0, double bulge){
+	/* append a vertice in a LWPOLYLINE */
 	int ok = 1;
+	/* look for the vertices counter attribute */
 	dxf_node * verts = dxf_find_attr_i(poly, 90, 0);
-	if (verts){
+	if (verts){ /* place the new vertice */
 		ok &= dxf_attr_append(poly, 10, (void *) &x0);
 		ok &= dxf_attr_append(poly, 20, (void *) &y0);
 		ok &= dxf_attr_append(poly, 30, (void *) &z0);
 		ok &= dxf_attr_append(poly, 42, (void *) &bulge);
 		
-		if (ok) verts->value.i_data++;
+		if (ok) verts->value.i_data++; /* increment the verts counter */
 		
 		return ok;
 	}
 	return 0;
 }
 
-int dxf_poly_remove (dxf_node * poly, int idx){
+int dxf_lwpoly_remove (dxf_node * poly, int idx){
+	/* remove a vertice in a LWPOLYLINE, indicated by index */
 	int ok = 1;
+	/* look for the vertices counter attribute */
 	dxf_node * verts = dxf_find_attr_i(poly, 90, 0);
 	if (verts){
+		/* look for the vertice attributes */
 		dxf_node * x = dxf_find_attr_i(poly, 10, idx);
 		dxf_node * y = dxf_find_attr_i(poly, 20, idx);
 		dxf_node * z = dxf_find_attr_i(poly, 30, idx);
 		dxf_node * bulge = dxf_find_attr_i(poly, 42, idx);
 		
+		/* detach the attribs from the list */
 		ok &= dxf_obj_detach(x);
 		ok &= dxf_obj_detach(y);
 		ok &= dxf_obj_detach(z);
 		
 		if (ok) {
-			dxf_obj_detach(bulge);
-			verts->value.i_data--;
+			dxf_obj_detach(bulge); /* bulge is optional, so the ok flag is not affected*/
+			verts->value.i_data--; /* decrement the verts counter */
 		}
 		
 		return ok;

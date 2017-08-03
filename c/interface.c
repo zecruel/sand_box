@@ -132,6 +132,7 @@ int main(int argc, char** argv){
 		FILE_SAVE,
 		EXPORT,
 		VIEW_ZOOM_EXT,
+		DELETE,
 		EXIT
 	} action = NONE;
 	
@@ -257,6 +258,48 @@ int main(int argc, char** argv){
 		height, /* height */
 		0); /* flags */
 	
+	SDL_Surface *surface;     // Declare an SDL_Surface to be filled in with pixel data from an image file
+	Uint16 pixels[16*16] = {  // ...or with raw pixel data:
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0aab, 0x0789, 0x0bcc, 0x0eee, 0x09aa, 0x099a, 0x0ddd,
+		0x0fff, 0x0eee, 0x0899, 0x0fff, 0x0fff, 0x1fff, 0x0dde, 0x0dee,
+		0x0fff, 0xabbc, 0xf779, 0x8cdd, 0x3fff, 0x9bbc, 0xaaab, 0x6fff,
+		0x0fff, 0x3fff, 0xbaab, 0x0fff, 0x0fff, 0x6689, 0x6fff, 0x0dee,
+		0xe678, 0xf134, 0x8abb, 0xf235, 0xf678, 0xf013, 0xf568, 0xf001,
+		0xd889, 0x7abc, 0xf001, 0x0fff, 0x0fff, 0x0bcc, 0x9124, 0x5fff,
+		0xf124, 0xf356, 0x3eee, 0x0fff, 0x7bbc, 0xf124, 0x0789, 0x2fff,
+		0xf002, 0xd789, 0xf024, 0x0fff, 0x0fff, 0x0002, 0x0134, 0xd79a,
+		0x1fff, 0xf023, 0xf000, 0xf124, 0xc99a, 0xf024, 0x0567, 0x0fff,
+		0xf002, 0xe678, 0xf013, 0x0fff, 0x0ddd, 0x0fff, 0x0fff, 0xb689,
+		0x8abb, 0x0fff, 0x0fff, 0xf001, 0xf235, 0xf013, 0x0fff, 0xd789,
+		0xf002, 0x9899, 0xf001, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0xe789,
+		0xf023, 0xf000, 0xf001, 0xe456, 0x8bcc, 0xf013, 0xf002, 0xf012,
+		0x1767, 0x5aaa, 0xf013, 0xf001, 0xf000, 0x0fff, 0x7fff, 0xf124,
+		0x0fff, 0x089a, 0x0578, 0x0fff, 0x089a, 0x0013, 0x0245, 0x0eff,
+		0x0223, 0x0dde, 0x0135, 0x0789, 0x0ddd, 0xbbbc, 0xf346, 0x0467,
+		0x0fff, 0x4eee, 0x3ddd, 0x0edd, 0x0dee, 0x0fff, 0x0fff, 0x0dee,
+		0x0def, 0x08ab, 0x0fff, 0x7fff, 0xfabc, 0xf356, 0x0457, 0x0467,
+		0x0fff, 0x0bcd, 0x4bde, 0x9bcc, 0x8dee, 0x8eff, 0x8fff, 0x9fff,
+		0xadee, 0xeccd, 0xf689, 0xc357, 0x2356, 0x0356, 0x0467, 0x0467,
+		0x0fff, 0x0ccd, 0x0bdd, 0x0cdd, 0x0aaa, 0x2234, 0x4135, 0x4346,
+		0x5356, 0x2246, 0x0346, 0x0356, 0x0467, 0x0356, 0x0467, 0x0467,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff
+	};
+	surface = SDL_CreateRGBSurfaceFrom(pixels,16,16,16,16*2,0x0f00,0x00f0,0x000f,0xf000);
+
+	// The icon is attached to the window pointer
+	SDL_SetWindowIcon(window, surface);
+
+	// ...and the surface containing the icon pixel data is no longer required.
+	SDL_FreeSurface(surface);
 
 	SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
 	/*
@@ -370,11 +413,13 @@ int main(int argc, char** argv){
 					case (SDL_DROPFILE): {      // In case if dropped file
 						dropped_filedir = event.drop.file;
 						// Shows directory of dropped file
-						SDL_ShowSimpleMessageBox(
-							SDL_MESSAGEBOX_INFORMATION,
-							"File dropped on window",
-							dropped_filedir,
-							window);
+						//SDL_ShowSimpleMessageBox(
+						//	SDL_MESSAGEBOX_INFORMATION,
+						//	"File dropped on window",
+						//	dropped_filedir,
+						//	window);
+						printf(dropped_filedir);
+						printf("\n----------------------------\n");
 						SDL_free(dropped_filedir);    // Free dropped_filedir memory
 						break;
 					}
@@ -538,7 +583,8 @@ int main(int argc, char** argv){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_delete)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","DELETE");
 				}
 				nk_tree_pop(gui->ctx);
 			}
@@ -853,6 +899,29 @@ int main(int argc, char** argv){
 			zoom_ext(drawing, img, &zoom, &ofs_x, &ofs_y);
 			draw = 1;
 		}
+		else if(action == DELETE){
+			action = NONE;
+		
+			if (sel_list != NULL){
+				list_node *current = sel_list->next;
+				
+				// starts the content sweep 
+				while (current != NULL){
+					if (current->data){
+						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+							
+							// -------------------------------------------
+							dxf_obj_detach((dxf_node *)current->data);
+							
+							//---------------------------------------
+						}
+					}
+					current = current->next;
+				}
+				list_clear(sel_list);
+			}
+			draw = 1;
+		}
 		
 		if(recv_comm_flag){
 			recv_comm_flag =0;
@@ -860,13 +929,18 @@ int main(int argc, char** argv){
 			if (strcmp(recv_comm, "SELECT") == 0){
 				modal = SELECT;
 			}
-			if (strcmp(recv_comm, "LINE") == 0){
+			else if (strcmp(recv_comm, "LINE") == 0){
 				modal = LINE;
 			}
-			if (strcmp(recv_comm, "POLYLINE") == 0){
+			else if (strcmp(recv_comm, "POLYLINE") == 0){
 				modal = POLYLINE;
 			}
-			
+			else if (strcmp(recv_comm, "LINE") == 0){
+				modal = LINE;
+			}
+			else if (strcmp(recv_comm, "DELETE") == 0){
+				action = DELETE;
+			}
 		}
 		
 		if (modal == SELECT){
@@ -1035,6 +1109,7 @@ int main(int argc, char** argv){
 					init_line = 0;
 					draw_tmp = 0;
 					element = NULL;
+					draw = 1;
 				}
 				if (MouseMotion){
 					x1 = (double) mouse_x/zoom + ofs_x;
@@ -1061,8 +1136,8 @@ int main(int argc, char** argv){
 					x1 = x0;
 					y1 = y0;
 					draw_tmp = 1;
-					/* create a new DXF polyline */
-					new_el = (dxf_node *) dxf_new_polyline (
+					/* create a new DXF lwpolyline */
+					new_el = (dxf_node *) dxf_new_lwpolyline (
 						x0, y0, 0.0, /* pt1, */
 						0.0, (double) thick, /* bulge, thickness, */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
@@ -1070,7 +1145,7 @@ int main(int argc, char** argv){
 					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 					//x1_attr = dxf_find_attr2(new_el, 11);
 					//y1_attr = dxf_find_attr2(new_el, 21);
-					dxf_poly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
 					element = new_el;
 					
 				}
@@ -1106,18 +1181,19 @@ int main(int argc, char** argv){
 					x0 = x1;
 					y0 = y1;
 					
-					dxf_poly_append (new_el, x1, y1, 0.0, 0.0);
+					dxf_lwpoly_append (new_el, x1, y1, 0.0, 0.0);
 				}
 				else if (rightMouseButtonClick){
 					init_line = 0;
 					draw_tmp = 0;
 					if (init_polyline){
-						dxf_poly_remove (new_el, -1);
+						dxf_lwpoly_remove (new_el, -1);
 						new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 						drawing_ent_append(drawing, new_el);
 						init_polyline = 0;
 					}
 					element = NULL;
+					draw = 1;
 				}
 				if (MouseMotion){
 					x1 = (double) mouse_x/zoom + ofs_x;
