@@ -271,7 +271,7 @@ double bulge, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_poly, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_poly, 20, (void *) &y0);
 	ok &= dxf_attr_append(new_poly, 30, (void *) &z0);
-	ok &= dxf_attr_append(new_poly, 42, (void *) &bulge);
+	//ok &= dxf_attr_append(new_poly, 42, (void *) &bulge);
 	
 	if(ok){
 		return new_poly;
@@ -287,10 +287,11 @@ double x0, double y0, double z0, double bulge){
 	/* look for the vertices counter attribute */
 	dxf_node * verts = dxf_find_attr_i(poly, 90, 0);
 	if (verts){ /* place the new vertice */
+		ok &= dxf_attr_append(poly, 42, (void *) &bulge);
 		ok &= dxf_attr_append(poly, 10, (void *) &x0);
 		ok &= dxf_attr_append(poly, 20, (void *) &y0);
 		ok &= dxf_attr_append(poly, 30, (void *) &z0);
-		ok &= dxf_attr_append(poly, 42, (void *) &bulge);
+		
 		
 		if (ok) verts->value.i_data++; /* increment the verts counter */
 		
@@ -352,6 +353,39 @@ double r, double thick, int color, char *layer, char *ltype, int paper){
 	
 	if(ok){
 		return new_circle;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_new_text (double x0, double y0, double z0, double h,
+char *txt, double thick, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF TEXT */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbText";
+	int ok = 1;
+	dxf_node * new_text = dxf_obj_new ("TEXT");
+	
+	ok &= dxf_attr_append(new_text, 5, (void *) handle);
+	ok &= dxf_attr_append(new_text, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(new_text, 67, (void *) &paper);
+	ok &= dxf_attr_append(new_text, 8, (void *) layer);
+	ok &= dxf_attr_append(new_text, 6, (void *) ltype);
+	ok &= dxf_attr_append(new_text, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(new_text, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(new_text, 39, (void *) &thick);
+	/* place the first vertice */
+	ok &= dxf_attr_append(new_text, 10, (void *) &x0);
+	ok &= dxf_attr_append(new_text, 20, (void *) &y0);
+	ok &= dxf_attr_append(new_text, 30, (void *) &z0);
+	ok &= dxf_attr_append(new_text, 40, (void *) &h);
+	ok &= dxf_attr_append(new_text, 1, (void *) txt);
+	ok &= dxf_attr_append(new_text, 100, (void *) dxf_subclass);
+	
+	if(ok){
+		return new_text;
 	}
 
 	return NULL;

@@ -95,8 +95,9 @@ int main(int argc, char** argv){
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
-	double pos_x, pos_y, x0, y0, x1, y1, bulge = 0.0;
+	double pos_x, pos_y, x0, y0, x1, y1, bulge = 0.0, txt_h = 1.0;
 	double thick = 0.0;
+	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
 	unsigned int width = 1024;
@@ -142,6 +143,7 @@ int main(int argc, char** argv){
 		POLYLINE,
 		CIRCLE,
 		RECT,
+		TEXT,
 		ARC
 	}modal = SELECT;
 	
@@ -239,6 +241,7 @@ int main(int argc, char** argv){
 	
 	/* init comands */
 	recv_comm[0] = 0;
+	txt[0] = 0;
 	
 	/* init the drawing */
 	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
@@ -552,7 +555,8 @@ int main(int argc, char** argv){
 					snprintf(recv_comm, 64, "%s","RECT");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_text)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","TEXT");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_circle)){
 					recv_comm_flag = 1;
@@ -596,7 +600,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(110, 50, 200, 100),
+		if (nk_begin(gui->ctx, "Tool", nk_rect(110, 50, 200, 200),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			switch (modal) {
@@ -640,6 +644,13 @@ int main(int argc, char** argv){
 					} else {
 						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
 					}
+					break;
+				case TEXT:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place an text", NK_TEXT_LEFT);
+					//nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
+					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+					txt_h = nk_propertyd(gui->ctx, "Text Height", 0.0d, txt_h, 100.0d, 0.1d, 0.1d);
 					break;
 				case ARC:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -1003,19 +1014,22 @@ int main(int argc, char** argv){
 			else if (strcmp(recv_comm, "RECT") == 0){
 				modal = RECT;
 			}
+			else if (strcmp(recv_comm, "TEXT") == 0){
+				modal = TEXT;
+			}
 		}
 		
 		if (modal == SELECT){
 			if (leftMouseButtonClick){
 				sel_list_append(sel_list, element);
-				/*-------------------------------test-------------- */
+				/*-------------------------------test-------------- 
 				dxf_node *current, *start, *end;
 				if(dxf_find_ext_appid(element, "ZECRUEL", &start, &end)){
 					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
 					current = start;
 					while (current != NULL){
-						printf ("%d = ", current->value.group); /* print the DFX group */
-						/* print the value of atrribute, acording its type */
+						printf ("%d = ", current->value.group); 
+						
 						switch (current->value.t_data) {
 							case DXF_STR:
 								if(current->value.s_data){
@@ -1033,63 +1047,7 @@ int main(int argc, char** argv){
 						if (current == end) break;
 						current = current->next;
 					}
-				}
-				/*-------------------------------test-------------- */
-				current = dxf_find_attr_i(element, 10, 0);
-				if (current){
-					printf ("First: %d = ", current->value.group); /* print the DFX group */
-					/* print the value of atrribute, acording its type */
-					switch (current->value.t_data) {
-						case DXF_STR:
-							if(current->value.s_data){
-								printf(current->value.s_data);
-							}
-							break;
-						case DXF_FLOAT:
-							printf("%f", current->value.d_data);
-							break;
-						case DXF_INT:
-							printf("%d", current->value.i_data);
-					}
-					printf("\n");
-				}
-				current = dxf_find_attr_i(element, 10, 1);
-				if (current){
-					printf ("Second: %d = ", current->value.group); /* print the DFX group */
-					/* print the value of atrribute, acording its type */
-					switch (current->value.t_data) {
-						case DXF_STR:
-							if(current->value.s_data){
-								printf(current->value.s_data);
-							}
-							break;
-						case DXF_FLOAT:
-							printf("%f", current->value.d_data);
-							break;
-						case DXF_INT:
-							printf("%d", current->value.i_data);
-					}
-					printf("\n");
-				}
-				current = dxf_find_attr_i(element, 10, -1);
-				if (current){
-					printf ("Last: %d = ", current->value.group); /* print the DFX group */
-					/* print the value of atrribute, acording its type */
-					switch (current->value.t_data) {
-						case DXF_STR:
-							if(current->value.s_data){
-								printf(current->value.s_data);
-							}
-							break;
-						case DXF_FLOAT:
-							printf("%f", current->value.d_data);
-							break;
-						case DXF_INT:
-							printf("%d", current->value.i_data);
-					}
-					printf("\n\n");
-				}
-				/*-------------------------------test-------------- */
+				}*/
 			}
 			if (rightMouseButtonClick){
 				list_clear(sel_list);
@@ -1313,6 +1271,12 @@ int main(int argc, char** argv){
 					element = NULL;
 					draw = 1;
 				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+				}
 				if (MouseMotion){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
@@ -1373,6 +1337,12 @@ int main(int argc, char** argv){
 					element = NULL;
 					draw = 1;
 				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+				}
 				if (MouseMotion){
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
@@ -1387,6 +1357,65 @@ int main(int argc, char** argv){
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 				}
+			}
+		}
+		if (modal == TEXT){
+			if (step == 0){
+				step = 1;
+				x0 = (double) mouse_x/zoom + ofs_x;
+				y0 = (double) mouse_y/zoom + ofs_y;
+				x1 = x0;
+				y1 = y0;
+				draw_tmp = 1;
+				/* create a new DXF text */
+				//dxf_new_text (double x0, double y0, double z0, double h, char *txt, double thick, int color, char *layer, char *ltype, int paper)
+				new_el = (dxf_node *) dxf_new_text (
+					x0, y0, 0.0, txt_h, /* pt1, height */
+					txt, (double) thick, /* text, thickness */
+					color_idx, drawing->layers[layer_idx].name, /* color, layer */
+					drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+				element = new_el;
+				
+				
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					dxf_attr_change_i(new_el, 10, &x1, -1);
+					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change(new_el, 40, &txt_h);
+					dxf_attr_change(new_el, 1, txt);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					drawing_ent_append(drawing, new_el);
+					
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					dxf_attr_change_i(new_el, 10, &x1, -1);
+					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change(new_el, 40, &txt_h);
+					dxf_attr_change(new_el, 1, txt);
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 62, &color_idx);
+					
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+				
 			}
 		}
 		
