@@ -86,4 +86,6 @@ bmp_img * bmp_sub_img(bmp_img *orig, int x, int y, int w, int h);
 
 bmp_img * bmp_load_img(char *url);
 
+bmp_img * bmp_load_img2(unsigned char *data, int w, int h);
+
 #endif

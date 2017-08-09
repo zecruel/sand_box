@@ -757,6 +757,50 @@ bmp_img * bmp_load_img(char *url){
 	return NULL;
 }
 
+
+bmp_img * bmp_load_img2(unsigned char *data, int w, int h){
+	
+	if (data){
+		bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+		/* alloc the structure */
+		bmp_img * img = (bmp_img *) malloc (sizeof (bmp_img));
+		if (img){
+			/* initialize */
+			img->buf = data;
+			/* dimensions */
+			img->width = w;
+			img->height = h;
+			/* colors */
+			img->bkg = transp;
+			img->frg = transp;
+			/* line pattern generation vars  */
+			img->tick = 0;
+			img->patt_i = 0;
+			img->pix_count = 0;
+			/* line pattern */
+			/* initialize the image with a solid line pattern */
+			img->patt_size = 1;
+			img->pattern[0] = 1;
+			img->pat_scale = 15;
+			
+			img->zero_tl = 0; /* zero in botton left corner */
+			
+			/*clipping rectangle */
+			img->clip_x = 0;
+			img->clip_y = 0;
+			img->clip_w = w;
+			img->clip_h = h;
+	
+			/*order of color components in buffer. Init with RGBA */
+			img->r_i = 0;
+			img->g_i = 1;
+			img->b_i = 2;
+			img->a_i = 3;
+		}
+		return img;
+	}
+	return NULL;
+}
 	
 /*If you scan along octants as explained for the Midpoint circle algorithm, your major coordinate y will always increase by one. You can then draw two circles at once, because their major coordinates are in sync.
 

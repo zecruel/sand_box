@@ -25,6 +25,7 @@
 #define NK_ZERO_COMMAND_MEMORY
 #include "nuklear.h"
 #include "gui.h"
+#include "images.c"
 
 void toolbox_get_imgs(bmp_img *img, int w, int h, bmp_img *vec[], int num){
 	if (vec){
@@ -95,7 +96,7 @@ int main(int argc, char** argv){
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
-	double pos_x, pos_y, x0, y0, x1, y1, bulge = 0.0, txt_h = 1.0;
+	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0;
 	double thick = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
@@ -108,8 +109,10 @@ int main(int argc, char** argv){
 	int progr_end = 0;
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
+	int show_app_about = 0;
 	int i;
-	int ev_type, draw = 0, draw_tmp = 0;
+	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
+	vector_p *phanton = NULL;
 	struct nk_color background;
 	
 	int leftMouseButtonDown = 0;
@@ -144,7 +147,8 @@ int main(int argc, char** argv){
 		CIRCLE,
 		RECT,
 		TEXT,
-		ARC
+		ARC,
+		MOVE
 	}modal = SELECT;
 	
 	char recv_comm[64];
@@ -239,6 +243,12 @@ int main(int argc, char** argv){
 	b_icon_style.image_padding.x = -4;
 	b_icon_style.image_padding.y = -4;
 	
+	bmp_img * brazil_img = bmp_load_img2(brazil_flag.pixel_data, brazil_flag.width, brazil_flag.height);
+	struct nk_image i_brazil = nk_image_ptr(brazil_img);
+	
+	bmp_img * cz_img = bmp_load_img2(cz.pixel_data, cz.width, cz.height);
+	struct nk_image i_cz = nk_image_ptr(cz_img);
+	
 	/* init comands */
 	recv_comm[0] = 0;
 	txt[0] = 0;
@@ -264,42 +274,10 @@ int main(int argc, char** argv){
 		height, /* height */
 		0); /* flags */
 	
-	SDL_Surface *surface;     // Declare an SDL_Surface to be filled in with pixel data from an image file
-	Uint16 pixels[16*16] = {  // ...or with raw pixel data:
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0aab, 0x0789, 0x0bcc, 0x0eee, 0x09aa, 0x099a, 0x0ddd,
-		0x0fff, 0x0eee, 0x0899, 0x0fff, 0x0fff, 0x1fff, 0x0dde, 0x0dee,
-		0x0fff, 0xabbc, 0xf779, 0x8cdd, 0x3fff, 0x9bbc, 0xaaab, 0x6fff,
-		0x0fff, 0x3fff, 0xbaab, 0x0fff, 0x0fff, 0x6689, 0x6fff, 0x0dee,
-		0xe678, 0xf134, 0x8abb, 0xf235, 0xf678, 0xf013, 0xf568, 0xf001,
-		0xd889, 0x7abc, 0xf001, 0x0fff, 0x0fff, 0x0bcc, 0x9124, 0x5fff,
-		0xf124, 0xf356, 0x3eee, 0x0fff, 0x7bbc, 0xf124, 0x0789, 0x2fff,
-		0xf002, 0xd789, 0xf024, 0x0fff, 0x0fff, 0x0002, 0x0134, 0xd79a,
-		0x1fff, 0xf023, 0xf000, 0xf124, 0xc99a, 0xf024, 0x0567, 0x0fff,
-		0xf002, 0xe678, 0xf013, 0x0fff, 0x0ddd, 0x0fff, 0x0fff, 0xb689,
-		0x8abb, 0x0fff, 0x0fff, 0xf001, 0xf235, 0xf013, 0x0fff, 0xd789,
-		0xf002, 0x9899, 0xf001, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0xe789,
-		0xf023, 0xf000, 0xf001, 0xe456, 0x8bcc, 0xf013, 0xf002, 0xf012,
-		0x1767, 0x5aaa, 0xf013, 0xf001, 0xf000, 0x0fff, 0x7fff, 0xf124,
-		0x0fff, 0x089a, 0x0578, 0x0fff, 0x089a, 0x0013, 0x0245, 0x0eff,
-		0x0223, 0x0dde, 0x0135, 0x0789, 0x0ddd, 0xbbbc, 0xf346, 0x0467,
-		0x0fff, 0x4eee, 0x3ddd, 0x0edd, 0x0dee, 0x0fff, 0x0fff, 0x0dee,
-		0x0def, 0x08ab, 0x0fff, 0x7fff, 0xfabc, 0xf356, 0x0457, 0x0467,
-		0x0fff, 0x0bcd, 0x4bde, 0x9bcc, 0x8dee, 0x8eff, 0x8fff, 0x9fff,
-		0xadee, 0xeccd, 0xf689, 0xc357, 0x2356, 0x0356, 0x0467, 0x0467,
-		0x0fff, 0x0ccd, 0x0bdd, 0x0cdd, 0x0aaa, 0x2234, 0x4135, 0x4346,
-		0x5356, 0x2246, 0x0346, 0x0356, 0x0467, 0x0356, 0x0467, 0x0467,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
-		0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff
-	};
-	surface = SDL_CreateRGBSurfaceFrom(pixels,16,16,16,16*2,0x0f00,0x00f0,0x000f,0xf000);
+	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
+		(void *)cz48.pixel_data, cz48.width, cz48.height,
+		32, cz48.width * 4,
+		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 
 	// The icon is attached to the window pointer
 	SDL_SetWindowIcon(window, surface);
@@ -512,7 +490,28 @@ int main(int argc, char** argv){
 				printf("CLOSE\n");
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_help)){
-				printf("HELP\n");
+				show_app_about = 1;
+				//printf("HELP\n");
+			}
+			if (show_app_about){
+				/* about popup */
+				static struct nk_rect s = {20, 100, 400, 300};
+				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "About", NK_WINDOW_CLOSABLE, s)){
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Cadzinho", NK_TEXT_LEFT);
+					nk_layout_row_dynamic(gui->ctx, 165, 1);
+					nk_image(gui->ctx, i_cz);
+					nk_layout_row_begin(gui->ctx, NK_DYNAMIC, 20, 2);
+					nk_layout_row_push(gui->ctx, 0.7f);
+					nk_label(gui->ctx, "By Ezequiel Rabelo de Aguiar", NK_TEXT_LEFT);
+					nk_layout_row_push(gui->ctx, 0.3f);
+					nk_image(gui->ctx, i_brazil);
+					nk_layout_row_end(gui->ctx);
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Cadzinho is licensed under the MIT License.",  NK_TEXT_LEFT);
+					
+					nk_popup_end(gui->ctx);
+				} else show_app_about = nk_false;
 			}
 			
 		}
@@ -574,7 +573,8 @@ int main(int argc, char** argv){
 				nk_layout_row_static(gui->ctx, 20, 20, 2);
 				
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_move)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","MOVE");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_dupli)){
 					
@@ -655,6 +655,15 @@ int main(int argc, char** argv){
 				case ARC:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Place an arc", NK_TEXT_LEFT);
+					break;
+				case MOVE:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Move a selection", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
+					}
 					break;
 			}
 		}
@@ -884,6 +893,7 @@ int main(int argc, char** argv){
 		
 		
 		
+		
 		if (wait_open != 0){
 			low_proc = 0;
 			draw = 1;
@@ -1017,12 +1027,19 @@ int main(int argc, char** argv){
 			else if (strcmp(recv_comm, "TEXT") == 0){
 				modal = TEXT;
 			}
+			else if (strcmp(recv_comm, "MOVE") == 0){
+				modal = MOVE;
+			}
 		}
 		
 		if (modal == SELECT){
 			if (leftMouseButtonClick){
 				sel_list_append(sel_list, element);
-				/*-------------------------------test-------------- 
+				/* -------------------------------test-------------- */
+				
+				/*dxf_edit_move (element, 0.0 , 0.0, 0.0);
+				
+				/*--------------------------------------------- 
 				dxf_node *current, *start, *end;
 				if(dxf_find_ext_appid(element, "ZECRUEL", &start, &end)){
 					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
@@ -1418,6 +1435,94 @@ int main(int argc, char** argv){
 				
 			}
 		}
+		if (modal == MOVE){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					step = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					x2 = x1;
+					y2 = y1;
+					draw_tmp = 1;
+					/* phantom object */
+					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					element = NULL;
+					draw_phanton = 1;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					if (sel_list != NULL){
+						list_node *current = sel_list->next;
+						
+						// starts the content sweep 
+						while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+									// -------------------------------------------
+									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
+									
+									//---------------------------------------
+								}
+							}
+							current = current->next;
+						}
+						//list_clear(sel_list);
+					}
+					draw = 1;
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+					
+					
+				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
+					x2 = x1;
+					y2 = y1;
+				}
+			}
+		}
 		
 		if (gui_check_draw(gui) != 0){
 			draw = 1;
@@ -1433,11 +1538,15 @@ int main(int argc, char** argv){
 			
 			
 			/*hilite test */
-			if(draw_tmp){
+			if((draw_tmp)&&(element != NULL)){
 				element->obj.graphics = dxf_graph_parse(drawing, element, 0 , 1);
 			}
 			if(element != NULL){
 				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
+			}
+			if((draw_phanton)&&(phanton)){
+				//dxf_list_draw(sel_list, img, ofs_x - (x1 - x0), ofs_y - (y1 - y0), zoom, hilite);
+				vec_graph_draw_fix(phanton, img, ofs_x, ofs_y, zoom, hilite);
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
 			

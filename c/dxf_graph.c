@@ -1,6 +1,5 @@
 #include "dxf_graph.h"
-#include "shape2.h"
-#include "list.h"
+
 
 #include "dxf_colors.h"
 #include <string.h>
@@ -1899,10 +1898,10 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 	return NULL;
 }
 
-vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* this function is non recursive */
 	
-	vector_p *v_return = NULL, v_search;
+	vector_p v_search;
 	dxf_node *current = NULL, *insert_ent = NULL, *blk = NULL , *prev;
 	enum dxf_graph ent_type;
 	int lay_idx, ltype_idx;
@@ -1946,9 +1945,6 @@ vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 	int i;
 	int blk_flag = 0;
 	
-	/* Initialize */
-	/*create the vector of returned values */
-	v_return = vect_new ();
 	if (v_return){
 		current = ent;
 	}
@@ -2356,7 +2352,7 @@ vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 			}
 		}
 	}
-	return v_return;
+	return 1;
 }
 
 int dxf_ents_parse(dxf_drawing *drawing){
@@ -2384,6 +2380,43 @@ int dxf_ents_parse(dxf_drawing *drawing){
 			//printf("%d\n", current);
 		}
 	}
+}
+
+vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+	/* Initialize */
+	/*create the vector of returned values */
+	vector_p *v_return = vect_new ();
+	dxf_obj_parse(v_return, drawing, ent, p_space, pool_idx);
+	return v_return;
+}
+
+vector_p * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, int pool_idx){
+	list_node *current = NULL;
+	
+		
+	if (list != NULL){
+		/* Initialize */
+		/*create the vector of returned values */
+		vector_p *v_return = vect_new ();
+		
+		current = list->next;
+		
+		// starts the content sweep 
+		while (current != NULL){
+			if (current->data){
+				if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+					
+					// -------------------------------------------
+					dxf_obj_parse(v_return, drawing, ((dxf_node *)current->data), p_space, pool_idx);
+					
+					//---------------------------------------
+				}
+			}
+			current = current->next;
+		}
+		return v_return;
+	}
+	return NULL;
 }
 
 int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){

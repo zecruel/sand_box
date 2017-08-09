@@ -227,7 +227,7 @@ double thick, double elev, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_line, 31, (void *) &z1);
 	
 	/* test */
-	/* -------------------------------------------  */
+	/* -------------------------------------------  
 	ok &= dxf_attr_append(new_line, 1001, (void *) "ZECRUEL");
 	ok &= dxf_attr_append(new_line, 1001, (void *) "ACAD");
 	
@@ -389,6 +389,27 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	}
 
 	return NULL;
+}
+
+int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
+	/* move the object relactive to offset distances */
+	if (obj){
+		dxf_node *current;
+		int i, j;
+		for (i = 0; i < 8; i++){ /* sweep in range of DXF points (10-17, 20-27, 30-37) */
+			for (j = 0; current = dxf_find_attr_i(obj, 10 + i, j); j++){
+				current->value.d_data += ofs_x;
+			}
+			for (j = 0; current = dxf_find_attr_i(obj, 20 + i, j); j++){
+				current->value.d_data += ofs_y;
+			}
+			for (j = 0; current = dxf_find_attr_i(obj, 30 + i, j); j++){
+				current->value.d_data += ofs_z;
+			}
+		}
+		return 1;
+	}
+	return 0;
 }
 
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
