@@ -148,6 +148,7 @@ int main(int argc, char** argv){
 		RECT,
 		TEXT,
 		ARC,
+		DUPLI,
 		MOVE
 	}modal = SELECT;
 	
@@ -249,6 +250,9 @@ int main(int argc, char** argv){
 	bmp_img * cz_img = bmp_load_img2(cz.pixel_data, cz.width, cz.height);
 	struct nk_image i_cz = nk_image_ptr(cz_img);
 	
+	bmp_img * cz48_img = bmp_load_img2(cz48.pixel_data, cz48.width, cz48.height);
+	struct nk_image i_cz48 = nk_image_ptr(cz48_img);
+	
 	/* init comands */
 	recv_comm[0] = 0;
 	txt[0] = 0;
@@ -267,7 +271,7 @@ int main(int argc, char** argv){
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_Window * window = SDL_CreateWindow(
-		"DXF Viewer with SDL2", /* title */
+		"CadZinho", /* title */
 		SDL_WINDOWPOS_UNDEFINED, /* x position */
 		SDL_WINDOWPOS_UNDEFINED, /* y position */
 		width, /* width */
@@ -275,8 +279,8 @@ int main(int argc, char** argv){
 		0); /* flags */
 	
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
-		(void *)cz48.pixel_data, cz48.width, cz48.height,
-		32, cz48.width * 4,
+		(void *)cz16.pixel_data, cz16.width, cz16.height,
+		32, cz16.width * 4,
 		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 
 	// The icon is attached to the window pointer
@@ -495,20 +499,21 @@ int main(int argc, char** argv){
 			}
 			if (show_app_about){
 				/* about popup */
-				static struct nk_rect s = {20, 100, 400, 300};
+				static struct nk_rect s = {20, 100, 400, 150};
 				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "About", NK_WINDOW_CLOSABLE, s)){
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Cadzinho", NK_TEXT_LEFT);
-					nk_layout_row_dynamic(gui->ctx, 165, 1);
-					nk_image(gui->ctx, i_cz);
+					nk_layout_row_dynamic(gui->ctx, 50, 2);
+					nk_label(gui->ctx, "CadZinho", NK_TEXT_RIGHT);
+					nk_image(gui->ctx, i_cz48);
+					//nk_layout_row_dynamic(gui->ctx, 165, 1);
+					//nk_image(gui->ctx, i_cz);
 					nk_layout_row_begin(gui->ctx, NK_DYNAMIC, 20, 2);
 					nk_layout_row_push(gui->ctx, 0.7f);
-					nk_label(gui->ctx, "By Ezequiel Rabelo de Aguiar", NK_TEXT_LEFT);
+					nk_label(gui->ctx, "By Ezequiel Rabelo de Aguiar", NK_TEXT_RIGHT);
 					nk_layout_row_push(gui->ctx, 0.3f);
 					nk_image(gui->ctx, i_brazil);
 					nk_layout_row_end(gui->ctx);
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Cadzinho is licensed under the MIT License.",  NK_TEXT_LEFT);
+					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
 					
 					nk_popup_end(gui->ctx);
 				} else show_app_about = nk_false;
@@ -577,7 +582,8 @@ int main(int argc, char** argv){
 					snprintf(recv_comm, 64, "%s","MOVE");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_dupli)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","DUPLI");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_rotate)){
 					
@@ -659,6 +665,15 @@ int main(int argc, char** argv){
 				case MOVE:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Move a selection", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
+					}
+					break;
+				case DUPLI:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Duplicate a selection", NK_TEXT_LEFT);
 					if (step == 0){
 						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
 					} else {
@@ -1029,6 +1044,9 @@ int main(int argc, char** argv){
 			}
 			else if (strcmp(recv_comm, "MOVE") == 0){
 				modal = MOVE;
+			}
+			else if (strcmp(recv_comm, "DUPLI") == 0){
+				modal = DUPLI;
 			}
 		}
 		
@@ -1479,6 +1497,97 @@ int main(int argc, char** argv){
 									// -------------------------------------------
 									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
 									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
+									
+									//---------------------------------------
+								}
+							}
+							current = current->next;
+						}
+						//list_clear(sel_list);
+					}
+					draw = 1;
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+					
+					
+				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
+					x2 = x1;
+					y2 = y1;
+				}
+			}
+		}
+		if (modal == DUPLI){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					step = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					x2 = x1;
+					y2 = y1;
+					draw_tmp = 1;
+					/* phantom object */
+					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					element = NULL;
+					draw_phanton = 1;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					if (sel_list != NULL){
+						list_node *current = sel_list->next;
+						dxf_node *new_ent = NULL;
+						
+						// starts the content sweep 
+						while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+									// -------------------------------------------
+									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+									dxf_edit_move(new_ent, x1- x0, y1 - y0, 0.0);
+									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+									drawing_ent_append(drawing, new_ent);
 									
 									//---------------------------------------
 								}

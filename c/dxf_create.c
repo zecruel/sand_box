@@ -1,6 +1,34 @@
 #include "dxf.h"
 #include "list.h"
 
+int dxf_obj_append(dxf_node *master, dxf_node *obj){
+	if ((master) && (obj)){
+		if (master->type == DXF_ENT){
+			obj->master = master;
+			/* start search at end of master's list */
+			dxf_node *next = NULL, *prev = master->end;
+			
+			/* append object between prev and next nodes */
+			obj->prev = prev;
+			if (prev){
+				next = prev->next;
+				prev->next = obj;
+			}
+			obj->next = next;
+			if (next){
+				next->prev = obj;
+			}
+			
+			if (prev == master->end){
+				master->end = obj;
+			}
+			
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int dxf_obj_detach(dxf_node *obj){
 	/* remove the object from its list */
 	if (obj){
@@ -197,7 +225,128 @@ int dxf_ext_append(dxf_node *master, char *appid, int group, void *value){
 	return 0;
 }
 
+void dxf_obj_transverse(dxf_node *source){
+	/* it is only a a prototype of function to transverse a DXF entity */
+	dxf_node *current = NULL;
+	dxf_node *prev = NULL;
+	
+	if (source){ 
+		if (source->type == DXF_ENT){
+			if (source->obj.content){
+				current = source->obj.content->next;
+				prev = current;
+			}
+		}
+	}
 
+	while (current){
+		if (current->type == DXF_ENT){
+			
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				prev = current;
+				continue;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			
+			
+		}
+		
+		current = current->next; /* go to the next in the list */
+		/* ============================================================= */
+		while (current == NULL){
+			/* end of list sweeping */
+			/* try to back in structure hierarchy */
+			if (prev == source){ /* stop the search if back on initial entity */
+				//printf("para\n");
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){ /* up in structure */
+				/* try to continue on previous point in structure */
+				current = prev->next;
+				
+			}
+			else{ /* stop the search if structure ends */
+				current = NULL;
+				break;
+			}
+		}
+	}
+}
+
+dxf_node *dxf_ent_copy(dxf_node *source, int pool_dest){
+	dxf_node *current = NULL;
+	dxf_node *prev = NULL, *dest = NULL, *curr_dest = NULL, *new_ent = NULL;
+	
+	if (source){ 
+		if (source->type == DXF_ENT){
+			if (source->obj.content){
+				current = source->obj.content->next;
+				prev = current;
+				
+				dest = dxf_obj_new (source->obj.name);
+				curr_dest = dest;
+			}
+		}
+	}
+
+	while ((current) && (curr_dest)){
+		if (current->type == DXF_ENT){
+			
+			if (current->obj.content){
+				
+				new_ent = dxf_obj_new (current->obj.name);
+				dxf_obj_append(curr_dest, new_ent);
+				curr_dest = new_ent;
+				
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				prev = current;
+				
+				continue;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			if (current->value.t_data == DXF_STR){
+				dxf_attr_append(curr_dest, current->value.group, current->value.s_data);
+			} else if (current->value.t_data == DXF_FLOAT){
+				dxf_attr_append(curr_dest, current->value.group, &current->value.d_data);
+			} else if (current->value.t_data == DXF_INT){
+				dxf_attr_append(curr_dest, current->value.group, &current->value.i_data);
+			}
+			
+		}
+		
+		current = current->next; /* go to the next in the list */
+		/* ============================================================= */
+		while (current == NULL){
+			/* end of list sweeping */
+			/* try to back in structure hierarchy */
+			if (prev == source){ /* stop the search if back on initial entity */
+				//printf("para\n");
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			curr_dest = curr_dest->master;
+			if (prev){ /* up in structure */
+				/* try to continue on previous point in structure */
+				current = prev->next;
+				
+			}
+			else{ /* stop the search if structure ends */
+				current = NULL;
+				break;
+			}
+		}
+	}
+	
+	return dest;
+}
 
 dxf_node * dxf_new_line (double x0, double y0, double z0,
 double x1, double y1, double z1,
