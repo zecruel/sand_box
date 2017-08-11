@@ -176,6 +176,8 @@ dxf_node * dxf_obj_new (char *name);
 
 int dxf_ident_attr_type (int group);
 
+int dxf_ident_ent_type (dxf_node *obj);
+
 dxf_node * dxf_attr_new (int group, int type, void *value);
 
 vector_p dxf_find_attr(dxf_node * obj, int attr);

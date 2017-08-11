@@ -540,7 +540,7 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	return NULL;
 }
 
-int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
+int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 	/* move the object relactive to offset distances */
 	if (obj){
 		dxf_node *current;
@@ -559,6 +559,147 @@ int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 		return 1;
 	}
 	return 0;
+}
+
+int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
+	/* move the object and its childrens,  relactive to offset distances */
+	dxf_node *current = NULL;
+	dxf_node *prev = NULL;
+	int ret = 0;
+	
+	if (obj){ 
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+				prev = current;
+			}
+		}
+	}
+
+	while (current){
+		ret = 1;
+		if (current->type == DXF_ENT){
+			
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				prev = current;
+				continue;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			if ((current->value.group >= 10) && (current->value.group < 19)){ 
+				current->value.d_data += ofs_x;
+			}
+			if ((current->value.group >= 20) && (current->value.group < 29)){ 
+				current->value.d_data += ofs_y;
+			}
+			if ((current->value.group >= 30) && (current->value.group < 38)){ 
+				current->value.d_data += ofs_z;
+			}
+		}
+		
+		current = current->next; /* go to the next in the list */
+		/* ============================================================= */
+		while (current == NULL){
+			/* end of list sweeping */
+			/* try to back in structure hierarchy */
+			if (prev == obj){ /* stop the search if back on initial entity */
+				//printf("para\n");
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){ /* up in structure */
+				/* try to continue on previous point in structure */
+				current = prev->next;
+				
+			}
+			else{ /* stop the search if structure ends */
+				current = NULL;
+				break;
+			}
+		}
+	}
+	return ret;
+}
+
+int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale_z){
+	/* move the object and its childrens,  relactive to offset distances */
+	dxf_node *current = NULL;
+	dxf_node *prev = NULL;
+	int ret = 0;
+	enum dxf_graph ent_type = DXF_NONE;
+	
+	if (obj){ 
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				ent_type =  dxf_ident_ent_type (obj);
+				current = obj->obj.content->next;
+				prev = current;
+			}
+		}
+	}
+
+	while (current){
+		ret = 1;
+		if (current->type == DXF_ENT){
+			
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				prev = current;
+				continue;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			if ((current->value.group >= 10) && (current->value.group < 19)){ 
+				current->value.d_data *= scale_x;
+			}
+			if ((current->value.group >= 20) && (current->value.group < 29)){ 
+				current->value.d_data *= scale_y;
+			}
+			if ((current->value.group >= 30) && (current->value.group < 38)){ 
+				current->value.d_data *= scale_z;
+			}
+			
+			switch (ent_type){
+				case DXF_CIRCLE:
+					if (current->value.group == 40) { 
+						current->value.d_data *= scale_x;
+					}
+					break;
+				case DXF_TEXT:
+					if (current->value.group == 40) { 
+						current->value.d_data *= scale_x;
+					}
+					break;
+			}
+		}
+		
+		current = current->next; /* go to the next in the list */
+		/* ============================================================= */
+		while (current == NULL){
+			/* end of list sweeping */
+			/* try to back in structure hierarchy */
+			if (prev == obj){ /* stop the search if back on initial entity */
+				//printf("para\n");
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){ /* up in structure */
+				/* try to continue on previous point in structure */
+				current = prev->next;
+				
+			}
+			else{ /* stop the search if structure ends */
+				current = NULL;
+				break;
+			}
+		}
+	}
+	return ret;
 }
 
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){

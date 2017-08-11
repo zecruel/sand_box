@@ -96,7 +96,7 @@ int main(int argc, char** argv){
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
-	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0;
+	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
 	double thick = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
@@ -149,7 +149,8 @@ int main(int argc, char** argv){
 		TEXT,
 		ARC,
 		DUPLI,
-		MOVE
+		MOVE,
+		SCALE
 	}modal = SELECT;
 	
 	char recv_comm[64];
@@ -592,7 +593,8 @@ int main(int argc, char** argv){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
-					
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","SCALE");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_ungroup)){
 					
@@ -631,7 +633,7 @@ int main(int argc, char** argv){
 					} else {
 						nk_label(gui->ctx, "Enter next point", NK_TEXT_LEFT);
 					}
-					bulge = nk_propertyd(gui->ctx, "Bulge", 0.0d, bulge, 1.0d, 0.1d, 0.1d);
+					bulge = nk_propertyd(gui->ctx, "Bulge", -1.0d, bulge, 1.0d, 0.1d, 0.1d);
 					break;
 				case CIRCLE:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -679,6 +681,16 @@ int main(int argc, char** argv){
 					} else {
 						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
 					}
+					break;
+				case SCALE:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Scale a selection", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					} else {
+						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
+					}
+					scale = nk_propertyd(gui->ctx, "Scale", 0.0d, scale, 100.0d, 0.1d, 0.1d);
 					break;
 			}
 		}
@@ -1047,6 +1059,9 @@ int main(int argc, char** argv){
 			}
 			else if (strcmp(recv_comm, "DUPLI") == 0){
 				modal = DUPLI;
+			}
+			else if (strcmp(recv_comm, "SCALE") == 0){
+				modal = SCALE;
 			}
 		}
 		
@@ -1588,6 +1603,97 @@ int main(int argc, char** argv){
 									dxf_edit_move(new_ent, x1- x0, y1 - y0, 0.0);
 									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
 									drawing_ent_append(drawing, new_ent);
+									
+									//---------------------------------------
+								}
+							}
+							current = current->next;
+						}
+						//list_clear(sel_list);
+					}
+					draw = 1;
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+					
+					
+				}
+				else if (rightMouseButtonClick){
+					step = 0;
+					draw_tmp = 0;
+					element = NULL;
+					draw = 1;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+				if (MouseMotion){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
+					x2 = x1;
+					y2 = y1;
+				}
+			}
+		}
+		if (modal == SCALE){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					step = 1;
+					x0 = (double) mouse_x/zoom + ofs_x;
+					y0 = (double) mouse_y/zoom + ofs_y;
+					x1 = x0;
+					y1 = y0;
+					x2 = x1;
+					y2 = y1;
+					draw_tmp = 1;
+					/* phantom object */
+					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					vec_graph_modify(phanton, 0, 0 , scale, scale, 0.0);
+					element = NULL;
+					draw_phanton = 1;
+				}
+				else if (rightMouseButtonClick){
+					modal = SELECT;
+					draw_tmp = 0;
+					element = NULL;
+					draw_phanton = 0;
+					if (phanton){
+						free(phanton->data);
+						free(phanton);
+						phanton = NULL;
+					}
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					x1 = (double) mouse_x/zoom + ofs_x;
+					y1 = (double) mouse_y/zoom + ofs_y;
+					
+					if (sel_list != NULL){
+						list_node *current = sel_list->next;
+						
+						// starts the content sweep 
+						while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+									// -------------------------------------------
+									dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
+									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									
+									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
 									
 									//---------------------------------------
 								}

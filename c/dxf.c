@@ -467,6 +467,72 @@ int dxf_ident_attr_type (int group){
 	}
 }
 
+int dxf_ident_ent_type (dxf_node *obj){
+	enum dxf_graph ent_type = DXF_NONE;
+	if (obj){
+		if (obj->type == DXF_ENT){
+			if (strcmp(obj->obj.name, "LINE") == 0){
+				ent_type = DXF_LINE;
+			}
+			else if (strcmp(obj->obj.name, "POINT") == 0){
+				ent_type = DXF_POINT;
+			}
+			else if (strcmp(obj->obj.name, "CIRCLE") == 0){
+				ent_type = DXF_CIRCLE;
+			}
+			else if (strcmp(obj->obj.name, "ARC") == 0){
+				ent_type = DXF_ARC;
+			}
+			else if (strcmp(obj->obj.name, "TRACE") == 0){
+				ent_type = DXF_TRACE;
+			}
+			else if (strcmp(obj->obj.name, "SOLID") == 0){
+				ent_type = DXF_SOLID;
+			}
+			else if (strcmp(obj->obj.name, "TEXT") == 0){
+				ent_type = DXF_TEXT;
+			}
+			else if (strcmp(obj->obj.name, "SHAPE") == 0){
+				ent_type = DXF_SHAPE;
+			}
+			else if (strcmp(obj->obj.name, "INSERT") == 0){
+				ent_type = DXF_INSERT;
+			}
+			else if (strcmp(obj->obj.name, "ATTRIB") == 0){
+				ent_type = DXF_ATTRIB;
+			}
+			else if (strcmp(obj->obj.name, "POLYLINE") == 0){
+				ent_type = DXF_POLYLINE;
+			}
+			else if (strcmp(obj->obj.name, "VERTEX") == 0){
+				ent_type = DXF_VERTEX;
+			}
+			else if (strcmp(obj->obj.name, "LWPOLYLINE") == 0){
+				ent_type = DXF_LWPOLYLINE;
+			}
+			else if (strcmp(obj->obj.name, "3DFACE") == 0){
+				ent_type = DXF_3DFACE;
+			}
+			else if (strcmp(obj->obj.name, "VIEWPORT") == 0){
+				ent_type = DXF_VIEWPORT;
+			}
+			else if (strcmp(obj->obj.name, "DIMENSION") == 0){
+				ent_type = DXF_DIMENSION;
+			}
+			else if (strcmp(obj->obj.name, "ELLIPSE") == 0){
+				ent_type = DXF_ELLIPSE;
+			}
+			else if (strcmp(obj->obj.name, "MTEXT") == 0){
+				ent_type = DXF_MTEXT;
+			}
+			else if (strcmp(obj->obj.name, "BLOCK") == 0){
+				ent_type = DXF_BLK;
+			}
+		}
+	}
+	return ent_type;
+}
+
 dxf_node * dxf_attr_new (int group, int type, void *value){
 	/* create a new DXF attribute */
 	//dxf_node *new_attr = (dxf_node *) malloc(sizeof(dxf_node));
