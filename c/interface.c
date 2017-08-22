@@ -1691,7 +1691,8 @@ int main(int argc, char** argv){
 									
 									// -------------------------------------------
 									dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
-									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									//dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									//printf("obj = %d, scale = %0.2f\n", current->data, scale);
 									
 									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
 									
@@ -1700,6 +1701,24 @@ int main(int argc, char** argv){
 							}
 							current = current->next;
 						}
+						current = sel_list->next;
+						
+						// starts the content sweep 
+						/*while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+									// -------------------------------------------
+									//dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
+									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									
+									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
+									
+									//---------------------------------------
+								}
+							}
+							current = current->next;
+						}*/
 						//list_clear(sel_list);
 					}
 					draw = 1;

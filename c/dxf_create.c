@@ -259,12 +259,12 @@ void dxf_obj_transverse(dxf_node *source){
 		while (current == NULL){
 			/* end of list sweeping */
 			/* try to back in structure hierarchy */
+			prev = prev->master;
 			if (prev == source){ /* stop the search if back on initial entity */
 				//printf("para\n");
 				current = NULL;
 				break;
 			}
-			prev = prev->master;
 			if (prev){ /* up in structure */
 				/* try to continue on previous point in structure */
 				current = prev->next;
@@ -326,13 +326,13 @@ dxf_node *dxf_ent_copy(dxf_node *source, int pool_dest){
 		while (current == NULL){
 			/* end of list sweeping */
 			/* try to back in structure hierarchy */
+			prev = prev->master;
+			curr_dest = curr_dest->master;
 			if (prev == source){ /* stop the search if back on initial entity */
 				//printf("para\n");
 				current = NULL;
 				break;
 			}
-			prev = prev->master;
-			curr_dest = curr_dest->master;
 			if (prev){ /* up in structure */
 				/* try to continue on previous point in structure */
 				current = prev->next;
@@ -604,12 +604,12 @@ int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 		while (current == NULL){
 			/* end of list sweeping */
 			/* try to back in structure hierarchy */
+			prev = prev->master;
 			if (prev == obj){ /* stop the search if back on initial entity */
 				//printf("para\n");
 				current = NULL;
 				break;
 			}
-			prev = prev->master;
 			if (prev){ /* up in structure */
 				/* try to continue on previous point in structure */
 				current = prev->next;
@@ -674,6 +674,8 @@ int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale
 						current->value.d_data *= scale_x;
 					}
 					break;
+				default:
+					break;
 			}
 		}
 		
@@ -682,12 +684,12 @@ int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale
 		while (current == NULL){
 			/* end of list sweeping */
 			/* try to back in structure hierarchy */
+			prev = prev->master;
 			if (prev == obj){ /* stop the search if back on initial entity */
 				//printf("para\n");
 				current = NULL;
 				break;
 			}
-			prev = prev->master;
 			if (prev){ /* up in structure */
 				/* try to continue on previous point in structure */
 				current = prev->next;
