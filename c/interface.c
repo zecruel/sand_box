@@ -107,6 +107,7 @@ int main(int argc, char** argv){
 	int progress = 0;
 	int progr_win = 0;
 	int progr_end = 0;
+	int text_left = 0;
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int show_app_about = 0;
@@ -194,9 +195,9 @@ int main(int argc, char** argv){
 	gui->ctx->style.edit.padding = nk_vec2(4, -6);
 	
 	/* init the toolbox image */
-	bmp_img * tool_img = bmp_load_img("tool2.png");
-	bmp_img * tool_vec[40];
-	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 40);
+	bmp_img * tool_img = bmp_load_img("tool4.png");
+	bmp_img * tool_vec[54];
+	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 54);
 	struct nk_image i_new = nk_image_ptr(tool_vec[0]);
 	struct nk_image i_open = nk_image_ptr(tool_vec[1]);
 	struct nk_image i_save = nk_image_ptr(tool_vec[2]);
@@ -237,6 +238,20 @@ int main(int argc, char** argv){
 	struct nk_image i_layer = nk_image_ptr(tool_vec[37]);
 	struct nk_image i_image = nk_image_ptr(tool_vec[38]);
 	struct nk_image i_lib = nk_image_ptr(tool_vec[39]);
+	struct nk_image i_scale = nk_image_ptr(tool_vec[40]);
+	struct nk_image i_elipse = nk_image_ptr(tool_vec[41]);
+	struct nk_image i_t_l = nk_image_ptr(tool_vec[42]);
+	struct nk_image i_t_c = nk_image_ptr(tool_vec[43]);
+	struct nk_image i_t_r = nk_image_ptr(tool_vec[44]);
+	struct nk_image i_t_bl = nk_image_ptr(tool_vec[45]);
+	struct nk_image i_t_bc = nk_image_ptr(tool_vec[46]);
+	struct nk_image i_t_br = nk_image_ptr(tool_vec[47]);
+	struct nk_image i_t_tl = nk_image_ptr(tool_vec[48]);
+	struct nk_image i_t_tc = nk_image_ptr(tool_vec[49]);
+	struct nk_image i_t_tr = nk_image_ptr(tool_vec[50]);
+	struct nk_image i_t_ml = nk_image_ptr(tool_vec[51]);
+	struct nk_image i_t_mc = nk_image_ptr(tool_vec[52]);
+	struct nk_image i_t_mr = nk_image_ptr(tool_vec[53]);
 	
 	struct nk_style_button b_icon_style;
 	if (gui){
@@ -523,7 +538,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 300),
+		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 340),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			
@@ -573,6 +588,9 @@ int main(int argc, char** argv){
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_spline)){
 					
 				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_elipse)){
+					
+				}
 				nk_tree_pop(gui->ctx);
 			}
 			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Modify", NK_MAXIMIZED)) {
@@ -586,6 +604,10 @@ int main(int argc, char** argv){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","DUPLI");
 				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_scale)){
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","SCALE");
+				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_rotate)){
 					
 				}
@@ -593,8 +615,7 @@ int main(int argc, char** argv){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","SCALE");
+					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_ungroup)){
 					
