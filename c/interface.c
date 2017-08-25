@@ -101,13 +101,21 @@ int main(int argc, char** argv){
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
+	/* DXF text vertical alignment definitions */
+	static const char *text_al_v[] = {"Base Line", "Bottom", "Middle", "Top"};
+	#define T_AL_V_LEN 4
+	int t_al_v = 0;
+	/* DXF text horizontal alignment definitions */
+	static const char *text_al_h[] = {"Left", "Center", "Right", "Aligned", "Middle", "Fit"};
+	#define T_AL_H_LEN 6
+	int t_al_h = 0;
+	
 	unsigned int width = 1024;
 	unsigned int height = 600;
 	int open_prg = 0;
 	int progress = 0;
 	int progr_win = 0;
 	int progr_end = 0;
-	int text_left = 0;
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int show_app_about = 0;
@@ -680,6 +688,8 @@ int main(int argc, char** argv){
 					//nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
 					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
 					txt_h = nk_propertyd(gui->ctx, "Text Height", 0.0d, txt_h, 100.0d, 0.1d, 0.1d);
+					t_al_v = nk_combo(gui->ctx, text_al_v, T_AL_V_LEN, t_al_v, 20, nk_vec2(100,105));
+					t_al_h = nk_combo(gui->ctx, text_al_h, T_AL_H_LEN, t_al_h, 20, nk_vec2(100,105));
 					break;
 				case ARC:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -1446,7 +1456,8 @@ int main(int argc, char** argv){
 					color_idx, drawing->layers[layer_idx].name, /* color, layer */
 					drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
 				element = new_el;
-				
+				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
+				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 				
 			}
 			else{
@@ -1456,8 +1467,12 @@ int main(int argc, char** argv){
 					
 					dxf_attr_change_i(new_el, 10, &x1, -1);
 					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 11, &x1, -1);
+					dxf_attr_change_i(new_el, 21, &y1, -1);
 					dxf_attr_change(new_el, 40, &txt_h);
 					dxf_attr_change(new_el, 1, txt);
+					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
+					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
 					
@@ -1477,12 +1492,16 @@ int main(int argc, char** argv){
 					y1 = (double) mouse_y/zoom + ofs_y;
 					dxf_attr_change_i(new_el, 10, &x1, -1);
 					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 11, &x1, -1);
+					dxf_attr_change_i(new_el, 21, &y1, -1);
 					dxf_attr_change(new_el, 40, &txt_h);
 					dxf_attr_change(new_el, 1, txt);
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change(new_el, 39, &thick);
 					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
+					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 				}

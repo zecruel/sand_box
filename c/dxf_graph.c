@@ -1438,7 +1438,7 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 				curr_graph->color = dxf_colors[color];
 				
 				/* find the dimentions of text */
-				txt_size = t_size/fnt_size;
+				txt_size = t_size/fnt_above;
 				txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
 				txt_h = fabs(curr_graph->ext_max_y - curr_graph->ext_min_y);
 				
@@ -1463,30 +1463,46 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 						pt1_z);
 				}
 				
+				t_base_x =  pt2_x;
+				t_base_y =  pt2_y;
+				
+				if ((t_alin_v == 0) && (t_alin_h == 0)){
+					t_base_x =  pt1_x;
+					t_base_y =  pt1_y;
+				}
+				
 				/* find the insert point of text, in function of its aling */
-				if(t_alin_h < 3){
+				else if(t_alin_h < 3){
 					t_center_x = (double)t_alin_h * (t_scale_x*txt_w * txt_size/2);
-					t_base_x =  (double)t_alin_h * (pt2_x - pt1_x)/2;
-					t_base_y =  (double)t_alin_h * (pt2_y - pt1_y)/2;
+					//t_base_x =  (double)t_alin_h * (pt2_x - pt1_x)/2;
+					//t_base_y =  (double)t_alin_h * (pt2_y - pt1_y)/2;
 				}
 				else{ 
 					if(t_alin_h == 4){
-						t_base_x = (pt2_x - pt1_x)/2;
-						t_base_y = (pt2_y - pt1_y)/2;
+						t_center_y = (fnt_above + fnt_below)* txt_size/2;
 					}
 					else{
 						t_scale_x = sqrt(pow((pt2_x - pt1_x), 2) + pow((pt2_y - pt1_y), 2))/(txt_w * txt_size);
+						t_base_x =  pt1_x + (pt2_x - pt1_x)/2;
+						t_base_y =  pt1_y + (pt2_y - pt1_y)/2;
 					}
+					
+					t_center_x = (t_scale_x*txt_w * txt_size/2);
 					//rot = atan2((pt2_y - pt1_y),(pt2_x - pt1_x)) * 180/M_PI;
 					
 					//printf("alinhamento=%d\n", t_alin_h);
 				}
 				if(t_alin_v >0){
-					t_center_y = (double)(t_alin_v - 1) * (txt_size/2);
+					if(t_alin_v != 1){
+						t_center_y = (double)(t_alin_v - 1) * fnt_above * txt_size/2;
+					}
+					else{
+						t_center_y = - fnt_below * txt_size;
+					}
 				}
 				
-				t_pos_x = pt1_x + t_base_x - t_center_x;
-				t_pos_y = pt1_y + t_base_y - t_center_y;
+				t_pos_x = t_base_x - t_center_x;
+				t_pos_y = t_base_y - t_center_y;
 				
 				/* apply the scales, offsets and rotation to graphs */
 				graph_modify(curr_graph, t_pos_x, t_pos_y, t_scale_x*txt_size, txt_size, t_rot);

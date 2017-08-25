@@ -513,7 +513,8 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
 	const char *dxf_subclass = "AcDbText";
-	int ok = 1;
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0;
 	dxf_node * new_text = dxf_obj_new ("TEXT");
 	
 	ok &= dxf_attr_append(new_text, 5, (void *) handle);
@@ -531,7 +532,14 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_text, 30, (void *) &z0);
 	ok &= dxf_attr_append(new_text, 40, (void *) &h);
 	ok &= dxf_attr_append(new_text, 1, (void *) txt);
+	ok &= dxf_attr_append(new_text, 50, (void *) &d_zero);
+	ok &= dxf_attr_append(new_text, 72, (void *) &int_zero);
+	
+	ok &= dxf_attr_append(new_text, 11, (void *) &x0);
+	ok &= dxf_attr_append(new_text, 21, (void *) &y0);
+	ok &= dxf_attr_append(new_text, 31, (void *) &z0);
 	ok &= dxf_attr_append(new_text, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(new_text, 73, (void *) &int_zero);
 	
 	if(ok){
 		return new_text;
