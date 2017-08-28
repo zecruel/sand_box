@@ -95,7 +95,7 @@ int main(int argc, char** argv){
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
-	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL;
+	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL, *near_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
 	double thick = 0.0;
 	char txt[DXF_MAX_CHARS];
@@ -129,8 +129,13 @@ int main(int argc, char** argv){
 	int leftMouseButtonClick = 0;
 	int rightMouseButtonClick = 0;
 	int MouseMotion = 0;
+	int keyEnter = 0;
 	
 	int step = 0;
+	int lock_ax_x = 0;
+	int lock_ax_y = 0;
+	double step_x[10], step_y[10];
+	
 	//graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
@@ -433,6 +438,11 @@ int main(int argc, char** argv){
 						printf(dropped_filedir);
 						printf("\n----------------------------\n");
 						SDL_free(dropped_filedir);    // Free dropped_filedir memory
+						break;
+					case SDL_KEYDOWN:
+						if (event.key.keysym.sym == SDLK_RETURN){
+							keyEnter = 1;
+						}
 						break;
 					}
 				}
@@ -762,7 +772,9 @@ int main(int argc, char** argv){
 			
 			nk_layout_row_dynamic(gui->ctx, 20, 4);
 			
+			//nk_edit_focus(gui->ctx, 0);
 			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
+			//
 			//NK_EDIT_ACTIVE
 			if (res & NK_EDIT_COMMITED){
 				comm[comm_len] = 0;
@@ -1063,38 +1075,81 @@ int main(int argc, char** argv){
 			str_upp(recv_comm);
 			if (strcmp(recv_comm, "SELECT") == 0){
 				modal = SELECT;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "LINE") == 0){
 				modal = LINE;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "POLYLINE") == 0){
 				modal = POLYLINE;
-			}
-			else if (strcmp(recv_comm, "LINE") == 0){
-				modal = LINE;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "DELETE") == 0){
 				action = DELETE;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "CIRCLE") == 0){
 				modal = CIRCLE;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "RECT") == 0){
 				modal = RECT;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "TEXT") == 0){
 				modal = TEXT;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "MOVE") == 0){
 				modal = MOVE;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "DUPLI") == 0){
 				modal = DUPLI;
+				step = 0;
 			}
 			else if (strcmp(recv_comm, "SCALE") == 0){
 				modal = SCALE;
+				step = 0;
 			}
 		}
+		
+		if ((modal != SELECT) && (step > 0) && (keyEnter)){
+			if ((lock_ax_x != 0) || (lock_ax_y != 0)){
+				lock_ax_x = 0;
+				lock_ax_y = 0;
+			}
+			else{
+				lock_ax_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
+				lock_ax_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
+				
+				//printf ("lock x=%d, y=%d\n", lock_ax_x, lock_ax_y);
+			}
+		}
+		
+		if ((leftMouseButtonClick) || (rightMouseButtonClick) || (MouseMotion)){
+			rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
+			rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
+			rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
+			rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
+			
+			near_el = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+			
+			if ((step >= 0) && (step < 10)){
+				step_x[step] = (double) mouse_x/zoom + ofs_x;
+				step_y[step] = (double) mouse_y/zoom + ofs_y;
+			}
+			if ((step > 0) && (step < 10)){
+				if (lock_ax_y != 0){
+					step_x[step] = step_x[step - 1];
+				}
+				if (lock_ax_x != 0){
+					step_y[step] = step_y[step - 1];
+				}
+			}
+		}
+		
 		
 		if (modal == SELECT){
 			if (leftMouseButtonClick){
@@ -1135,28 +1190,31 @@ int main(int argc, char** argv){
 				draw = 1;
 			}
 			if (MouseMotion){
+				/*
 				rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
 				rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
 				rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
 				rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
 				
 				/* for hilite test */
-				element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+				//element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+				element = near_el;
 				draw = 1;
 			}
 		}
 		if (modal == LINE){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					step = 1;
+					
+					/*
 					x0 = (double) mouse_x/zoom + ofs_x;
 					y0 = (double) mouse_y/zoom + ofs_y;
 					x1 = x0;
-					y1 = y0;
+					y1 = y0;*/
 					draw_tmp = 1;
 					/* create a new DXF line */
 					new_el = (dxf_node *) dxf_new_line (
-						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
+						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
 						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
@@ -1164,28 +1222,29 @@ int main(int argc, char** argv){
 					//x1_attr = dxf_find_attr2(new_el, 11);
 					//y1_attr = dxf_find_attr2(new_el, 21);
 					element = new_el;
+					step = 1;
 				}
 				else if (rightMouseButtonClick){
 					modal = SELECT;
 					draw_tmp = 0;
 					element = NULL;
+					lock_ax_x = 0;
+					lock_ax_y = 0;
 				}
 			}
 			else{
 				if (leftMouseButtonClick){
+					/*
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
-					
-					/*
-					if(x1_attr){
-						x1_attr->value.d_data = x1;
+					if (lock_ax_y != 0){
+						x1 = x0;
 					}
-					if(y1_attr){
-						y1_attr->value.d_data = y1;
+					if (lock_ax_x != 0){
+						y1 = y0;
 					}*/
-					
-					dxf_attr_change(new_el, 11, &x1);
-					dxf_attr_change(new_el, 21, &y1);
+					dxf_attr_change(new_el, 11, &step_x[step]);
+					dxf_attr_change(new_el, 21, &step_y[step]);
 					
 					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
 					
@@ -1193,11 +1252,13 @@ int main(int argc, char** argv){
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
 					
-					x0 = x1;
-					y0 = y1;
+					//x0 = x1;
+					//y0 = y1;
+					step_x[step - 1] = step_x[step];
+					step_y[step - 1] = step_y[step];
 					
 					new_el = (dxf_node *) dxf_new_line (
-						x0, y0, 0.0, x1, y1, 0.0, /* pt1, pt2 */
+						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
 						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
@@ -1205,22 +1266,32 @@ int main(int argc, char** argv){
 					//x1_attr = dxf_find_attr2(new_el, 11);
 					//y1_attr = dxf_find_attr2(new_el, 21);
 					element = new_el;
+					lock_ax_x = 0;
+					lock_ax_y = 0;
 				}
 				else if (rightMouseButtonClick){
 					step = 0;
 					draw_tmp = 0;
 					element = NULL;
 					draw = 1;
+					lock_ax_x = 0;
+					lock_ax_y = 0;
 				}
 				if (MouseMotion){
+					/*
 					x1 = (double) mouse_x/zoom + ofs_x;
 					y1 = (double) mouse_y/zoom + ofs_y;
-					
+					if (lock_ax_y != 0){
+						x1 = x0;
+					}
+					if (lock_ax_x != 0){
+						y1 = y0;
+					}*/
 					
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 11, &x1);
-					dxf_attr_change(new_el, 21, &y1);
+					dxf_attr_change(new_el, 11, &step_x[step]);
+					dxf_attr_change(new_el, 21, &step_y[step]);
 					dxf_attr_change(new_el, 39, &thick);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
@@ -1831,13 +1902,15 @@ int main(int argc, char** argv){
 			SDL_RenderCopy(renderer, canvas, NULL, NULL);
 			SDL_RenderPresent(renderer);
 			
-			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+			//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+			SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEMOTION);
 			draw = 0;
 		}
 		
 		leftMouseButtonClick = 0;
 		rightMouseButtonClick = 0;
 		MouseMotion = 0;
+		keyEnter = 0;
 		
 		//graph_mem_pool(ZERO_GRAPH, 2);
 		//graph_mem_pool(ZERO_LINE, 2);
