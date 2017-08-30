@@ -135,6 +135,10 @@ int main(int argc, char** argv){
 	int lock_ax_x = 0;
 	int lock_ax_y = 0;
 	double step_x[10], step_y[10];
+	char user_str_x[64], user_str_y[64];
+	user_str_x[0] = 0; user_str_y[0] = 0;
+	double user_x = 0.0, user_y = 0.0;
+	int user_flag_x = 0, user_flag_y = 0;
 	
 	//graph_obj *tmp_graph = NULL;
 	
@@ -769,8 +773,9 @@ int main(int argc, char** argv){
 			
 			static char text[64];
 			static int text_len;
+			float ratio[] = {0.4f, 0.2f, 0.4f};
 			
-			nk_layout_row_dynamic(gui->ctx, 20, 4);
+			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 3, ratio);
 			
 			//nk_edit_focus(gui->ctx, 0);
 			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
@@ -785,6 +790,8 @@ int main(int argc, char** argv){
 			}
 			
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
+			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			text_len = snprintf(text, 63, "x = %f, y = %f", pos_x, pos_y);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
 			
 			/*if (wait_open != 0){
@@ -802,13 +809,59 @@ int main(int argc, char** argv){
 			static char text[64];
 			static int text_len;
 			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
+			nk_flags res;
+			
 			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 4, ratio);
+			
 			nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
-			text_len = snprintf(text, 63, "%f", pos_x);
-			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, text, &text_len, 64, nk_filter_float);
+			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
+			if (res & NK_EDIT_ACTIVE){
+				if (strlen(user_str_x)){
+					user_x = atof(user_str_x);
+					user_flag_x = 1;
+				}
+				else{
+					user_flag_x = 0;
+					nk_edit_unfocus(gui->ctx);
+				}
+			}
+			else {
+				if ((step > 0) && (step < 10)){
+					snprintf(user_str_x, 63, "%f", step_x[step] - step_x[step - 1]);
+				}
+				else {
+					snprintf(user_str_x, 63, "%f", 0.0);
+				}
+			}
+			if (res & NK_EDIT_COMMITED){
+				nk_edit_unfocus(gui->ctx);
+				//printf("%s\n", user_str_x);
+			}
+			
 			nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
-			text_len = snprintf(text, 63, "%f", pos_y);
-			nk_edit_string(gui->ctx, NK_EDIT_SIMPLE, text, &text_len, 64, nk_filter_float);
+			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
+			if (res & NK_EDIT_ACTIVE){
+				if (strlen(user_str_y)){
+					user_y = atof(user_str_y);
+					user_flag_y = 1;
+				}
+				else{
+					user_flag_y = 0;
+					nk_edit_unfocus(gui->ctx);
+				}
+			}
+			else {
+				if ((step > 0) && (step < 10)){
+					snprintf(user_str_y, 63, "%f", step_y[step] - step_y[step - 1]);
+				}
+				else {
+					snprintf(user_str_y, 63, "%f", 0.0);
+				}
+			}
+			if (res & NK_EDIT_COMMITED){
+				nk_edit_unfocus(gui->ctx);
+				//printf("%s\n", user_str_y);
+			}
 		}
 		nk_end(gui->ctx);
 		
@@ -1147,7 +1200,14 @@ int main(int argc, char** argv){
 				if (lock_ax_x != 0){
 					step_y[step] = step_y[step - 1];
 				}
+				if (user_flag_x){
+					step_x[step] = step_x[step - 1] + user_x;
+				}
+				if (user_flag_y){
+					step_y[step] = step_y[step - 1] + user_y;
+				}
 			}
+			
 		}
 		
 		
@@ -1230,6 +1290,8 @@ int main(int argc, char** argv){
 					element = NULL;
 					lock_ax_x = 0;
 					lock_ax_y = 0;
+					user_flag_x = 0;
+					user_flag_y = 0;
 				}
 			}
 			else{
@@ -1268,6 +1330,8 @@ int main(int argc, char** argv){
 					element = new_el;
 					lock_ax_x = 0;
 					lock_ax_y = 0;
+					user_flag_x = 0;
+					user_flag_y = 0;
 				}
 				else if (rightMouseButtonClick){
 					step = 0;
@@ -1276,6 +1340,8 @@ int main(int argc, char** argv){
 					draw = 1;
 					lock_ax_x = 0;
 					lock_ax_y = 0;
+					user_flag_x = 0;
+					user_flag_y = 0;
 				}
 				if (MouseMotion){
 					/*
@@ -1302,62 +1368,42 @@ int main(int argc, char** argv){
 		if (modal == POLYLINE){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					step = 1;
-					x0 = (double) mouse_x/zoom + ofs_x;
-					y0 = (double) mouse_y/zoom + ofs_y;
-					x1 = x0;
-					y1 = y0;
-					draw_tmp = 1;
 					/* create a new DXF lwpolyline */
 					new_el = (dxf_node *) dxf_new_lwpolyline (
-						x0, y0, 0.0, /* pt1, */
+						step_x[step], step_y[step], 0.0, /* pt1, */
 						bulge, (double) thick, /* bulge, thickness, */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
-					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
-					//x1_attr = dxf_find_attr2(new_el, 11);
-					//y1_attr = dxf_find_attr2(new_el, 21);
-					dxf_lwpoly_append (new_el, x1, y1, 0.0, bulge);
+					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
 					element = new_el;
-					
+					step = 1;
+					draw_tmp = 1;
 				}
 				else if (rightMouseButtonClick){
 					modal = SELECT;
 					draw_tmp = 0;
 					element = NULL;
+					lock_ax_x = 0;
+					lock_ax_y = 0;
 				}
 			}
 			else{
 				if (leftMouseButtonClick){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					step = 2;
+					step_x[step - 1] = step_x[step];
+					step_y[step - 1] = step_y[step];
 					
-					/*
-					if(x1_attr){
-						x1_attr->value.d_data = x1;
-					}
-					if(y1_attr){
-						y1_attr->value.d_data = y1;
-					}*/
-					
-					dxf_attr_change_i(new_el, 10, &x1, -1);
-					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
+					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					dxf_attr_change_i(new_el, 42, &bulge, -1);
 					
-					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
-					
-					//dxf_ent_print2(new_el);
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 					
-					
-					x0 = x1;
-					y0 = y1;
-					
-					dxf_lwpoly_append (new_el, x1, y1, 0.0, bulge);
+					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
+					lock_ax_x = 0;
+					lock_ax_y = 0;
+					step = 2;
 				}
 				else if (rightMouseButtonClick){
-					//step = 0;
 					draw_tmp = 0;
 					if (step == 2){
 						dxf_lwpoly_remove (new_el, -1);
@@ -1367,16 +1413,14 @@ int main(int argc, char** argv){
 					}
 					element = NULL;
 					draw = 1;
+					lock_ax_x = 0;
+					lock_ax_y = 0;
 				}
 				if (MouseMotion){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
-					
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change_i(new_el, 10, &x1, -1);
-					dxf_attr_change_i(new_el, 20, &y1, -1);
+					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
+					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					dxf_attr_change_i(new_el, 42, &bulge, -1);
 					dxf_attr_change(new_el, 39, &thick);
 					dxf_attr_change(new_el, 62, &color_idx);
