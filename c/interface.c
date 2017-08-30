@@ -13,6 +13,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
+#include <ctype.h>
 //#include <locale.h>
 
 #include "tinyfiledialogs.h"
@@ -139,6 +140,8 @@ int main(int argc, char** argv){
 	user_str_x[0] = 0; user_str_y[0] = 0;
 	double user_x = 0.0, user_y = 0.0;
 	int user_flag_x = 0, user_flag_y = 0;
+	int user_number = 0;
+	char user_str[64];
 	
 	//graph_obj *tmp_graph = NULL;
 	
@@ -442,13 +445,20 @@ int main(int argc, char** argv){
 						printf(dropped_filedir);
 						printf("\n----------------------------\n");
 						SDL_free(dropped_filedir);    // Free dropped_filedir memory
+						}
 						break;
 					case SDL_KEYDOWN:
 						if (event.key.keysym.sym == SDLK_RETURN){
 							keyEnter = 1;
 						}
 						break;
-					}
+					case SDL_TEXTINPUT:
+						/* text input */
+						if ((*event.text.text > 41) && (*event.text.text < 58)){
+							user_number = 1;
+							strncpy (user_str, event.text.text, 63);
+						}
+						break;
 				}
 			}
 		}
@@ -814,6 +824,14 @@ int main(int argc, char** argv){
 			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 4, ratio);
 			
 			nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
+			if ((user_number) && (step > 0) && (step < 10) && (!user_flag_x) &&
+				(fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]))){
+				//lock_ax_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
+				user_number = 0;
+				user_str_x[0] = 0;
+				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
+			}
+			
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
 			if (res & NK_EDIT_ACTIVE){
 				if (strlen(user_str_x)){
@@ -839,6 +857,13 @@ int main(int argc, char** argv){
 			}
 			
 			nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
+			if ((user_number) && (step > 0) && (step < 10) && (!user_flag_y) &&
+				(fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]))){
+				user_number = 0;
+				user_str_y[0] = 0;
+				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
+			}
+			
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
 			if (res & NK_EDIT_ACTIVE){
 				if (strlen(user_str_y)){
@@ -1014,8 +1039,9 @@ int main(int argc, char** argv){
 			nk_end(gui->ctx);
 		}
 		
-		
-		
+		if(modal != SELECT){
+			nk_window_set_focus(gui->ctx, "POS");
+		}
 		
 		if (wait_open != 0){
 			low_proc = 0;
