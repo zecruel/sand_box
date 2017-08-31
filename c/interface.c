@@ -1216,38 +1216,46 @@ int main(int argc, char** argv){
 			}
 		}
 		
+		/* if user hit the enter key during a drawing operation, toggle axis lock */
 		if ((modal != SELECT) && (step > 0) && (keyEnter)){
 			if ((lock_ax_x != 0) || (lock_ax_y != 0)){
+				/* release the lock, if previously active */
 				lock_ax_x = 0;
 				lock_ax_y = 0;
 			}
 			else{
+				/* activate the lock according coordinate is predominant */
 				lock_ax_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
 				lock_ax_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
-				
-				//printf ("lock x=%d, y=%d\n", lock_ax_x, lock_ax_y);
 			}
 		}
 		
+		/* events to update current coordinates according the mouse position,
+		axis locks, user entry, or DXf element attractor */
 		if ((leftMouseButtonClick) || (rightMouseButtonClick) || (MouseMotion)){
+			/* aproximation rectangle in mouse position (10 pixels wide) */
 			rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
 			rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
 			rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
 			rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
-			
+			/* get the drawing element near the mouse */
 			near_el = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
 			
+			/* update current position by the mouse */
 			if ((step >= 0) && (step < 10)){
 				step_x[step] = (double) mouse_x/zoom + ofs_x;
 				step_y[step] = (double) mouse_y/zoom + ofs_y;
 			}
+			/* compute the next point coordinates by axis distances entry */
 			if ((step > 0) && (step < 10)){
+				/* verify if an axis is locked during a drawing operation */
 				if (lock_ax_y != 0){
 					step_x[step] = step_x[step - 1];
 				}
 				if (lock_ax_x != 0){
 					step_y[step] = step_y[step - 1];
 				}
+				/* check the user entry */
 				if (user_flag_x){
 					step_x[step] = step_x[step - 1] + user_x;
 				}
@@ -1297,28 +1305,16 @@ int main(int argc, char** argv){
 				list_clear(sel_list);
 				draw = 1;
 			}
-			if (MouseMotion){
-				/*
-				rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
-				rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
-				rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
-				rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
-				
+			if (MouseMotion){				
 				/* for hilite test */
-				//element = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
 				element = near_el;
 				draw = 1;
 			}
 		}
+		{
 		if (modal == LINE){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					
-					/*
-					x0 = (double) mouse_x/zoom + ofs_x;
-					y0 = (double) mouse_y/zoom + ofs_y;
-					x1 = x0;
-					y1 = y0;*/
 					draw_tmp = 1;
 					/* create a new DXF line */
 					new_el = (dxf_node *) dxf_new_line (
@@ -1326,44 +1322,21 @@ int main(int argc, char** argv){
 						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
-					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
-					//x1_attr = dxf_find_attr2(new_el, 11);
-					//y1_attr = dxf_find_attr2(new_el, 21);
 					element = new_el;
 					step = 1;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
-					lock_ax_x = 0;
-					lock_ax_y = 0;
-					user_flag_x = 0;
-					user_flag_y = 0;
+					goto default_modal;
 				}
 			}
 			else{
 				if (leftMouseButtonClick){
-					/*
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					if (lock_ax_y != 0){
-						x1 = x0;
-					}
-					if (lock_ax_x != 0){
-						y1 = y0;
-					}*/
 					dxf_attr_change(new_el, 11, &step_x[step]);
 					dxf_attr_change(new_el, 21, &step_y[step]);
 					
-					//printf("line (%.2f,%.2f)-(%.2f,%.2f)\n", x0, y0, x1, y1);
-					
-					//dxf_ent_print2(new_el);
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
 					
-					//x0 = x1;
-					//y0 = y1;
 					step_x[step - 1] = step_x[step];
 					step_y[step - 1] = step_y[step];
 					
@@ -1372,36 +1345,14 @@ int main(int argc, char** argv){
 						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
 						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
-					//new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
-					//x1_attr = dxf_find_attr2(new_el, 11);
-					//y1_attr = dxf_find_attr2(new_el, 21);
+					
 					element = new_el;
-					lock_ax_x = 0;
-					lock_ax_y = 0;
-					user_flag_x = 0;
-					user_flag_y = 0;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					lock_ax_x = 0;
-					lock_ax_y = 0;
-					user_flag_x = 0;
-					user_flag_y = 0;
+					goto first_step;
 				}
 				if (MouseMotion){
-					/*
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					if (lock_ax_y != 0){
-						x1 = x0;
-					}
-					if (lock_ax_x != 0){
-						y1 = y0;
-					}*/
-					
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change(new_el, 11, &step_x[step]);
@@ -1428,11 +1379,7 @@ int main(int argc, char** argv){
 					draw_tmp = 1;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
-					lock_ax_x = 0;
-					lock_ax_y = 0;
+					goto default_modal;
 				}
 			}
 			else{
@@ -1447,9 +1394,8 @@ int main(int argc, char** argv){
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
 					
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
-					lock_ax_x = 0;
-					lock_ax_y = 0;
 					step = 2;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					draw_tmp = 0;
@@ -1460,9 +1406,7 @@ int main(int argc, char** argv){
 						step = 0;
 					}
 					element = NULL;
-					draw = 1;
-					lock_ax_x = 0;
-					lock_ax_y = 0;
+					goto next_step;
 				}
 				if (MouseMotion){
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
@@ -1495,9 +1439,7 @@ int main(int argc, char** argv){
 					element = new_el;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
+					goto default_modal;
 				}
 			}
 			else{
@@ -1559,9 +1501,7 @@ int main(int argc, char** argv){
 					element = new_el;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
+					goto default_modal;
 				}
 			}
 			else{
@@ -1621,6 +1561,10 @@ int main(int argc, char** argv){
 				element = new_el;
 				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
+				
+				if (rightMouseButtonClick){
+					goto default_modal;
+				}
 				
 			}
 			else{
@@ -1688,15 +1632,7 @@ int main(int argc, char** argv){
 					draw_phanton = 1;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto default_modal;
 				}
 			}
 			else{
@@ -1776,15 +1712,7 @@ int main(int argc, char** argv){
 					draw_phanton = 1;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto default_modal;
 				}
 			}
 			else{
@@ -1868,15 +1796,7 @@ int main(int argc, char** argv){
 					draw_phanton = 1;
 				}
 				else if (rightMouseButtonClick){
-					modal = SELECT;
-					draw_tmp = 0;
-					element = NULL;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto default_modal;
 				}
 			}
 			else{
@@ -1959,6 +1879,33 @@ int main(int argc, char** argv){
 					y2 = y1;
 				}
 			}
+		}
+		goto end_step;
+		default_modal:
+			modal = SELECT;
+		first_step:
+			draw_tmp = 0;
+			element = NULL;
+			draw = 1;
+			step = 0;
+			draw_phanton = 0;
+			if (phanton){
+				free(phanton->data);
+				free(phanton);
+				phanton = NULL;
+			}
+		next_step:
+			
+			//draw_tmp = 0;
+			//element = NULL;
+			lock_ax_x = 0;
+			lock_ax_y = 0;
+			user_flag_x = 0;
+			user_flag_y = 0;
+
+			draw = 1;
+		end_step: ;
+		
 		}
 		
 		if (gui_check_draw(gui) != 0){
