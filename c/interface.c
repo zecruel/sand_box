@@ -141,7 +141,6 @@ int main(int argc, char** argv){
 	double user_x = 0.0, user_y = 0.0;
 	int user_flag_x = 0, user_flag_y = 0;
 	int user_number = 0;
-	char user_str[64];
 	
 	//graph_obj *tmp_graph = NULL;
 	
@@ -454,9 +453,9 @@ int main(int argc, char** argv){
 						break;
 					case SDL_TEXTINPUT:
 						/* text input */
+						/* if the user enters a character relative a number */
 						if ((*event.text.text > 41) && (*event.text.text < 58)){
-							user_number = 1;
-							strncpy (user_str, event.text.text, 63);
+							user_number = 1; /* sinalize a user flag */
 						}
 						break;
 				}
@@ -801,6 +800,7 @@ int main(int argc, char** argv){
 			
 			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			/* view coordinates of mouse in drawing units */
 			text_len = snprintf(text, 63, "x = %f, y = %f", pos_x, pos_y);
 			nk_label(gui->ctx, text, NK_TEXT_LEFT);
 			
@@ -812,38 +812,50 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		/* view coordinates of mouse in drawing units */
+		/* interface to the user visualize and enter coordinates distances*/
 		if (nk_begin(gui->ctx, "POS", nk_rect(0, height - 32, 400, 32),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
-			static char text[64];
-			static int text_len;
 			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
 			nk_flags res;
+			/* flags to verify which coordinate is predominant */
+			int flag_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
+			int flag_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
 			
 			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 4, ratio);
 			
-			nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
-			if ((user_number) && (step > 0) && (step < 10) && (!user_flag_x) &&
-				(fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]))){
-				//lock_ax_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
-				user_number = 0;
-				user_str_x[0] = 0;
+			/* X distance */
+			/* hilite coordinate, if coord is predominant during a drawing operation*/
+			if ((step > 0) && (step < 10) && (flag_x)){
+				nk_label_colored(gui->ctx, "X=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
+			}
+			else {
+				nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
+			}
+			/* verify if the user initiate a number entry during a drawing operation */
+			if ((user_number) && (step > 0) && (step < 10) &&
+			(!user_flag_x) && (flag_x)){
+				user_number = 0; /* clear user flag */
+				user_str_x[0] = 0; /* clear edit string */
+				/* set focus to edit */
 				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 			}
 			
+			/* edit to visualize or enter distance */
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
-			if (res & NK_EDIT_ACTIVE){
+			if (res & NK_EDIT_ACTIVE){ /* enter mode */
 				if (strlen(user_str_x)){
+					/* sinalize the distance of user entry */
 					user_x = atof(user_str_x);
 					user_flag_x = 1;
 				}
-				else{
+				else{ /* if the user clear the string */
+					/* cancel the enter mode*/
 					user_flag_x = 0;
 					nk_edit_unfocus(gui->ctx);
 				}
 			}
-			else {
+			else { /* visualize mode */
 				if ((step > 0) && (step < 10)){
 					snprintf(user_str_x, 63, "%f", step_x[step] - step_x[step - 1]);
 				}
@@ -851,31 +863,42 @@ int main(int argc, char** argv){
 					snprintf(user_str_x, 63, "%f", 0.0);
 				}
 			}
-			if (res & NK_EDIT_COMMITED){
+			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
 				nk_edit_unfocus(gui->ctx);
-				//printf("%s\n", user_str_x);
 			}
 			
-			nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
-			if ((user_number) && (step > 0) && (step < 10) && (!user_flag_y) &&
-				(fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]))){
-				user_number = 0;
-				user_str_y[0] = 0;
+			/* Y distance */
+			/* hilite coordinate, if coord is predominant during a drawing operation*/
+			if ((step > 0) && (step < 10) && (flag_y)){
+				nk_label_colored(gui->ctx, "Y=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
+			}
+			else {
+				nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
+			}
+			/* verify if the user initiate a number entry during a drawing operation */
+			if ((user_number) && (step > 0) && (step < 10) &&
+			(!user_flag_y) && (flag_y)){
+				user_number = 0; /* clear user flag */
+				user_str_y[0] = 0; /* clear edit string */
+				/* set focus to edit */
 				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 			}
 			
+			/* edit to visualize or enter distance */
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
-			if (res & NK_EDIT_ACTIVE){
+			if (res & NK_EDIT_ACTIVE){ /* enter mode */
 				if (strlen(user_str_y)){
+					/* sinalize the distance of user entry */
 					user_y = atof(user_str_y);
 					user_flag_y = 1;
 				}
-				else{
+				else{ /* if the user clear the string */
+					/* cancel the enter mode*/
 					user_flag_y = 0;
 					nk_edit_unfocus(gui->ctx);
 				}
 			}
-			else {
+			else { /* visualize mode */
 				if ((step > 0) && (step < 10)){
 					snprintf(user_str_y, 63, "%f", step_y[step] - step_y[step - 1]);
 				}
@@ -883,9 +906,8 @@ int main(int argc, char** argv){
 					snprintf(user_str_y, 63, "%f", 0.0);
 				}
 			}
-			if (res & NK_EDIT_COMMITED){
+			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
 				nk_edit_unfocus(gui->ctx);
-				//printf("%s\n", user_str_y);
 			}
 		}
 		nk_end(gui->ctx);
