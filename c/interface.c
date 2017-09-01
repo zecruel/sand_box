@@ -1597,18 +1597,17 @@ int main(int argc, char** argv){
 		if (modal == MOVE){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					step = 1;
-					x0 = (double) mouse_x/zoom + ofs_x;
-					y0 = (double) mouse_y/zoom + ofs_y;
-					x1 = x0;
-					y1 = y0;
-					x2 = x1;
-					y2 = y1;
 					draw_tmp = 1;
 					/* phantom object */
 					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
 					element = NULL;
 					draw_phanton = 1;
+					en_distance = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
+					step = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1616,79 +1615,46 @@ int main(int argc, char** argv){
 			}
 			else{
 				if (leftMouseButtonClick){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
 					if (sel_list != NULL){
+						/* sweep the selection list */
 						list_node *current = sel_list->next;
-						
-						// starts the content sweep 
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-									// -------------------------------------------
-									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
+									dxf_edit_move((dxf_node *)current->data, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
 									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
-									
-									//---------------------------------------
 								}
 							}
 							current = current->next;
 						}
 						//list_clear(sel_list);
 					}
-					draw = 1;
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
-					
-					
+					goto first_step;
 				}
 				else if (rightMouseButtonClick){
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto first_step;
 				}
 				if (MouseMotion){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
-					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
-					x2 = x1;
-					y2 = y1;
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 			}
 		}
 		if (modal == DUPLI){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					step = 1;
-					x0 = (double) mouse_x/zoom + ofs_x;
-					y0 = (double) mouse_y/zoom + ofs_y;
-					x1 = x0;
-					y1 = y0;
-					x2 = x1;
-					y2 = y1;
 					draw_tmp = 1;
 					/* phantom object */
 					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
 					element = NULL;
 					draw_phanton = 1;
+					en_distance = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
+					step = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1696,83 +1662,52 @@ int main(int argc, char** argv){
 			}
 			else{
 				if (leftMouseButtonClick){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
 					if (sel_list != NULL){
+						/* sweep the selection list */
 						list_node *current = sel_list->next;
 						dxf_node *new_ent = NULL;
-						
-						// starts the content sweep 
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-									// -------------------------------------------
 									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
-									dxf_edit_move(new_ent, x1- x0, y1 - y0, 0.0);
+									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
 									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
 									drawing_ent_append(drawing, new_ent);
 									
-									//---------------------------------------
+									current->data = new_ent;
 								}
 							}
 							current = current->next;
 						}
 						//list_clear(sel_list);
 					}
-					draw = 1;
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
-					
-					
+					goto first_step;
 				}
 				else if (rightMouseButtonClick){
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto first_step;
 				}
 				if (MouseMotion){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
-					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
-					x2 = x1;
-					y2 = y1;
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 			}
 		}
 		if (modal == SCALE){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					step = 1;
-					x0 = (double) mouse_x/zoom + ofs_x;
-					y0 = (double) mouse_y/zoom + ofs_y;
-					x1 = x0;
-					y1 = y0;
-					x2 = x1;
-					y2 = y1;
 					draw_tmp = 1;
 					/* phantom object */
 					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
-					vec_graph_modify(phanton, 0, 0 , scale, scale, 0.0);
+					vec_graph_modify(phanton, step_x[step]*(1 - scale), step_y[step]*(1 - scale), scale, scale, 0.0);
 					element = NULL;
 					draw_phanton = 1;
+					en_distance = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
+					step = 1;
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1780,82 +1715,32 @@ int main(int argc, char** argv){
 			}
 			else{
 				if (leftMouseButtonClick){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
 					if (sel_list != NULL){
 						list_node *current = sel_list->next;
-						
-						// starts the content sweep 
+						/* sweep the selection list */
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-									// -------------------------------------------
 									dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
-									//dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
-									//printf("obj = %d, scale = %0.2f\n", current->data, scale);
+									dxf_edit_move((dxf_node *)current->data, step_x[step - 1]*(1 - scale), step_y[step - 1]*(1 - scale), 0.0);
+									dxf_edit_move((dxf_node *)current->data, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
 									
 									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
-									
-									//---------------------------------------
 								}
 							}
 							current = current->next;
 						}
 						current = sel_list->next;
-						
-						// starts the content sweep 
-						/*while (current != NULL){
-							if (current->data){
-								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-									// -------------------------------------------
-									//dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
-									dxf_edit_move((dxf_node *)current->data, x1- x0, y1 - y0, 0.0);
-									
-									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
-									
-									//---------------------------------------
-								}
-							}
-							current = current->next;
-						}*/
-						//list_clear(sel_list);
 					}
-					draw = 1;
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
-					
-					
+					goto first_step;
 				}
 				else if (rightMouseButtonClick){
-					step = 0;
-					draw_tmp = 0;
-					element = NULL;
-					draw = 1;
-					draw_phanton = 0;
-					if (phanton){
-						free(phanton->data);
-						free(phanton);
-						phanton = NULL;
-					}
+					goto first_step;
 				}
 				if (MouseMotion){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
-					
-					vec_graph_modify(phanton, x1-x2, y1-y2 , 1.0, 1.0, 0.0);
-					x2 = x1;
-					y2 = y1;
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					step_x[step + 1] = step_x[step];
+					step_y[step + 1] = step_y[step];
 				}
 			}
 		}
