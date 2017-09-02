@@ -866,6 +866,7 @@ int main(int argc, char** argv){
 			}
 			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
 				nk_edit_unfocus(gui->ctx);
+				keyEnter = 0;
 			}
 			
 			/* Y distance */
@@ -909,6 +910,7 @@ int main(int argc, char** argv){
 			}
 			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
 				nk_edit_unfocus(gui->ctx);
+				keyEnter = 0;
 			}
 		}
 		nk_end(gui->ctx);
@@ -1823,7 +1825,7 @@ int main(int argc, char** argv){
 		graph_mem_pool(ZERO_LINE, 1);
 		nk_clear(gui->ctx); /*IMPORTANT */
 		if (low_proc){
-			SDL_Delay(60);
+			SDL_Delay(20);
 		}
 	}
 	
