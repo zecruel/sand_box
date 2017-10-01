@@ -6,6 +6,8 @@
 #include "shape2.h"
 #include "dxf_graph.h"
 #include "list.h"
+#include "dxf_create.h"
+#include "dxf_attract.h"
 
 #include "dxf_colors.h"
 #include "dxf_seed.h"
@@ -59,6 +61,21 @@ void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
 	bmp_line(img, x-5, y-5, x+5, y-5);
 	bmp_line(img, x+5, y-5, x+5, y+5);
 	bmp_line(img, x-5, y-5, x-5, y+5);
+}
+
+void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_color color){
+	/* draw attractor mark*/
+	if (type != ATRC_NONE){
+		/* set the pattern */
+		double pat = 1;
+		patt_change(img, &pat, 1);
+		/* set the color */
+		img->frg = color;
+		/* set the tickness */
+		img->tick = 3;
+		bmp_line(img, x-5, y-5, x+5, y+5);
+		bmp_line(img, x-5, y+5, x+5, y-5);
+	}
 }
 
 void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, double *ofs_y){
@@ -143,6 +160,11 @@ int main(int argc, char** argv){
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
 	
+	enum attract_type curr_attr_t = ATRC_END;
+	double near_x, near_y;
+	int near_attr; /* flag */
+	
+	
 	//graph_obj *tmp_graph = NULL;
 	
 	SDL_Event event;
@@ -191,6 +213,7 @@ int main(int argc, char** argv){
 	bmp_color blue = {.r = 0, .g = 0, .b =255, .a = 255};
 	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
 	bmp_color green = {.r = 0, .g = 255, .b =0, .a = 255};
+	bmp_color yellow = {.r = 255, .g = 255, .b =0, .a = 255};
 	bmp_color grey = {.r = 100, .g = 100, .b = 100, .a = 255};
 	bmp_color hilite = {.r = 255, .g = 0, .b = 255, .a = 150};
 	bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
@@ -1246,11 +1269,20 @@ int main(int argc, char** argv){
 			/* get the drawing element near the mouse */
 			near_el = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
 			
-			/* update current position by the mouse */
 			if ((step >= 0) && (step < 10)){
+				/* update current position by the mouse */
 				step_x[step] = (double) mouse_x/zoom + ofs_x;
 				step_y[step] = (double) mouse_y/zoom + ofs_y;
+				
+				/* update current position by the attractor of near element */
+				if (near_attr = dxf_ent_attract(near_el, curr_attr_t,
+				step_x[step], step_y[step], 
+				(double) 20/zoom, &near_x , &near_y)){
+					step_x[step] = near_x;
+					step_y[step] = near_y;
+				}
 			}
+			
 			/* compute the next point coordinates by axis distances entry */
 			if ((en_distance) && (step > 0) && (step < 10)){
 				/* verify if an axis is locked during a drawing operation */
@@ -1324,6 +1356,16 @@ int main(int argc, char** argv){
 						current = current->next;
 					}
 				}*/
+				/* -------------------------------test-------------- */
+				
+				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
+				
+				double ret_x, ret_y;
+				if (dxf_ent_attract(element, ATRC_END, step_x[0], step_y[0], (double) 20/zoom, &ret_x , &ret_y)){
+					printf ("%0.2f,%0.2f\n", ret_x, ret_y);
+				}
+				
+				/*---------------------------------------------  */
 			}
 			if (rightMouseButtonClick){
 				list_clear(sel_list);
@@ -1786,8 +1828,12 @@ int main(int argc, char** argv){
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
 			
-			
-			
+			if (near_attr){ /* check if needs to draw an attractor mark */
+				/* convert entities coordinates to screen coordinates */
+				int attr_x = (int) round((near_x - ofs_x) * zoom);
+				int attr_y = (int) round((near_y - ofs_y) * zoom);
+				draw_attractor(img, near_attr, attr_x, attr_y, yellow);
+			}
 			/*hilite test */
 			if((draw_tmp)&&(element != NULL)){
 				element->obj.graphics = dxf_graph_parse(drawing, element, 0 , 1);

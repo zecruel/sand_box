@@ -1,5 +1,4 @@
-#include "dxf.h"
-#include "list.h"
+#include "dxf_create.h"
 
 int dxf_obj_append(dxf_node *master, dxf_node *obj){
 	if ((master) && (obj)){
