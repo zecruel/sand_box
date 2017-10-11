@@ -1275,7 +1275,7 @@ int main(int argc, char** argv){
 				step_y[step] = (double) mouse_y/zoom + ofs_y;
 				
 				/* update current position by the attractor of near element */
-				if (near_attr = dxf_ent_attract(near_el, curr_attr_t,
+				if (near_attr = dxf_ent_attract(drawing, near_el, curr_attr_t,
 				step_x[step], step_y[step], 
 				(double) 20/zoom, &near_x , &near_y)){
 					step_x[step] = near_x;
@@ -1361,7 +1361,7 @@ int main(int argc, char** argv){
 				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
 				
 				double ret_x, ret_y;
-				if (dxf_ent_attract(element, ATRC_END, step_x[0], step_y[0], (double) 20/zoom, &ret_x , &ret_y)){
+				if (dxf_ent_attract(drawing, element, ATRC_END, step_x[0], step_y[0], (double) 20/zoom, &ret_x , &ret_y)){
 					printf ("%0.2f,%0.2f\n", ret_x, ret_y);
 				}
 				

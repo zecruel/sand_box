@@ -3,7 +3,7 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = dxf.c bmp.c graph.c dxf_graph.c interface.c shape2.c list.c dxf_create.c tinyfiledialogs.c
+OBJS = dxf.c bmp.c graph.c dxf_graph.c dxf_attract.c interface.c shape2.c list.c dxf_create.c tinyfiledialogs.c
 
 #CC specifies which compiler we're using
 CC = gcc

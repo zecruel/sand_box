@@ -10,13 +10,23 @@ enum attract_type {
 	ATRC_END = 1,
 	ATRC_MID = 2,
 	ATRC_CENTER = 4,
-	ATRC_KEY = 8,
-	ATRC_ANY = 16,
-	ATRC_INS = 32,
-	ATRC_CTRL = 64
+	ATRC_QUAD = 8,
+	ATRC_INTER = 16,
+	ATRC_PERP = 32,
+	ATRC_INS = 64,
+	ATRC_CTRL = 128,
+	ATRC_KEY = 256,
+	ATRC_ANY = 512
 };
 
-int dxf_ent_attract (dxf_node * obj, enum attract_type type,
+struct ins_space{
+	dxf_node *ins_ent, *prev;
+	double ofs_x, ofs_y, ofs_z;
+	double rot, scale_x, scale_y, scale_z;
+	double normal[3];
+};
+
+int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
 double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y);
 
 #endif
