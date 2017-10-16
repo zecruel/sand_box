@@ -41,7 +41,7 @@ int transform(double *x, double *y, struct ins_space space){
 		x0 = cosine*(*x - space.ofs_x) - sine*(*y - space.ofs_y) + space.ofs_x;
 		y0 = sine*(*x - space.ofs_x) + cosine*(*y - space.ofs_y) + space.ofs_y;
 		
-		/* axis tranform */
+		/* axis tranform 
 		if ((fabs(space.normal[0] < 0.015625)) && (fabs(space.normal[1] < 0.015625))){
 			cross_product(wy_axis, space.normal, x_axis);
 		}
@@ -163,8 +163,64 @@ int *init_dist, double *min_dist, struct ins_space space){
 			}
 		}
 	}
-	if(type & ATRC_MID){ /* if type of attractor is flaged as midpoint */
+	if((type & ATRC_MID) && (pt1 !=0) && (pt2 !=0)){ /* if type of attractor is flaged as midpoint */
+		double mid_x = (pt1_x + pt2_x)/2;
+		double mid_y = (pt1_y + pt2_y)/2;
+		curr_dist = sqrt(pow(mid_x - pos_x, 2) + pow(mid_y - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = mid_x;
+				*ret_y = mid_y;
+				ret = ATRC_END;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = mid_x;
+				*ret_y = mid_y;
+				ret = ATRC_END;
+			}
+		}
+	}
+	
+	if((type & ATRC_ANY) && (pt1 !=0) && (pt2 !=0)){ /* if type of attractor is flaged as any point */
+		/*consider line equation ax + by + c = 0 */
+		double a = pt2_y - pt1_y;
+		double b = -(pt2_x - pt1_x);
+		double c = pt2_x * pt1_y - pt2_y * pt1_x;
 		
+		if ((a != 0) && (b != 0)){
+			/* calcule distance between point  and line */
+			curr_dist = fabs(a*pos_x + b*pos_y + c)/
+					sqrt(pow(a, 2) + pow(b, 2));
+			if (curr_dist < sensi){
+				/* look the closest point on line */
+				double any_x = (b * (b*pos_x - a*pos_y) - a*c)/
+							(pow(a, 2) + pow(b, 2));
+				double any_y = (a * (-b*pos_x + a*pos_y) - b*c)/
+							(pow(a, 2) + pow(b, 2));
+				/* verify if point is in segment */
+				if ((((any_x <= pt1_x) && (any_x >= pt2_x))||
+					((any_x <= pt2_x) && (any_x >= pt1_x))) &&
+					(((any_y <= pt1_y) && (any_y >= pt2_y))||
+					((any_y <= pt2_y) && (any_y >= pt1_y)))){
+					if (*init_dist == 0){
+						*init_dist = 1;
+						*min_dist = curr_dist;
+						*ret_x = any_x;
+						*ret_y = any_y;
+						ret = ATRC_END;
+					}
+					else if (curr_dist < *min_dist){
+						*min_dist = curr_dist;
+						*ret_x = any_x;
+						*ret_y = any_y;
+						ret = ATRC_END;
+					}
+				}
+			}
+		}
 	}
 	
 	return ret;

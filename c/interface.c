@@ -160,7 +160,7 @@ int main(int argc, char** argv){
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
 	
-	enum attract_type curr_attr_t = ATRC_END;
+	enum attract_type curr_attr_t = ATRC_END|ATRC_MID;
 	double near_x, near_y;
 	int near_attr; /* flag */
 	
@@ -1359,7 +1359,17 @@ int main(int argc, char** argv){
 				/* -------------------------------test-------------- */
 				
 				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
-				
+				if (element){
+					if(element->type == DXF_ENT){
+						printf("%s\n",element->obj.name);
+						if (dxf_ident_ent_type (element)  ==  DXF_INSERT){
+							dxf_node *volta = dxf_find_attr2(element, 2);
+							if (volta){
+								printf("%s\n",volta->value.s_data);
+							}
+						}
+					}
+				}
 				double ret_x, ret_y;
 				if (dxf_ent_attract(drawing, element, ATRC_END, step_x[0], step_y[0], (double) 20/zoom, &ret_x , &ret_y)){
 					printf ("%0.2f,%0.2f\n", ret_x, ret_y);
