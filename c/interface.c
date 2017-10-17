@@ -94,10 +94,10 @@ void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_colo
 			break;
 		case ATRC_QUAD:
 			/* draw diamond */
-			bmp_line(img, x-5, y, x, y+5);
-			bmp_line(img, x, y+5, x+5, y);
-			bmp_line(img, x+5, y, x, y-5);
-			bmp_line(img, x, y-5, x-5, y);
+			bmp_line(img, x-7, y, x, y+7);
+			bmp_line(img, x, y+7, x+7, y);
+			bmp_line(img, x+7, y, x, y-7);
+			bmp_line(img, x, y-7, x-7, y);
 			break;
 		case ATRC_INTER:
 			/* draw x */
@@ -206,7 +206,7 @@ int main(int argc, char** argv){
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
 	
-	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_CENTER|ATRC_ANY;
+	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_CENTER|ATRC_ANY|ATRC_QUAD;
 	double near_x, near_y;
 	int near_attr; /* flag */
 	
@@ -639,7 +639,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 340),
+		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 500),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			
@@ -725,6 +725,48 @@ int main(int argc, char** argv){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","DELETE");
 				}
+				nk_tree_pop(gui->ctx);
+			}
+			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Attract", NK_MAXIMIZED)) {
+				nk_layout_row_static(gui->ctx, 20, 40, 1);
+				int selected;
+				
+				//ATRC_END = 1,
+				selected = (curr_attr_t & ATRC_END);
+				nk_selectable_label(gui->ctx, "End", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_END;
+				else curr_attr_t &= ~ATRC_END;
+				
+				//ATRC_MID = 2,
+				selected = (curr_attr_t & ATRC_MID);
+				nk_selectable_label(gui->ctx, "Mid", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_MID;
+				else curr_attr_t &= ~ATRC_MID;
+				
+				//ATRC_CENTER = 4,
+				selected = (curr_attr_t & ATRC_CENTER);
+				nk_selectable_label(gui->ctx, "Cen", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_CENTER;
+				else curr_attr_t &= ~ATRC_CENTER;
+				
+				//ATRC_QUAD = 8,
+				selected = (curr_attr_t & ATRC_QUAD);
+				nk_selectable_label(gui->ctx, "Quad", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_QUAD;
+				else curr_attr_t &= ~ATRC_QUAD;
+				
+				//ATRC_INTER = 16,
+				//ATRC_PERP = 32,
+				//ATRC_INS = 64,
+				//ATRC_CTRL = 128,
+				//ATRC_KEY = 256,
+				
+				//ATRC_ANY = 512
+				selected = (curr_attr_t & ATRC_ANY);
+				nk_selectable_label(gui->ctx, "Any", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_ANY;
+				else curr_attr_t &= ~ATRC_ANY;
+				
 				nk_tree_pop(gui->ctx);
 			}
 		}

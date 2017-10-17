@@ -286,8 +286,13 @@ int *init_dist, double *min_dist, struct ins_space space){
 		/* transform coordinates, according insert space */
 		if (pt1) transform(&pt1_x, &pt1_y, space);
 		
-		if(type & ATRC_CENTER){ /* if type of attractor is flaged as endpoint */
-			/* check if points of the line pass on distance criteria */
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		
+		if(type & ATRC_CENTER){ /* if type of attractor is flaged as center */
+			/* check if points of the circle pass on distance criteria */
 			if (pt1){ /* found point 1 */
 				curr_dist = fabs(sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2)) - radius);
 				if (curr_dist < sensi){
@@ -307,10 +312,36 @@ int *init_dist, double *min_dist, struct ins_space space){
 				}
 			}
 		}
-		/* convert OCS to WCS */
-		normal[0] = extru_x;
-		normal[1] = extru_y;
-		normal[2] = extru_z;
+		if(type & ATRC_QUAD){ /* if type of attractor is flaged as quadrant */
+			if (pt1){ /* found point 1 */
+				double quad_x[4], quad_y[4];
+				quad_x[0] = pt1_x + radius; quad_y[0] = pt1_y;
+				quad_x[1] = pt1_x; quad_y[1] = pt1_y + radius;
+				quad_x[2] = pt1_x - radius; quad_y[2] = pt1_y;
+				quad_x[3] = pt1_x; quad_y[3] = pt1_y - radius;
+				
+				/* check if points of the circle pass on distance criteria */
+				int i;
+				for (i = 0; i < 4; i++){
+					curr_dist = sqrt(pow(quad_x[i] - pos_x, 2) + pow(quad_y[i] - pos_y, 2));
+					if (curr_dist < sensi){
+						if (*init_dist == 0){
+							*init_dist = 1;
+							*min_dist = curr_dist;
+							*ret_x = quad_x[i];
+							*ret_y = quad_y[i];
+							ret = ATRC_QUAD;
+						}
+						else if (curr_dist < *min_dist){
+							*min_dist = curr_dist;
+							*ret_x = quad_x[i];
+							*ret_y = quad_y[i];
+							ret = ATRC_QUAD;
+						}
+					}
+				}
+			}
+		}
 	}
 	return ret;
 }
