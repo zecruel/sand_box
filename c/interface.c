@@ -72,9 +72,55 @@ void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_colo
 		/* set the color */
 		img->frg = color;
 		/* set the tickness */
-		img->tick = 3;
-		bmp_line(img, x-5, y-5, x+5, y+5);
-		bmp_line(img, x-5, y+5, x+5, y-5);
+		img->tick = 1;
+	}
+	switch (type){
+		case ATRC_END:
+			/* draw square */
+			bmp_line(img, x-5, y-5, x-5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y+5);
+			bmp_line(img, x+5, y+5, x+5, y-5);
+			bmp_line(img, x+5, y-5, x-5, y-5);
+			break;
+		case ATRC_MID:
+			/* draw triangle */
+			bmp_line(img, x-5, y-5, x+5, y-5);
+			bmp_line(img, x-5, y-5, x, y+5);
+			bmp_line(img, x+5, y-5, x, y+5);
+			break;
+		case ATRC_CENTER:
+			/* draw circle */
+			bmp_circle(img, x, y, 7);
+			break;
+		case ATRC_QUAD:
+			/* draw diamond */
+			bmp_line(img, x-5, y, x, y+5);
+			bmp_line(img, x, y+5, x+5, y);
+			bmp_line(img, x+5, y, x, y-5);
+			bmp_line(img, x, y-5, x-5, y);
+			break;
+		case ATRC_INTER:
+			/* draw x */
+			img->tick = 3;
+			bmp_line(img, x-5, y-5, x+5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y-5);
+			break;
+		case ATRC_PERP:
+			break;
+		case ATRC_INS:
+			break;
+		case ATRC_CTRL:
+			break;
+		case ATRC_KEY:
+			break;
+		case ATRC_ANY:
+			/* draw a Hourglass */
+			bmp_line(img, x-5, y-5, x+5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y-5);
+			img->tick = 2;
+			bmp_line(img, x-5, y+5, x+5, y+5);
+			bmp_line(img, x-5, y-5, x+5, y-5);
+			break;
 	}
 }
 
@@ -160,7 +206,7 @@ int main(int argc, char** argv){
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
 	
-	enum attract_type curr_attr_t = ATRC_END|ATRC_MID;
+	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_CENTER|ATRC_ANY;
 	double near_x, near_y;
 	int near_attr; /* flag */
 	

@@ -173,13 +173,13 @@ int *init_dist, double *min_dist, struct ins_space space){
 				*min_dist = curr_dist;
 				*ret_x = mid_x;
 				*ret_y = mid_y;
-				ret = ATRC_END;
+				ret = ATRC_MID;
 			}
 			else if (curr_dist < *min_dist){
 				*min_dist = curr_dist;
 				*ret_x = mid_x;
 				*ret_y = mid_y;
-				ret = ATRC_END;
+				ret = ATRC_MID;
 			}
 		}
 	}
@@ -190,12 +190,13 @@ int *init_dist, double *min_dist, struct ins_space space){
 		double b = -(pt2_x - pt1_x);
 		double c = pt2_x * pt1_y - pt2_y * pt1_x;
 		
-		if ((a != 0) && (b != 0)){
+		if ((a != 0) || (b != 0)){
 			/* calcule distance between point  and line */
 			curr_dist = fabs(a*pos_x + b*pos_y + c)/
 					sqrt(pow(a, 2) + pow(b, 2));
 			if (curr_dist < sensi){
 				/* look the closest point on line */
+				/* equation from https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line */
 				double any_x = (b * (b*pos_x - a*pos_y) - a*c)/
 							(pow(a, 2) + pow(b, 2));
 				double any_y = (a * (-b*pos_x + a*pos_y) - b*c)/
@@ -210,19 +211,107 @@ int *init_dist, double *min_dist, struct ins_space space){
 						*min_dist = curr_dist;
 						*ret_x = any_x;
 						*ret_y = any_y;
-						ret = ATRC_END;
+						ret = ATRC_ANY;
 					}
 					else if (curr_dist < *min_dist){
 						*min_dist = curr_dist;
 						*ret_x = any_x;
 						*ret_y = any_y;
-						ret = ATRC_END;
+						ret = ATRC_ANY;
 					}
 				}
 			}
 		}
 	}
 	
+	return ret;
+}
+
+int dxf_circle_attract(dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
+double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y,
+int *init_dist, double *min_dist, struct ins_space space){
+	int ret = 0;
+	double curr_dist;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double radius, elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		/*flags*/
+		int pt1 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+				//printf("%s\n", obj->obj.name);
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 40:
+						radius = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* transform coordinates, according insert space */
+		if (pt1) transform(&pt1_x, &pt1_y, space);
+		
+		if(type & ATRC_CENTER){ /* if type of attractor is flaged as endpoint */
+			/* check if points of the line pass on distance criteria */
+			if (pt1){ /* found point 1 */
+				curr_dist = fabs(sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2)) - radius);
+				if (curr_dist < sensi){
+					if (*init_dist == 0){
+						*init_dist = 1;
+						*min_dist = curr_dist;
+						*ret_x = pt1_x;
+						*ret_y = pt1_y;
+						ret = ATRC_CENTER;
+					}
+					else if (curr_dist < *min_dist){
+						*min_dist = curr_dist;
+						*ret_x = pt1_x;
+						*ret_y = pt1_y;
+						ret = ATRC_CENTER;
+					}
+				}
+			}
+		}
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+	}
 	return ret;
 }
 
@@ -274,6 +363,11 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 					ret = found;
 				}
 				//printf("line %d\n", found);
+			}
+			else if (ent_type == DXF_CIRCLE){
+				if (found = dxf_circle_attract (drawing, current, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist, ins_stack[ins_stack_pos])){
+					ret = found;
+				}
 			}
 			else if (ent_type ==  DXF_INSERT){
 				insert_ent = current;
