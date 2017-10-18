@@ -33,4 +33,16 @@ struct List_node{
 };
 typedef struct List_node list_node;
 
+void * list_mem_pool(enum list_pool_action action, int idx);
+
+list_node * list_new (void *data, int pool);
+
+int list_push(list_node * list, list_node * new_node);
+
+list_node *list_pop(list_node * list);
+
+list_node *list_find_data(list_node * list, void *data);
+
+int list_clear(list_node * list);
+
 #endif

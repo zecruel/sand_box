@@ -1,5 +1,5 @@
 #include "dxf_graph.h"
-
+#include "list.h"
 
 #include "dxf_colors.h"
 #include <string.h>
@@ -2537,4 +2537,43 @@ dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_
 		}
 	}
 	return NULL;
+}
+
+int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], double rect_pt2[2]){
+	/* find all visible elements in drawing that intercept the given rectangle */
+	/* return the number of found elements */
+	
+	dxf_node *current = NULL;
+	int num = 0;
+		
+	if ((drawing->ents != NULL) && /*verify the integrity of drawing */
+	(drawing->main_struct != NULL)
+	&& (list != NULL)){ /* and if list exists */
+		
+		list_clear(list);
+		
+		/* sweep the drawing content */
+		current = drawing->ents->obj.content->next;
+		while (current != NULL){
+			if (current->type == DXF_ENT){ /* found a DXF entity  */
+				/* look for a instersect in entity's visible graphics */
+				if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+					/* append entity,  if it does not already exist in the list */
+					if (list_find_data(list, current)){
+						//printf ("DEBUG: already exists!\n");
+					}
+					else{
+						list_node * new_el = list_new(current, 1);
+						if (new_el){
+							list_push(list, new_el);
+							num++;
+						}
+					}
+				}
+			}
+			current = current->next;
+		}
+	}
+	
+	return num;
 }

@@ -1,5 +1,6 @@
 
 #include "dxf_attract.h"
+#include "list.h"
 
 static double dot_product(double a[3], double b[3]){
 	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -67,23 +68,21 @@ int transform(double *x, double *y, struct ins_space space){
 	return 0;
 }
 
-int dxf_line_attract(dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
-double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y,
-int *init_dist, double *min_dist, struct ins_space space){
-	dxf_node *current = NULL;
-	int ret = 0;
-	double curr_dist;
+int dxf_line_get (dxf_drawing *drawing, dxf_node * obj, 
+double *pt1_x, double *pt1_y, double *pt1_z, 
+double *pt2_x, double *pt2_y, double *pt2_z){
 	
-	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
-	double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+	dxf_node *current = NULL;
 	
 	/*flags*/
-	int pt1 = 0, pt2 = 0;
+	int pt1 = 0, pt2 = 0, ok = 0;
 	
 	if (obj){ 
 		if (obj->type == DXF_ENT){
 			if (obj->obj.content){
 				current = obj->obj.content->next;
+				*pt1_x = 0, *pt1_y = 0, *pt1_z = 0;
+				*pt2_x = 0, *pt2_y = 0, *pt2_z = 0;
 			}
 		}
 	}
@@ -92,27 +91,27 @@ int *init_dist, double *min_dist, struct ins_space space){
 		if (current->type == DXF_ATTR){ /* DXF attibute */
 			switch (current->value.group){
 				case 10:
-					pt1_x = current->value.d_data;
+					*pt1_x = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 11:
-					pt2_x = current->value.d_data;
+					*pt2_x = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 				case 20:
-					pt1_y = current->value.d_data;
+					*pt1_y = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 21:
-					pt2_y = current->value.d_data;
+					*pt2_y = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 				case 30:
-					pt1_z = current->value.d_data;
+					*pt1_z = current->value.d_data;
 					pt1 = 1; /* set flag */
 					break;
 				case 31:
-					pt2_z = current->value.d_data;
+					*pt2_z = current->value.d_data;
 					pt2 = 1; /* set flag */
 					break;
 			}
@@ -120,50 +119,58 @@ int *init_dist, double *min_dist, struct ins_space space){
 		current = current->next; /* go to the next in the list */
 	}
 	
-	/* transform coordinates, according insert space */
-	if (pt1) transform(&pt1_x, &pt1_y, space);
-	if (pt2) transform(&pt2_x, &pt2_y, space);
+	if((pt1 !=0) && (pt2 !=0)) ok = 1;
 	
+	return ok;
+}	
+
+
+int dxf_line_attract(double pt1_x, double pt1_y, 
+double pt2_x, double pt2_y, enum attract_type type,
+double pos_x, double pos_y, double sensi, 
+double *ret_x, double *ret_y,
+int *init_dist, double *min_dist){
+	
+	int ret = 0;
+	double curr_dist;
+			
 	if(type & ATRC_END){ /* if type of attractor is flaged as endpoint */
 		/* check if points of the line pass on distance criteria */
-		if (pt1){ /* found point 1 */
-			curr_dist = sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2));
-			if (curr_dist < sensi){
-				if (*init_dist == 0){
-					*init_dist = 1;
-					*min_dist = curr_dist;
-					*ret_x = pt1_x;
-					*ret_y = pt1_y;
-					ret = ATRC_END;
-				}
-				else if (curr_dist < *min_dist){
-					*min_dist = curr_dist;
-					*ret_x = pt1_x;
-					*ret_y = pt1_y;
-					ret = ATRC_END;
-				}
+		curr_dist = sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = pt1_x;
+				*ret_y = pt1_y;
+				ret = ATRC_END;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = pt1_x;
+				*ret_y = pt1_y;
+				ret = ATRC_END;
 			}
 		}
-		if (pt2){ /* found point 2 */
-			curr_dist = sqrt(pow(pt2_x - pos_x, 2) + pow(pt2_y - pos_y, 2));
-			if (curr_dist < sensi){
-				if (*init_dist == 0){
-					*init_dist = 1;
-					*min_dist = curr_dist;
-					*ret_x = pt2_x;
-					*ret_y = pt2_y;
-					ret = ATRC_END;
-				}
-				else if (curr_dist < *min_dist){
-					*min_dist = curr_dist;
-					*ret_x = pt2_x;
-					*ret_y = pt2_y;
-					ret = ATRC_END;
-				}
+		curr_dist = sqrt(pow(pt2_x - pos_x, 2) + pow(pt2_y - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = pt2_x;
+				*ret_y = pt2_y;
+				ret = ATRC_END;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = pt2_x;
+				*ret_y = pt2_y;
+				ret = ATRC_END;
 			}
 		}
+		
 	}
-	if((type & ATRC_MID) && (pt1 !=0) && (pt2 !=0)){ /* if type of attractor is flaged as midpoint */
+	if(type & ATRC_MID){ /* if type of attractor is flaged as midpoint */
 		double mid_x = (pt1_x + pt2_x)/2;
 		double mid_y = (pt1_y + pt2_y)/2;
 		curr_dist = sqrt(pow(mid_x - pos_x, 2) + pow(mid_y - pos_y, 2));
@@ -184,7 +191,7 @@ int *init_dist, double *min_dist, struct ins_space space){
 		}
 	}
 	
-	if((type & ATRC_ANY) && (pt1 !=0) && (pt2 !=0)){ /* if type of attractor is flaged as any point */
+	if(type & ATRC_ANY){ /* if type of attractor is flaged as any point */
 		/*consider line equation ax + by + c = 0 */
 		double a = pt2_y - pt1_y;
 		double b = -(pt2_x - pt1_x);
@@ -197,15 +204,27 @@ int *init_dist, double *min_dist, struct ins_space space){
 			if (curr_dist < sensi){
 				/* look the closest point on line */
 				/* equation from https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line */
-				double any_x = (b * (b*pos_x - a*pos_y) - a*c)/
+				double any_x, any_y;
+				if (b != 0){
+					any_x = (b * (b*pos_x - a*pos_y) - a*c)/
 							(pow(a, 2) + pow(b, 2));
-				double any_y = (a * (-b*pos_x + a*pos_y) - b*c)/
+				}
+				else{
+					any_x = pt1_x;
+				}
+				if (a != 0){
+					any_y = (a * (-b*pos_x + a*pos_y) - b*c)/
 							(pow(a, 2) + pow(b, 2));
+				}
+				else {
+					any_y = pt1_y;
+				}
 				/* verify if point is in segment */
 				if ((((any_x <= pt1_x) && (any_x >= pt2_x))||
 					((any_x <= pt2_x) && (any_x >= pt1_x))) &&
 					(((any_y <= pt1_y) && (any_y >= pt2_y))||
 					((any_y <= pt2_y) && (any_y >= pt1_y)))){
+					
 					if (*init_dist == 0){
 						*init_dist = 1;
 						*min_dist = curr_dist;
@@ -222,8 +241,46 @@ int *init_dist, double *min_dist, struct ins_space space){
 				}
 			}
 		}
+		
 	}
 	
+	/*if(type & ATRC_INTER){
+		double inter_x = 0;
+		double inter_y = 0;
+		double rect_pt1[2]; double rect_pt2[2];
+		int num_el = 0;
+		
+		rect_pt1[0] = pos_x - sensi;
+		rect_pt1[1] = pos_y - sensi;
+		rect_pt2[0] = pos_x + sensi;
+		rect_pt2[1] = pos_y + sensi;
+		
+		curr_dist = sensi;
+		
+		list_node * list = list_new(NULL, 1);
+		
+		num_el = dxf_ents_isect2(list, drawing, rect_pt1, rect_pt2);
+		if (num_el) printf("intersection = %d\n", num_el);
+		
+		list_mem_pool(ZERO_LIST, 1);
+		
+		
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = inter_x;
+				*ret_y = inter_y;
+				ret = ATRC_INTER;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = inter_x;
+				*ret_y = inter_y;
+				ret = ATRC_INTER;
+			}
+		}
+	}*/
 	return ret;
 }
 
@@ -390,8 +447,17 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 		if (current->type == DXF_ENT){
 			ent_type =  dxf_ident_ent_type (current);
 			if (ent_type == DXF_LINE){
-				if (found = dxf_line_attract (drawing, current, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist, ins_stack[ins_stack_pos])){
-					ret = found;
+				double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+				double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+				
+				if (dxf_line_get (drawing, current, &pt1_x, &pt1_y, &pt1_z, &pt2_x, &pt2_y, &pt2_z)){
+					/* transform coordinates, according insert space */
+					transform(&pt1_x, &pt1_y, ins_stack[ins_stack_pos]);
+					transform(&pt2_x, &pt2_y, ins_stack[ins_stack_pos]);
+				
+					if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						ret = found;
+					}
 				}
 				//printf("line %d\n", found);
 			}

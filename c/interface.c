@@ -140,12 +140,12 @@ void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, d
 
 void sel_list_append(list_node *list, dxf_node *ent){
 	if (list && ent){
-		list_node * new_el = (list_node *)list_new(ent, 0);
-		if (new_el){
-			if (list_find_data(list, ent)){
-				//printf ("ja existe!\n");
-			}
-			else{
+		if (list_find_data(list, ent)){
+			//printf ("ja existe!\n");
+		}
+		else{
+			list_node * new_el = list_new(ent, 0);
+			if (new_el){
 				list_push(list, new_el);
 			}
 		}
@@ -272,7 +272,7 @@ int main(int argc, char** argv){
 	double continuous[] = {1};
 	
 	/* initialize the selection list */
-	list_node * sel_list = (list_node *)list_new(NULL, 0);
+	list_node * sel_list = list_new(NULL, 0);
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
@@ -728,7 +728,7 @@ int main(int argc, char** argv){
 				nk_tree_pop(gui->ctx);
 			}
 			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Attract", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 20, 40, 1);
+				nk_layout_row_static(gui->ctx, 15, 40, 1);
 				int selected;
 				
 				//ATRC_END = 1,
@@ -756,6 +756,11 @@ int main(int argc, char** argv){
 				else curr_attr_t &= ~ATRC_QUAD;
 				
 				//ATRC_INTER = 16,
+				selected = (curr_attr_t & ATRC_INTER);
+				nk_selectable_label(gui->ctx, "Int", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_INTER;
+				else curr_attr_t &= ~ATRC_INTER;
+				
 				//ATRC_PERP = 32,
 				//ATRC_INS = 64,
 				//ATRC_CTRL = 128,
@@ -1980,6 +1985,7 @@ int main(int argc, char** argv){
 	SDL_Quit();
 	
 	list_mem_pool(FREE_LIST, 0);
+	list_mem_pool(FREE_LIST, 1);
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
