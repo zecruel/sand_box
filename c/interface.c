@@ -206,7 +206,7 @@ int main(int argc, char** argv){
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
 	
-	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_CENTER|ATRC_ANY|ATRC_QUAD;
+	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
 	double near_x, near_y;
 	int near_attr; /* flag */
 	
@@ -1464,9 +1464,6 @@ int main(int argc, char** argv){
 					}
 				}
 				double ret_x, ret_y;
-				if (dxf_ent_attract(drawing, element, ATRC_END, step_x[0], step_y[0], (double) 20/zoom, &ret_x , &ret_y)){
-					printf ("%0.2f,%0.2f\n", ret_x, ret_y);
-				}
 				
 				/*---------------------------------------------  */
 			}

@@ -403,9 +403,9 @@ int *init_dist, double *min_dist, struct ins_space space){
 	return ret;
 }
 
-int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
+int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj_hilite, enum attract_type type,
 double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
-	dxf_node *current = NULL;
+	dxf_node *current = NULL, *obj = NULL;
 	dxf_node *prev = NULL;
 	int ret = 0, found = 0;
 	
@@ -440,218 +440,260 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 	int ins_flag = 0;
 	/* ---- */
 	
-	current = obj;
+	double rect_pt1[2]; double rect_pt2[2];
+	int num_el = 0;
 	
-	while (current){
-		prev = current;
-		if (current->type == DXF_ENT){
-			ent_type =  dxf_ident_ent_type (current);
-			if (ent_type == DXF_LINE){
-				double pt1_x = 0, pt1_y = 0, pt1_z = 0;
-				double pt2_x = 0, pt2_y = 0, pt2_z = 0;
-				
-				if (dxf_line_get (drawing, current, &pt1_x, &pt1_y, &pt1_z, &pt2_x, &pt2_y, &pt2_z)){
-					/* transform coordinates, according insert space */
-					transform(&pt1_x, &pt1_y, ins_stack[ins_stack_pos]);
-					transform(&pt2_x, &pt2_y, ins_stack[ins_stack_pos]);
-				
-					if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+	rect_pt1[0] = pos_x - sensi;
+	rect_pt1[1] = pos_y - sensi;
+	rect_pt2[0] = pos_x + sensi;
+	rect_pt2[1] = pos_y + sensi;
+	
+	list_node * list = list_new(NULL, 1);
+	list_node *list_el = NULL;
+	
+	num_el = dxf_ents_isect2(list, drawing, rect_pt1, rect_pt2);
+	
+	if ((list != NULL) && (num_el > 0)){
+		list_el = list->next;
+	}
+	
+	
+	
+	while (list_el){/* ###### LIST LOOP ########### */
+		
+		obj = (dxf_node *)list_el->data; /* current obj */
+		
+		/* reset variables for complex entities (DXF_INSERT) */
+		insert_ent = NULL;
+		blk = NULL;
+		ins_stack_pos = 0;
+		ins_zero.ins_ent = obj;
+		ins_stack[0] = ins_zero;
+		ins_flag = 0;
+		ent_type = DXF_NONE;
+		name1[0] = 0; name2[0] = 0;
+		pt1_x = 0; pt1_y = 0; pt1_z = 0;
+		pt1 = 0;
+		t_rot = 0; rot = 0; elev = 0;
+		scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
+		extru_x = 0.0; extru_y = 0.0; extru_z = 1.0;
+		
+		current = obj;
+		while (current){ /* ########### OBJ LOOP ########*/
+			prev = current;
+			if (current->type == DXF_ENT){
+				ent_type =  dxf_ident_ent_type (current);
+				if (ent_type == DXF_LINE){
+					double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+					double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+					
+					if (dxf_line_get (drawing, current, &pt1_x, &pt1_y, &pt1_z, &pt2_x, &pt2_y, &pt2_z)){
+						/* transform coordinates, according insert space */
+						transform(&pt1_x, &pt1_y, ins_stack[ins_stack_pos]);
+						transform(&pt2_x, &pt2_y, ins_stack[ins_stack_pos]);
+					
+						if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+							ret = found;
+						}
+					}
+					//printf("line %d\n", found);
+				}
+				else if (ent_type == DXF_CIRCLE){
+					if (found = dxf_circle_attract (drawing, current, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist, ins_stack[ins_stack_pos])){
 						ret = found;
 					}
 				}
-				//printf("line %d\n", found);
-			}
-			else if (ent_type == DXF_CIRCLE){
-				if (found = dxf_circle_attract (drawing, current, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist, ins_stack[ins_stack_pos])){
-					ret = found;
+				else if (ent_type ==  DXF_INSERT){
+					insert_ent = current;
+					ins_flag = 1;
+					//printf("insert %d\n", current->obj.content);
+					if (current->obj.content){
+						/* starts the content sweep */
+						current = current->obj.content->next;
+						//prev = current;
+						continue;
+					}
+					printf("Error: empty entity\n");
 				}
 			}
-			else if (ent_type ==  DXF_INSERT){
-				insert_ent = current;
-				ins_flag = 1;
-				//printf("insert %d\n", current->obj.content);
-				if (current->obj.content){
-					/* starts the content sweep */
-					current = current->obj.content->next;
-					//prev = current;
-					continue;
-				}
-				printf("Error: empty entity\n");
-			}
-		}
-		/* ============================================================= */
-		else if ((current->type == DXF_ATTR) && (ins_flag != 0)){ /* read DXF attibutes of insert block */
-			//printf("%d\n", current->value.group);
-			switch (current->value.group){
-				case 2:
-					strcpy(name1, current->value.s_data);
-					break;
-				case 3:
-					strcpy(name2, current->value.s_data);
-					break;
-				case 10:
-					pt1_x = current->value.d_data;
-					pt1 = 1; /* set flag */
-					break;
-				case 20:
-					pt1_y = current->value.d_data;
-					pt1 = 1; /* set flag */
-					break;
-				case 30:
-					pt1_z = current->value.d_data;
-					pt1 = 1; /* set flag */
-					break;
-				case 38:
-					elev = current->value.d_data;
-					break;
-				case 41:
-					scale_x = current->value.d_data;
-					break;
-				case 42:
-					scale_y = current->value.d_data;
-					break;
-				case 43:
-					scale_z = current->value.d_data;
-					break;
-				case 50:
-					t_rot = current->value.d_data;
-					break;
-				case 210:
-					extru_x = current->value.d_data;
-					break;
-				case 220:
-					extru_y = current->value.d_data;
-					break;
-				case 230:
-					extru_z = current->value.d_data;
-					break;
-			}
-			
-			
-		}
-			
-		current = current->next; /* go to the next in the list*/
-		
-		/* ============================================================= */
-		/* complex entities */
-		
-		if (((ins_flag != 0) && (current == NULL))||
-			((ins_flag != 0) && (current != NULL) && (current != insert_ent) && (current->type == DXF_ENT))){
-			ins_flag = 0;
-			/* look for block */
-			v_search = dxf_find_obj_descr(drawing->blks, "BLOCK", name1);
-			if (v_search.data) { 
-				blk = ((dxf_node **) v_search.data)[0];
-				//printf ("bloco %s\n", name1);
-				free(v_search.data);
-				/* save current entity for future process */
-				ins_stack_pos++;
-				ins_stack[ins_stack_pos].ins_ent = blk;
-				ins_stack[ins_stack_pos].prev = prev;
-				
-				if (ins_stack_pos > 1){
-					ins_stack[ins_stack_pos].ofs_x = pt1_x + ins_stack[ins_stack_pos - 1].ofs_x;
-					ins_stack[ins_stack_pos].ofs_y = pt1_y + ins_stack[ins_stack_pos - 1].ofs_y;
-					ins_stack[ins_stack_pos].ofs_z = pt1_z + ins_stack[ins_stack_pos - 1].ofs_z;
-					ins_stack[ins_stack_pos].scale_x = scale_x * ins_stack[ins_stack_pos - 1].scale_x;
-					ins_stack[ins_stack_pos].scale_y = scale_y * ins_stack[ins_stack_pos - 1].scale_y;
-					ins_stack[ins_stack_pos].scale_z = scale_z * ins_stack[ins_stack_pos - 1].scale_z;
-					ins_stack[ins_stack_pos].rot = t_rot + ins_stack[ins_stack_pos - 1].rot;
-					ins_stack[ins_stack_pos].normal[0] = extru_x;
-					ins_stack[ins_stack_pos].normal[1] = extru_y;
-					ins_stack[ins_stack_pos].normal[2] = extru_z;
-				}
-				else{ 
-					ins_stack[ins_stack_pos].ofs_x = pt1_x;
-					ins_stack[ins_stack_pos].ofs_y = pt1_y;
-					ins_stack[ins_stack_pos].ofs_z = pt1_z;
-					ins_stack[ins_stack_pos].scale_x = scale_x;
-					ins_stack[ins_stack_pos].scale_y = scale_y;
-					ins_stack[ins_stack_pos].scale_z = scale_z;
-					ins_stack[ins_stack_pos].rot = t_rot;
-					ins_stack[ins_stack_pos].normal[0] = extru_x;
-					ins_stack[ins_stack_pos].normal[1] = extru_y;
-					ins_stack[ins_stack_pos].normal[2] = extru_z;
-				}
-				/*
-				if (v_return->size > 0){
-					ins_stack[ins_stack_pos].start_idx = v_return->size;
-				}
-				else{
-					ins_stack[ins_stack_pos].start_idx = 0;
-				}*/
-				
-				
-				//p_space = paper;
-				
-				/*reinit_vars: */
-				
-				ent_type = DXF_NONE;
-					
-				pt1_x = 0; pt1_y = 0; pt1_z = 0; rot = 0;
-				elev = 0; t_rot = 0;
-				scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
-				extru_x = 0.0; extru_y = 0.0; extru_z = 1.0;
-				
-				/* clear the strings */
-				name1[0] = 0;
-				name2[0] = 0;
-				
-				/*clear flags*/
-				pt1 = 0;
-				
-				if (blk->obj.content){
-					/* now, current is the block */
-					/* starts the content sweep */
-					current = blk->obj.content->next;
-					continue;
-				}
-				printf("Error: empty block\n");
-				continue;
-			}
-		}
-		
-		if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-			current = NULL;
-			break;
-		}
-		
-		
-		/* ============================================================= */
-		while (current == NULL){
-			/* end of list sweeping */
-			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-				//printf("para\n");
-				current = NULL;
-				break;
-			}
-			/* try to back in structure hierarchy */
-			prev = prev->master;
-			if (prev){ /* up in structure */
-				/* try to continue on previous point in structure */
-				current = prev->next;
-				if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
-					if (ins_stack_pos < 1){
-						/* stop the search if back on initial entity */
-						current = NULL;
+			/* ============================================================= */
+			else if ((current->type == DXF_ATTR) && (ins_flag != 0)){ /* read DXF attibutes of insert block */
+				//printf("%d\n", current->value.group);
+				switch (current->value.group){
+					case 2:
+						strcpy(name1, current->value.s_data);
 						break;
+					case 3:
+						strcpy(name2, current->value.s_data);
+						break;
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 41:
+						scale_x = current->value.d_data;
+						break;
+					case 42:
+						scale_y = current->value.d_data;
+						break;
+					case 43:
+						scale_z = current->value.d_data;
+						break;
+					case 50:
+						t_rot = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+				
+				
+			}
+				
+			current = current->next; /* go to the next in the list*/
+			
+			/* ============================================================= */
+			/* complex entities */
+			
+			if (((ins_flag != 0) && (current == NULL))||
+				((ins_flag != 0) && (current != NULL) && (current != insert_ent) && (current->type == DXF_ENT))){
+				ins_flag = 0;
+				/* look for block */
+				v_search = dxf_find_obj_descr(drawing->blks, "BLOCK", name1);
+				if (v_search.data) { 
+					blk = ((dxf_node **) v_search.data)[0];
+					//printf ("bloco %s\n", name1);
+					free(v_search.data);
+					/* save current entity for future process */
+					ins_stack_pos++;
+					ins_stack[ins_stack_pos].ins_ent = blk;
+					ins_stack[ins_stack_pos].prev = prev;
+					
+					if (ins_stack_pos > 1){
+						ins_stack[ins_stack_pos].ofs_x = pt1_x + ins_stack[ins_stack_pos - 1].ofs_x;
+						ins_stack[ins_stack_pos].ofs_y = pt1_y + ins_stack[ins_stack_pos - 1].ofs_y;
+						ins_stack[ins_stack_pos].ofs_z = pt1_z + ins_stack[ins_stack_pos - 1].ofs_z;
+						ins_stack[ins_stack_pos].scale_x = scale_x * ins_stack[ins_stack_pos - 1].scale_x;
+						ins_stack[ins_stack_pos].scale_y = scale_y * ins_stack[ins_stack_pos - 1].scale_y;
+						ins_stack[ins_stack_pos].scale_z = scale_z * ins_stack[ins_stack_pos - 1].scale_z;
+						ins_stack[ins_stack_pos].rot = t_rot + ins_stack[ins_stack_pos - 1].rot;
+						ins_stack[ins_stack_pos].normal[0] = extru_x;
+						ins_stack[ins_stack_pos].normal[1] = extru_y;
+						ins_stack[ins_stack_pos].normal[2] = extru_z;
+					}
+					else{ 
+						ins_stack[ins_stack_pos].ofs_x = pt1_x;
+						ins_stack[ins_stack_pos].ofs_y = pt1_y;
+						ins_stack[ins_stack_pos].ofs_z = pt1_z;
+						ins_stack[ins_stack_pos].scale_x = scale_x;
+						ins_stack[ins_stack_pos].scale_y = scale_y;
+						ins_stack[ins_stack_pos].scale_z = scale_z;
+						ins_stack[ins_stack_pos].rot = t_rot;
+						ins_stack[ins_stack_pos].normal[0] = extru_x;
+						ins_stack[ins_stack_pos].normal[1] = extru_y;
+						ins_stack[ins_stack_pos].normal[2] = extru_z;
+					}
+					/*
+					if (v_return->size > 0){
+						ins_stack[ins_stack_pos].start_idx = v_return->size;
 					}
 					else{
-						prev = ins_stack[ins_stack_pos].prev;
-						ins_stack_pos--;
-						//prev = ins_stack[ins_stack_pos].ins_ent;
-						//printf("retorna %d\n", ins_stack_pos);
-						current = prev;
+						ins_stack[ins_stack_pos].start_idx = 0;
+					}*/
+					
+					
+					//p_space = paper;
+					
+					/*reinit_vars: */
+					
+					ent_type = DXF_NONE;
+						
+					pt1_x = 0; pt1_y = 0; pt1_z = 0; rot = 0;
+					elev = 0; t_rot = 0;
+					scale_x = 1.0; scale_y = 1.0; scale_z = 1.0;
+					extru_x = 0.0; extru_y = 0.0; extru_z = 1.0;
+					
+					/* clear the strings */
+					name1[0] = 0;
+					name2[0] = 0;
+					
+					/*clear flags*/
+					pt1 = 0;
+					
+					if (blk->obj.content){
+						/* now, current is the block */
+						/* starts the content sweep */
+						current = blk->obj.content->next;
+						continue;
 					}
+					printf("Error: empty block\n");
+					continue;
 				}
-				
 			}
-			else{ /* stop the search if structure ends */
+			
+			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
 				current = NULL;
 				break;
 			}
-		}
-	}
+			
+			
+			/* ============================================================= */
+			while (current == NULL){
+				/* end of list sweeping */
+				if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+					//printf("para\n");
+					current = NULL;
+					break;
+				}
+				/* try to back in structure hierarchy */
+				prev = prev->master;
+				if (prev){ /* up in structure */
+					/* try to continue on previous point in structure */
+					current = prev->next;
+					if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
+						if (ins_stack_pos < 1){
+							/* stop the search if back on initial entity */
+							current = NULL;
+							break;
+						}
+						else{
+							prev = ins_stack[ins_stack_pos].prev;
+							ins_stack_pos--;
+							//prev = ins_stack[ins_stack_pos].ins_ent;
+							//printf("retorna %d\n", ins_stack_pos);
+							current = prev;
+						}
+					}
+					
+				}
+				else{ /* stop the search if structure ends */
+					current = NULL;
+					break;
+				}
+			}
+		} /* ######### END OBJ LOOP ########### */
+		
+		list_el = list_el->next;
+		
+	}/* ######### END LIST LOOP ############ */
+	list_mem_pool(ZERO_LIST, 1);
 	//printf("%d\n", ret);
 	return ret;
 }
