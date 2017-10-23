@@ -2,6 +2,9 @@
 #include "dxf_attract.h"
 #include "list.h"
 
+#define IN_BOUNDS(x,y,p1x,p1y,p2x,p2y) ((((x <= p1x) && (x >= p2x))||((x <= p2x) && (x >= p1x))) && (((y <= p1y) && (y >= p2y))||((y <= p2y) && (y >= p1y))))
+#define NEAR_LN(x,y,p1x,p1y,p2x,p2y,s) (((fabs(p1x-p2x)<1e-9) && (fabs(p1x - x) < s)) || ((fabs(p1y-p2y)<1e-9) && (fabs(p1y - y) < s)))
+
 static double dot_product(double a[3], double b[3]){
 	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 }
@@ -243,44 +246,6 @@ int *init_dist, double *min_dist){
 		}
 		
 	}
-	
-	/*if(type & ATRC_INTER){
-		double inter_x = 0;
-		double inter_y = 0;
-		double rect_pt1[2]; double rect_pt2[2];
-		int num_el = 0;
-		
-		rect_pt1[0] = pos_x - sensi;
-		rect_pt1[1] = pos_y - sensi;
-		rect_pt2[0] = pos_x + sensi;
-		rect_pt2[1] = pos_y + sensi;
-		
-		curr_dist = sensi;
-		
-		list_node * list = list_new(NULL, 1);
-		
-		num_el = dxf_ents_isect2(list, drawing, rect_pt1, rect_pt2);
-		if (num_el) printf("intersection = %d\n", num_el);
-		
-		list_mem_pool(ZERO_LIST, 1);
-		
-		
-		if (curr_dist < sensi){
-			if (*init_dist == 0){
-				*init_dist = 1;
-				*min_dist = curr_dist;
-				*ret_x = inter_x;
-				*ret_y = inter_y;
-				ret = ATRC_INTER;
-			}
-			else if (curr_dist < *min_dist){
-				*min_dist = curr_dist;
-				*ret_x = inter_x;
-				*ret_y = inter_y;
-				ret = ATRC_INTER;
-			}
-		}
-	}*/
 	return ret;
 }
 
@@ -403,76 +368,47 @@ int *init_dist, double *min_dist, struct ins_space space){
 	return ret;
 }
 
-int dxf_inter_attract(dxf_drawing *drawing, 
-dxf_node *obj1, dxf_node *obj2,
-enum attract_type type,
+int dxf_inter_attract(struct inter_obj obj1, struct inter_obj obj2,
 double pos_x, double pos_y, double sensi, 
 double *ret_x, double *ret_y,
-int *init_dist, double *min_dist,
-struct ins_space obj1_ins , struct ins_space obj2_ins){
+int *init_dist, double *min_dist){
 	int ret = ATRC_NONE;
 	double curr_dist = sensi;
+	double inter_x = 0;
+	double inter_y = 0;
 	
-	if((type & ATRC_INTER) && (obj1 != NULL) && (obj2 != NULL)){
-		double inter_x = 0;
-		double inter_y = 0;
-		
-		int obj1_type =  dxf_ident_ent_type (obj1);
-		int obj2_type =  dxf_ident_ent_type (obj2);
-		
-		if ((obj1_type == DXF_LINE) && (obj2_type == DXF_LINE)){
-			double obj1_pt1_x = 0, obj1_pt1_y = 0, obj1_pt1_z = 0;
-			double obj1_pt2_x = 0, obj1_pt2_y = 0, obj1_pt2_z = 0;
-			double obj2_pt1_x = 0, obj2_pt1_y = 0, obj2_pt1_z = 0;
-			double obj2_pt2_x = 0, obj2_pt2_y = 0, obj2_pt2_z = 0;
+	if ((obj1.type == DXF_LINE) && (obj2.type == DXF_LINE)){
 			
-			int ok1 = dxf_line_get (drawing, obj1, &obj1_pt1_x, &obj1_pt1_y, &obj1_pt1_z, &obj1_pt2_x, &obj1_pt2_y, &obj1_pt2_z);
-			int ok2 = dxf_line_get (drawing, obj2, &obj2_pt1_x, &obj2_pt1_y, &obj2_pt1_z, &obj2_pt2_x, &obj2_pt2_y, &obj2_pt2_z);
-			if ((ok1) && (ok2)){
-				/* transform coordinates, according insert space */
-				transform(&obj1_pt1_x, &obj1_pt1_y, obj1_ins);
-				transform(&obj1_pt2_x, &obj1_pt2_y, obj1_ins);
-				transform(&obj2_pt1_x, &obj2_pt1_y, obj2_ins);
-				transform(&obj2_pt2_x, &obj2_pt2_y, obj2_ins);
-				
-				/* calcule the intersection point*/
-				/*from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection*/
-				double den = (obj1_pt1_x - obj1_pt2_x) * (obj2_pt1_y - obj2_pt2_y) -
-						(obj1_pt1_y - obj1_pt2_y) * (obj2_pt1_x - obj2_pt2_x);
-				
-				if (fabs(den) > 1e-9){
-					inter_x = ((obj1_pt1_x*obj1_pt2_y - obj1_pt1_y*obj1_pt2_x)*(obj2_pt1_x - obj2_pt2_x) -
-							(obj1_pt1_x - obj1_pt2_x)*(obj2_pt1_x*obj2_pt2_y - obj2_pt1_y*obj2_pt2_x)) / den;
-					inter_y = ((obj1_pt1_x*obj1_pt2_y - obj1_pt1_y*obj1_pt2_x)*(obj2_pt1_y - obj2_pt2_y) -
-							(obj1_pt1_y - obj1_pt2_y)*(obj2_pt1_x*obj2_pt2_y - obj2_pt1_y*obj2_pt2_x)) / den;
-					/* verify if point is in segments */
-					if (((((inter_x <= obj1_pt1_x) && (inter_x >= obj1_pt2_x))||
-						((inter_x <= obj1_pt2_x) && (inter_x >= obj1_pt1_x))) &&
-						(((inter_y <= obj1_pt1_y) && (inter_y >= obj1_pt2_y))||
-						((inter_y <= obj1_pt2_y) && (inter_y >= obj1_pt1_y))))&&
-						((((inter_x <= obj2_pt1_x) && (inter_x >= obj2_pt2_x))||
-						((inter_x <= obj2_pt2_x) && (inter_x >= obj2_pt1_x))) &&
-						(((inter_y <= obj2_pt1_y) && (inter_y >= obj2_pt2_y))||
-						((inter_y <= obj2_pt2_y) && (inter_y >= obj2_pt1_y))))){
-							curr_dist = sqrt(pow(inter_x - pos_x, 2) + pow(inter_y - pos_y, 2));
-					}
-				}
+		/* calcule the intersection point*/
+		/*from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection*/
+		double den = (obj1.line.p1x - obj1.line.p2x) * (obj2.line.p1y - obj2.line.p2y) -
+				(obj1.line.p1y - obj1.line.p2y) * (obj2.line.p1x - obj2.line.p2x);
+		
+		if (fabs(den) > 1e-9){
+			inter_x = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
+					(obj1.line.p1x - obj1.line.p2x)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
+			inter_y = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
+					(obj1.line.p1y - obj1.line.p2y)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
+			/* verify if point is in segments */
+			if (IN_BOUNDS(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) &&
+				IN_BOUNDS(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y)) {
+					curr_dist = sqrt(pow(inter_x - pos_x, 2) + pow(inter_y - pos_y, 2));
 			}
 		}
-		if (curr_dist < sensi){
-			if (*init_dist == 0){
-				*init_dist = 1;
-				*min_dist = curr_dist;
-				*ret_x = inter_x;
-				*ret_y = inter_y;
-				ret = ATRC_INTER;
-			}
-			else if (curr_dist < *min_dist){
-				*min_dist = curr_dist;
-				*ret_x = inter_x;
-				*ret_y = inter_y;
-				ret = ATRC_INTER;
-			}
+	}
+	if (curr_dist < sensi){
+		if (*init_dist == 0){
+			*init_dist = 1;
+			*min_dist = curr_dist;
+			*ret_x = inter_x;
+			*ret_y = inter_y;
+			ret = ATRC_INTER;
+		}
+		else if (curr_dist < *min_dist){
+			*min_dist = curr_dist;
+			*ret_x = inter_x;
+			*ret_y = inter_y;
+			ret = ATRC_INTER;
 		}
 	}
 	return ret;
@@ -481,7 +417,7 @@ struct ins_space obj1_ins , struct ins_space obj2_ins){
 int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj_hilite, enum attract_type type,
 double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 	dxf_node *current = NULL, *obj = NULL;
-	dxf_node *prev = NULL, *prev_obj = NULL;
+	dxf_node *prev = NULL;
 	int ret = ATRC_NONE, found = 0;
 	
 	int init_dist = 0;
@@ -512,8 +448,6 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 	};
 	ins_stack[0] = ins_zero;
 	
-	struct ins_space ins_prev = ins_zero;
-	
 	int ins_flag = 0;
 	/* ---- */
 	
@@ -534,7 +468,9 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 		list_el = list->next;
 	}
 	
-	
+	struct inter_obj inter_cand[10];
+	int num_inter = 0;
+		
 	
 	while (list_el){/* ###### LIST LOOP ########### */
 		
@@ -572,6 +508,18 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
+						if ((type & ATRC_INTER) && (num_inter < 10) &&
+						(IN_BOUNDS(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y) ||
+						NEAR_LN(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y, sensi))){
+							
+							inter_cand[num_inter].type = ent_type;
+							inter_cand[num_inter].line.p1x = pt1_x;
+							inter_cand[num_inter].line.p1y = pt1_y;
+							inter_cand[num_inter].line.p2x = pt2_x;
+							inter_cand[num_inter].line.p2y = pt2_y;
+							inter_cand[num_inter].line.bulge = 0;
+							num_inter++;
+						}
 					}
 					//printf("line %d\n", found);
 				}
@@ -593,15 +541,6 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 					printf("Error: empty entity\n");
 				}
 				
-				if (found = dxf_inter_attract(drawing, current, prev_obj,
-							type, pos_x, pos_y, sensi, 
-							ret_x, ret_y, &init_dist, &min_dist,
-							ins_stack[ins_stack_pos], ins_prev)){
-					ret = found;
-				}
-				
-				ins_prev = ins_stack[ins_stack_pos];
-				prev_obj = current;
 			}
 			/* ============================================================= */
 			else if ((current->type == DXF_ATTR) && (ins_flag != 0)){ /* read DXF attibutes of insert block */
@@ -781,6 +720,17 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 		
 	}/* ######### END LIST LOOP ############ */
 	list_mem_pool(ZERO_LIST, 1);
+	
+	if(num_inter > 1){
+		int i, j;
+		for (i = 0; i < num_inter - 1; i++){
+			for (j = i+1; j < num_inter; j++){
+				if (found = dxf_inter_attract (inter_cand[i], inter_cand[j], pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+					ret = found;
+				}
+			}
+		}
+	}
 	//printf("%d\n", ret);
 	return ret;
 }

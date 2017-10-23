@@ -26,6 +26,28 @@ struct ins_space{
 	double normal[3];
 };
 
+struct inter_obj{
+	int type;
+	union {
+		struct {
+			double p1x;
+			double p1y;
+			double p2x;
+			double p2y;
+			double bulge;
+		} line;
+		struct {
+			double p1x;
+			double p1y;
+			double p2x;
+			double p2y;
+			double cx;
+			double cy;
+			double radius;
+		} arc;
+	};
+};
+
 int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
 double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y);
 
