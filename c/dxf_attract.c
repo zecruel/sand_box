@@ -3,7 +3,9 @@
 #include "list.h"
 
 #define IN_BOUNDS(x,y,p1x,p1y,p2x,p2y) ((((x <= p1x) && (x >= p2x))||((x <= p2x) && (x >= p1x))) && (((y <= p1y) && (y >= p2y))||((y <= p2y) && (y >= p1y))))
-#define NEAR_LN(x,y,p1x,p1y,p2x,p2y,s) (((fabs(p1x-p2x)<1e-9) && (fabs(p1x - x) < s)) || ((fabs(p1y-p2y)<1e-9) && (fabs(p1y - y) < s)))
+#define TOL 1e-9
+#define NEAR_LN(x,y,p1x,p1y,p2x,p2y,s) (((fabs(p1x-p2x)<TOL) && (fabs(p1x - x) < s)) || ((fabs(p1y-p2y)<TOL) && (fabs(p1y - y) < s)))
+#define MAX_CAND 50
 
 static double dot_product(double a[3], double b[3]){
 	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -126,6 +128,197 @@ double *pt2_x, double *pt2_y, double *pt2_z){
 	
 	return ok;
 }	
+
+int dxf_lwpline_get_pt(dxf_drawing *drawing,
+dxf_node * obj, dxf_node ** next,
+double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
+	
+	dxf_node *current = NULL;
+	static dxf_node *last = NULL;
+	static double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+	
+	/*flags*/
+	int first = 0, pt1 = 0, ok = 0;
+	static int pline_flag = 0, closed =0, init = 0;
+	
+	double px = 0.0, py = 0.0, pz = 0.0, bul = 0.0;
+	static double last_x, last_y, last_z, curr_x, elev;
+	
+	if (*next == NULL){ /* parse object first time */
+		pline_flag = 0; closed =0; init = 0;
+		last = NULL;
+		if(obj){
+			if (obj->type == DXF_ENT){
+				if (obj->obj.content){
+					current = obj->obj.content->next;
+					//printf("%s\n", obj->obj.name);
+				}
+			}
+		}
+		/* get general parameters of polyline */
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						px = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						py = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pz = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 42:
+						bul = current->value.d_data;
+						break;
+					case 70:
+						pline_flag = current->value.i_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			if (pt1){
+				pt1 = 0;
+				if (init == 0){
+					init = 1;
+					curr_x = px;
+					last = current;
+				}
+				else{
+					*next = current;
+					break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+			//*next = current->next;
+		}
+		if (init){
+			if (pline_flag & 1){
+				closed = 1;
+				/* if closed, the last vertex is first */
+				last_x = curr_x;
+				last_y = py;
+				last_z = pz;
+			}
+			else {
+				closed = 0;
+				last = NULL;
+			}
+			
+			/* convert OCS to WCS */
+			normal[0] = extru_x;
+			normal[1] = extru_y;
+			normal[2] = extru_z;
+			/* TODO */
+			
+			*pt1_x = curr_x;
+			*pt1_y = py;
+			*pt1_z = pz;
+			*bulge = bul;
+			ok = 1;
+			
+		}
+	}
+	else if ((init) && (*next != last)){ /* continue search in next point */
+		current = *next;
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						px = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						py = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pz = current->value.d_data;
+						//pt1 = 1; /* set flag */
+						break;
+					case 42:
+						bul = current->value.d_data;
+						break;
+				}
+			}
+			if (pt1){
+				pt1 = 0;
+				if (first == 0){
+					first = 1;
+					curr_x = px;
+				}
+				else{
+					*next = current;
+					break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		if (first){
+			/* convert OCS to WCS */
+			normal[0] = extru_x;
+			normal[1] = extru_y;
+			normal[2] = extru_z;
+			/* TODO */
+			
+			*pt1_x = curr_x;
+			*pt1_y = py;
+			*pt1_z = pz;
+			*bulge = bul;
+			ok = 1;
+			if (current == NULL){
+				if (closed){
+					*next = last;
+				}
+				else {
+					*next = NULL;
+					pline_flag = 0; closed =0; init = 0;
+					last = NULL;
+				}
+			}
+		}
+		else if (closed){
+			*next = last;
+		}
+		else {
+			*next = NULL;
+			pline_flag = 0; closed =0; init = 0;
+			last = NULL;
+		}
+	}
+	else { /* last vertex */
+		*pt1_x = last_x;
+		*pt1_y = last_y;
+		*pt1_z = last_z;
+		*bulge = 0.0;
+		ok = 1;
+		*next = NULL;
+		pline_flag = 0; closed =0; init = 0;
+		last = NULL;
+	}
+	
+	if (ok == 0){
+		*next = NULL;
+		pline_flag = 0; closed =0; init = 0;
+		last = NULL;
+	}
+	
+	return ok;
+}
 
 
 int dxf_line_attract(double pt1_x, double pt1_y, 
@@ -384,15 +577,17 @@ int *init_dist, double *min_dist){
 		double den = (obj1.line.p1x - obj1.line.p2x) * (obj2.line.p1y - obj2.line.p2y) -
 				(obj1.line.p1y - obj1.line.p2y) * (obj2.line.p1x - obj2.line.p2x);
 		
-		if (fabs(den) > 1e-9){
+		if (fabs(den) > TOL){
 			inter_x = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
 					(obj1.line.p1x - obj1.line.p2x)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
 			inter_y = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
 					(obj1.line.p1y - obj1.line.p2y)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
 			/* verify if point is in segments */
-			if (IN_BOUNDS(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) &&
-				IN_BOUNDS(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y)) {
-					curr_dist = sqrt(pow(inter_x - pos_x, 2) + pow(inter_y - pos_y, 2));
+			if ((IN_BOUNDS(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) ||
+			NEAR_LN(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y, sensi))&&
+			(IN_BOUNDS(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y) ||
+			NEAR_LN(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y, sensi))) {
+				curr_dist = sqrt(pow(inter_x - pos_x, 2) + pow(inter_y - pos_y, 2));
 			}
 		}
 	}
@@ -468,7 +663,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 		list_el = list->next;
 	}
 	
-	struct inter_obj inter_cand[10];
+	struct inter_obj inter_cand[MAX_CAND];
 	int num_inter = 0;
 		
 	
@@ -508,7 +703,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
-						if ((type & ATRC_INTER) && (num_inter < 10) &&
+						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
 						(IN_BOUNDS(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y) ||
 						NEAR_LN(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y, sensi))){
 							
@@ -539,6 +734,40 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						continue;
 					}
 					printf("Error: empty entity\n");
+				}
+				else if (ent_type == DXF_LWPOLYLINE){
+					double pt1_x = 0, pt1_y = 0, pt1_z = 0, bulge = 0;
+					double pt2_x = 0, pt2_y = 0, pt2_z = 0, prev_bulge = 0;
+					dxf_node * next_vert = NULL;
+					if(dxf_lwpline_get_pt(drawing, current, &next_vert, &pt2_x, &pt2_y, &pt2_z, &bulge)){
+						//printf("%0.f,%0.2f  -  %d\n",pt2_x, pt2_y, next_vert);
+						/* transform coordinates, according insert space */
+						while (next_vert){
+							transform(&pt2_x, &pt2_y, ins_stack[ins_stack_pos]);
+							pt1_x = pt2_x; pt1_y = pt2_y; prev_bulge = bulge;
+							
+							if(!dxf_lwpline_get_pt(drawing, current, &next_vert, &pt2_x, &pt2_y, &pt2_z, &bulge)){
+								break;
+							}
+							//printf("%0.f,%0.2f  -  %d\n",pt2_x, pt2_y, next_vert);
+							
+							if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								ret = found;
+							}
+							if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+							(IN_BOUNDS(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y) ||
+							NEAR_LN(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y, sensi))){
+								
+								inter_cand[num_inter].type = DXF_LINE;
+								inter_cand[num_inter].line.p1x = pt1_x;
+								inter_cand[num_inter].line.p1y = pt1_y;
+								inter_cand[num_inter].line.p2x = pt2_x;
+								inter_cand[num_inter].line.p2y = pt2_y;
+								inter_cand[num_inter].line.bulge = 0;
+								num_inter++;
+							}
+						}
+					}
 				}
 				
 			}
@@ -721,8 +950,10 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 	}/* ######### END LIST LOOP ############ */
 	list_mem_pool(ZERO_LIST, 1);
 	
+	/* verify if exist intersections between candidates*/
 	if(num_inter > 1){
 		int i, j;
+		/* walk in all combinations */
 		for (i = 0; i < num_inter - 1; i++){
 			for (j = i+1; j < num_inter; j++){
 				if (found = dxf_inter_attract (inter_cand[i], inter_cand[j], pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
