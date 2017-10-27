@@ -72,12 +72,45 @@ double *center_x, double *center_y){
 	*ang_end *= 180/M_PI;
 }
 
+int axis_transform(double *x, double *y, double *z, double normal[3]){
+	if ((x != NULL) && (y != NULL) && (z != NULL)){
+		double x0, y0, z0;
+		double x_axis[3], y_axis[3], z_axis[3], point[3];
+		double wy_axis[3] = {0.0, 1.0, 0.0};
+		double wz_axis[3] = {0.0, 0.0, 1.0};
+		
+		/* axis tranform */
+		/* choose absolute world axis, according DXF spec, and obtain x axis */
+		if ((fabs(normal[0] < 0.015625)) && (fabs(normal[1] < 0.015625))){
+			cross_product(wy_axis, normal, x_axis);
+		}
+		else{
+			cross_product(wz_axis, normal, x_axis);
+		}
+		unit_vector(x_axis); /* normalize axis */
+		cross_product(normal, x_axis, y_axis); /*obtain y axis */
+		unit_vector(y_axis); /* normalize axis */
+		
+		/* z_axis is the same normal, but normalized*/
+		z_axis[0] = normal[0]; z_axis[1] = normal[1]; z_axis[2] = normal[2];
+		unit_vector(z_axis); /* normalize axis */
+		
+		/*obtain result point */
+		point[0] = *x;
+		point[1] = *y;
+		point[2] = *z;
+		*x = dot_product(point, x_axis);
+		*y = dot_product(point, y_axis);
+		*z = dot_product(point, z_axis);
+		
+		return 1;
+	}
+	return 0;
+}
+
 int transform(double *x, double *y, struct ins_space space){
 	if ((x != NULL) && (y != NULL)){
 		double x0, y0;
-		double x_axis[3], y_axis[3], point[3];
-		double wy_axis[3] = {0.0, 1.0, 0.0};
-		double wz_axis[3] = {0.0, 0.0, 1.0};
 		
 		/* rotation constants */
 		double cosine = cos(space.rot * M_PI/180);
@@ -90,23 +123,6 @@ int transform(double *x, double *y, struct ins_space space){
 		/* rotation transform */ 
 		x0 = cosine*(*x - space.ofs_x) - sine*(*y - space.ofs_y) + space.ofs_x;
 		y0 = sine*(*x - space.ofs_x) + cosine*(*y - space.ofs_y) + space.ofs_y;
-		
-		/* axis tranform 
-		if ((fabs(space.normal[0] < 0.015625)) && (fabs(space.normal[1] < 0.015625))){
-			cross_product(wy_axis, space.normal, x_axis);
-		}
-		else{
-			cross_product(wz_axis, space.normal, x_axis);
-		}
-		unit_vector(x_axis);
-		cross_product(space.normal, x_axis, y_axis);
-		unit_vector(y_axis);
-		
-		point[0] = x0;
-		point[1] = y0;
-		point[2] = 0;
-		x0 = dot_product(point, x_axis);
-		y0 = dot_product(point, y_axis);
 
 		/* update return values*/ 
 		*x = x0;
@@ -171,7 +187,153 @@ double *pt2_x, double *pt2_y, double *pt2_z){
 	if((pt1 !=0) && (pt2 !=0)) ok = 1;
 	
 	return ok;
-}	
+}
+
+int dxf_circle_get(dxf_drawing *drawing, dxf_node * obj,
+double *center_x, double *center_y, double *center_z, 
+double *radius){
+	int ok = 0;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		/*flags*/
+		int pt1 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 40:
+						*radius = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		
+		/* update return values */
+		*center_x = pt1_x;
+		*center_y = pt1_y;
+		*center_z = pt1_z;
+		
+		ok =1;
+	}
+	return ok;
+}
+
+int dxf_arc_get(dxf_drawing *drawing, dxf_node * obj,
+double *center_x, double *center_y, double *center_z, 
+double *radius, double *start_ang, double *end_ang){
+	int ok = 0;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		/*flags*/
+		int pt1 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 40:
+						*radius = current->value.d_data;
+						break;
+					case 50:
+						*start_ang = current->value.d_data;
+						break;
+					case 51:
+						*end_ang = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		
+		/* update return values */
+		*center_x = pt1_x;
+		*center_y = pt1_y;
+		*center_z = pt1_z;
+		
+		ok =1;
+	}
+	return ok;
+}
 
 int dxf_lwpline_get_pt(dxf_drawing *drawing,
 dxf_node * obj, dxf_node ** next,
@@ -188,7 +350,7 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 	double px = 0.0, py = 0.0, pz = 0.0, bul = 0.0;
 	static double last_x, last_y, last_z, curr_x, elev;
 	
-	//*pt1_x= 0.0; *pt1_y= 0.0; *pt1_z = 0.0; *bulge = 0.0;
+	double x, y, z; /*return values */
 	
 	if (*next == NULL){ /* parse object first time */
 		pline_flag = 0; closed =0; init = 0;
@@ -265,15 +427,14 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 				last = NULL;
 			}
 			
-			/* convert OCS to WCS */
+			/* to convert OCS to WCS */
 			normal[0] = extru_x;
 			normal[1] = extru_y;
-			normal[2] = extru_z;
-			/* TODO */
+			normal[2] = extru_z;			
 			
-			*pt1_x = curr_x;
-			*pt1_y = py;
-			*pt1_z = pz;
+			x = curr_x;
+			y = py;
+			z = pz;
 			*bulge = bul;
 			ok = 1;
 			
@@ -315,15 +476,10 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 			current = current->next; /* go to the next in the list */
 		}
 		if (first){
-			/* convert OCS to WCS */
-			normal[0] = extru_x;
-			normal[1] = extru_y;
-			normal[2] = extru_z;
-			/* TODO */
 			
-			*pt1_x = curr_x;
-			*pt1_y = py;
-			*pt1_z = pz;
+			x = curr_x;
+			y = py;
+			z = pz;
 			*bulge = bul;
 			ok = 1;
 			if (current == NULL){
@@ -347,9 +503,9 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 		}
 	}
 	else { /* last vertex */
-		*pt1_x = last_x;
-		*pt1_y = last_y;
-		*pt1_z = last_z;
+		x = last_x;
+		y = last_y;
+		z = last_z;
 		*bulge = 0.0;
 		ok = 1;
 		*next = NULL;
@@ -361,6 +517,13 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 		*next = NULL;
 		pline_flag = 0; closed =0; init = 0;
 		last = NULL;
+	}
+	/* convert OCS to WCS */
+	else if (axis_transform(&x, &y, &z, normal)){
+		/* update return values */
+		*pt1_x = x;
+		*pt1_y = y;
+		*pt1_z = z;
 	}
 	
 	return ok;
@@ -544,13 +707,14 @@ int *init_dist, double *min_dist, struct ins_space space){
 			current = current->next; /* go to the next in the list */
 		}
 		
-		/* transform coordinates, according insert space */
-		if (pt1) transform(&pt1_x, &pt1_y, space);
-		
 		/* convert OCS to WCS */
 		normal[0] = extru_x;
 		normal[1] = extru_y;
 		normal[2] = extru_z;
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		
+		/* transform coordinates, according insert space */
+		if (pt1) transform(&pt1_x, &pt1_y, space);
 		
 		if(type & ATRC_CENTER){ /* if type of attractor is flaged as center */
 			/* check if points of the circle pass on distance criteria */
@@ -616,7 +780,7 @@ int *init_dist, double *min_dist){
 	int ret = ATRC_NONE;
 	double curr_dist;
 	
-	double end;
+	double test, end;
 	
 	/* verify if arc if a full circle */
 	if (fabs(ang_end - ang_start) < 1e-6){
@@ -632,16 +796,17 @@ int *init_dist, double *min_dist){
 	if (ang_pt < 0){
 		ang_pt += 2*M_PI;
 	}
+	
 	/* change radians to degrees */
-	ang_pt *= 180/M_PI;
+	test = ang_pt * 180/M_PI;
 	
 	/* verify if point angle is between start and end of arc */
-	ang_pt -= ang_start;
-	if (ang_pt < 0 ) ang_pt += 360;
+	test -= ang_start;
+	if (test < 0 ) test += 360;
 	end = ang_end - ang_start;
 	if (end < 0 ) end += 360;
 	
-	if (ang_pt <= end){
+	if (test <= end){
 		/* start and end points of arc, in cartesian coodinates */
 		double pt1_x = center_x + radius * cos(ang_start*M_PI/180);
 		double pt1_y = center_y + radius * sin(ang_start*M_PI/180);
@@ -714,7 +879,28 @@ int *init_dist, double *min_dist){
 				}
 			}
 		}
-		if(type & ATRC_CENTER){ /* if type of attractor is flaged as center */
+		if ((type & ATRC_ANY) && (!ret)){ /* if type of attractor is flaged as center */
+			/* check if point pass on distance criteria */
+			curr_dist = fabs(sqrt(pow(center_x - pos_x, 2) + pow(center_y - pos_y, 2)) - radius);
+			if (curr_dist < sensi){
+				double any_x = center_x + radius * cos(ang_pt);
+				double any_y = center_y + radius * sin(ang_pt);
+				if (*init_dist == 0){
+					*init_dist = 1;
+					*min_dist = curr_dist;
+					*ret_x = any_x;
+					*ret_y = any_y;
+					ret = ATRC_ANY;
+				}
+				else if (curr_dist < *min_dist){
+					*min_dist = curr_dist;
+					*ret_x = any_x;
+					*ret_y = any_y;
+					ret = ATRC_ANY;
+				}
+			}
+		}
+		if ((type & ATRC_CENTER) && (!ret)){ /* if type of attractor is flaged as center */
 			/* check if point pass on distance criteria */
 			curr_dist = fabs(sqrt(pow(center_x - pos_x, 2) + pow(center_y - pos_y, 2)) - radius);
 			if (curr_dist < sensi){
@@ -895,11 +1081,26 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 					//printf("line %d\n", found);
 				}
 				else if (ent_type == DXF_CIRCLE){
-					if (found = dxf_circle_attract (drawing, current, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist, ins_stack[ins_stack_pos])){
-						ret = found;
-					}
+					double center_x, center_y, center_z, radius;
 					
-					//int dxf_arc_attract(double radius, double ang_start, double ang_end, double center_x, double center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist){
+					if (dxf_circle_get(drawing, current, &center_x, &center_y, &center_z, &radius)){
+						/* transform coordinates, according insert space */
+						transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
+						if (found = dxf_arc_attract(radius, 0, 0, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+							ret = found;
+						}
+					}
+				}
+				else if (ent_type == DXF_ARC){
+					double center_x, center_y, center_z, radius, start_ang, end_ang;
+					
+					if (dxf_arc_get(drawing, current, &center_x, &center_y, &center_z, &radius, &start_ang, &end_ang)){
+						/* transform coordinates, according insert space */
+						transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
+						if (found = dxf_arc_attract(radius, start_ang, end_ang, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+							ret = found;
+						}
+					}
 				}
 				else if (ent_type ==  DXF_INSERT){
 					insert_ent = current;
