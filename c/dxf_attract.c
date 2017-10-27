@@ -7,6 +7,8 @@
 #define NEAR_LN(x,y,p1x,p1y,p2x,p2y,s) (((fabs(p1x-p2x)<TOL) && (fabs(p1x - x) < s) && (((y <= p1y) && (y >= p2y))||((y <= p2y) && (y >= p1y)))) || ((fabs(p1y-p2y)<TOL) && (fabs(p1y - y) < s) && (((x <= p1x) && (x >= p2x))||((x <= p2x) && (x >= p1x)))))
 #define MAX_CAND 50
 
+#define SIG(x) (x >= 0) ? 1 : -1
+
 static double dot_product(double a[3], double b[3]){
 	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 }
@@ -33,7 +35,7 @@ double pt2_x, double pt2_y, double bulge,
 double *radius, double *ang_start, double *ang_end,
 double *center_x, double *center_y){
 	
-	double theta, alfa, d, ang_c;
+	double theta, alfa, d, ang_c, start, end;
 	//int sig;
 	
 	theta = 2 * atan(bulge);
@@ -46,14 +48,24 @@ double *center_x, double *center_y){
 	*center_y = *radius*sin(ang_c) + pt1_y;
 	
 	//angulo inicial e final obtidos das coordenadas iniciais
-	*ang_start = atan2(pt1_y - *center_y,pt1_x - *center_x);
-	*ang_end = atan2(pt2_y - *center_y,pt2_x - *center_x);
+	start = atan2(pt1_y - *center_y, pt1_x - *center_x);
+	end = atan2(pt2_y - *center_y, pt2_x - *center_x);
 	
-	//sig = 1;
-	if (bulge < 0){
-		*ang_start += M_PI;
-		*ang_end += M_PI;
-		//sig = -1;
+	/* set angle range to 0-2*pi */
+	if (start < 0){
+		start += 2*M_PI;
+	}
+	if (end < 0){
+		end += 2*M_PI;
+	}
+	if (*radius >= 0){
+		*ang_start = start;
+		*ang_end = end;
+	}
+	else{
+		*ang_start = end;
+		*ang_end = start;
+		*radius = fabs(*radius);
 	}
 	//converte para garus
 	*ang_start *= 180/M_PI;
@@ -176,7 +188,7 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 	double px = 0.0, py = 0.0, pz = 0.0, bul = 0.0;
 	static double last_x, last_y, last_z, curr_x, elev;
 	
-	*pt1_x= 0.0; *pt1_y= 0.0; *pt1_z = 0.0; *bulge = 0.0;
+	//*pt1_x= 0.0; *pt1_y= 0.0; *pt1_z = 0.0; *bulge = 0.0;
 	
 	if (*next == NULL){ /* parse object first time */
 		pline_flag = 0; closed =0; init = 0;
@@ -601,8 +613,10 @@ double pos_x, double pos_y, double sensi,
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	
-	int ret = ATRC_NONE, in_range = 0;
+	int ret = ATRC_NONE;
 	double curr_dist;
+	
+	double end;
 	
 	/* verify if arc if a full circle */
 	if (fabs(ang_end - ang_start) < 1e-6){
@@ -619,26 +633,22 @@ int *init_dist, double *min_dist){
 		ang_pt += 2*M_PI;
 	}
 	/* change radians to degrees */
-	ang_pt = 180/M_PI;
+	ang_pt *= 180/M_PI;
 	
 	/* verify if point angle is between start and end of arc */
-	if (ang_end - ang_start >= 0){ /*arc in counterclockwise (DXF default)*/
-		if((ang_pt >= ang_start) && (ang_pt <= ang_end)){
-			in_range = 1;
-		}
-	}
-	else { /*arc in clockwise*/
-		if((ang_pt <= ang_start) || (ang_pt >= ang_end)){
-			in_range = 1;
-		}
-	}
+	ang_pt -= ang_start;
+	if (ang_pt < 0 ) ang_pt += 360;
+	end = ang_end - ang_start;
+	if (end < 0 ) end += 360;
 	
-	if (in_range){
+	if (ang_pt <= end){
 		/* start and end points of arc, in cartesian coodinates */
 		double pt1_x = center_x + radius * cos(ang_start*M_PI/180);
 		double pt1_y = center_y + radius * sin(ang_start*M_PI/180);
-		double pt2_x = center_x + radius * cos(ang_start*M_PI/180);
-		double pt2_y = center_y + radius * sin(ang_start*M_PI/180);
+		double pt2_x = center_x + radius * cos(ang_end*M_PI/180);
+		double pt2_y = center_y + radius * sin(ang_end*M_PI/180);
+		
+		
 		
 		if(type & ATRC_END){ /* if type of attractor is flaged as endpoint */
 			/* check if points of the arc pass on distance criteria */
@@ -724,6 +734,7 @@ int *init_dist, double *min_dist){
 			}
 		}
 	}
+	return ret;
 }
 
 int dxf_inter_attract(struct inter_obj obj1, struct inter_obj obj2,
@@ -918,7 +929,6 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							}
 							
 							if (fabs(prev_bulge) < TOL){ /* segment is a straight line*/
-								//printf("%0.2f\n", prev_bulge);
 								if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
@@ -937,9 +947,8 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							}
 							else{ /* segment is an arc*/
 								double radius, ang_start, ang_end, center_x, center_y;
-								
-								arc_bulge(pt1_x, pt1_y, pt2_x, pt2_y, prev_bulge, &radius, &ang_start, &ang_end,&center_x, &center_y);
-								if (ret = dxf_arc_attract(radius, ang_start, ang_end, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								arc_bulge(pt1_x, pt1_y, pt2_x, pt2_y, prev_bulge, &radius, &ang_start, &ang_end, &center_x, &center_y);
+								if (found = dxf_arc_attract(radius, ang_start, ang_end, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
 							}
