@@ -68,8 +68,8 @@ double *center_x, double *center_y){
 		*radius = fabs(*radius);
 	}
 	//converte para garus
-	*ang_start *= 180/M_PI;
-	*ang_end *= 180/M_PI;
+	//*ang_start *= 180/M_PI;
+	//*ang_end *= 180/M_PI;
 }
 
 int axis_transform(double *x, double *y, double *z, double normal[3]){
@@ -259,6 +259,96 @@ double *radius){
 	return ok;
 }
 
+int dxf_circle_get2(dxf_drawing *drawing, dxf_node * obj,
+double *center_x, double *center_y, double *center_z, 
+double *axis, double *ratio, double *rot){
+	int ok = 0;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0, radius = 0;
+		double elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		/*flags*/
+		int pt1 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 40:
+						radius = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		
+		/* update return values */
+		*center_x = pt1_x;
+		*center_y = pt1_y;
+		*center_z = pt1_z;
+		*axis = radius;
+		*ratio = 1.0;
+		*rot = 0.0;
+		
+		pt1_x = 1.0;
+		pt1_y = 1.0;
+		pt1_z = 0.0;
+		
+		/* transform the circle in ellipse, by the OCS */
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		if ((fabs(pt1_x) >= fabs(pt1_y)) && pt1_x != 0.0){
+			*axis = radius * pt1_x;
+			*ratio = pt1_y / pt1_x;
+			*rot = atan(normal[1]);
+		}
+		else if (pt1_y != 0.0) {
+			*axis = radius * pt1_y;
+			*ratio = pt1_x / pt1_y;
+			//*rot = atan2(pt1_x, pt1_y) + M_PI/2;
+		}
+		
+		ok =1;
+	}
+	return ok;
+}
+
 int dxf_arc_get(dxf_drawing *drawing, dxf_node * obj,
 double *center_x, double *center_y, double *center_z, 
 double *radius, double *start_ang, double *end_ang){
@@ -329,6 +419,10 @@ double *radius, double *start_ang, double *end_ang){
 		*center_x = pt1_x;
 		*center_y = pt1_y;
 		*center_z = pt1_z;
+		
+		/*convert to radians */
+		*start_ang *= M_PI/180;
+		*end_ang *= M_PI/180;
 		
 		ok =1;
 	}
@@ -651,169 +745,62 @@ int *init_dist, double *min_dist){
 	return ret;
 }
 
-int dxf_circle_attract(dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
-double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y,
-int *init_dist, double *min_dist, struct ins_space space){
-	int ret = ATRC_NONE;
-	double curr_dist;
-	
-	if(obj){
-		dxf_node *current = NULL;
-		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
-		double radius, elev = 0;
-		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
-		
-		/*flags*/
-		int pt1 = 0;
-				
-		if (obj->type == DXF_ENT){
-			if (obj->obj.content){
-				current = obj->obj.content->next;
-				//printf("%s\n", obj->obj.name);
-			}
-		}
-		while (current){
-			if (current->type == DXF_ATTR){ /* DXF attibute */
-				switch (current->value.group){
-					case 10:
-						pt1_x = current->value.d_data;
-						pt1 = 1; /* set flag */
-						break;
-					case 20:
-						pt1_y = current->value.d_data;
-						pt1 = 1; /* set flag */
-						break;
-					case 30:
-						pt1_z = current->value.d_data;
-						pt1 = 1; /* set flag */
-						break;
-					case 40:
-						radius = current->value.d_data;
-						break;
-					case 38:
-						elev = current->value.d_data;
-						break;
-					case 210:
-						extru_x = current->value.d_data;
-						break;
-					case 220:
-						extru_y = current->value.d_data;
-						break;
-					case 230:
-						extru_z = current->value.d_data;
-						break;
-				}
-			}
-			current = current->next; /* go to the next in the list */
-		}
-		
-		/* convert OCS to WCS */
-		normal[0] = extru_x;
-		normal[1] = extru_y;
-		normal[2] = extru_z;
-		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
-		
-		/* transform coordinates, according insert space */
-		if (pt1) transform(&pt1_x, &pt1_y, space);
-		
-		if(type & ATRC_CENTER){ /* if type of attractor is flaged as center */
-			/* check if points of the circle pass on distance criteria */
-			if (pt1){ /* found point 1 */
-				curr_dist = fabs(sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2)) - radius);
-				if (curr_dist < sensi){
-					if (*init_dist == 0){
-						*init_dist = 1;
-						*min_dist = curr_dist;
-						*ret_x = pt1_x;
-						*ret_y = pt1_y;
-						ret = ATRC_CENTER;
-					}
-					else if (curr_dist < *min_dist){
-						*min_dist = curr_dist;
-						*ret_x = pt1_x;
-						*ret_y = pt1_y;
-						ret = ATRC_CENTER;
-					}
-				}
-			}
-		}
-		if(type & ATRC_QUAD){ /* if type of attractor is flaged as quadrant */
-			if (pt1){ /* found point 1 */
-				double quad_x[4], quad_y[4];
-				quad_x[0] = pt1_x + radius; quad_y[0] = pt1_y;
-				quad_x[1] = pt1_x; quad_y[1] = pt1_y + radius;
-				quad_x[2] = pt1_x - radius; quad_y[2] = pt1_y;
-				quad_x[3] = pt1_x; quad_y[3] = pt1_y - radius;
-				
-				/* check if points of the circle pass on distance criteria */
-				int i;
-				for (i = 0; i < 4; i++){
-					curr_dist = sqrt(pow(quad_x[i] - pos_x, 2) + pow(quad_y[i] - pos_y, 2));
-					if (curr_dist < sensi){
-						if (*init_dist == 0){
-							*init_dist = 1;
-							*min_dist = curr_dist;
-							*ret_x = quad_x[i];
-							*ret_y = quad_y[i];
-							ret = ATRC_QUAD;
-						}
-						else if (curr_dist < *min_dist){
-							*min_dist = curr_dist;
-							*ret_x = quad_x[i];
-							*ret_y = quad_y[i];
-							ret = ATRC_QUAD;
-						}
-					}
-				}
-			}
-		}
-	}
-	return ret;
-}
 int dxf_arc_attract(double radius, double ang_start, double ang_end,
-double center_x, double center_y,
+double center_x, double center_y, double ratio, double rot,
 enum attract_type type,
 double pos_x, double pos_y, double sensi, 
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
+	/* elliptical arc */
 	
 	int ret = ATRC_NONE;
 	double curr_dist;
 	
-	double test, end;
-	
-	/* verify if arc if a full circle */
-	if (fabs(ang_end - ang_start) < 1e-6){
-		ang_start = 0;
-		ang_end = 360;
-		type &= ~ATRC_END; /* disable the endpoint attractor */
-	}
-	
+	double test, start, end;
 	
 	/* find the angle of point, referenced to arc center */
 	double ang_pt = atan2(pos_y - center_y, pos_x - center_x);
-	/* set angle range to 0-2*pi */
-	if (ang_pt < 0){
-		ang_pt += 2*M_PI;
+	
+	/* verify if arc if a full circle */
+	if (fabs(ang_end - ang_start) < 1e-6){
+		ang_start = 0.0;
+		ang_end = 2*M_PI;
+		type &= ~ATRC_END; /* disable the endpoint attractor */
+		
+		start = ang_start;
+		end = ang_end;
+		test = 0.0;
+	}
+	else{
+		/* set angle range to 0-2*pi */
+		if (ang_pt < 0) ang_pt += 2*M_PI;
+		start = fmod(ang_start + rot, 2*M_PI);
+		end = fmod(ang_end + rot, 2*M_PI);
+		
+		/* verify if point angle is between start and end of arc */
+		test = ang_pt - start;
+		if (test < 0 ) test += 2*M_PI;
+		end -= start;
+		if (end < 0 ) end += 2*M_PI;
 	}
 	
-	/* change radians to degrees */
-	test = ang_pt * 180/M_PI;
-	
-	/* verify if point angle is between start and end of arc */
-	test -= ang_start;
-	if (test < 0 ) test += 360;
-	end = ang_end - ang_start;
-	if (end < 0 ) end += 360;
-	
 	if (test <= end){
+		/* rotation constants */
+		double cosine = cos(rot);
+		double sine = sin(rot);
+		
+		/*ellipse's parameters */
+		double a = radius, b = radius * ratio;
+		
 		/* start and end points of arc, in cartesian coodinates */
-		double pt1_x = center_x + radius * cos(ang_start*M_PI/180);
-		double pt1_y = center_y + radius * sin(ang_start*M_PI/180);
-		double pt2_x = center_x + radius * cos(ang_end*M_PI/180);
-		double pt2_y = center_y + radius * sin(ang_end*M_PI/180);
+		double pt1_x = center_x + a*cos(ang_start)*cosine - b*sin(ang_start)*sine;
+		double pt1_y = center_y + a*cos(ang_start)*sine + b*sin(ang_start)*cosine;
+		double pt2_x = center_x + a*cos(ang_end)*cosine - b*sin(ang_end)*sine;
+		double pt2_y = center_y + a*cos(ang_end)*sine + b*sin(ang_end)*cosine;
 		
-		
+		/* point in ellipse near current position */
+		double near_x = center_x + a*cos(ang_pt)*cosine - b*sin(ang_pt)*sine;
+		double near_y = center_y + a*cos(ang_pt)*sine + b*sin(ang_pt)*cosine;
 		
 		if(type & ATRC_END){ /* if type of attractor is flaged as endpoint */
 			/* check if points of the arc pass on distance criteria */
@@ -853,10 +840,17 @@ int *init_dist, double *min_dist){
 		if(type & ATRC_QUAD){ /* if type of attractor is flaged as quadrant */
 			
 			double quad_x[4], quad_y[4];
-			quad_x[0] = center_x + radius; quad_y[0] = center_y;
-			quad_x[1] = center_x; quad_y[1] = center_y + radius;
-			quad_x[2] = center_x - radius; quad_y[2] = center_y;
-			quad_x[3] = center_x; quad_y[3] = center_y - radius;
+			quad_x[0] = center_x + a*cosine;
+			quad_y[0] = center_y + a*sine;
+			
+			quad_x[1] = center_x - b*sine;
+			quad_y[1] = center_y + b*cosine;
+			
+			quad_x[2] = center_x - a*cosine;
+			quad_y[2] = center_y - a*sine;
+			
+			quad_x[3] = center_x + b*sine;
+			quad_y[3] = center_y - b*cosine;
 			
 			/* check if point pass on distance criteria */
 			int i;
@@ -881,28 +875,26 @@ int *init_dist, double *min_dist){
 		}
 		if ((type & ATRC_ANY) && (!ret)){ /* if type of attractor is flaged as center */
 			/* check if point pass on distance criteria */
-			curr_dist = fabs(sqrt(pow(center_x - pos_x, 2) + pow(center_y - pos_y, 2)) - radius);
+			curr_dist = fabs(sqrt(pow(near_x - pos_x, 2) + pow(near_y - pos_y, 2)));
 			if (curr_dist < sensi){
-				double any_x = center_x + radius * cos(ang_pt);
-				double any_y = center_y + radius * sin(ang_pt);
 				if (*init_dist == 0){
 					*init_dist = 1;
 					*min_dist = curr_dist;
-					*ret_x = any_x;
-					*ret_y = any_y;
+					*ret_x = near_x;
+					*ret_y = near_y;
 					ret = ATRC_ANY;
 				}
 				else if (curr_dist < *min_dist){
 					*min_dist = curr_dist;
-					*ret_x = any_x;
-					*ret_y = any_y;
+					*ret_x = near_x;
+					*ret_y = near_y;
 					ret = ATRC_ANY;
 				}
 			}
 		}
 		if ((type & ATRC_CENTER) && (!ret)){ /* if type of attractor is flaged as center */
 			/* check if point pass on distance criteria */
-			curr_dist = fabs(sqrt(pow(center_x - pos_x, 2) + pow(center_y - pos_y, 2)) - radius);
+			curr_dist = fabs(sqrt(pow(near_x - pos_x, 2) + pow(near_y - pos_y, 2)));
 			if (curr_dist < sensi){
 				if (*init_dist == 0){
 					*init_dist = 1;
@@ -1082,12 +1074,27 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 				}
 				else if (ent_type == DXF_CIRCLE){
 					double center_x, center_y, center_z, radius;
+					double axis = 0, rot = 0, ratio = 1;
 					
-					if (dxf_circle_get(drawing, current, &center_x, &center_y, &center_z, &radius)){
+					//if (dxf_circle_get(drawing, current, &center_x, &center_y, &center_z, &radius)){
+					if (dxf_circle_get2(drawing, current, &center_x, &center_y, &center_z, &axis, &ratio, &rot)){
 						/* transform coordinates, according insert space */
 						transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
-						if (found = dxf_arc_attract(radius, 0, 0, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						/*
+						if (ins_stack[ins_stack_pos].scale_x >= ins_stack[ins_stack_pos].scale_y){
+							axis = ins_stack[ins_stack_pos].scale_x * radius;
+							rot = ins_stack[ins_stack_pos].rot * M_PI/180;
+							ratio = ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x;
+						}
+						else{
+							axis = ins_stack[ins_stack_pos].scale_y * radius;
+							rot = M_PI/2 + ins_stack[ins_stack_pos].rot * M_PI/180;
+							ratio = ins_stack[ins_stack_pos].scale_x / ins_stack[ins_stack_pos].scale_y;
+						}*/
+						if (found = dxf_arc_attract(axis, 0.0, 0.0, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
+							printf("ratio = %0.2f\n", ratio);
+							//printf("pos = %d\n", ins_stack_pos);
 						}
 					}
 				}
@@ -1097,7 +1104,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 					if (dxf_arc_get(drawing, current, &center_x, &center_y, &center_z, &radius, &start_ang, &end_ang)){
 						/* transform coordinates, according insert space */
 						transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
-						if (found = dxf_arc_attract(radius, start_ang, end_ang, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_arc_attract(radius, start_ang, end_ang, center_x, center_y, 1.0, 0.0, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 					}
@@ -1149,7 +1156,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							else{ /* segment is an arc*/
 								double radius, ang_start, ang_end, center_x, center_y;
 								arc_bulge(pt1_x, pt1_y, pt2_x, pt2_y, prev_bulge, &radius, &ang_start, &ang_end, &center_x, &center_y);
-								if (found = dxf_arc_attract(radius, ang_start, ang_end, center_x, center_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								if (found = dxf_arc_attract(radius, ang_start, ang_end, center_x, center_y, 1.0, 0, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
 							}
