@@ -323,26 +323,18 @@ double *axis, double *ratio, double *rot){
 		*center_x = pt1_x;
 		*center_y = pt1_y;
 		*center_z = pt1_z;
-		*axis = radius;
-		*ratio = 1.0;
-		*rot = 0.0;
+		//*axis = radius;
+		//*ratio = 1.0;
+		//*rot = 0.0;
 		
+		/* transform the circle in ellipse, by the OCS */
 		pt1_x = 1.0;
 		pt1_y = 1.0;
 		pt1_z = 0.0;
-		
-		/* transform the circle in ellipse, by the OCS */
 		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
-		if ((fabs(pt1_x) >= fabs(pt1_y)) && pt1_x != 0.0){
-			*axis = radius * pt1_x;
-			*ratio = pt1_y / pt1_x;
-			*rot = atan(normal[1]);
-		}
-		else if (pt1_y != 0.0) {
-			*axis = radius * pt1_y;
-			*ratio = pt1_x / pt1_y;
-			//*rot = atan2(pt1_x, pt1_y) + M_PI/2;
-		}
+		*axis = fabs(radius * pt1_x);
+		*ratio = fabs(pt1_y / pt1_x);
+		*rot = atan2(normal[0], normal[1]);
 		
 		ok =1;
 	}
@@ -1093,7 +1085,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						}*/
 						if (found = dxf_arc_attract(axis, 0.0, 0.0, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
-							printf("ratio = %0.2f\n", ratio);
+							//printf("ratio = %0.2f\n", ratio);
 							//printf("pos = %d\n", ins_stack_pos);
 						}
 					}
