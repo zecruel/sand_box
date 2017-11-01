@@ -1589,13 +1589,15 @@ int main(int argc, char** argv){
 				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
 				if (element){
 					if(element->type == DXF_ENT){
+						dxf_ent_print2(element);
+						/*
 						printf("%s\n",element->obj.name);
 						if (dxf_ident_ent_type (element)  ==  DXF_INSERT){
 							dxf_node *volta = dxf_find_attr2(element, 2);
 							if (volta){
 								printf("%s\n",volta->value.s_data);
 							}
-						}
+						}*/
 					}
 				}
 				double ret_x, ret_y;

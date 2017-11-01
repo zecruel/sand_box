@@ -480,7 +480,7 @@ int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, dou
 
 void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig){
 	if (master){
-		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang;
 		int steps, i;
 		double x0, y0, x1, y1;
@@ -558,7 +558,7 @@ void graph_ellipse(graph_obj * master,
 		double p2_x, double p2_y, double p2_z,
 		double minor_ax, double ang_start, double ang_end){
 	if (master){
-		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang, major_ax, cosine, sine;
 		int steps, i;
 		double x0, y0, x1, y1;

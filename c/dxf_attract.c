@@ -360,6 +360,98 @@ double *start_ang, double *end_ang){
 	return ok;
 }
 
+int dxf_ellipse_get(dxf_drawing *drawing, dxf_node * obj,
+double *center_x, double *center_y, double *center_z, 
+double *axis, double *ratio, double *rot, 
+double *start_ang, double *end_ang){
+	int ok = 0;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+		double elev = 0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		/*flags*/
+		int pt1 = 0, pt2 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 11:
+						pt2_x = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 21:
+						pt2_y = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 31:
+						pt2_z = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 40:
+						*ratio = current->value.d_data;
+						break;
+					case 41:
+						*start_ang = current->value.d_data;
+						break;
+					case 42:
+						*end_ang = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		*center_x = pt1_x;
+		*center_y = pt1_y;
+		*center_z = pt1_z;
+		*axis = sqrt(pow(pt2_x, 2) + pow(pt2_y, 2));
+		*rot = atan2(pt2_y, pt2_x);
+		ok = ellipse_transf(center_x, center_y, center_z, axis, ratio, rot, normal);
+		
+		/*convert to radians */
+		//*start_ang *= M_PI/180;
+		//*end_ang *= M_PI/180;
+	}
+	return ok;
+}
+
 int dxf_lwpline_get_pt(dxf_drawing *drawing,
 dxf_node * obj, dxf_node ** next,
 double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
@@ -705,6 +797,11 @@ int *init_dist, double *min_dist){
 	else{
 		/* set angle range to 0-2*pi */
 		if (ang_pt < 0) ang_pt += 2*M_PI;
+		ang_start = fmod(ang_start, 2*M_PI);
+		if (ang_start < 0) ang_start += 2*M_PI;
+		ang_end = fmod(ang_end, 2*M_PI);
+		if (ang_end < 0) ang_end += 2*M_PI;
+		
 		start = fmod(ang_start + rot, 2*M_PI);
 		end = fmod(ang_end + rot, 2*M_PI);
 		
@@ -730,8 +827,8 @@ int *init_dist, double *min_dist){
 		double pt2_y = center_y + a*cos(ang_end)*sine + b*sin(ang_end)*cosine;
 		
 		/* point in ellipse near current position */
-		double near_x = center_x + a*cos(ang_pt)*cosine - b*sin(ang_pt)*sine;
-		double near_y = center_y + a*cos(ang_pt)*sine + b*sin(ang_pt)*cosine;
+		double near_x = center_x + a*cos(ang_pt - rot)*cosine - b*sin(ang_pt - rot)*sine;
+		double near_y = center_y + a*cos(ang_pt - rot)*sine + b*sin(ang_pt - rot)*cosine;
 		
 		if(type & ATRC_END){ /* if type of attractor is flaged as endpoint */
 			/* check if points of the arc pass on distance criteria */
@@ -806,7 +903,7 @@ int *init_dist, double *min_dist){
 		}
 		if ((type & ATRC_ANY) && (!ret)){ /* if type of attractor is flaged as center */
 			/* check if point pass on distance criteria */
-			curr_dist = fabs(sqrt(pow(near_x - pos_x, 2) + pow(near_y - pos_y, 2)));
+			curr_dist = sqrt(pow(near_x - pos_x, 2) + pow(near_y - pos_y, 2));
 			if (curr_dist < sensi){
 				if (*init_dist == 0){
 					*init_dist = 1;
@@ -1032,8 +1129,22 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						rot += ins_stack[ins_stack_pos].rot * M_PI/180;
 						ratio *= fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
-						start_ang += ins_stack[ins_stack_pos].rot * M_PI/180;
-						end_ang += ins_stack[ins_stack_pos].rot * M_PI/180;
+						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+							ret = found;
+						}
+					}
+				}
+				else if (ent_type == DXF_ELLIPSE){
+					double center_x, center_y, center_z, radius, start_ang, end_ang;
+					double axis = 0, rot = 0, ratio = 1;
+					//if (dxf_arc_get(drawing, current, &center_x, &center_y, &center_z, &radius, &start_ang, &end_ang)){
+					if (dxf_ellipse_get(drawing, current, &center_x, &center_y, &center_z, &axis, &ratio, &rot, &start_ang, &end_ang)){
+						/* transform coordinates, according insert space */
+						transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
+						axis *= fabs(ins_stack[ins_stack_pos].scale_x);
+						rot += ins_stack[ins_stack_pos].rot * M_PI/180;
+						ratio *= fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
+						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
 						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
@@ -1084,9 +1195,16 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 								}
 							}
 							else{ /* segment is an arc*/
-								double radius, ang_start, ang_end, center_x, center_y;
+								double radius, ang_start, ang_end, center_x, center_y, center_z = 0.0;
+								double axis = 0, rot = 0, ratio = 1;
 								arc_bulge(pt1_x, pt1_y, pt2_x, pt2_y, prev_bulge, &radius, &ang_start, &ang_end, &center_x, &center_y);
-								if (found = dxf_arc_attract(radius, ang_start, ang_end, center_x, center_y, 1.0, 0, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								/* transform coordinates, according insert space */
+								transform(&center_x, &center_y, ins_stack[ins_stack_pos]);
+								axis = radius * fabs(ins_stack[ins_stack_pos].scale_x);
+								rot = ins_stack[ins_stack_pos].rot * M_PI/180;
+								ratio = fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
+								ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
+								if (found = dxf_arc_attract(axis, ang_start, ang_end, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
 							}
