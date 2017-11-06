@@ -155,6 +155,26 @@ double *axis, double *ratio, double *rot, double normal[3]){
 	return ok;
 }
 
+double ellipse_par (double ang, double a, double b){
+	/* find the polar parameter (t) for ellipse */
+	double t = atan(a*tan(ang)/b);
+	if ((ang > M_PI/2) && (ang < M_PI)){
+		t += M_PI; 
+	}
+	else if ((ang >= M_PI) && (ang <= 3*M_PI/2)){
+		t -= M_PI; 
+	}
+	if (t < 0 ) t += 2*M_PI;
+	
+	return t;
+}
+
+void angle_range(double *ang){
+	/* set angle range to 0-2*pi */
+	if (fabs(*ang) > 2*M_PI) *ang = fmod(*ang, 2*M_PI);
+	if (*ang < 0) *ang += 2*M_PI;
+}
+
 int dxf_line_get (dxf_drawing *drawing, dxf_node * obj, 
 double *pt1_x, double *pt1_y, double *pt1_z, 
 double *pt2_x, double *pt2_y, double *pt2_z){
@@ -781,11 +801,27 @@ int *init_dist, double *min_dist){
 	
 	double test, start, end;
 	
+	/* rotation constants */
+	double cosine = cos(rot);
+	double sine = sin(rot);
+	
+	/*ellipse's parameters */
+	double a = radius, b = radius * ratio;
+	
 	/* find the angle of point, referenced to arc center */
 	double ang_pt = atan2(pos_y - center_y, pos_x - center_x);
 	
-	/* verify if arc if a full circle */
-	if (fabs(ang_end - ang_start) < 1e-6){
+	angle_range(&rot); /* set angle range to 0-2*pi */
+	
+	/* update by rotation */
+	ang_pt = ang_pt - rot;
+	angle_range(&ang_pt); /* set angle range to 0-2*pi */
+	
+	/* find the ellipse polar parameter (t) for  point*/
+	double t = ellipse_par(ang_pt, a, b);
+	
+	/* verify if arc is a full circle */
+	if ((fabs(ang_end - ang_start) < 1e-6) || (fabs(ang_end - ang_start) >= (2*M_PI - 1e-6))){
 		ang_start = 0.0;
 		ang_end = 2*M_PI;
 		type &= ~ATRC_END; /* disable the endpoint attractor */
@@ -795,42 +831,28 @@ int *init_dist, double *min_dist){
 		test = 0.0;
 	}
 	else{
-		/* set angle range to 0-2*pi */
-		if (ang_pt < 0) ang_pt += 2*M_PI;
-		ang_start = fmod(ang_start, 2*M_PI);
-		if (ang_start < 0) ang_start += 2*M_PI;
-		ang_end = fmod(ang_end, 2*M_PI);
-		if (ang_end < 0) ang_end += 2*M_PI;
-		
-		start = fmod(ang_start + rot, 2*M_PI);
-		end = fmod(ang_end + rot, 2*M_PI);
+		angle_range(&ang_start); /* set angle range to 0-2*pi */
+		angle_range(&ang_end); /* set angle range to 0-2*pi */
 		
 		/* verify if point angle is between start and end of arc */
-		test = ang_pt - start;
+		test = t - ang_start;
 		if (test < 0 ) test += 2*M_PI;
-		end -= start;
+		end = ang_end - ang_start;
 		if (end < 0 ) end += 2*M_PI;
 	}
 	
-	if (test <= end){
-		/* rotation constants */
-		double cosine = cos(rot);
-		double sine = sin(rot);
-		
-		/*ellipse's parameters */
-		double a = radius, b = radius * ratio;
-		
-		/* start and end points of arc, in cartesian coodinates */
-		double pt1_x = center_x + a*cos(ang_start)*cosine - b*sin(ang_start)*sine;
-		double pt1_y = center_y + a*cos(ang_start)*sine + b*sin(ang_start)*cosine;
-		double pt2_x = center_x + a*cos(ang_end)*cosine - b*sin(ang_end)*sine;
-		double pt2_y = center_y + a*cos(ang_end)*sine + b*sin(ang_end)*cosine;
-		
+	if (test <= end){		
 		/* point in ellipse near current position */
-		double near_x = center_x + a*cos(ang_pt - rot)*cosine - b*sin(ang_pt - rot)*sine;
-		double near_y = center_y + a*cos(ang_pt - rot)*sine + b*sin(ang_pt - rot)*cosine;
+		double near_x = center_x + a*cos(t)*cosine - b*sin(t)*sine;
+		double near_y = center_y + a*cos(t)*sine + b*sin(t)*cosine;
 		
 		if(type & ATRC_END){ /* if type of attractor is flaged as endpoint */
+			/* start and end points of arc, in cartesian coodinates */
+			double pt1_x = center_x + a*cos(ang_start)*cosine - b*sin(ang_start)*sine;
+			double pt1_y = center_y + a*cos(ang_start)*sine + b*sin(ang_start)*cosine;
+			double pt2_x = center_x + a*cos(ang_end)*cosine - b*sin(ang_end)*sine;
+			double pt2_y = center_y + a*cos(ang_end)*sine + b*sin(ang_end)*cosine;
+			
 			/* check if points of the arc pass on distance criteria */
 			curr_dist = sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2));
 			if (curr_dist < sensi){
@@ -867,18 +889,25 @@ int *init_dist, double *min_dist){
 		}
 		if(type & ATRC_QUAD){ /* if type of attractor is flaged as quadrant */
 			
-			double quad_x[4], quad_y[4];
+			double quad_x[4], quad_y[4], t_q;
 			quad_x[0] = center_x + a*cosine;
 			quad_y[0] = center_y + a*sine;
 			
-			quad_x[1] = center_x - b*sine;
-			quad_y[1] = center_y + b*cosine;
+			//quad_x[1] = center_x - b*sine;
+			//quad_y[1] = center_y + b*cosine;
+			t_q = ellipse_par(M_PI/2, a, b);
+			quad_x[1] = center_x + a*cos(t_q)*cosine - b*sin(t_q)*sine;
+			quad_y[1] = center_y + a*cos(t_q)*sine + b*sin(t_q)*cosine;
+			
 			
 			quad_x[2] = center_x - a*cosine;
 			quad_y[2] = center_y - a*sine;
 			
-			quad_x[3] = center_x + b*sine;
-			quad_y[3] = center_y - b*cosine;
+			//quad_x[3] = center_x + b*sine;
+			//quad_y[3] = center_y - b*cosine;
+			t_q = ellipse_par(3*M_PI/2, a, b);
+			quad_x[3] = center_x + a*cos(t_q)*cosine - b*sin(t_q)*sine;
+			quad_y[3] = center_y + a*cos(t_q)*sine + b*sin(t_q)*cosine;
 			
 			/* check if point pass on distance criteria */
 			int i;
