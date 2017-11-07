@@ -169,6 +169,29 @@ double ellipse_par (double ang, double a, double b){
 	return t;
 }
 
+int ellipse_near(double pos_x, double pos_y, double sensi,
+double center_x, double center_y, 
+double axis, double ratio, double rot){
+	
+	/* rotation constants */
+	double cosine = cos(rot);
+	double sine = sin(rot);
+	
+	double x = axis*cosine - axis*ratio*sine;
+	double y = axis*sine + axis*ratio*cosine;
+	
+	double tr_x = center_x + x + sensi;
+	double tr_y = center_y + y + sensi;
+	double bl_x = center_x - x - sensi;
+	double bl_y = center_y - y - sensi;
+	
+	if((pos_x >= bl_x) && (pos_x <= tr_x) && 
+	(pos_y >= bl_y) && (pos_y <= tr_y)){
+		return 1;
+	}
+	return 0;
+}
+
 void angle_range(double *ang){
 	/* set angle range to 0-2*pi */
 	if (fabs(*ang) > 2*M_PI) *ang = fmod(*ang, 2*M_PI);
@@ -978,8 +1001,9 @@ double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	int ret = ATRC_NONE;
 	double curr_dist = sensi;
-	double inter_x = 0;
-	double inter_y = 0;
+	double inter_x[2];
+	double inter_y[2];
+	int num_inter = 0, i;
 	
 	if ((obj1.type == DXF_LINE) && (obj2.type == DXF_LINE)){
 			
@@ -989,32 +1013,112 @@ int *init_dist, double *min_dist){
 				(obj1.line.p1y - obj1.line.p2y) * (obj2.line.p1x - obj2.line.p2x);
 		
 		if (fabs(den) > TOL){
-			inter_x = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
+			inter_x[0] = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
 					(obj1.line.p1x - obj1.line.p2x)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
-			inter_y = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
+			inter_y[0] = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
 					(obj1.line.p1y - obj1.line.p2y)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
 			/* verify if point is in segments */
-			if ((IN_BOUNDS(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) ||
-			NEAR_LN(inter_x, inter_y, obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y, sensi))&&
-			(IN_BOUNDS(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y) ||
-			NEAR_LN(inter_x, inter_y, obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y, sensi))) {
-				curr_dist = sqrt(pow(inter_x - pos_x, 2) + pow(inter_y - pos_y, 2));
+			if ((IN_BOUNDS(inter_x[0], inter_y[0], obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) ||
+			NEAR_LN(inter_x[0], inter_y[0], obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y, sensi))&&
+			(IN_BOUNDS(inter_x[0], inter_y[0], obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y) ||
+			NEAR_LN(inter_x[0], inter_y[0], obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y, sensi))) {
+				num_inter = 1;
 			}
 		}
 	}
-	if (curr_dist < sensi){
-		if (*init_dist == 0){
-			*init_dist = 1;
-			*min_dist = curr_dist;
-			*ret_x = inter_x;
-			*ret_y = inter_y;
-			ret = ATRC_INTER;
+	else if (((obj1.type == DXF_LINE) && (obj2.type == DXF_ARC)) || ((obj1.type == DXF_ARC) && (obj2.type == DXF_LINE))){
+		if (obj1.type == DXF_ARC){ /*swap objects (obj1 is always a line and obj2 is always an arc*/
+			struct inter_obj tmp =obj1;
+			obj1 = obj2;
+			obj2 = tmp;
 		}
-		else if (curr_dist < *min_dist){
-			*min_dist = curr_dist;
-			*ret_x = inter_x;
-			*ret_y = inter_y;
-			ret = ATRC_INTER;
+		
+		/* ellipse's rotation constants */
+		double cosine = cos(obj2.arc.rot);
+		double sine = sin(obj2.arc.rot);
+		/*ellipse's parameters */
+		double a = obj2.arc.axis, b = obj2.arc.axis * obj2.arc.ratio;
+		double cx = obj2.arc.cx, cy = obj2.arc.cy;
+		
+		/*calc params*/
+		double k, l, m, n, p, q, r, delta = -1.0, s, d;
+		
+		if (fabs(obj1.line.p2y - obj1.line.p1y) < TOL) { /* horizontal line*/
+			k = cosine; m = sine;
+			l = cy*sine - cx*cosine - obj1.line.p1y*sine;
+			n = -cy*cosine - cx*sine + obj1.line.p1y*cosine;
+			
+			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
+			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
+			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
+			delta = pow(q,2) - 4*p*r;
+			
+			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
+				num_inter = 2;
+				inter_x[0] = (-q + sqrt(delta))/(2*p);
+				inter_x[1] = (-q - sqrt(delta))/(2*p);
+				inter_y[0] = obj1.line.p1y;
+				inter_y[1] = obj1.line.p1y;
+			}
+		}
+		else if (fabs(obj1.line.p2x - obj1.line.p1x) < TOL) { /* vertical line*/
+			k = -sine; m = cosine;
+			l = cy*sine - cx*cosine + obj1.line.p1x*cosine;
+			n = -cy*cosine - cx*sine + obj1.line.p1x*sine;
+			
+			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
+			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
+			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
+			delta = pow(q,2) - 4*p*r;
+			
+			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
+				num_inter = 2;
+				inter_y[0] = (-q + sqrt(delta))/(2*p);
+				inter_y[1] = (-q - sqrt(delta))/(2*p);
+				inter_x[0] = obj1.line.p1x;
+				inter_x[1] = obj1.line.p1x;
+			}
+		}
+		else{
+			s = (obj1.line.p2y - obj1.line.p1y) / (obj1.line.p2x - obj1.line.p1x);
+			d = obj1.line.p2y - s*obj1.line.p2x;
+			
+			k = cosine - s*sine; 
+			m = sine + s*cosine;
+			l = cy*sine - cx*cosine - d*sine;
+			n = -cy*cosine - cx*sine + d*cosine;
+			
+			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
+			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
+			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
+			delta = pow(q,2) - 4*p*r;
+			
+			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
+				num_inter = 2;
+				inter_x[0] = (-q + sqrt(delta))/(2*p);
+				inter_x[1] = (-q - sqrt(delta))/(2*p);
+				inter_y[0] = s*inter_x[0] + d;
+				inter_y[1] = s*inter_x[1] + d;
+			}
+		}
+		
+	}
+	for (i = 0; i < num_inter; i++){
+		curr_dist = sqrt(pow(inter_x[i] - pos_x, 2) + pow(inter_y[i] - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = inter_x[i];
+				*ret_y = inter_y[i];
+				ret = ATRC_INTER;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = inter_x[i];
+				*ret_y = inter_y[i];
+				ret = ATRC_INTER;
+			}
 		}
 	}
 	return ret;
@@ -1142,8 +1246,18 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
 						if (found = dxf_arc_attract(axis, 0.0, 0.0, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
-							//printf("ratio = %0.2f\n", ratio);
-							//printf("pos = %d\n", ins_stack_pos);
+						}
+						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+							inter_cand[num_inter].type = DXF_ARC;
+							inter_cand[num_inter].arc.cx = center_x;
+							inter_cand[num_inter].arc.cy = center_y;
+							inter_cand[num_inter].arc.axis = axis;
+							inter_cand[num_inter].arc.ratio = ratio;
+							inter_cand[num_inter].arc.rot = rot;
+							inter_cand[num_inter].arc.ang_start = 0.0;
+							inter_cand[num_inter].arc.ang_end = 2*M_PI;
+							num_inter++;
 						}
 					}
 				}
@@ -1161,6 +1275,18 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
+						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+							inter_cand[num_inter].type = DXF_ARC;
+							inter_cand[num_inter].arc.cx = center_x;
+							inter_cand[num_inter].arc.cy = center_y;
+							inter_cand[num_inter].arc.axis = axis;
+							inter_cand[num_inter].arc.ratio = ratio;
+							inter_cand[num_inter].arc.rot = rot;
+							inter_cand[num_inter].arc.ang_start = start_ang;
+							inter_cand[num_inter].arc.ang_end = end_ang;
+							num_inter++;
+						}
 					}
 				}
 				else if (ent_type == DXF_ELLIPSE){
@@ -1176,6 +1302,18 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
 						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
+						}
+						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+							inter_cand[num_inter].type = DXF_ARC;
+							inter_cand[num_inter].arc.cx = center_x;
+							inter_cand[num_inter].arc.cy = center_y;
+							inter_cand[num_inter].arc.axis = axis;
+							inter_cand[num_inter].arc.ratio = ratio;
+							inter_cand[num_inter].arc.rot = rot;
+							inter_cand[num_inter].arc.ang_start = start_ang;
+							inter_cand[num_inter].arc.ang_end = end_ang;
+							num_inter++;
 						}
 					}
 				}
@@ -1235,6 +1373,18 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 								ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
 								if (found = dxf_arc_attract(axis, ang_start, ang_end, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
+								}
+								if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+								ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+									inter_cand[num_inter].type = DXF_ARC;
+									inter_cand[num_inter].arc.cx = center_x;
+									inter_cand[num_inter].arc.cy = center_y;
+									inter_cand[num_inter].arc.axis = axis;
+									inter_cand[num_inter].arc.ratio = ratio;
+									inter_cand[num_inter].arc.rot = rot;
+									inter_cand[num_inter].arc.ang_start = ang_start;
+									inter_cand[num_inter].arc.ang_end = ang_end;
+									num_inter++;
 								}
 							}
 						}

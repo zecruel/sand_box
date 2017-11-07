@@ -37,13 +37,13 @@ struct inter_obj{
 			double bulge;
 		} line;
 		struct {
-			double p1x;
-			double p1y;
-			double p2x;
-			double p2y;
 			double cx;
 			double cy;
-			double radius;
+			double axis;
+			double ratio;
+			double rot;
+			double ang_start;
+			double ang_end;
 		} arc;
 	};
 };
