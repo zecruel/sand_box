@@ -30,6 +30,31 @@ static void unit_vector(double a[3]){
 	}
 }
 
+int point_lies_seg(double p1x, double p1y, double p2x, double p2y,
+double x, double y){
+	if(fabs(p1x - p2x) < TOL){
+		if ((fabs(x - p2x) < TOL) &&
+		(((y >= p1y) && (y <= p2y)) || 
+		((y <= p1y) && (y >= p2y)))){
+			return 1;
+		}
+	}
+	else if(fabs(p1y - p2y) < TOL){
+		if ((fabs(y - p2y) < TOL) &&
+		(((x >= p1x) && (x <= p2x)) || 
+		((x <= p1x) && (x >= p2x)))){
+			return 1;
+		}
+	}
+	else if ((((x >= p1x) && (x <= p2x)) ||
+	((x <= p1x) && (x >= p2x))) &&
+	(((y >= p1y) && (y <= p2y)) || 
+	((y <= p1y) && (y >= p2y)))){
+		return 1;
+	}
+	return 0;
+}
+
 void arc_bulge(double pt1_x, double pt1_y,
 double pt2_x, double pt2_y, double bulge,
 double *radius, double *ang_start, double *ang_end,
@@ -202,6 +227,66 @@ void angle_range(double *ang){
 	/* set angle range to 0-2*pi */
 	if (fabs(*ang) > 2*M_PI) *ang = fmod(*ang, 2*M_PI);
 	if (*ang < 0) *ang += 2*M_PI;
+}
+
+int arc_near(double axis, double ratio, double rot,
+double ang_start, double ang_end,
+double center_x, double center_y, 
+double pos_x, double pos_y,
+double *ret_x, double *ret_y){
+	/* elliptical arc */
+	
+	int ret = ATRC_NONE;
+	double curr_dist;
+	
+	double test, start, end;
+	
+	/* rotation constants */
+	double cosine = cos(rot);
+	double sine = sin(rot);
+	
+	/*ellipse's parameters */
+	double a = axis, b = axis * ratio;
+	
+	/* find the angle of point, referenced to arc center */
+	double ang_pt = atan2(pos_y - center_y, pos_x - center_x);
+	
+	angle_range(&rot); /* set angle range to 0-2*pi */
+	
+	/* update by rotation */
+	ang_pt = ang_pt - rot;
+	angle_range(&ang_pt); /* set angle range to 0-2*pi */
+	
+	/* find the ellipse polar parameter (t) for  point*/
+	double t = ellipse_par(ang_pt, a, b);
+	
+	/* verify if arc is a full circle */
+	if ((fabs(ang_end - ang_start) < 1e-6) || (fabs(ang_end - ang_start) >= (2*M_PI - 1e-6))){
+		ang_start = 0.0;
+		ang_end = 2*M_PI;
+		
+		start = ang_start;
+		end = ang_end;
+		test = 0.0;
+	}
+	else{
+		angle_range(&ang_start); /* set angle range to 0-2*pi */
+		angle_range(&ang_end); /* set angle range to 0-2*pi */
+		
+		/* verify if point angle is between start and end of arc */
+		test = t - ang_start;
+		if (test < 0 ) test += 2*M_PI;
+		end = ang_end - ang_start;
+		if (end < 0 ) end += 2*M_PI;
+	}
+	
+	if (test <= end){		
+		/* point in ellipse near current position */
+		*ret_x = center_x + a*cos(t)*cosine - b*sin(t)*sine;
+		*ret_y = center_y + a*cos(t)*sine + b*sin(t)*cosine;
+		return 1;
+	}
+	return 0;
 }
 
 int dxf_line_get (dxf_drawing *drawing, dxf_node * obj, 
@@ -1001,6 +1086,30 @@ int *init_dist, double *min_dist){
 	return ret;
 }
 
+int seg_inter(struct inter_obj obj1, struct inter_obj obj2,
+double *ret_x, double *ret_y){
+	if ((obj1.type == DXF_LINE) && (obj2.type == DXF_LINE)){
+			
+		/* calcule the intersection point*/
+		/*from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection*/
+		double den = (obj1.line.p1x - obj1.line.p2x) * (obj2.line.p1y - obj2.line.p2y) -
+				(obj1.line.p1y - obj1.line.p2y) * (obj2.line.p1x - obj2.line.p2x);
+		
+		if (fabs(den) > TOL){
+			*ret_x = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
+					(obj1.line.p1x - obj1.line.p2x)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
+			*ret_y = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
+					(obj1.line.p1y - obj1.line.p2y)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
+			/* verify if point is in segments */
+			if (point_lies_seg(obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y, *ret_x, *ret_y) &&
+			point_lies_seg(obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y, *ret_x, *ret_y)){
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
 int dxf_inter_attract(struct inter_obj obj1, struct inter_obj obj2,
 double pos_x, double pos_y, double sensi, 
 double *ret_x, double *ret_y,
@@ -1012,25 +1121,7 @@ int *init_dist, double *min_dist){
 	int num_inter = 0, i;
 	
 	if ((obj1.type == DXF_LINE) && (obj2.type == DXF_LINE)){
-			
-		/* calcule the intersection point*/
-		/*from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection*/
-		double den = (obj1.line.p1x - obj1.line.p2x) * (obj2.line.p1y - obj2.line.p2y) -
-				(obj1.line.p1y - obj1.line.p2y) * (obj2.line.p1x - obj2.line.p2x);
-		
-		if (fabs(den) > TOL){
-			inter_x[0] = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1x - obj2.line.p2x) -
-					(obj1.line.p1x - obj1.line.p2x)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
-			inter_y[0] = ((obj1.line.p1x*obj1.line.p2y - obj1.line.p1y*obj1.line.p2x)*(obj2.line.p1y - obj2.line.p2y) -
-					(obj1.line.p1y - obj1.line.p2y)*(obj2.line.p1x*obj2.line.p2y - obj2.line.p1y*obj2.line.p2x)) / den;
-			/* verify if point is in segments */
-			if ((IN_BOUNDS(inter_x[0], inter_y[0], obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y) ||
-			NEAR_LN(inter_x[0], inter_y[0], obj1.line.p1x, obj1.line.p1y, obj1.line.p2x, obj1.line.p2y, sensi))&&
-			(IN_BOUNDS(inter_x[0], inter_y[0], obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y) ||
-			NEAR_LN(inter_x[0], inter_y[0], obj2.line.p1x, obj2.line.p1y, obj2.line.p2x, obj2.line.p2y, sensi))) {
-				num_inter = 1;
-			}
-		}
+		if (seg_inter(obj1, obj2, &inter_x[0], &inter_y[0])) num_inter = 1;
 	}
 	else if (((obj1.type == DXF_LINE) && (obj2.type == DXF_ARC)) || ((obj1.type == DXF_ARC) && (obj2.type == DXF_LINE))){
 		if (obj1.type == DXF_ARC){ /*swap objects (obj1 is always a line and obj2 is always an arc*/
@@ -1109,6 +1200,72 @@ int *init_dist, double *min_dist){
 		}
 		
 	}
+	else if ((obj1.type == DXF_ARC) && (obj2.type == DXF_ARC)){
+		double bl_x = pos_x - sensi;
+		double bl_y = pos_y - sensi;
+		double tr_x = pos_x + sensi;
+		double tr_y = pos_y + sensi;
+		struct inter_obj seg1;
+		struct inter_obj seg2;
+		
+		seg1.type = DXF_LINE; seg2.type = DXF_LINE;
+		
+		if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
+		obj1.arc.ang_start, obj1.arc.ang_end,
+		obj1.arc.cx, obj1.arc.cy, 
+		bl_x, bl_y, &seg1.line.p1x, &seg1.line.p1y) &&
+		
+		arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
+		obj1.arc.ang_start, obj1.arc.ang_end,
+		obj1.arc.cx, obj1.arc.cy, 
+		tr_x, tr_y, &seg1.line.p2x, &seg1.line.p2y) &&
+		
+		arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
+		obj2.arc.ang_start, obj2.arc.ang_end,
+		obj2.arc.cx, obj2.arc.cy, 
+		bl_x, bl_y, &seg2.line.p1x, &seg2.line.p1y) &&
+		
+		arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
+		obj2.arc.ang_start, obj2.arc.ang_end,
+		obj2.arc.cx, obj2.arc.cy, 
+		tr_x, tr_y, &seg2.line.p2x, &seg2.line.p2y)){
+			if (seg_inter(seg1, seg2, &inter_x[0], &inter_y[0])) {
+				int i =0;
+				double dist;
+				for(i = 0; i< 10; i++){
+					if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
+					obj1.arc.ang_start, obj1.arc.ang_end,
+					obj1.arc.cx, obj1.arc.cy, 
+					inter_x[0], inter_y[0], &seg1.line.p1x, &seg1.line.p1y) &&
+					
+					arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
+					obj2.arc.ang_start, obj2.arc.ang_end,
+					obj2.arc.cx, obj2.arc.cy, 
+					inter_x[0], inter_y[0], &seg2.line.p1x, &seg2.line.p1y)){
+						dist = sqrt(pow(seg1.line.p1x - seg2.line.p1x, 2) + pow(seg1.line.p1y - seg2.line.p1y, 2));
+						if (dist > 1e-3){
+							inter_x[0] = (seg1.line.p1x + seg2.line.p1x)/2;
+							inter_y[0] = (seg1.line.p1y + seg2.line.p1y)/2;
+						}
+						else {
+							num_inter = 1;
+							break;
+						}
+					}
+					else break;
+				}
+				printf("INTER %0.2f, %0.2f\n", inter_x[0], inter_y[0]);
+			}
+			
+		}
+		
+		/*arc_near(double axis, double ratio, double rot,
+		double ang_start, double ang_end,
+		double center_x, double center_y, 
+		double pos_x, double pos_y,
+		double *ret_x, double *ret_y)*/
+	}
+	
 	for (i = 0; i < num_inter; i++){
 		curr_dist = sqrt(pow(inter_x[i] - pos_x, 2) + pow(inter_y[i] - pos_y, 2));
 		if (curr_dist < sensi){
