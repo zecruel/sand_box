@@ -177,13 +177,19 @@ double axis, double ratio, double rot){
 	double cosine = cos(rot);
 	double sine = sin(rot);
 	
-	double x = axis*cosine - axis*ratio*sine;
-	double y = axis*sine + axis*ratio*cosine;
+	/*https://math.stackexchange.com/questions/91132/how-to-get-the-limits-of-rotated-ellipse
+	xa = Sqrt[a^2 Cos[th]^2 + b^2 Sin[th]^2]
+	ya = Sqrt[a^2 Sin[th]^2 + b^2 Cos[th]^2]*/
+	
+	double x = sqrt(pow(axis, 2)*pow(cosine, 2) + pow(axis*ratio, 2)*pow(sine, 2));
+	double y = sqrt(pow(axis, 2)*pow(sine, 2) + pow(axis*ratio, 2)*pow(cosine, 2));
 	
 	double tr_x = center_x + x + sensi;
 	double tr_y = center_y + y + sensi;
 	double bl_x = center_x - x - sensi;
 	double bl_y = center_y - y - sensi;
+	
+	//printf("%0.2f, %0.2f - %0.2f, %0.2f\n", bl_x, bl_y, tr_x, tr_y);
 	
 	if((pos_x >= bl_x) && (pos_x <= tr_x) && 
 	(pos_y >= bl_y) && (pos_y <= tr_y)){
@@ -1034,8 +1040,8 @@ int *init_dist, double *min_dist){
 		}
 		
 		/* ellipse's rotation constants */
-		double cosine = cos(obj2.arc.rot);
-		double sine = sin(obj2.arc.rot);
+		double cosine = cos(-obj2.arc.rot);
+		double sine = sin(-obj2.arc.rot);
 		/*ellipse's parameters */
 		double a = obj2.arc.axis, b = obj2.arc.axis * obj2.arc.ratio;
 		double cx = obj2.arc.cx, cy = obj2.arc.cy;
