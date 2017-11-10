@@ -1199,10 +1199,13 @@ int *init_dist, double *min_dist){
 	}
 	else if ((obj1.type == DXF_ARC) && (obj2.type == DXF_ARC)){
 		
+		double ang_cmp = obj2.arc.rot + M_PI;
+		angle_range(&ang_cmp);
+		
 		/* verify if objects are not coincident */
 		if (!(fabs(obj1.arc.axis - obj2.arc.axis) < TOL &&
 		fabs(obj1.arc.ratio - obj2.arc.ratio) < TOL &&
-		fabs(fabs(sin(obj1.arc.rot)) - fabs(sin(obj2.arc.rot))) < 1e-3 &&
+		(fabs(obj1.arc.rot - obj2.arc.rot) < TOL || fabs(obj1.arc.rot - ang_cmp) < TOL)&&
 		fabs(obj1.arc.cx - obj2.arc.cx) < TOL &&
 		fabs(obj1.arc.cy - obj2.arc.cy) < TOL)){
 			//printf("%f, %f\n", sin(obj1.arc.rot), sin(obj2.arc.rot));
