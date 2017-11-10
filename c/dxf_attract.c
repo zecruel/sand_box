@@ -3,7 +3,7 @@
 #include "list.h"
 
 #define IN_BOUNDS(x,y,p1x,p1y,p2x,p2y) ((((x <= p1x) && (x >= p2x))||((x <= p2x) && (x >= p1x))) && (((y <= p1y) && (y >= p2y))||((y <= p2y) && (y >= p1y))))
-#define TOL 1e-9
+#define TOL 1e-6
 #define NEAR_LN(x,y,p1x,p1y,p2x,p2y,s) (((fabs(p1x-p2x)<TOL) && (fabs(p1x - x) < s) && (((y <= p1y) && (y >= p2y))||((y <= p2y) && (y >= p1y)))) || ((fabs(p1y-p2y)<TOL) && (fabs(p1y - y) < s) && (((x <= p1x) && (x >= p2x))||((x <= p2x) && (x >= p1x)))))
 #define MAX_CAND 50
 
@@ -61,7 +61,7 @@ double *radius, double *ang_start, double *ang_end,
 double *center_x, double *center_y){
 	
 	double theta, alfa, d, ang_c, start, end;
-	//int sig;
+	/* some math to find radius and center point */
 	
 	theta = 2 * atan(bulge);
 	alfa = atan2(pt2_y-pt1_y, pt2_x-pt1_x);
@@ -72,7 +72,7 @@ double *center_x, double *center_y){
 	*center_x = *radius*cos(ang_c) + pt1_x;
 	*center_y = *radius*sin(ang_c) + pt1_y;
 	
-	//angulo inicial e final obtidos das coordenadas iniciais
+	/* start and end angles found by points coordinates*/
 	start = atan2(pt1_y - *center_y, pt1_x - *center_x);
 	end = atan2(pt2_y - *center_y, pt2_x - *center_x);
 	
@@ -92,9 +92,6 @@ double *center_x, double *center_y){
 		*ang_end = start;
 		*radius = fabs(*radius);
 	}
-	//converte para garus
-	//*ang_start *= 180/M_PI;
-	//*ang_end *= 180/M_PI;
 }
 
 int axis_transform(double *x, double *y, double *z, double normal[3]){
@@ -194,7 +191,7 @@ double ellipse_par (double ang, double a, double b){
 	return t;
 }
 
-int ellipse_near(double pos_x, double pos_y, double sensi,
+int in_ellip_bound(double pos_x, double pos_y, double sensi,
 double center_x, double center_y, 
 double axis, double ratio, double rot){
 	
@@ -1201,69 +1198,58 @@ int *init_dist, double *min_dist){
 		
 	}
 	else if ((obj1.type == DXF_ARC) && (obj2.type == DXF_ARC)){
-		double bl_x = pos_x - sensi;
-		double bl_y = pos_y - sensi;
-		double tr_x = pos_x + sensi;
-		double tr_y = pos_y + sensi;
-		struct inter_obj seg1;
-		struct inter_obj seg2;
 		
-		seg1.type = DXF_LINE; seg2.type = DXF_LINE;
-		
-		if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
-		obj1.arc.ang_start, obj1.arc.ang_end,
-		obj1.arc.cx, obj1.arc.cy, 
-		bl_x, bl_y, &seg1.line.p1x, &seg1.line.p1y) &&
-		
-		arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
-		obj1.arc.ang_start, obj1.arc.ang_end,
-		obj1.arc.cx, obj1.arc.cy, 
-		tr_x, tr_y, &seg1.line.p2x, &seg1.line.p2y) &&
-		
-		arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
-		obj2.arc.ang_start, obj2.arc.ang_end,
-		obj2.arc.cx, obj2.arc.cy, 
-		bl_x, bl_y, &seg2.line.p1x, &seg2.line.p1y) &&
-		
-		arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
-		obj2.arc.ang_start, obj2.arc.ang_end,
-		obj2.arc.cx, obj2.arc.cy, 
-		tr_x, tr_y, &seg2.line.p2x, &seg2.line.p2y)){
-			if (seg_inter(seg1, seg2, &inter_x[0], &inter_y[0])) {
-				int i =0;
-				double dist;
-				for(i = 0; i< 10; i++){
-					if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
-					obj1.arc.ang_start, obj1.arc.ang_end,
-					obj1.arc.cx, obj1.arc.cy, 
-					inter_x[0], inter_y[0], &seg1.line.p1x, &seg1.line.p1y) &&
-					
-					arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
-					obj2.arc.ang_start, obj2.arc.ang_end,
-					obj2.arc.cx, obj2.arc.cy, 
-					inter_x[0], inter_y[0], &seg2.line.p1x, &seg2.line.p1y)){
-						dist = sqrt(pow(seg1.line.p1x - seg2.line.p1x, 2) + pow(seg1.line.p1y - seg2.line.p1y, 2));
-						if (dist > 1e-3){
-							inter_x[0] = (seg1.line.p1x + seg2.line.p1x)/2;
-							inter_y[0] = (seg1.line.p1y + seg2.line.p1y)/2;
-						}
-						else {
-							num_inter = 1;
-							break;
-						}
-					}
-					else break;
-				}
-				printf("INTER %0.2f, %0.2f\n", inter_x[0], inter_y[0]);
-			}
+		/* verify if objects are not coincident */
+		if (!(fabs(obj1.arc.axis - obj2.arc.axis) < TOL &&
+		fabs(obj1.arc.ratio - obj2.arc.ratio) < TOL &&
+		fabs(fabs(sin(obj1.arc.rot)) - fabs(sin(obj2.arc.rot))) < 1e-3 &&
+		fabs(obj1.arc.cx - obj2.arc.cx) < TOL &&
+		fabs(obj1.arc.cy - obj2.arc.cy) < TOL)){
+			//printf("%f, %f\n", sin(obj1.arc.rot), sin(obj2.arc.rot));
+			double p1_x, p1_y, p2_x, p2_y;
+			int i;
+			double dist, error;
 			
+			/* error criteria is based in minor axis of two objects*/
+			error = obj1.arc.axis * obj1.arc.ratio;
+			if (error > obj2.arc.axis * obj2.arc.ratio){
+				error = obj2.arc.axis * obj2.arc.ratio;
+			}
+			error /= 1000; /* set error to 1/1000 */
+			/* or by sensi */
+			if (error > sensi/100) error = sensi/100;
+			
+			inter_x[0] = pos_x;
+			inter_y[0] = pos_y;
+			
+			/* calcule the intersection point by sucessive aproximation */
+			for(i = 0; i< 10; i++){ /* try to find in less then 10 steps */
+				/*find  the real point in first curve near intersection point previusly calculated */
+				if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
+				obj1.arc.ang_start, obj1.arc.ang_end,
+				obj1.arc.cx, obj1.arc.cy, 
+				inter_x[0], inter_y[0], &p1_x, &p1_y) &&
+				
+				/*find  the real point in second curve near intersection point previusly calculated */
+				arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
+				obj2.arc.ang_start, obj2.arc.ang_end,
+				obj2.arc.cx, obj2.arc.cy, 
+				inter_x[0], inter_y[0], &p2_x, &p2_y)){
+					
+					inter_x[0] = (p1_x + p2_x)/2;
+					inter_y[0] = (p1_y + p2_y)/2;
+					
+					/* verify if new intersect point pass in error criteria */
+					dist = sqrt(pow(p1_x - p2_x, 2) + pow(p1_y - p2_y, 2));
+					if (dist < error){
+						num_inter = 1; /* found a intersect point */
+						break;
+					}
+				}
+				else break;
+			}
+			//printf("INTER %0.2f, %0.2f\n", inter_x[0], inter_y[0]);
 		}
-		
-		/*arc_near(double axis, double ratio, double rot,
-		double ang_start, double ang_end,
-		double center_x, double center_y, 
-		double pos_x, double pos_y,
-		double *ret_x, double *ret_y)*/
 	}
 	
 	for (i = 0; i < num_inter; i++){
@@ -1411,7 +1397,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
-						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+						in_ellip_bound(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
 							inter_cand[num_inter].type = DXF_ARC;
 							inter_cand[num_inter].arc.cx = center_x;
 							inter_cand[num_inter].arc.cy = center_y;
@@ -1439,7 +1425,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
-						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+						in_ellip_bound(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
 							inter_cand[num_inter].type = DXF_ARC;
 							inter_cand[num_inter].arc.cx = center_x;
 							inter_cand[num_inter].arc.cy = center_y;
@@ -1467,7 +1453,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
-						ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+						in_ellip_bound(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
 							inter_cand[num_inter].type = DXF_ARC;
 							inter_cand[num_inter].arc.cx = center_x;
 							inter_cand[num_inter].arc.cy = center_y;
@@ -1538,7 +1524,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 									ret = found;
 								}
 								if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
-								ellipse_near(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
+								in_ellip_bound(pos_x, pos_y, sensi, center_x, center_y, axis, ratio, rot)){
 									inter_cand[num_inter].type = DXF_ARC;
 									inter_cand[num_inter].arc.cx = center_x;
 									inter_cand[num_inter].arc.cy = center_y;
