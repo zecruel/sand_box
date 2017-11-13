@@ -3,6 +3,7 @@
 
 #include "dxf.h"
 #include <math.h>
+#include "shape2.h"
 
 enum attract_type {
 	/* bit coded */

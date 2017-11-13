@@ -179,23 +179,48 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					img->frg = color;
 					/*change tickness */
 					img->tick = (unsigned int) r->line_thickness;
-
+					/*
 					bmp_line(img, r->x,r->y, r->x + r->w, r->y);
 					bmp_line(img, r->x + r->w, r->y, r->x + r->w, r->y + r->h);
 					bmp_line(img, r->x + r->w, r->y + r->h, r->x, r->y + r->h);
-					bmp_line(img, r->x, r->y + r->h, r->x, r->y);
+					bmp_line(img, r->x, r->y + r->h, r->x, r->y);*/
+					bmp_line(img, r->x + r->rounding, r->y, r->x + r->w -r->rounding, r->y);
+					bmp_line(img, r->x + r->w - r->rounding, r->y, r->x + r->w, r->y + r->rounding);
+					bmp_line(img, r->x + r->w, r->y + r->rounding, r->x + r->w, r->y + r->h - r->rounding);
+					bmp_line(img, r->x + r->w, r->y + r->h - r->rounding, r->x + r->w - r->rounding, r->y + r->h);
+					bmp_line(img, r->x + r->w - r->rounding, r->y + r->h, r->x + r->rounding, r->y + r->h);
+					bmp_line(img, r->x + r->rounding, r->y + r->h, r->x, r->y + r->h - r->rounding);
+					bmp_line(img, r->x, r->y + r->h - r->rounding, r->x, r->y + r->rounding);
+					bmp_line(img, r->x, r->y + r->rounding,  r->x + r->rounding, r->y);
 				} break;
 				
 				case NK_COMMAND_RECT_FILLED: {
 					const struct nk_command_rect_filled *r = (const struct nk_command_rect_filled *)cmd;
-					int vert_x[4] = {r->x, r->x + r->w, r->x + r->w, r->x};
-					int vert_y[4] = {r->y, r->y, r->y + r->h, r->y + r->h};
+					/*int vert_x[4] = {r->x, r->x + r->w, r->x + r->w, r->x};
+					int vert_y[4] = {r->y, r->y, r->y + r->h, r->y + r->h};*/
+					
+					int vert_x[8] = {r->x + r->rounding,
+						r->x + r->w - r->rounding, 
+						r->x + r->w,
+						r->x + r->w,
+						r->x + r->w - r->rounding,
+						r->x + r->rounding,
+						r->x,
+						r->x};
+					int vert_y[8] = {r->y, 
+						r->y, 
+						r->y + r->rounding,
+						r->y + r->h - r->rounding,
+						r->y + r->h,
+						r->y + r->h,
+						r->y + r->h - r->rounding,
+						r->y + r->rounding};
 					
 					color = nk_to_bmp_color(r->color);
 					/*change the color */
 					img->frg = color;
 					
-					bmp_poly_fill(img, 4, vert_x, vert_y);
+					bmp_poly_fill(img, 8, vert_x, vert_y);
 				} break;
 				
 				case NK_COMMAND_CIRCLE: {

@@ -199,20 +199,20 @@ double axis, double ratio, double rot){
 	double cosine = cos(rot);
 	double sine = sin(rot);
 	
+	/* calc the half width and height of rectangle of ellipse bounds */
 	/*https://math.stackexchange.com/questions/91132/how-to-get-the-limits-of-rotated-ellipse
 	xa = Sqrt[a^2 Cos[th]^2 + b^2 Sin[th]^2]
 	ya = Sqrt[a^2 Sin[th]^2 + b^2 Cos[th]^2]*/
-	
 	double x = sqrt(pow(axis, 2)*pow(cosine, 2) + pow(axis*ratio, 2)*pow(sine, 2));
 	double y = sqrt(pow(axis, 2)*pow(sine, 2) + pow(axis*ratio, 2)*pow(cosine, 2));
 	
+	/*determine the rectangle coordinates, considering the sensibility */
 	double tr_x = center_x + x + sensi;
 	double tr_y = center_y + y + sensi;
 	double bl_x = center_x - x - sensi;
 	double bl_y = center_y - y - sensi;
 	
-	//printf("%0.2f, %0.2f - %0.2f, %0.2f\n", bl_x, bl_y, tr_x, tr_y);
-	
+	/* verify if point is in bounds */
 	if((pos_x >= bl_x) && (pos_x <= tr_x) && 
 	(pos_y >= bl_y) && (pos_y <= tr_y)){
 		return 1;
@@ -282,6 +282,20 @@ double *ret_x, double *ret_y){
 		*ret_x = center_x + a*cos(t)*cosine - b*sin(t)*sine;
 		*ret_y = center_y + a*cos(t)*sine + b*sin(t)*cosine;
 		return 1;
+	}
+	return 0;
+}
+
+double dxf_text_width(shape *font, char *text){
+	if ((text!= NULL) && (font!=NULL)) {
+		graph_obj *curr_graph = shx_font_parse(font, ONE_TIME, text);
+		if (curr_graph){
+			double txt_w;
+			txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
+			return txt_w;
+		}
+		graph_mem_pool(ZERO_GRAPH, ONE_TIME);
+		graph_mem_pool(ZERO_LINE, ONE_TIME);
 	}
 	return 0;
 }

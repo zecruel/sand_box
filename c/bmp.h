@@ -52,6 +52,11 @@ struct Bmp_img {
 	int clip_w;
 	int clip_h;
 	
+	/* lines conection parameters */
+	int prev_x, prev_y;
+	int end_x[4];
+	int end_y[4];
+	
 };
 typedef struct Bmp_img bmp_img;
 

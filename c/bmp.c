@@ -141,6 +141,12 @@ bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_c
 		img->clip_w = width;
 		img->clip_h = height;
 		
+		img->prev_x = 0;
+		img->prev_y = 0;
+		
+		img->end_x[0] = 0; img->end_x[1] = 0; img->end_x[2] = 0; img->end_x[3] = 0;
+		img->end_y[0] = 0; img->end_y[1] = 0; img->end_y[2] = 0; img->end_y[3] = 0;
+		
 		/*order of color components in buffer. Init with ARGB */
 		img->r_i = 2;
 		img->g_i = 1;
@@ -508,14 +514,23 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	half_x = normal_x/2;
 	half_y = normal_y/2;
 	
-	if (img->tick > 1){ /* if the point have a tickness */
-		/* extends line's enpoints to overlap their ends */
-		x0 -= (int)(ceil((double)img->tick * x/12));
-		y0 -= (int)(ceil((double)img->tick * y/12));
-		x1 += (int)(ceil((double)img->tick * x/12));
-		y1 += (int)(ceil((double)img->tick * y/12));
+	/*update line conection parameters */
+	img->end_x[2] = x0 - half_x;
+	img->end_y[2] = y0 - half_y;
+	img->end_x[3]  = img->end_x[2] + normal_x;
+	img->end_y[3] = img->end_y[2] + normal_y;
+	if ((img->tick > 1) && (img->prev_x == x0) && (img->prev_y == y0)){ /* if the point have a tickness */
+		/* draw a filled  polygon as line conection*/
+		bmp_poly_fill(img, 4, img->end_x, img->end_y);
 	}
 	
+	/*update line conection parameters for next line*/
+	img->prev_x = x1;
+	img->prev_y = y1;
+	img->end_x[1] = x1 - half_x;
+	img->end_y[1] = y1 - half_y;
+	img->end_x[0]  = img->end_x[1] + normal_x;
+	img->end_y[0] = img->end_y[1] + normal_y;
 	
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
 	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 

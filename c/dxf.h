@@ -44,6 +44,12 @@ enum dxf_pool_action{
 	FREE_DXF
 };
 
+enum dxf_pool_life{
+	DWG_LIFE = 0,
+	FRAME_LIFE = 1,
+	ONE_TIME = 2
+};
+
 struct Dxf_pool_slot{
 	void *pool[DXF_POOL_PAGES];
 	/* the pool is a vector of pages. The size of each page is out of this definition */
