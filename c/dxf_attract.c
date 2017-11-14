@@ -1121,6 +1121,127 @@ int *init_dist, double *min_dist){
 	return ret;
 }
 
+int dxf_text_attract(double pt1_x, double pt1_y, 
+double pt2_x, double pt2_y,
+double w, double h,
+int alin_v, int alin_h,
+enum attract_type type,
+double pos_x, double pos_y, double sensi, 
+double *ret_x, double *ret_y,
+int *init_dist, double *min_dist){
+	
+	int ret = ATRC_NONE;
+	double curr_dist;
+			
+	if(type & ATRC_INS){ /* if type of attractor is flaged as insert */
+		/* check if points of the line pass on distance criteria */
+		curr_dist = sqrt(pow(pt1_x - pos_x, 2) + pow(pt1_y - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = pt1_x;
+				*ret_y = pt1_y;
+				ret = ATRC_INS;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = pt1_x;
+				*ret_y = pt1_y;
+				ret = ATRC_INS;
+			}
+		}
+	}
+	if(type & ATRC_NODE){ /* if type of attractor is flaged as node*/
+		curr_dist = sqrt(pow(pt2_x - pos_x, 2) + pow(pt2_y - pos_y, 2));
+		if (curr_dist < sensi){
+			if (*init_dist == 0){
+				*init_dist = 1;
+				*min_dist = curr_dist;
+				*ret_x = pt2_x;
+				*ret_y = pt2_y;
+				ret = ATRC_NODE;
+			}
+			else if (curr_dist < *min_dist){
+				*min_dist = curr_dist;
+				*ret_x = pt2_x;
+				*ret_y = pt2_y;
+				ret = ATRC_NODE;
+			}
+		}
+		
+	}
+		
+	if(type & ATRC_ANY){ /* if type of attractor is flaged as any point */
+		double t_base_x, t_base_y, t_center_x = 0, t_center_y = 0;
+		double t_pos_x, t_pos_y, t_scale_x = 1;
+		int i, j;
+		
+		t_base_x =  pt2_x;
+		t_base_y =  pt2_y;
+		
+		if ((alin_v == 0) && (alin_h == 0)){
+			t_base_x =  pt1_x;
+			t_base_y =  pt1_y;
+		}
+		
+		/* find the insert point of text, in function of its aling */
+		else if(alin_h < 3){
+			t_center_x = (double)alin_h * w/2;
+			//t_base_x =  (double)alin_h * (pt2_x - pt1_x)/2;
+			//t_base_y =  (double)alin_h * (pt2_y - pt1_y)/2;
+		}
+		else{ 
+			if(alin_h == 4){
+				t_center_y = h/2;
+			}
+			else{
+				t_scale_x = sqrt(pow((pt2_x - pt1_x), 2) + pow((pt2_y - pt1_y), 2))/w;
+				t_base_x =  pt1_x + (pt2_x - pt1_x)/2;
+				t_base_y =  pt1_y + (pt2_y - pt1_y)/2;
+			}
+			
+			t_center_x = t_scale_x*w/2;
+			//rot = atan2((pt2_y - pt1_y),(pt2_x - pt1_x)) * 180/M_PI;
+			
+			//printf("alinhamento=%d\n", alin_h);
+		}
+		if(alin_v >0){
+			if(alin_v != 1){
+				t_center_y = (double)(alin_v - 1) * h/2;
+			}
+			else{
+				t_center_y = 0;
+			}
+		}
+		
+		for(i = 0; i < 3; i++){
+			for(j = 0; j < 3; j++){
+				t_pos_x = (t_base_x - t_center_x) + (double)i * w/2;
+				t_pos_y = (t_base_y - t_center_y) + (double)j * h/2;
+		
+				curr_dist = sqrt(pow(t_pos_x - pos_x, 2) + pow(t_pos_y - pos_y, 2));
+				if (curr_dist < sensi){
+					if (*init_dist == 0){
+						*init_dist = 1;
+						*min_dist = curr_dist;
+						*ret_x = t_pos_x;
+						*ret_y = t_pos_y;
+						ret = ATRC_ANY;
+					}
+					else if (curr_dist < *min_dist){
+						*min_dist = curr_dist;
+						*ret_x = t_pos_x;
+						*ret_y = t_pos_y;
+						ret = ATRC_ANY;
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
+
 int dxf_arc_attract(double radius, double ang_start, double ang_end,
 double center_x, double center_y, double ratio, double rot,
 enum attract_type type,
@@ -1781,11 +1902,12 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						transform(&ins_x, &ins_y, ins_stack[ins_stack_pos]);
 						transform(&alin_x, &alin_y, ins_stack[ins_stack_pos]);
 						
-						printf ("text w=%0.2f, h=%0.2f\n", w, h);
+						//printf ("text w=%0.2f, h=%0.2f\n", w, h);
 					
-						/*if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_text_attract (ins_x, ins_y, alin_x, alin_y, w, h, alin_v, alin_h, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
+						/*
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
 						(IN_BOUNDS(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y) ||
 						NEAR_LN(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y, sensi))){

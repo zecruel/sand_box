@@ -253,6 +253,19 @@ void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_colo
 			/* draw circle */
 			bmp_circle(img, x, y, 7);
 			break;
+		case ATRC_OCENTER:
+			/* draw a *star */
+			bmp_line(img, x, y-5, x, y+5);
+			bmp_line(img, x-5, y, x+5, y);
+			bmp_line(img, x-5, y-5, x+5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y-5);
+			break;
+		case ATRC_NODE:
+			/* draw circle with x*/
+			bmp_circle(img, x, y, 5);
+			bmp_line(img, x-5, y-5, x+5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y-5);
+			break;
 		case ATRC_QUAD:
 			/* draw diamond */
 			bmp_line(img, x-7, y, x, y+7);
@@ -266,13 +279,51 @@ void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_colo
 			bmp_line(img, x-5, y-5, x+5, y+5);
 			bmp_line(img, x-5, y+5, x+5, y-5);
 			break;
+		case ATRC_EXT:
+			img->tick = 3;
+			bmp_line(img, x-7, y, x-2, y);
+			bmp_line(img, x, y, x+3, y);
+			bmp_line(img, x+5, y, x+7, y);
+			break;
 		case ATRC_PERP:
+			/* draw square */
+			bmp_line(img, x-5, y-5, x-5, y+5);
+			bmp_line(img, x-5, y-5, x+5, y-5);
+			bmp_line(img, x-5, y, x, y);
+			bmp_line(img, x, y-5, x, y);
 			break;
 		case ATRC_INS:
+			bmp_line(img, x-5, y+5, x+1, y+5);
+			bmp_line(img, x+1, y+5, x+1, y+1);
+			bmp_line(img, x+1, y+1, x+5, y+1);
+			bmp_line(img, x+5, y+1, x+5, y-5);
+			bmp_line(img, x+5, y-5, x-1, y-5);
+			bmp_line(img, x-1, y-5, x-1, y-1);
+			bmp_line(img, x-1, y-1, x-5, y-1);
+			bmp_line(img, x-5, y-1, x-5, y+5);
+			break;
+		case ATRC_TAN:
+			bmp_line(img, x-5, y+5, x+5, y+5);
+			bmp_circle(img, x, y, 5);
+			break;
+		case ATRC_PAR:
+			/* draw two lines */
+			bmp_line(img, x-5, y-1, x+1, y+5);
+			bmp_line(img, x-1, y-5, x+5, y+1);
 			break;
 		case ATRC_CTRL:
+			/* draw a cross */
+			bmp_line(img, x, y-5, x, y+5);
+			bmp_line(img, x-5, y, x+5, y);
 			break;
-		case ATRC_KEY:
+		case ATRC_AINT:
+			/* draw square with x */
+			bmp_line(img, x-5, y-5, x-5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y+5);
+			bmp_line(img, x+5, y+5, x+5, y-5);
+			bmp_line(img, x+5, y-5, x-5, y-5);
+			bmp_line(img, x-5, y-5, x+5, y+5);
+			bmp_line(img, x-5, y+5, x+5, y-5);
 			break;
 		case ATRC_ANY:
 			/* draw a Hourglass */
@@ -925,6 +976,16 @@ int main(int argc, char** argv){
 				nk_selectable_label(gui->ctx, "Int", NK_TEXT_LEFT, &selected);
 				if (selected) curr_attr_t |= ATRC_INTER;
 				else curr_attr_t &= ~ATRC_INTER;
+				
+				selected = (curr_attr_t & ATRC_INS);
+				nk_selectable_label(gui->ctx, "Ins", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_INS;
+				else curr_attr_t &= ~ATRC_INS;
+				
+				selected = (curr_attr_t & ATRC_NODE);
+				nk_selectable_label(gui->ctx, "Node", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_NODE;
+				else curr_attr_t &= ~ATRC_NODE;
 				
 				//ATRC_PERP = 32,
 				//ATRC_INS = 64,

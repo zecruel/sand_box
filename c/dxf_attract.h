@@ -7,17 +7,22 @@
 
 enum attract_type {
 	/* bit coded */
-	ATRC_NONE = 0,
-	ATRC_END = 1,
-	ATRC_MID = 2,
-	ATRC_CENTER = 4,
-	ATRC_QUAD = 8,
-	ATRC_INTER = 16,
-	ATRC_PERP = 32,
-	ATRC_INS = 64,
-	ATRC_CTRL = 128,
-	ATRC_KEY = 256,
-	ATRC_ANY = 512
+	ATRC_NONE = 0, 	/* atrractor disabled */
+	ATRC_END = 1,		/* endpoint */
+	ATRC_MID = 2,		/* midpoint */
+	ATRC_CENTER = 4,	/* center (elliptical arcs) */
+	ATRC_OCENTER = 8,	/* object center */
+	ATRC_NODE = 16,	/* node */
+	ATRC_QUAD = 32,	/* quadrant (elliptical arcs) */
+	ATRC_INTER = 64,	/* intersection */
+	ATRC_EXT = 128,	/* extension */
+	ATRC_INS = 256,	/* insertion */
+	ATRC_PERP = 512,	/* perpenticular */
+	ATRC_TAN = 1024,	/* tangent */
+	ATRC_PAR = 2048,	/* parallel */
+	ATRC_CTRL = 4096,	/* control point (spline) */
+	ATRC_AINT = 8192,	/* apparent intersection (3D) */
+	ATRC_ANY = 16384	/* any or nearest */
 };
 
 struct ins_space{
