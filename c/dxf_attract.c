@@ -791,6 +791,214 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 	return ok;
 }
 
+int dxf_text_get(dxf_drawing *drawing, dxf_node * obj,
+char *text, int *fnt_idx,
+double *ins_x, double *ins_y, double *ins_z, 
+double *alin_x, double *alin_y, double *alin_z, 
+double *w, double *h, double *rot, 
+int *alin_v, int *alin_h){
+	int ok = 0;
+	
+	if(obj){
+		dxf_node *current = NULL;
+		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
+		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
+		double elev = 0, size = 0, scale_x = 1.0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		char t_style[DXF_MAX_CHARS];
+		char tmp_str[DXF_MAX_CHARS];
+		
+		char *pos_st, *pos_curr, *pos_tmp, special;
+		int under_l, over_l;
+		double fnt_size, fnt_above, fnt_below, txt_size;
+		shape *shx_font = NULL;
+		
+		t_style[0] = 0;
+		tmp_str[0] = 0;
+		
+		/*flags*/
+		int pt1 = 0, pt2 = 0;
+				
+		if (obj->type == DXF_ENT){
+			if (obj->obj.content){
+				current = obj->obj.content->next;
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 1:
+						strcpy(text, current->value.s_data);
+						break;
+					case 7:
+						strcpy(t_style, current->value.s_data);
+						break;
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 11:
+						pt2_x = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 21:
+						pt2_y = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 30:
+						pt1_z = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 31:
+						pt2_z = current->value.d_data;
+						pt2 = 1; /* set flag */
+						break;
+					case 40:
+						size = current->value.d_data;
+						break;
+					case 41:
+						scale_x = current->value.d_data;
+						break;
+					case 50:
+						*rot = current->value.d_data;
+						break;
+					case 38:
+						elev = current->value.d_data;
+						break;
+					case 72:
+						*alin_h = current->value.i_data;
+						break;
+					case 73:
+						*alin_v = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		/* find the font index and font*/
+		*fnt_idx = dxf_font_idx(drawing, t_style);
+		shx_font = drawing->text_fonts[*fnt_idx].shx_font;
+		
+		if(shx_font == NULL){ /* if font not loaded*/
+			/* use the deafault font*/
+			shx_font = drawing->text_fonts[0].shx_font;
+		}
+		
+		/* find the dimentions of SHX font */
+		if(shx_font){ /* if the font exists */
+			if(shx_font->next){ /* the font descriptor is stored in first iten of list */
+				if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
+					fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
+					fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
+					if((fnt_above + fnt_below) > 0){
+						fnt_size = fnt_above + fnt_below;
+						ok = 1;
+					}
+				}
+			}
+		}
+		
+		/* find and replace special symbols in the text*/
+		under_l = 0; /* under line flag*/
+		over_l = 0; /* over line flag*/
+		pos_curr = strstr(text, "%%");
+		pos_st = text;
+		pos_tmp = tmp_str;
+		while (pos_curr){
+			/* copy the part of text until the control string */
+			strncpy(pos_tmp, pos_st, pos_curr - pos_st);
+			/*control string is stripped in new string */
+			pos_tmp += pos_curr - pos_st;
+			/*get the control character */
+			special = *(pos_curr + 2);
+			/* verify the action to do */
+			switch (special){
+				/* put the  diameter simbol (unicode D8 Hex) in text*/
+				case 'c':
+					pos_tmp += wctomb(pos_tmp, L'\xd8');
+					break;
+				case 'C':
+					pos_tmp += wctomb(pos_tmp, L'\xd8');
+					break;
+				/* put the degrees simbol in text*/
+				case 'd':
+					pos_tmp += wctomb(pos_tmp, L'\xb0');
+					break;
+				case 'D':
+					pos_tmp += wctomb(pos_tmp, L'\xb0');
+					break;
+				/* put the plus/minus tolerance simbol in text*/
+				case 'p':
+					pos_tmp += wctomb(pos_tmp, L'\xb1');
+					break;
+				case 'P':
+					pos_tmp += wctomb(pos_tmp, L'\xb1');
+					break;
+				/* under line */
+				case 'u':
+					under_l = 1;
+					break;
+				case 'U':
+					under_l = 1;
+					break;
+				/* over line */
+				case 'o':
+					over_l = 1;
+					break;
+				case 'O':
+					over_l = 1;
+					break;
+			}
+			/*try to find new  control sequences in the rest of text*/
+			pos_curr += 3;
+			pos_st = pos_curr;
+			pos_curr = strstr(pos_curr, "%%");
+		}
+		/* copy the rest of text after the last control string */
+		strcpy(pos_tmp, pos_st);
+		
+		/* find the dimentions of text */
+		txt_size = size/fnt_above;
+		
+		
+		/* convert OCS to WCS */
+		normal[0] = extru_x;
+		normal[1] = extru_y;
+		normal[2] = extru_z;
+		*ins_x = pt1_x;
+		*ins_y = pt1_y;
+		*ins_z = pt1_z;
+		*alin_x = pt2_x;
+		*alin_y = pt2_y;
+		*alin_z = pt2_z;
+		axis_transform(ins_x, ins_y, ins_z, normal);
+		axis_transform(alin_x, alin_y, alin_z, normal);
+		pt1_x = 1.0;
+		pt1_y = 1.0;
+		pt1_z = 0.0;
+		axis_transform(&pt1_x, &pt1_y, &pt1_z, normal);
+		scale_x *= fabs(pt1_x);
+		txt_size *= fabs(pt1_y / pt1_x);
+		*rot += atan2(normal[0], normal[1]);
+		*w = dxf_text_width(shx_font, tmp_str) * txt_size * scale_x;
+		*h = size * fabs(pt1_y / pt1_x);
+	}
+	return ok;
+}
 
 int dxf_line_attract(double pt1_x, double pt1_y, 
 double pt2_x, double pt2_y, enum attract_type type,
@@ -1555,6 +1763,43 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							}
 						}
 					}
+				}
+				else if (ent_type == DXF_TEXT){
+					char text[DXF_MAX_CHARS];
+					double ins_x, ins_y, ins_z;
+					double alin_x, alin_y, alin_z; 
+					double w, h, rot;
+					int alin_v, alin_h, fnt_idx;
+					
+					if (dxf_text_get (drawing, current, 
+					text, &fnt_idx,
+					&ins_x, &ins_y, &ins_z, 
+					&alin_x, &alin_y, &alin_z, 
+					&w, &h, &rot, 
+					&alin_v, &alin_h)){
+						/* transform coordinates, according insert space */
+						transform(&ins_x, &ins_y, ins_stack[ins_stack_pos]);
+						transform(&alin_x, &alin_y, ins_stack[ins_stack_pos]);
+						
+						printf ("text w=%0.2f, h=%0.2f\n", w, h);
+					
+						/*if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+							ret = found;
+						}
+						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
+						(IN_BOUNDS(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y) ||
+						NEAR_LN(pos_x, pos_y, pt1_x, pt1_y, pt2_x, pt2_y, sensi))){
+							
+							inter_cand[num_inter].type = ent_type;
+							inter_cand[num_inter].line.p1x = pt1_x;
+							inter_cand[num_inter].line.p1y = pt1_y;
+							inter_cand[num_inter].line.p2x = pt2_x;
+							inter_cand[num_inter].line.p2y = pt2_y;
+							inter_cand[num_inter].line.bulge = 0;
+							num_inter++;
+						}*/
+					}
+					//printf("line %d\n", found);
 				}
 				
 			}
