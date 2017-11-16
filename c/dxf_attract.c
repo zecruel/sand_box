@@ -288,7 +288,7 @@ double *ret_x, double *ret_y){
 
 double dxf_text_width(shape *font, char *text){
 	if ((text!= NULL) && (font!=NULL)) {
-		graph_obj *curr_graph = shx_font_parse(font, ONE_TIME, text);
+		graph_obj *curr_graph = shx_font_parse(font, ONE_TIME, text, NULL);
 		if (curr_graph){
 			double txt_w;
 			txt_w = fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
@@ -792,7 +792,7 @@ double *pt1_x, double *pt1_y, double *pt1_z, double *bulge){
 }
 
 int dxf_text_get(dxf_drawing *drawing, dxf_node * obj,
-char *text, int *fnt_idx,
+char *text, int *fnt_idx, double *above, double *below,
 double *ins_x, double *ins_y, double *ins_z, 
 double *alin_x, double *alin_y, double *alin_z, 
 double *w, double *h, double *rot, 
@@ -810,7 +810,7 @@ int *alin_v, int *alin_h){
 		
 		char *pos_st, *pos_curr, *pos_tmp, special;
 		int under_l, over_l;
-		double fnt_size, fnt_above, fnt_below, txt_size;
+		double fnt_size, txt_size;
 		shape *shx_font = NULL;
 		
 		t_style[0] = 0;
@@ -902,10 +902,10 @@ int *alin_v, int *alin_h){
 		if(shx_font){ /* if the font exists */
 			if(shx_font->next){ /* the font descriptor is stored in first iten of list */
 				if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
-					fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
-					fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
-					if((fnt_above + fnt_below) > 0){
-						fnt_size = fnt_above + fnt_below;
+					*above = shx_font->next->cmds[0]; /* size above the base line of text */
+					*below = shx_font->next->cmds[1]; /* size below the base line of text */
+					if((*above + *below) > 0){
+						fnt_size = *above + *below;
 						ok = 1;
 					}
 				}
@@ -972,7 +972,7 @@ int *alin_v, int *alin_h){
 		strcpy(pos_tmp, pos_st);
 		
 		/* find the dimentions of text */
-		txt_size = size/fnt_above;
+		txt_size = size/(*above);
 		
 		
 		/* convert OCS to WCS */
@@ -996,6 +996,8 @@ int *alin_v, int *alin_h){
 		*rot += atan2(normal[0], normal[1]);
 		*w = dxf_text_width(shx_font, tmp_str) * txt_size * scale_x;
 		*h = size * fabs(pt1_y / pt1_x);
+		*above *= txt_size;
+		*below *= txt_size;
 	}
 	return ok;
 }
@@ -1123,8 +1125,8 @@ int *init_dist, double *min_dist){
 
 int dxf_text_attract(double pt1_x, double pt1_y, 
 double pt2_x, double pt2_y,
-double w, double h,
-int alin_v, int alin_h,
+double w, double h, double rot,
+int alin_v, int alin_h, double above, double below,
 enum attract_type type,
 double pos_x, double pos_y, double sensi, 
 double *ret_x, double *ret_y,
@@ -1174,7 +1176,7 @@ int *init_dist, double *min_dist){
 		
 	if(type & ATRC_ANY){ /* if type of attractor is flaged as any point */
 		double t_base_x, t_base_y, t_center_x = 0, t_center_y = 0;
-		double t_pos_x, t_pos_y, t_scale_x = 1;
+		double t_pos_x, t_pos_y, t_scale_x = 1, any_x, any_y;
 		int i, j;
 		
 		t_base_x =  pt2_x;
@@ -1188,8 +1190,6 @@ int *init_dist, double *min_dist){
 		/* find the insert point of text, in function of its aling */
 		else if(alin_h < 3){
 			t_center_x = (double)alin_h * w/2;
-			//t_base_x =  (double)alin_h * (pt2_x - pt1_x)/2;
-			//t_base_y =  (double)alin_h * (pt2_y - pt1_y)/2;
 		}
 		else{ 
 			if(alin_h == 4){
@@ -1202,37 +1202,41 @@ int *init_dist, double *min_dist){
 			}
 			
 			t_center_x = t_scale_x*w/2;
-			//rot = atan2((pt2_y - pt1_y),(pt2_x - pt1_x)) * 180/M_PI;
-			
-			//printf("alinhamento=%d\n", alin_h);
 		}
 		if(alin_v >0){
 			if(alin_v != 1){
 				t_center_y = (double)(alin_v - 1) * h/2;
 			}
 			else{
-				t_center_y = 0;
+				t_center_y = -below;
 			}
 		}
+		
+		/* rotation constants */
+		double cosine = cos(rot*M_PI/180);
+		double sine = sin(rot*M_PI/180);
 		
 		for(i = 0; i < 3; i++){
 			for(j = 0; j < 3; j++){
 				t_pos_x = (t_base_x - t_center_x) + (double)i * w/2;
 				t_pos_y = (t_base_y - t_center_y) + (double)j * h/2;
+				
+				any_x = cosine*(t_pos_x - t_base_x) - sine*(t_pos_y - t_base_y) + t_base_x;
+				any_y = sine*(t_pos_x - t_base_x) + cosine*(t_pos_y - t_base_y) + t_base_y;
 		
-				curr_dist = sqrt(pow(t_pos_x - pos_x, 2) + pow(t_pos_y - pos_y, 2));
+				curr_dist = sqrt(pow(any_x - pos_x, 2) + pow(any_y - pos_y, 2));
 				if (curr_dist < sensi){
 					if (*init_dist == 0){
 						*init_dist = 1;
 						*min_dist = curr_dist;
-						*ret_x = t_pos_x;
-						*ret_y = t_pos_y;
+						*ret_x = any_x;
+						*ret_y = any_y;
 						ret = ATRC_ANY;
 					}
 					else if (curr_dist < *min_dist){
 						*min_dist = curr_dist;
-						*ret_x = t_pos_x;
-						*ret_y = t_pos_y;
+						*ret_x = any_x;
+						*ret_y = any_y;
 						ret = ATRC_ANY;
 					}
 				}
@@ -1889,11 +1893,11 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 					char text[DXF_MAX_CHARS];
 					double ins_x, ins_y, ins_z;
 					double alin_x, alin_y, alin_z; 
-					double w, h, rot;
+					double w, h, rot, above, below;
 					int alin_v, alin_h, fnt_idx;
 					
 					if (dxf_text_get (drawing, current, 
-					text, &fnt_idx,
+					text, &fnt_idx, &above, &below,
 					&ins_x, &ins_y, &ins_z, 
 					&alin_x, &alin_y, &alin_z, 
 					&w, &h, &rot, 
@@ -1904,7 +1908,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						
 						//printf ("text w=%0.2f, h=%0.2f\n", w, h);
 					
-						if (found = dxf_text_attract (ins_x, ins_y, alin_x, alin_y, w, h, alin_v, alin_h, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_text_attract (ins_x, ins_y, alin_x, alin_y, w, h, rot, alin_v, alin_h, above, below, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 						/*

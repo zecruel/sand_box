@@ -1405,7 +1405,7 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 			strcpy(pos_tmp, pos_st);
 			//printf("%s\n", tmp_str);
 			
-			curr_graph = shx_font_parse(shx_font, pool_idx, tmp_str);
+			curr_graph = shx_font_parse(shx_font, pool_idx, tmp_str, NULL);
 			
 			
 			if (curr_graph){
@@ -1505,7 +1505,8 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 				t_pos_y = t_base_y - t_center_y;
 				
 				/* apply the scales, offsets and rotation to graphs */
-				graph_modify(curr_graph, t_pos_x, t_pos_y, t_scale_x*txt_size, txt_size, t_rot);
+				graph_modify(curr_graph, t_pos_x, t_pos_y, t_scale_x*txt_size, txt_size, 0.0);
+				graph_rot(curr_graph, t_base_x, t_base_y, t_rot);
 				
 				/* convert OCS to WCS */
 				normal[0] = extru_x;
@@ -1664,7 +1665,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 			}
 			
 			
-			curr_graph = shx_font_parse(shx_font, pool_idx, text);
+			curr_graph = shx_font_parse(shx_font, pool_idx, text, NULL);
 			
 			
 			if (curr_graph){

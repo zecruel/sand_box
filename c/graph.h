@@ -81,6 +81,12 @@ void graph_ellipse(graph_obj * master,
 
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot);
 
+void graph_rot(graph_obj * master, double base_x, double base_y, double rot);
+
 void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot);
+
+void vec_graph_rot(vector_p * vec, double base_x, double base_y , double rot);
+
+void vec_graph_rot_idx(vector_p * vec, double base_x, double base_y , double rot, int start_idx, int end_idx);
 
 #endif

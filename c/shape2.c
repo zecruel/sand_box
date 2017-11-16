@@ -205,7 +205,7 @@ shape *shx_font_open(char *path){
 	return(shx_font); // retorna a shx_font
 }
 
-graph_obj *shx_font_parse(shape *shx_font, int pool_idx, const char *txt){
+graph_obj *shx_font_parse(shape *shx_font, int pool_idx, const char *txt, double *w){
 	double pre_x = 0;
 	double pre_y = 0;
 	double px = 0;
@@ -572,12 +572,14 @@ graph_obj *shx_font_parse(shape *shx_font, int pool_idx, const char *txt){
 	//printf("Altura = %3.2f, largura = %3.2f\n", height, weigth);
 	
 	//return line_list, max_x, max_y
-	if (line_list){
-		line_list->ext_max_x = max_x;
-		line_list->ext_max_y = max_y;
-		line_list->ext_min_x = min_x;
-		line_list->ext_min_y = min_y;
-	}
+	//if (line_list){
+		//line_list->ext_max_x = max_x;
+		//line_list->ext_max_y = max_y;
+		//line_list->ext_min_x = min_x;
+		//line_list->ext_min_y = min_y;
+	//}
+	
+	if (w != NULL) *w = max_x - min_x;
 	return(line_list);
 }
 /*

@@ -51,8 +51,9 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 		/* We must copy into a new buffer with exact length null-terminated
 		as nuklear uses variable size buffers and shx_fonts routines doesn't
 		accept a length, it infers length from null-termination */
-		char txt_cpy[len+1];
+		char txt_cpy[len+2];
 		strncpy((char*)&txt_cpy, text, len);
+		//txt_cpy[len - 1] = ' ';
 		txt_cpy[len] = '\0';
 		
 		
@@ -68,7 +69,7 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 		
 		while ((*curr != 0) && (pos < 254)){
 		
-			glyph_size = nk_utf_decode(curr, str_uni, 10);
+			glyph_size = nk_utf_decode(curr, str_uni, 2);
 			if (glyph_size){
 				char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
 				curr += glyph_size;
@@ -87,11 +88,10 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 			str[254] = 0;
 		}
 		
-		graph_obj *curr_graph = shx_font_parse(font, 1, str);
+		double txt_w;
+		graph_obj *curr_graph = shx_font_parse(font, 1, str, &txt_w);
 		if (curr_graph){
-			double txt_w;
-			txt_w = FONT_SCALE*fabs(curr_graph->ext_max_x - curr_graph->ext_min_x);
-			return (float) txt_w;
+			return (float) FONT_SCALE * txt_w;
 		}
 	}
 	return 0;
@@ -347,7 +347,7 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					}
 					
 					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)str);
+					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)str, NULL);
 					/*change the color */
 					if(curr_graph){
 						curr_graph->color = color;

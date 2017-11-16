@@ -674,6 +674,59 @@ void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x
 	}
 }
 
+void graph_rot(graph_obj * master, double base_x, double base_y, double rot){
+	if ((master != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			double x0, y0, x1, y1;
+			double sine = 0, cosine = 1;
+			double min_x, min_y, max_x, max_y;
+			line_node *current = master->list->next;
+			master->ext_ini = 0;
+			
+			/* rotation constants */
+			cosine = cos(rot*M_PI/180);
+			sine = sin(rot*M_PI/180);
+			
+			/* apply changes to each point */
+			while(current){ /*sweep the list content */
+				
+				x0 = cosine*(current->x0-base_x) - sine*(current->y0-base_y) + base_x;
+				y0 = sine*(current->x0-base_x) + cosine*(current->y0-base_y) + base_y;
+				x1 = cosine*(current->x1-base_x) - sine*(current->y1-base_y) + base_x;
+				y1 = sine*(current->x1-base_x) + cosine*(current->y1-base_y) + base_y;
+				
+				/* update the graph */
+				current->x0 = x0;
+				current->y0 = y0;
+				current->x1 = x1;
+				current->y1 = y1;
+				
+				/*update the extent of graph */
+				/* sort the coordinates of entire line*/
+				min_x = (x0 < x1) ? x0 : x1;
+				min_y = (y0 < y1) ? y0 : y1;
+				max_x = (x0 > x1) ? x0 : x1;
+				max_y = (y0 > y1) ? y0 : y1;
+				if (master->ext_ini == 0){
+					master->ext_ini = 1;
+					master->ext_min_x = min_x;
+					master->ext_min_y = min_y;
+					master->ext_max_x = max_x;
+					master->ext_max_y = max_y;
+				}
+				else{
+					master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
+					master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+					master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
+					master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
+				}
+				
+				current = current->next; /* go to next */
+			}
+		}
+	}
+}
+
 void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot){
 	int i;
 	if (vec){
@@ -688,6 +741,24 @@ void vec_graph_modify_idx(vector_p * vec, double ofs_x, double ofs_y , double sc
 	if (vec){
 		for(i = start_idx; i <= end_idx; i++){
 			graph_modify(((graph_obj **)vec->data)[i], ofs_x, ofs_y, scale_x, scale_y, rot);
+		}
+	}
+}
+
+void vec_graph_rot(vector_p * vec, double base_x, double base_y , double rot){
+	int i;
+	if (vec){
+		for(i = 0; i < vec->size; i++){
+			graph_rot(((graph_obj **)vec->data)[i], base_x, base_y, rot);
+		}
+	}
+}
+
+void vec_graph_rot_idx(vector_p * vec, double base_x, double base_y , double rot, int start_idx, int end_idx){
+	int i;
+	if (vec){
+		for(i = start_idx; i <= end_idx; i++){
+			graph_rot(((graph_obj **)vec->data)[i], base_x, base_y, rot);
 		}
 	}
 }
