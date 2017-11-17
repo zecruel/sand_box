@@ -54,7 +54,7 @@ struct inter_obj{
 	};
 };
 
-int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj, enum attract_type type,
-double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y);
+int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj_hilite, enum attract_type type,
+double pos_x, double pos_y, double ref_x, double ref_y, double sensi, double *ret_x, double *ret_y);
 
 #endif

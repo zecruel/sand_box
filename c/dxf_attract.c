@@ -1004,7 +1004,7 @@ int *alin_v, int *alin_h){
 
 int dxf_line_attract(double pt1_x, double pt1_y, 
 double pt2_x, double pt2_y, enum attract_type type,
-double pos_x, double pos_y, double sensi, 
+double pos_x, double pos_y, double ref_x, double ref_y, double sensi, 
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	
@@ -1249,7 +1249,7 @@ int *init_dist, double *min_dist){
 int dxf_arc_attract(double radius, double ang_start, double ang_end,
 double center_x, double center_y, double ratio, double rot,
 enum attract_type type,
-double pos_x, double pos_y, double sensi, 
+double pos_x, double pos_y, double ref_x, double ref_y, double sensi, 
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	/* elliptical arc */
@@ -1388,7 +1388,7 @@ int *init_dist, double *min_dist){
 				}
 			}
 		}
-		if ((type & ATRC_ANY) && (!ret)){ /* if type of attractor is flaged as center */
+		if ((type & ATRC_ANY) && (!ret)){ /* if type of attractor is flaged as any */
 			/* check if point pass on distance criteria */
 			curr_dist = sqrt(pow(near_x - pos_x, 2) + pow(near_y - pos_y, 2));
 			if (curr_dist < sensi){
@@ -1425,6 +1425,32 @@ int *init_dist, double *min_dist){
 					ret = ATRC_CENTER;
 				}
 			}
+		}
+		if (type & ATRC_TAN){ /* if type of attractor is flaged as tangent */
+			/* check if point pass on distance criteria */
+			double t_x, t_y;
+			t_x = (ref_x - ref_y*pow(a,2)+center_x*pow(a,2)*pow(b,2) + center_y*pow(a,2))/(1 + pow(a,2)*pow(b,2));
+			t_y = ref_y + t_x*pow(b,2) - center_x*pow(b,2);
+			printf("%0.2f, %0.2f\n", t_x, t_y );
+			/*curr_dist = sqrt(pow(t_x - pos_x, 2) + pow(t_y - pos_y, 2));
+			if (curr_dist < sensi){
+				if (*init_dist == 0){
+					*init_dist = 1;
+					*min_dist = curr_dist;
+					*ret_x = t_x;
+					*ret_y = t_y;
+					ret = ATRC_TAN;
+				}
+				else if (curr_dist < *min_dist){
+					*min_dist = curr_dist;
+					*ret_x = t_x;
+					*ret_y = t_y;
+					ret = ATRC_TAN;
+				}
+			}*/
+			*ret_x = t_x;
+			*ret_y = t_y;
+			ret = ATRC_TAN;
 		}
 	}
 	return ret;
@@ -1624,7 +1650,7 @@ int *init_dist, double *min_dist){
 }
 
 int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj_hilite, enum attract_type type,
-double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
+double pos_x, double pos_y, double ref_x, double ref_y, double sensi, double *ret_x, double *ret_y){
 	dxf_node *current = NULL, *obj = NULL;
 	dxf_node *prev = NULL;
 	int ret = ATRC_NONE, found = 0;
@@ -1714,7 +1740,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						transform(&pt1_x, &pt1_y, ins_stack[ins_stack_pos]);
 						transform(&pt2_x, &pt2_y, ins_stack[ins_stack_pos]);
 					
-						if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
@@ -1743,7 +1769,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						rot += ins_stack[ins_stack_pos].rot * M_PI/180;
 						ratio *= fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
-						if (found = dxf_arc_attract(axis, 0.0, 0.0, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_arc_attract(axis, 0.0, 0.0, center_x, center_y, ratio, rot, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
@@ -1771,7 +1797,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						rot += ins_stack[ins_stack_pos].rot * M_PI/180;
 						ratio *= fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
-						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
@@ -1799,7 +1825,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 						rot += ins_stack[ins_stack_pos].rot * M_PI/180;
 						ratio *= fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
 						ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
-						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+						if (found = dxf_arc_attract(axis, start_ang, end_ang, center_x, center_y, ratio, rot, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 							ret = found;
 						}
 						if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
@@ -1844,7 +1870,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 							}
 							
 							if (fabs(prev_bulge) < TOL){ /* segment is a straight line*/
-								if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								if (found = dxf_line_attract (pt1_x, pt1_y, pt2_x, pt2_y, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
 								if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
@@ -1870,7 +1896,7 @@ double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y){
 								rot = ins_stack[ins_stack_pos].rot * M_PI/180;
 								ratio = fabs(ins_stack[ins_stack_pos].scale_y / ins_stack[ins_stack_pos].scale_x);
 								ellipse_transf(&center_x, &center_y, &center_z, &axis, &ratio, &rot, ins_stack[ins_stack_pos].normal);
-								if (found = dxf_arc_attract(axis, ang_start, ang_end, center_x, center_y, ratio, rot, type, pos_x, pos_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
+								if (found = dxf_arc_attract(axis, ang_start, ang_end, center_x, center_y, ratio, rot, type, pos_x, pos_y, ref_x, ref_y, sensi, ret_x, ret_y, &init_dist, &min_dist)){
 									ret = found;
 								}
 								if ((type & ATRC_INTER) && (num_inter < MAX_CAND) &&
