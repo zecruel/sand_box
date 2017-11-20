@@ -992,6 +992,11 @@ int main(int argc, char** argv){
 				if (selected) curr_attr_t |= ATRC_TAN;
 				else curr_attr_t &= ~ATRC_TAN;
 				
+				selected = (curr_attr_t & ATRC_PERP);
+				nk_selectable_label(gui->ctx, "PERP", NK_TEXT_LEFT, &selected);
+				if (selected) curr_attr_t |= ATRC_PERP;
+				else curr_attr_t &= ~ATRC_PERP;
+				
 				//ATRC_PERP = 32,
 				//ATRC_INS = 64,
 				//ATRC_CTRL = 128,
@@ -1601,6 +1606,15 @@ int main(int argc, char** argv){
 					/* update current position by the attractor of near element */
 					if (near_attr = dxf_ent_attract(drawing, near_el, curr_attr_t,
 					step_x[step], step_y[step], step_x[step-1], step_y[step-1],
+					(double) 20/zoom, &near_x , &near_y)){
+						step_x[step] = near_x;
+						step_y[step] = near_y;
+					}
+				}
+				else {
+					/* update current position by the attractor of near element */
+					if (near_attr = dxf_ent_attract(drawing, near_el, curr_attr_t,
+					step_x[step], step_y[step], step_x[step], step_y[step],
 					(double) 20/zoom, &near_x , &near_y)){
 						step_x[step] = near_x;
 						step_y[step] = near_y;

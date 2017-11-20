@@ -1253,7 +1253,7 @@ double pos_x, double pos_y, double ref_x, double ref_y, double sensi,
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	/* elliptical arc */
-	
+	int i;
 	int ret = ATRC_NONE;
 	double curr_dist;
 	
@@ -1427,30 +1427,133 @@ int *init_dist, double *min_dist){
 			}
 		}
 		if (type & ATRC_TAN){ /* if type of attractor is flaged as tangent */
-			/* check if point pass on distance criteria */
-			double t_x, t_y;
-			t_x = (ref_x - ref_y*pow(a,2)+center_x*pow(a,2)*pow(b,2) + center_y*pow(a,2))/(1 + pow(a,2)*pow(b,2));
-			t_y = ref_y + t_x*pow(b,2) - center_x*pow(b,2);
-			printf("%0.2f, %0.2f\n", t_x, t_y );
-			/*curr_dist = sqrt(pow(t_x - pos_x, 2) + pow(t_y - pos_y, 2));
-			if (curr_dist < sensi){
-				if (*init_dist == 0){
-					*init_dist = 1;
-					*min_dist = curr_dist;
-					*ret_x = t_x;
-					*ret_y = t_y;
-					ret = ATRC_TAN;
+			double t_x[2], t_y[2];
+			int num_inter = 0;
+			double ln_a, ln_b, ln_c, x, y;
+			
+			/* rotation constants */
+			cosine = cos(-rot);
+			sine = sin(-rot);
+			
+			/* rotation of ref point to align to ellipse axis */
+			x = cosine*(ref_x - center_x) - sine*(ref_y - center_y) + center_x;
+			y = sine*(ref_x - center_x) + cosine*(ref_y - center_y) + center_y;
+			
+			/* translate point to ellipse center */
+			x -= center_x;
+			y -= center_y;
+			
+			/* chord of contact points - line in form ax+ bx =c */
+			ln_a = x/pow(a, 2);
+			ln_b = y/pow(b, 2);
+			ln_c = 1.0;
+			
+			num_inter = el_ln_inter(0, 0, radius, ratio, 0, ln_a,  ln_b,  ln_c, t_x, t_y);
+			
+			/* rotate and translate back the result points */
+			cosine = cos(rot);
+			sine = sin(rot);
+			
+			for (i = 0; i < num_inter; i++){
+				x = t_x[i];
+				y = t_y[i];
+				
+				x += center_x;
+				y += center_y;
+				
+				/* rotation of ref point to align to ellipse axis */ 
+				t_x[i] = cosine*(x - center_x) - sine*(y - center_y) + center_x;
+				t_y[i] = sine*(x - center_x) + cosine*(y - center_y) + center_y;
+				
+				/* check if point pass on distance criteria */
+				curr_dist = sqrt(pow(t_x[i] - pos_x, 2) + pow(t_y[i] - pos_y, 2));
+				if (curr_dist < sensi){
+					if (*init_dist == 0){
+						*init_dist = 1;
+						*min_dist = curr_dist;
+						*ret_x = t_x[i];
+						*ret_y = t_y[i];
+						ret = ATRC_TAN;
+					}
+					else if (curr_dist < *min_dist){
+						*min_dist = curr_dist;
+						*ret_x = t_x[i];
+						*ret_y = t_y[i];
+						ret = ATRC_TAN;
+					}
 				}
-				else if (curr_dist < *min_dist){
-					*min_dist = curr_dist;
-					*ret_x = t_x;
-					*ret_y = t_y;
-					ret = ATRC_TAN;
+			}
+		}
+		if (type & ATRC_PERP){ /* if type of attractor is flaged as perpenticular */
+			double p_x[2], p_y[2];
+			int num_inter = 0;
+			double ln_a, ln_b, ln_c, x, y, e, dx1, dy1, dx2, dy2, f1x, f1y, f2x, f2y;
+			double l1, l2, alfa, beta, gama;
+			
+			e = sqrt(pow(a, 2) - pow(b, 2));
+			
+			/* rotation constants */
+			cosine = cos(rot);
+			sine = sin(rot);
+			
+			/* find foci points */
+			/* rotation and translation of foci points to align to ellipse axis */
+			f1x = cosine*-e + center_x;
+			f1y = sine*-e + center_y;
+			f2x = cosine*e + center_x;
+			f2y = sine*e + center_y;
+			
+			dx1 = ref_x - f1x;
+			dy1 = ref_y - f1y;
+			dx2 = ref_x - f2x;
+			dy2 = ref_y - f2y;
+			
+			l1 = sqrt(pow(dx1, 2) + pow(dy1, 2));
+			l2 = sqrt(pow(dx2, 2) + pow(dy2, 2));
+			
+			//printf("foci = %0.2f, %0.2f and %0.2f, %0.2f\n", f1x, f1y, f2x, f2y);
+			
+			if ((fabs(l1) > TOL) && (fabs(l2) > TOL)){
+				alfa = acos(dx1/l1);
+				beta = acos(dx2/l2);
+				gama = (alfa + beta)/2;
+				
+				if (fabs(l1 - M_PI/2) < TOL){
+					ln_b = 0.0;
+					ln_a = 1.0;
+					ln_c = ref_x;
+					
 				}
-			}*/
-			*ret_x = t_x;
-			*ret_y = t_y;
-			ret = ATRC_TAN;
+				else{
+					ln_a = tan(gama);
+					ln_b = 1.0;
+					ln_c = ref_y - tan(gama)*ref_x;
+				}
+				printf("gama = %0.2f, %0.2f, %0.2f\n", alfa*180/M_PI, beta*180/M_PI, gama*180/M_PI);
+				
+				num_inter = el_ln_inter(center_x, center_y, radius, ratio, rot, ln_a,  ln_b,  ln_c, p_x, p_y);
+				printf("inter = %d, %0.2f, %0.2f\n", num_inter, p_x[0], p_y[0]);
+				for (i = 0; i < num_inter; i++){
+					
+					/* check if point pass on distance criteria */
+					curr_dist = sqrt(pow(p_x[i] - pos_x, 2) + pow(p_y[i] - pos_y, 2));
+					if (curr_dist < sensi){
+						if (*init_dist == 0){
+							*init_dist = 1;
+							*min_dist = curr_dist;
+							*ret_x = p_x[i];
+							*ret_y = p_y[i];
+							ret = ATRC_PERP;
+						}
+						else if (curr_dist < *min_dist){
+							*min_dist = curr_dist;
+							*ret_x = p_x[i];
+							*ret_y = p_y[i];
+							ret = ATRC_PERP;
+						}
+					}
+				}
+			}
 		}
 	}
 	return ret;
@@ -1480,6 +1583,81 @@ double *ret_x, double *ret_y){
 	return 0;
 }
 
+int el_ln_inter( double center_x, double center_y, 
+double axis, double ratio, double rot,
+double ln_a, double ln_b, double ln_c, /*line in general form ax+bx = c*/
+double inter_x[2], double inter_y[2]){
+	
+	int num_inter = 0;
+	
+	/* ellipse's rotation constants */
+	double cosine = cos(-rot);
+	double sine = sin(-rot);
+	/*ellipse's parameters */
+	double a = axis, b = axis * ratio;
+	
+	/*calc params*/
+	double k, l, m, n, p, q, r, delta = -1.0, s, d;
+	
+	if ((fabs(ln_b) < TOL) && (fabs(ln_a) > TOL)) { /* vertical line*/
+		d = ln_c/ln_a;
+		k = -sine; 
+		m = cosine;
+		l = center_y*sine - center_x*cosine + d*cosine;
+		n = -center_y*cosine - center_x*sine + d*sine;
+		
+		p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
+		q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
+		r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
+		delta = pow(q,2) - 4*p*r;
+		
+		if (p != 0.0){ /* exist intersection */
+			if (delta > 0.0){ /* 2 intersections */
+				num_inter = 2;
+				inter_y[0] = (-q + sqrt(delta))/(2*p);
+				inter_y[1] = (-q - sqrt(delta))/(2*p);
+				inter_x[0] = d;
+				inter_x[1] = d;
+			}
+			else if (fabs(delta) < TOL){ /* 1 intersection */
+				num_inter = 1;
+				inter_y[1] = (-q)/(2*p);
+				inter_x[0] = d;
+			}
+		}
+	}
+	else if(fabs(ln_b) > TOL){
+		s = -ln_a / ln_b;
+		d = ln_c / ln_b;
+		
+		k = cosine - s*sine; 
+		m = sine + s*cosine;
+		l = center_y*sine - center_x*cosine - d*sine;
+		n = -center_y*cosine - center_x*sine + d*cosine;
+		
+		p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
+		q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
+		r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
+		delta = pow(q,2) - 4*p*r;
+		
+		if (p != 0.0){ /* exist intersection */
+			if (delta > 0.0){ /* 2 intersections */
+				num_inter = 2;
+				inter_x[0] = (-q + sqrt(delta))/(2*p);
+				inter_x[1] = (-q - sqrt(delta))/(2*p);
+				inter_y[0] = s*inter_x[0] + d;
+				inter_y[1] = s*inter_x[1] + d;
+			}
+			else if (fabs(delta) < TOL){ /* 1 intersection */
+				num_inter = 1;
+				inter_x[0] = (-q)/(2*p);
+				inter_y[0] = s*inter_x[0] + d;
+			}
+		}
+	}
+	return num_inter;
+}
+
 int dxf_inter_attract(struct inter_obj obj1, struct inter_obj obj2,
 double pos_x, double pos_y, double sensi, 
 double *ret_x, double *ret_y,
@@ -1500,74 +1678,10 @@ int *init_dist, double *min_dist){
 			obj2 = tmp;
 		}
 		
-		/* ellipse's rotation constants */
-		double cosine = cos(-obj2.arc.rot);
-		double sine = sin(-obj2.arc.rot);
-		/*ellipse's parameters */
-		double a = obj2.arc.axis, b = obj2.arc.axis * obj2.arc.ratio;
-		double cx = obj2.arc.cx, cy = obj2.arc.cy;
-		
-		/*calc params*/
-		double k, l, m, n, p, q, r, delta = -1.0, s, d;
-		
-		if (fabs(obj1.line.p2y - obj1.line.p1y) < TOL) { /* horizontal line*/
-			k = cosine; m = sine;
-			l = cy*sine - cx*cosine - obj1.line.p1y*sine;
-			n = -cy*cosine - cx*sine + obj1.line.p1y*cosine;
-			
-			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
-			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
-			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
-			delta = pow(q,2) - 4*p*r;
-			
-			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
-				num_inter = 2;
-				inter_x[0] = (-q + sqrt(delta))/(2*p);
-				inter_x[1] = (-q - sqrt(delta))/(2*p);
-				inter_y[0] = obj1.line.p1y;
-				inter_y[1] = obj1.line.p1y;
-			}
-		}
-		else if (fabs(obj1.line.p2x - obj1.line.p1x) < TOL) { /* vertical line*/
-			k = -sine; m = cosine;
-			l = cy*sine - cx*cosine + obj1.line.p1x*cosine;
-			n = -cy*cosine - cx*sine + obj1.line.p1x*sine;
-			
-			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
-			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
-			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
-			delta = pow(q,2) - 4*p*r;
-			
-			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
-				num_inter = 2;
-				inter_y[0] = (-q + sqrt(delta))/(2*p);
-				inter_y[1] = (-q - sqrt(delta))/(2*p);
-				inter_x[0] = obj1.line.p1x;
-				inter_x[1] = obj1.line.p1x;
-			}
-		}
-		else{
-			s = (obj1.line.p2y - obj1.line.p1y) / (obj1.line.p2x - obj1.line.p1x);
-			d = obj1.line.p2y - s*obj1.line.p2x;
-			
-			k = cosine - s*sine; 
-			m = sine + s*cosine;
-			l = cy*sine - cx*cosine - d*sine;
-			n = -cy*cosine - cx*sine + d*cosine;
-			
-			p = pow(b,2)*pow(k,2) + pow(a,2)*pow(m,2);
-			q = 2*(pow(b,2)*k*l + pow(a,2)*m*n);
-			r = pow(b,2)*pow(l,2) + pow(a,2)*pow(n,2) - pow(a,2)*pow(b,2);
-			delta = pow(q,2) - 4*p*r;
-			
-			if ((delta >= 0.0) && (p != 0.0)){ /* exist intersection */
-				num_inter = 2;
-				inter_x[0] = (-q + sqrt(delta))/(2*p);
-				inter_x[1] = (-q - sqrt(delta))/(2*p);
-				inter_y[0] = s*inter_x[0] + d;
-				inter_y[1] = s*inter_x[1] + d;
-			}
-		}
+		num_inter = el_ln_inter( obj2.arc.cx, obj2.arc.cy, 
+		obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
+		obj1.line.p1y - obj1.line.p2y, obj1.line.p2x - obj1.line.p1x, (obj1.line.p2x - obj1.line.p1x)*obj1.line.p1y + (obj1.line.p1y - obj1.line.p2y)*obj1.line.p1x,
+		inter_x, inter_y);
 		
 	}
 	else if ((obj1.type == DXF_ARC) && (obj2.type == DXF_ARC)){
