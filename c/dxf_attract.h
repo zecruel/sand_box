@@ -57,6 +57,10 @@ struct inter_obj{
 int dxf_ent_attract (dxf_drawing *drawing, dxf_node * obj_hilite, enum attract_type type,
 double pos_x, double pos_y, double ref_x, double ref_y, double sensi, double *ret_x, double *ret_y);
 
+int seg_inter2(double l1p1x, double l1p1y, double l1p2x, double l1p2y, 
+double l2p1x, double l2p1y, double l2p2x, double l2p2y, 
+double *ret_x, double *ret_y);
+
 int el_ln_inter( double center_x, double center_y, 
 double axis, double ratio, double rot,
 double ln_a, double ln_b, double ln_c, /*line in general form ax+bx = c*/

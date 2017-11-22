@@ -1253,7 +1253,7 @@ double pos_x, double pos_y, double ref_x, double ref_y, double sensi,
 double *ret_x, double *ret_y,
 int *init_dist, double *min_dist){
 	/* elliptical arc */
-	int i;
+	int i, j, count;
 	int ret = ATRC_NONE;
 	double curr_dist;
 	
@@ -1485,12 +1485,15 @@ int *init_dist, double *min_dist){
 			}
 		}
 		if (type & ATRC_PERP){ /* if type of attractor is flaged as perpenticular */
-			double p_x[2], p_y[2];
+			/*find normal to an external point of ellipse*/
+			/*http://www.mathpages.com/home/kmath505/kmath505.htm*/
+			double p_x[2], p_y[2], inter_x[2], inter_y[2];
 			int num_inter = 0;
-			double ln_a, ln_b, ln_c, x, y, e, dx1, dy1, dx2, dy2, f1x, f1y, f2x, f2y;
-			double l1, l2, alfa, beta, gama;
+			double ln_a, ln_b, ln_c;
 			
-			e = sqrt(pow(a, 2) - pow(b, 2));
+			double p1x[2], p1y[2], p2x[2], p2y[2];
+			
+			double e = sqrt(fabs(pow(a, 2) - pow(b, 2)));
 			
 			/* rotation constants */
 			cosine = cos(rot);
@@ -1498,60 +1501,61 @@ int *init_dist, double *min_dist){
 			
 			/* find foci points */
 			/* rotation and translation of foci points to align to ellipse axis */
-			f1x = cosine*-e + center_x;
-			f1y = sine*-e + center_y;
-			f2x = cosine*e + center_x;
-			f2y = sine*e + center_y;
+			p1x[0] = cosine*-e + center_x;
+			p1y[0] = sine*-e + center_y;
+			p1x[1] = cosine*e + center_x;
+			p1y[1] = sine*e + center_y;
 			
-			dx1 = ref_x - f1x;
-			dy1 = ref_y - f1y;
-			dx2 = ref_x - f2x;
-			dy2 = ref_y - f2y;
+			//printf("foci = %0.2f, %0.2f and %0.2f, %0.2f\n", p1x[0], p1y[0], p1x[1], p1y[1]);
 			
-			l1 = sqrt(pow(dx1, 2) + pow(dy1, 2));
-			l2 = sqrt(pow(dx2, 2) + pow(dy2, 2));
+			p2x[0] = ref_x; p2y[0] = ref_y;
+			p2x[1] = ref_x; p2y[1] = ref_y;
 			
-			//printf("foci = %0.2f, %0.2f and %0.2f, %0.2f\n", f1x, f1y, f2x, f2y);
-			
-			if ((fabs(l1) > TOL) && (fabs(l2) > TOL)){
-				alfa = acos(dx1/l1);
-				beta = acos(dx2/l2);
-				gama = (alfa + beta)/2;
-				
-				if (fabs(l1 - M_PI/2) < TOL){
-					ln_b = 0.0;
-					ln_a = 1.0;
-					ln_c = ref_x;
+			for (count = 0; count < 3; count++){
+				if (count < 2) i = count;
+				else {
+					i = 0;
+					if (!seg_inter2(p1x[0], p1y[0], p_x[1], p_y[1], 
+						p1x[1], p1y[1], p_x[0], p_y[0],
+						&inter_x[0], &inter_y[0]))
+					break;
 					
+					p1x[0] = inter_x[0]; p1y[0] = inter_y[0];
+					p2x[0] = ref_x; p2y[0] = ref_y;
 				}
-				else{
-					ln_a = tan(gama);
-					ln_b = 1.0;
-					ln_c = ref_y - tan(gama)*ref_x;
-				}
-				printf("gama = %0.2f, %0.2f, %0.2f\n", alfa*180/M_PI, beta*180/M_PI, gama*180/M_PI);
-				
-				num_inter = el_ln_inter(center_x, center_y, radius, ratio, rot, ln_a,  ln_b,  ln_c, p_x, p_y);
-				printf("inter = %d, %0.2f, %0.2f\n", num_inter, p_x[0], p_y[0]);
-				for (i = 0; i < num_inter; i++){
 					
-					/* check if point pass on distance criteria */
-					curr_dist = sqrt(pow(p_x[i] - pos_x, 2) + pow(p_y[i] - pos_y, 2));
-					if (curr_dist < sensi){
-						if (*init_dist == 0){
-							*init_dist = 1;
-							*min_dist = curr_dist;
-							*ret_x = p_x[i];
-							*ret_y = p_y[i];
-							ret = ATRC_PERP;
-						}
-						else if (curr_dist < *min_dist){
-							*min_dist = curr_dist;
-							*ret_x = p_x[i];
-							*ret_y = p_y[i];
-							ret = ATRC_PERP;
-						}
+				ln_a = p1y[i] - p2y[i];
+				ln_b = p2x[i] - p1x[i];
+				ln_c = (p2x[i] - p1x[i])*p1y[i] + (p1y[i] - p2y[i])*p1x[i];
+				
+				num_inter = el_ln_inter(center_x, center_y, radius, ratio, rot, ln_a,  ln_b,  ln_c, inter_x, inter_y);
+				if (!num_inter) break;
+				for (j = 0; j < num_inter; j++){
+					//printf("count = %d, inter = %0.2f, %0.2f\n", count, inter_x[j], inter_y[j]);
+					if (point_lies_seg(p1x[i], p1y[i], p2x[i], p2y[i], inter_x[j], inter_y[j])){
+						p_x[i] = inter_x[j];
+						p_y[i] = inter_y[j];
+						//printf("count = %d, inter = %0.2f, %0.2f\n", count, p_x[i], p_y[i]);
 					}
+				}
+			}
+			
+			/* check if point pass on distance criteria */
+			//printf("count = %d, inter = %0.2f, %0.2f\n", count, p_x[0], p_y[0]);
+			curr_dist = sqrt(pow(p_x[0] - pos_x, 2) + pow(p_y[0] - pos_y, 2));
+			if (curr_dist < sensi){
+				if (*init_dist == 0){
+					*init_dist = 1;
+					*min_dist = curr_dist;
+					*ret_x = p_x[0];
+					*ret_y = p_y[0];
+					ret = ATRC_PERP;
+				}
+				else if (curr_dist < *min_dist){
+					*min_dist = curr_dist;
+					*ret_x = p_x[0];
+					*ret_y = p_y[0];
+					ret = ATRC_PERP;
 				}
 			}
 		}
@@ -1580,6 +1584,30 @@ double *ret_x, double *ret_y){
 			}
 		}
 	}
+	return 0;
+}
+
+int seg_inter2(double l1p1x, double l1p1y, double l1p2x, double l1p2y, 
+double l2p1x, double l2p1y, double l2p2x, double l2p2y, 
+double *ret_x, double *ret_y){
+			
+	/* calcule the intersection point*/
+	/*from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection*/
+	double den = (l1p1x - l1p2x) * (l2p1y - l2p2y) -
+			(l1p1y - l1p2y) * (l2p1x - l2p2x);
+	
+	if (fabs(den) > TOL){
+		*ret_x = ((l1p1x*l1p2y - l1p1y*l1p2x)*(l2p1x - l2p2x) -
+				(l1p1x - l1p2x)*(l2p1x*l2p2y - l2p1y*l2p2x)) / den;
+		*ret_y = ((l1p1x*l1p2y - l1p1y*l1p2x)*(l2p1y - l2p2y) -
+				(l1p1y - l1p2y)*(l2p1x*l2p2y - l2p1y*l2p2x)) / den;
+		/* verify if point is in segments */
+		if (point_lies_seg(l1p1x, l1p1y, l1p2x, l1p2y, *ret_x, *ret_y) &&
+		point_lies_seg(l2p1x, l2p1y, l2p2x, l2p2y, *ret_x, *ret_y)){
+			return 1;
+		}
+	}
+	
 	return 0;
 }
 
