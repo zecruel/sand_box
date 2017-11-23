@@ -1489,27 +1489,32 @@ int *init_dist, double *min_dist){
 			/*http://www.mathpages.com/home/kmath505/kmath505.htm*/
 			double p_x[2], p_y[2], inter_x[2], inter_y[2];
 			int num_inter = 0;
-			double ln_a, ln_b, ln_c;
+			double ln_a, ln_b, ln_c, x, y, fx, fdx;
 			
 			double p1x[2], p1y[2], p2x[2], p2y[2];
 			
 			double e = sqrt(fabs(pow(a, 2) - pow(b, 2)));
 			
 			/* rotation constants */
-			cosine = cos(rot);
-			sine = sin(rot);
+			cosine = cos(-rot);
+			sine = sin(-rot);
+			
+			/* rotation of ref point to align to ellipse axis */
+			x = cosine*(ref_x - center_x) - sine*(ref_y - center_y) + center_x;
+			y = sine*(ref_x - center_x) + cosine*(ref_y - center_y) + center_y;
+			
+			/* translate point to ellipse center */
+			x -= center_x;
+			y -= center_y;
 			
 			/* find foci points */
-			/* rotation and translation of foci points to align to ellipse axis */
-			p1x[0] = cosine*-e + center_x;
-			p1y[0] = sine*-e + center_y;
-			p1x[1] = cosine*e + center_x;
-			p1y[1] = sine*e + center_y;
+			p1x[0] = -e;
+			p1y[0] = 0.0;
+			p1x[1] = e;
+			p1y[1] = 0.0;
 			
-			//printf("foci = %0.2f, %0.2f and %0.2f, %0.2f\n", p1x[0], p1y[0], p1x[1], p1y[1]);
-			
-			p2x[0] = ref_x; p2y[0] = ref_y;
-			p2x[1] = ref_x; p2y[1] = ref_y;
+			p2x[0] = x; p2y[0] = y;
+			p2x[1] = x; p2y[1] = y;
 			
 			for (count = 0; count < 3; count++){
 				if (count < 2) i = count;
@@ -1521,27 +1526,65 @@ int *init_dist, double *min_dist){
 					break;
 					
 					p1x[0] = inter_x[0]; p1y[0] = inter_y[0];
-					p2x[0] = ref_x; p2y[0] = ref_y;
+					p2x[0] = x; p2y[0] = y;
 				}
 					
 				ln_a = p1y[i] - p2y[i];
 				ln_b = p2x[i] - p1x[i];
 				ln_c = (p2x[i] - p1x[i])*p1y[i] + (p1y[i] - p2y[i])*p1x[i];
 				
-				num_inter = el_ln_inter(center_x, center_y, radius, ratio, rot, ln_a,  ln_b,  ln_c, inter_x, inter_y);
+				num_inter = el_ln_inter(0, 0, radius, ratio, 0, ln_a,  ln_b,  ln_c, inter_x, inter_y);
 				if (!num_inter) break;
 				for (j = 0; j < num_inter; j++){
-					//printf("count = %d, inter = %0.2f, %0.2f\n", count, inter_x[j], inter_y[j]);
 					if (point_lies_seg(p1x[i], p1y[i], p2x[i], p2y[i], inter_x[j], inter_y[j])){
 						p_x[i] = inter_x[j];
 						p_y[i] = inter_y[j];
-						//printf("count = %d, inter = %0.2f, %0.2f\n", count, p_x[i], p_y[i]);
 					}
 				}
 			}
+			/* polinomial constants */
+			double a2 = pow(a, 2);
+			double b2 = pow(b, 2);
+			double c4 = pow(a2-b2,2);
+			double c3 = -2*a2*x*(a2-b2);
+			double c2 = a2*(a2*pow(x,2)+b2*pow(y,2)-pow(a2-b2,2));
+			double c1 = 2*pow(a, 4)*x*(a2-b2);
+			double c0 = -pow(a, 6)*pow(x, 2);
+			
+			num_inter = 0; /* will indicates convergence */
+			/*Newtom-Raphson method in 5 iterations*/
+			for (j = 0; j < 5; j++){ 
+				fx = c4*pow(p_x[0],4) + c3*pow(p_x[0],3) + c2*pow(p_x[0],2) + c1*p_x[0] + c0;
+				fdx = 4*c4*pow(p_x[0],3) + 3*c3*pow(p_x[0],2) + 2*c2*p_x[0] + c1;
+				if (fabs(fdx) < TOL) break; /* fail if numerator is zero */
+				else{
+					p_x[1] = p_x[0] - fx/fdx;
+					if (fabs(p_x[1] - p_x[0]) < TOL){
+						/*has convercence*/
+						p_x[0] = p_x[1];
+						num_inter = 1;
+						break;
+					}
+					p_x[0] = p_x[1]; /*next iteration*/
+				}
+			}
+			/* find y coordinate*/
+			p_y[1] = sqrt(b2*(1-pow(p_x[0]/a, 2)));
+			/*near of first atemp */
+			p_y[0] = (fabs(p_y[1]-p_y[0]) < fabs(-p_y[1]-p_y[0])) ? p_y[1] : -p_y[1];
+			
+			/*rotate and translate back */
+			x = p_x[0]; y = p_y[0];
+			
+			/* rotation constants */
+			cosine = cos(rot);
+			sine = sin(rot);
+			/* rotation of ref point to align to ellipse axis */ 
+			p_x[0] = cosine*x - sine*y + center_x;
+			p_y[0] = sine*x + cosine*y + center_y;
+				
 			
 			/* check if point pass on distance criteria */
-			//printf("count = %d, inter = %0.2f, %0.2f\n", count, p_x[0], p_y[0]);
 			curr_dist = sqrt(pow(p_x[0] - pos_x, 2) + pow(p_y[0] - pos_y, 2));
 			if (curr_dist < sensi){
 				if (*init_dist == 0){
