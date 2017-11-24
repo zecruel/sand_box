@@ -1068,6 +1068,41 @@ int *init_dist, double *min_dist){
 		}
 	}
 	
+	if(type & ATRC_PERP){ /* if type of attractor is flaged as perpenticular */
+		double perp_x, perp_y;
+		double a1, b1, c1, a2, b2, c2;
+		/* parameters of line in general form ax+by = c */
+		a1 = pt1_y - pt2_y;
+		b1 = pt2_x - pt1_x;
+		c1 = (pt2_x - pt1_x)*pt1_y + (pt1_y - pt2_y)*pt1_x;
+		
+		/* parameters of perpenticular line passing through the reference point */
+		a2 = -b1;
+		b2 = a1;
+		c2 = a1*ref_y - b1*ref_x;
+		
+		/* find the intersection */
+		if (line_inter(a1, b1, c1, a2, b2, c2, &perp_x, &perp_y)){
+			/* check if pass on distance criteria */
+			curr_dist = sqrt(pow(perp_x - pos_x, 2) + pow(perp_y - pos_y, 2));
+			if (curr_dist < sensi){
+				if (*init_dist == 0){
+					*init_dist = 1;
+					*min_dist = curr_dist;
+					*ret_x = perp_x;
+					*ret_y = perp_y;
+					ret = ATRC_PERP;
+				}
+				else if (curr_dist < *min_dist){
+					*min_dist = curr_dist;
+					*ret_x = perp_x;
+					*ret_y = perp_y;
+					ret = ATRC_PERP;
+				}
+			}
+		}
+	}
+	
 	if(type & ATRC_ANY){ /* if type of attractor is flaged as any point */
 		/*consider line equation ax + by + c = 0 */
 		double a = pt2_y - pt1_y;
@@ -1626,6 +1661,18 @@ double *ret_x, double *ret_y){
 	return 0;
 }
 
+int line_inter(double a1, double b1, double c1,
+double a2, double b2, double c2,
+double *ret_x, double *ret_y){
+	double den =b1*a2-b2*a1;
+	if (fabs(den) > TOL){
+		*ret_x = (b1*c2-b2*c1)/den;
+		*ret_y = (a1*c2-a2*c1)/-den;
+		return 1;
+	}
+	return 0;
+}
+
 int el_ln_inter( double center_x, double center_y, 
 double axis, double ratio, double rot,
 double ln_a, double ln_b, double ln_c, /*line in general form ax+bx = c*/
@@ -1713,6 +1760,11 @@ int *init_dist, double *min_dist){
 	
 	if ((obj1.type == DXF_LINE) && (obj2.type == DXF_LINE)){
 		if (seg_inter(obj1, obj2, &inter_x[0], &inter_y[0])) num_inter = 1;
+		
+		//p1y - p2y, p2x - p1x, (p2x - p1x)*p1y + (p1y - p2y)*p1x,
+		//if (line_inter(obj1.line.p1y - obj1.line.p2y, obj1.line.p2x - obj1.line.p1x, (obj1.line.p2x - obj1.line.p1x)*obj1.line.p1y + (obj1.line.p1y - obj1.line.p2y)*obj1.line.p1x,
+		//obj2.line.p1y - obj2.line.p2y, obj2.line.p2x - obj2.line.p1x, (obj2.line.p2x - obj2.line.p1x)*obj2.line.p1y + (obj2.line.p1y - obj2.line.p2y)*obj2.line.p1x,
+		//&inter_x[1], &inter_y[1])) printf("inter = %0.2f, %0.2f\n", inter_x[1], inter_y[1]);
 	}
 	else if (((obj1.type == DXF_LINE) && (obj2.type == DXF_ARC)) || ((obj1.type == DXF_ARC) && (obj2.type == DXF_LINE))){
 		if (obj1.type == DXF_ARC){ /*swap objects (obj1 is always a line and obj2 is always an arc*/
