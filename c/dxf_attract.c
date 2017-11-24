@@ -1552,7 +1552,7 @@ int *init_dist, double *min_dist){
 			double c0 = -pow(a, 6)*pow(x, 2);
 			
 			num_inter = 0; /* will indicates convergence */
-			/*Newtom-Raphson method in 5 iterations*/
+			/*Newton-Raphson method in 5 iterations*/
 			for (j = 0; j < 5; j++){ 
 				fx = c4*pow(p_x[0],4) + c3*pow(p_x[0],3) + c2*pow(p_x[0],2) + c1*p_x[0] + c0;
 				fdx = 4*c4*pow(p_x[0],3) + 3*c3*pow(p_x[0],2) + 2*c2*p_x[0] + c1;
@@ -1560,7 +1560,7 @@ int *init_dist, double *min_dist){
 				else{
 					p_x[1] = p_x[0] - fx/fdx;
 					if (fabs(p_x[1] - p_x[0]) < TOL){
-						/*has convercence*/
+						/*has convergence*/
 						p_x[0] = p_x[1];
 						num_inter = 1;
 						break;
@@ -1568,37 +1568,39 @@ int *init_dist, double *min_dist){
 					p_x[0] = p_x[1]; /*next iteration*/
 				}
 			}
-			/* find y coordinate*/
-			p_y[1] = sqrt(b2*(1-pow(p_x[0]/a, 2)));
-			/*near of first atemp */
-			p_y[0] = (fabs(p_y[1]-p_y[0]) < fabs(-p_y[1]-p_y[0])) ? p_y[1] : -p_y[1];
-			
-			/*rotate and translate back */
-			x = p_x[0]; y = p_y[0];
-			
-			/* rotation constants */
-			cosine = cos(rot);
-			sine = sin(rot);
-			/* rotation of ref point to align to ellipse axis */ 
-			p_x[0] = cosine*x - sine*y + center_x;
-			p_y[0] = sine*x + cosine*y + center_y;
+			if (num_inter){
+				/* find y coordinate*/
+				p_y[1] = sqrt(b2*(1-pow(p_x[0]/a, 2)));
+				/*near of first atemp */
+				p_y[0] = (fabs(p_y[1]-p_y[0]) < fabs(-p_y[1]-p_y[0])) ? p_y[1] : -p_y[1];
 				
-			
-			/* check if point pass on distance criteria */
-			curr_dist = sqrt(pow(p_x[0] - pos_x, 2) + pow(p_y[0] - pos_y, 2));
-			if (curr_dist < sensi){
-				if (*init_dist == 0){
-					*init_dist = 1;
-					*min_dist = curr_dist;
-					*ret_x = p_x[0];
-					*ret_y = p_y[0];
-					ret = ATRC_PERP;
-				}
-				else if (curr_dist < *min_dist){
-					*min_dist = curr_dist;
-					*ret_x = p_x[0];
-					*ret_y = p_y[0];
-					ret = ATRC_PERP;
+				/*rotate and translate back */
+				x = p_x[0]; y = p_y[0];
+				
+				/* rotation constants */
+				cosine = cos(rot);
+				sine = sin(rot);
+				/* rotation of ref point to align to ellipse axis */ 
+				p_x[0] = cosine*x - sine*y + center_x;
+				p_y[0] = sine*x + cosine*y + center_y;
+					
+				
+				/* check if point pass on distance criteria */
+				curr_dist = sqrt(pow(p_x[0] - pos_x, 2) + pow(p_y[0] - pos_y, 2));
+				if (curr_dist < sensi){
+					if (*init_dist == 0){
+						*init_dist = 1;
+						*min_dist = curr_dist;
+						*ret_x = p_x[0];
+						*ret_y = p_y[0];
+						ret = ATRC_PERP;
+					}
+					else if (curr_dist < *min_dist){
+						*min_dist = curr_dist;
+						*ret_x = p_x[0];
+						*ret_y = p_y[0];
+						ret = ATRC_PERP;
+					}
 				}
 			}
 		}
@@ -1756,7 +1758,6 @@ int *init_dist, double *min_dist){
 		
 	}
 	else if ((obj1.type == DXF_ARC) && (obj2.type == DXF_ARC)){
-		
 		double ang_cmp = obj2.arc.rot + M_PI;
 		angle_range(&ang_cmp);
 		
@@ -1766,56 +1767,84 @@ int *init_dist, double *min_dist){
 		(fabs(obj1.arc.rot - obj2.arc.rot) < TOL || fabs(obj1.arc.rot - ang_cmp) < TOL)&&
 		fabs(obj1.arc.cx - obj2.arc.cx) < TOL &&
 		fabs(obj1.arc.cy - obj2.arc.cy) < TOL)){
-			//printf("%f, %f\n", sin(obj1.arc.rot), sin(obj2.arc.rot));
-			double p1_x, p1_y, p2_x, p2_y;
-			int i;
-			double dist, error;
+			num_inter = 0;
+			double x = pos_x, y = pos_y, xnew, ynew;
 			
-			/* error criteria is based in minor axis of two objects*/
-			error = obj1.arc.axis * obj1.arc.ratio;
-			if (error > obj2.arc.axis * obj2.arc.ratio){
-				error = obj2.arc.axis * obj2.arc.ratio;
-			}
-			error /= 1000; /* set error to 1/1000 */
-			/* or by sensi */
-			if (error > sensi/100) error = sensi/100;
+			double c1[2], c2[2], c3[2], c4[2], c5[2], c6[2];
+			double a2, b2, cos1, cos2, sin1, sin2, xr, yr;
+			double f[2], dx[2], dy[2], den;
 			
-			inter_x[0] = pos_x;
-			inter_y[0] = pos_y;
+			/* first arc parameters calculation */
+			a2 = pow(obj1.arc.axis, 2);
+			b2 = pow(obj1.arc.axis*obj1.arc.ratio, 2);
+			cos1 = cos(-obj1.arc.rot); cos2 = pow(cos1, 2);
+			sin1 = sin(-obj1.arc.rot); sin2 = pow(sin1, 2);
+			xr = obj1.arc.cx*cos1 - obj1.arc.cy*sin1;
+			yr = obj1.arc.cx*sin1 + obj1.arc.cy*cos1;
+			/* parameters for ellipse equation in general form */
+			c1[0] = cos2/a2 + sin2/b2;
+			c2[0] = 2*sin1*cos1*(1/b2 - 1/a2);
+			c3[0] = -2*(cos1*xr/a2 + sin1*yr/b2);
+			c4[0] = cos2/b2 + sin2/a2;
+			c5[0] = 2*(sin1*xr/a2 - cos1*yr/b2);
+			c6[0] = pow(xr, 2)/a2 + pow(yr, 2)/b2 - 1;
 			
-			/* calcule the intersection point by sucessive aproximation */
-			for(i = 0; i< 10; i++){ /* try to find in less then 10 steps */
-				/*find  the real point in first curve near intersection point previusly calculated */
-				if (arc_near(obj1.arc.axis, obj1.arc.ratio, obj1.arc.rot,
-				obj1.arc.ang_start, obj1.arc.ang_end,
-				obj1.arc.cx, obj1.arc.cy, 
-				inter_x[0], inter_y[0], &p1_x, &p1_y) &&
+			/* second arc parameters calculation */
+			a2 = pow(obj2.arc.axis, 2);
+			b2 = pow(obj2.arc.axis*obj2.arc.ratio, 2);
+			cos1 = cos(-obj2.arc.rot); cos2 = pow(cos1, 2);
+			sin1 = sin(-obj2.arc.rot); sin2 = pow(sin1, 2);
+			xr = obj2.arc.cx*cos1 - obj2.arc.cy*sin1;
+			yr = obj2.arc.cx*sin1 + obj2.arc.cy*cos1;
+			/* parameters for ellipse equation in general form */
+			c1[1] = cos2/a2 + sin2/b2;
+			c2[1] = 2*sin1*cos1*(1/b2 - 1/a2);
+			c3[1] = -2*(cos1*xr/a2 + sin1*yr/b2);
+			c4[1] = cos2/b2 + sin2/a2;
+			c5[1] = 2*(sin1*xr/a2 - cos1*yr/b2);
+			c6[1] = pow(xr, 2)/a2 + pow(yr, 2)/b2 - 1;
+			
+			/* Newton-Raphson method, in ten iterations*/
+			for (i = 0; i < 10; i++){
+				/* first arc - ellipse equation */
+				f[0] = c1[0]*x*x + c2[0]*x*y + c3[0]*x+ c4[0]*y*y + c5[0]*y + c6[0];
+				/* partial derivates in point */
+				dx[0] = 2*c1[0]*x + c2[0]*y + c3[0];
+				dy[0] = c2[0]*x + 2*c4[0]*y + c5[0];
 				
-				/*find  the real point in second curve near intersection point previusly calculated */
-				arc_near(obj2.arc.axis, obj2.arc.ratio, obj2.arc.rot,
-				obj2.arc.ang_start, obj2.arc.ang_end,
-				obj2.arc.cx, obj2.arc.cy, 
-				inter_x[0], inter_y[0], &p2_x, &p2_y)){
-					
-					inter_x[0] = (p1_x + p2_x)/2;
-					inter_y[0] = (p1_y + p2_y)/2;
-					
-					/* verify if new intersect point pass in error criteria */
-					dist = sqrt(pow(p1_x - p2_x, 2) + pow(p1_y - p2_y, 2));
-					if (dist < error){
-						num_inter = 1; /* found a intersect point */
-						break;
-					}
+				/* second arc - ellipse equation */
+				f[1] = c1[1]*x*x + c2[1]*x*y + c3[1]*x+ c4[1]*y*y + c5[1]*y + c6[1];
+				/* partial derivates in point */
+				dx[1] = 2*c1[1]*x + c2[1]*y + c3[1];
+				dy[1] = c2[1]*x + 2*c4[1]*y + c5[1];
+				
+				/* denominator of inverse jacobian matrix*/
+				den = dx[0]*dy[1] - dy[0]*dx[1];
+				if (fabs(den) > TOL){
+					/* Newton-Raphson core => Pnew = P - F(P)*invJacob(P) */
+					xnew = x - (f[0]*dy[1] - f[1]*dy[0])/den;
+					ynew = y - (-f[0]*dx[1] + f[1]*dx[0])/den;
 				}
 				else break;
+				if ((fabs(xnew - x) < TOL) && (fabs(ynew - y) < TOL)){
+					/* has convergence*/
+					num_inter = 1;
+					inter_x[0] = xnew;
+					inter_y[0] = ynew;
+					break;
+				}
+				/* for next iteration */
+				x = xnew;
+				y = ynew;
 			}
-			//printf("INTER %0.2f, %0.2f\n", inter_x[0], inter_y[0]);
 		}
+		
 	}
 	
 	for (i = 0; i < num_inter; i++){
 		curr_dist = sqrt(pow(inter_x[i] - pos_x, 2) + pow(inter_y[i] - pos_y, 2));
 		if (curr_dist < sensi){
+			//printf("INTER %0.2f, %0.2f\n", inter_x[i], inter_y[i]);
 			if (*init_dist == 0){
 				*init_dist = 1;
 				*min_dist = curr_dist;
@@ -1831,6 +1860,7 @@ int *init_dist, double *min_dist){
 			}
 		}
 	}
+	
 	return ret;
 }
 
