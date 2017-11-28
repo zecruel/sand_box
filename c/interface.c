@@ -364,6 +364,25 @@ void sel_list_append(list_node *list, dxf_node *ent){
 	}
 }
 
+double font_scale(shape *font, float height){
+	double fnt_scale = 0;
+	/* find the dimentions of SHX font */
+	double fnt_size = 0, fnt_above, fnt_below;
+	if(font){ /* if the font exists */
+		if(font->next){ /* the font descriptor is stored in first iten of list */
+			if(font->next->cmd_size > 1){ /* check if the font is valid */
+				fnt_above = font->next->cmds[0]; /* size above the base line of text */
+				fnt_below = font->next->cmds[1]; /* size below the base line of text */
+				if((fnt_above + fnt_below) > 0){
+					fnt_size = fnt_above + fnt_below;
+				}
+			}
+		}
+	}
+	if (fnt_size != 0) fnt_scale = height/fnt_size;
+	return fnt_scale;
+}
+
 int main(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
@@ -490,14 +509,21 @@ int main(int argc, char** argv){
 	bmp_img * img = bmp_new(width, height, grey, red);
 	
 	/* init Nuklear GUI */
-	shape *shx_font = shx_font_open("txt.shx");
-	gui_obj *gui = nk_sdl_init(shx_font);
+	struct font_obj font;
+	font.shx_font = shx_font_open("txt.shx");
+	font.scale = 1.4;
+	
+	struct nk_user_font default_font;
+	default_font.userdata = nk_handle_ptr(&font);
+	default_font.height = 12.0;
+	font.scale = font_scale(font.shx_font, default_font.height);
+	default_font.width = nk_user_font_get_text_width;
+	
+	gui_obj *gui = nk_sdl_init(&default_font);
 	
 	set_style(gui->ctx, THEME_ZE);
 	
 	gui->ctx->style.edit.padding = nk_vec2(4, -6);
-	
-	
 	
 	/* init the toolbox image */
 	bmp_img * tool_img = bmp_load_img("tool4.png");
@@ -573,6 +599,20 @@ int main(int argc, char** argv){
 	
 	bmp_img * cz48_img = bmp_load_img2(cz48.pixel_data, cz48.width, cz48.height);
 	struct nk_image i_cz48 = nk_image_ptr(cz48_img);
+	
+	bmp_img * color_img = bmp_new(15, 13, black, red);
+	struct nk_image i_color = nk_image_ptr(color_img);
+	
+	/* other font */
+	struct font_obj font_tiny;
+	font_tiny.shx_font = font.shx_font;
+	font_tiny.scale = 1.4;
+	
+	struct nk_user_font font_tiny_nk;
+	font_tiny_nk.userdata = nk_handle_ptr(&font_tiny);
+	font_tiny_nk.height = 8.0;
+	font_tiny.scale = font_scale(font_tiny.shx_font, font_tiny_nk.height);
+	font_tiny_nk.width = nk_user_font_get_text_width;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -808,24 +848,30 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);*/
 		
-		if (nk_begin(gui->ctx, "Main", nk_rect(0, 0, 200, 32),
+		if (nk_begin(gui->ctx, "Main", nk_rect(0, 0, 1000, 32),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
-			nk_layout_row_static(gui->ctx, 20, 20, 10);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_new)){
 				printf("NEW\n");
 			}
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_open)){
 				action = FILE_OPEN;
 			}
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_save)){
 				action = FILE_SAVE;
 			}
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_export)){
 				action = EXPORT;
 			}
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_close)){
 				printf("CLOSE\n");
 			}
+			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_help)){
 				show_app_about = 1;
 				//printf("HELP\n");
@@ -847,11 +893,139 @@ int main(int argc, char** argv){
 					nk_layout_row_end(gui->ctx);
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
-					
 					nk_popup_end(gui->ctx);
 				} else show_app_about = nk_false;
 			}
 			
+			static char text[64];
+			int text_len;
+			
+			/*layer*/
+			nk_layout_row_push(gui->ctx, 200);
+			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
+				float wid[] = {120, 20, 20};
+				nk_layout_row(gui->ctx, NK_STATIC, 20, 3, wid);
+				int num_layers = drawing->num_layers;
+				for (i = 0; i < num_layers; i++){
+					//strcpy(layer_nam[i], drawing->layers[i].name);
+					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
+						layer_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+					if (drawing->layers[i].off){
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unview)){
+							drawing->layers[i].off = 0;
+						}
+					}
+					else{
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_view)){
+							drawing->layers[i].off = 1;
+						}
+					}
+					if (drawing->layers[i].lock){
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lock)){
+							drawing->layers[i].lock = 0;
+						}
+					}
+					else{
+						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unlock)){
+							drawing->layers[i].lock = 1;
+						}
+					}
+				}
+				
+				nk_combo_end(gui->ctx);
+			}
+			
+			/*color picker */
+			int c_idx = color_idx;
+			if (c_idx >255){
+				c_idx = drawing->layers[layer_idx].color;
+				if (c_idx >255){
+					c_idx = 0;
+				}
+			}
+			/* fill the tiny bitmap with selected color*/
+			bmp_fill(color_img, dxf_colors[c_idx]);
+			
+			/* print the name (number) of color */
+			if (color_idx <256){
+				text_len = snprintf(text, 63, "%d", color_idx);
+			}
+			else{
+				text_len = snprintf(text, 63, "%s", "ByL");
+			}
+			
+			nk_layout_row_push(gui->ctx, 70);
+			if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
+				nk_layout_row_static(gui->ctx, 15, 15, 10);
+				for (i = 0; i < 256; i++){
+					struct nk_color b_color = {
+						.r = dxf_colors[i].r,
+						.g = dxf_colors[i].g,
+						.b = dxf_colors[i].b,
+						.a = dxf_colors[i].a
+					};
+					if(nk_button_color(gui->ctx, b_color)){
+						color_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+				}
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+					if (nk_button_label(gui->ctx, "By Layer")){
+						color_idx = 256;
+						nk_combo_close(gui->ctx);
+					}
+				nk_combo_end(gui->ctx);
+			}
+			
+			/*line type*/
+			nk_layout_row_push(gui->ctx, 200);
+			if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
+				nk_layout_row_dynamic(gui->ctx, 25, 2);
+				int num_ltypes = drawing->num_ltypes;
+				
+				for (i = 0; i < num_ltypes; i++){
+					
+					if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
+						ltypes_idx = i;
+						nk_combo_close(gui->ctx);
+					}
+					nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
+				}
+				
+				nk_combo_end(gui->ctx);
+			}
+			
+			/* thickness */
+			nk_layout_row_push(gui->ctx, 150);
+			//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
+			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
+			
+			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
+			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick, 20.0d, 0.1d, 0.1d);
+			
+			
+			/* zoom*/
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_plus)){
+				printf("ZOOM +\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_minus)){
+				printf("ZOOM -\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
+				printf("ZOOM win\n");
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
+				printf("ZOOM all\n");
+				action = VIEW_ZOOM_EXT;
+			}
+			
+			nk_layout_row_end(gui->ctx);
 		}
 		nk_end(gui->ctx);
 		
@@ -1126,47 +1300,8 @@ int main(int argc, char** argv){
 			}
 		}
 		
-		/* status */
-		if (nk_begin(gui->ctx, "status", nk_rect(415, height - 32, 600, 32),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
-		{
-			static char comm[64];
-			static int comm_len;
-			
-			static char text[64];
-			static int text_len;
-			float ratio[] = {0.4f, 0.2f, 0.4f};
-			
-			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 3, ratio);
-			
-			//nk_edit_focus(gui->ctx, 0);
-			nk_flags res = nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
-			//
-			//NK_EDIT_ACTIVE
-			if (res & NK_EDIT_COMMITED){
-				comm[comm_len] = 0;
-				recv_comm_flag = 1;
-				snprintf(recv_comm, 64, "%s", comm);
-				//printf("%s\n", comm);
-				comm_len = 0;
-			}
-			
-			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
-			nk_label(gui->ctx, text, NK_TEXT_LEFT);
-			/* view coordinates of mouse in drawing units */
-			text_len = snprintf(text, 63, "x = %f, y = %f", pos_x, pos_y);
-			nk_label(gui->ctx, text, NK_TEXT_LEFT);
-			
-			/*if (wait_open != 0){
-				text_len = snprintf(text, 63, "Opening...");
-				nk_label(gui->ctx, text, NK_TEXT_LEFT);
-				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
-			}*/
-		}
-		nk_end(gui->ctx);
-		
 		/* interface to the user visualize and enter coordinates distances*/
-		if (nk_begin(gui->ctx, "POS", nk_rect(0, height - 32, 400, 32),
+		if (nk_begin(gui->ctx, "POS", nk_rect(0, height - 50, 600, 50),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
@@ -1175,8 +1310,9 @@ int main(int argc, char** argv){
 			int flag_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
 			int flag_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
 			
-			nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 4, ratio);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 			
+			nk_layout_row_push(gui->ctx, 20);
 			/* X distance */
 			/* hilite coordinate, if coord is predominant during a drawing operation*/
 			if ((en_distance) && (step > 0) && (step < 10) && (flag_x)){
@@ -1194,6 +1330,7 @@ int main(int argc, char** argv){
 				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 			}
 			
+			nk_layout_row_push(gui->ctx, 120);
 			/* edit to visualize or enter distance */
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
 			if (res & NK_EDIT_ACTIVE){ /* enter mode */
@@ -1221,6 +1358,7 @@ int main(int argc, char** argv){
 				keyEnter = 0;
 			}
 			
+			nk_layout_row_push(gui->ctx, 20);
 			/* Y distance */
 			/* hilite coordinate, if coord is predominant during a drawing operation*/
 			if ((en_distance) && (step > 0) && (step < 10) && (flag_y)){
@@ -1238,6 +1376,7 @@ int main(int argc, char** argv){
 				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 			}
 			
+			nk_layout_row_push(gui->ctx, 120);
 			/* edit to visualize or enter distance */
 			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
 			if (res & NK_EDIT_ACTIVE){ /* enter mode */
@@ -1264,157 +1403,34 @@ int main(int argc, char** argv){
 				nk_edit_unfocus(gui->ctx);
 				keyEnter = 0;
 			}
+			/*-------------------------------*/
+			nk_layout_row_end(gui->ctx);
+			
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
+			
+			int text_len;
+			char text[64];
+			
+			nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
+			
+			/* view coordinates of mouse in drawing units */
+			nk_layout_row_push(gui->ctx, 280);
+			text_len = snprintf(text, 63, "(%f,  %f)", pos_x, pos_y);
+			nk_label(gui->ctx, text, NK_TEXT_CENTERED);
+			
+			nk_layout_row_push(gui->ctx, 90);
+			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
+			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			
+			nk_style_pop_font(gui->ctx); /* return to the default font*/
+			
+			/*-------------------------------*/
+			nk_layout_row_end(gui->ctx);
 		}
 		nk_end(gui->ctx);
 		
 		/* */
-		if (nk_begin(gui->ctx, "Prop", nk_rect(200, 0, 750, 32),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
-		{
-			static char text[64];
-			int text_len;
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 9);
-			
-			/*layer*/
-			nk_layout_row_push(gui->ctx, 200);
-			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
-				float wid[] = {120, 20, 20};
-				nk_layout_row(gui->ctx, NK_STATIC, 20, 3, wid);
-				int num_layers = drawing->num_layers;
-				for (i = 0; i < num_layers; i++){
-					//strcpy(layer_nam[i], drawing->layers[i].name);
-					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
-						layer_idx = i;
-						nk_combo_close(gui->ctx);
-					}
-					if (drawing->layers[i].off){
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unview)){
-							drawing->layers[i].off = 0;
-						}
-					}
-					else{
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_view)){
-							drawing->layers[i].off = 1;
-						}
-					}
-					if (drawing->layers[i].lock){
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lock)){
-							drawing->layers[i].lock = 0;
-						}
-					}
-					else{
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unlock)){
-							drawing->layers[i].lock = 1;
-						}
-					}
-				}
-				
-				nk_combo_end(gui->ctx);
-			}
-			
-			/*color picker */
-			int c_idx = color_idx;
-			if (c_idx >255){
-				c_idx = drawing->layers[layer_idx].color;
-				if (c_idx >255){
-					c_idx = 0;
-				}
-			}
-			struct nk_color combo_color = {
-				.r = dxf_colors[c_idx].r,
-				.g = dxf_colors[c_idx].g,
-				.b = dxf_colors[c_idx].b,
-				.a = dxf_colors[c_idx].a
-			};
-			nk_layout_row_push(gui->ctx, 40);
-			struct nk_style_button b_style = gui->ctx->style.button;
-			b_style.normal.data.color = combo_color;
-			combo_color.a = 120;
-			b_style.hover.data.color = combo_color;
-			
-			if (color_idx <256){
-				text_len = snprintf(text, 63, "%d", color_idx);
-			}
-			else{
-				text_len = snprintf(text, 63, "%s", "ByL");
-			}
-			
-			nk_button_text_styled(gui->ctx, &b_style, text, text_len);
-			//if(nk_button_color(gui->ctx, combo_color)){
-				//
-			//}
-			nk_layout_row_push(gui->ctx, 25);
-			if (nk_combo_begin_color(gui->ctx, combo_color, nk_vec2(215,320))) {
-				nk_layout_row_static(gui->ctx, 15, 15, 10);
-				for (i = 0; i < 256; i++){
-					struct nk_color b_color = {
-						.r = dxf_colors[i].r,
-						.g = dxf_colors[i].g,
-						.b = dxf_colors[i].b,
-						.a = dxf_colors[i].a
-					};
-					if(nk_button_color(gui->ctx, b_color)){
-						color_idx = i;
-						nk_combo_close(gui->ctx);
-					}
-				}
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-					if (nk_button_label(gui->ctx, "By Layer")){
-						color_idx = 256;
-						nk_combo_close(gui->ctx);
-					}
-				nk_combo_end(gui->ctx);
-			}
-			
-			/*line type*/
-			nk_layout_row_push(gui->ctx, 200);
-			if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
-				nk_layout_row_dynamic(gui->ctx, 25, 2);
-				int num_ltypes = drawing->num_ltypes;
-				
-				for (i = 0; i < num_ltypes; i++){
-					
-					if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
-						ltypes_idx = i;
-						nk_combo_close(gui->ctx);
-					}
-					nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
-				}
-				
-				nk_combo_end(gui->ctx);
-			}
-			
-			/* thickness */
-			nk_layout_row_push(gui->ctx, 150);
-			//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
-			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
-			
-			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
-			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick, 20.0d, 0.1d, 0.1d);
-			
-			
-			/* zoom*/
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_plus)){
-				printf("ZOOM +\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_minus)){
-				printf("ZOOM -\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
-				printf("ZOOM win\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
-				printf("ZOOM all\n");
-				action = VIEW_ZOOM_EXT;
-			}
-			
-			nk_layout_row_end(gui->ctx);
-			nk_end(gui->ctx);
-		}
+		
 		
 		if (!(nk_window_is_any_hovered(gui->ctx)) && (modal != SELECT)){
 			nk_window_set_focus(gui->ctx, "POS");
@@ -2247,7 +2263,7 @@ int main(int argc, char** argv){
 		shx_font_free(drawing->text_fonts[i].shx_font);
 	}
 	nk_sdl_shutdown(gui);
-	shx_font_free(shx_font);
+	shx_font_free(font.shx_font);
 	free(drawing);
 		
 	return 0;

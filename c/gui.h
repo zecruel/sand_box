@@ -44,9 +44,15 @@ struct Gui_obj {
 };
 typedef struct Gui_obj gui_obj;
 
+struct font_obj{
+	shape *shx_font;
+	double scale;
+};
+
 static float nk_user_font_get_text_width(nk_handle handle, float height, const char *text, int len){
-	shape *font = (shape*)handle.ptr;
+	struct font_obj *font = (struct font_obj *)handle.ptr;
 	if ((text!= NULL) && (font!=NULL)) {
+		
 	
 		/* We must copy into a new buffer with exact length null-terminated
 		as nuklear uses variable size buffers and shx_fonts routines doesn't
@@ -89,9 +95,9 @@ static float nk_user_font_get_text_width(nk_handle handle, float height, const c
 		}
 		
 		double txt_w;
-		graph_obj *curr_graph = shx_font_parse(font, 1, str, &txt_w);
+		graph_obj *curr_graph = shx_font_parse(font->shx_font, 1, str, &txt_w);
 		if (curr_graph){
-			return (float) FONT_SCALE * txt_w;
+			return (float) font->scale * txt_w;
 		}
 	}
 	return 0;
@@ -346,15 +352,15 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 						str[254] = 0;
 					}
 					
-					shape *font = (shape*)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font, 1, (const char*)str, NULL);
+					struct font_obj *font = (struct font_obj *)t->font->userdata.ptr;
+					graph_obj *curr_graph = shx_font_parse(font->shx_font, 1, (const char*)str, NULL);
 					/*change the color */
 					if(curr_graph){
 						curr_graph->color = color;
 					}
 
 					/* apply the scales, offsets and rotation to graphs */
-					graph_modify(curr_graph, t->x, t->y + t->font->height, FONT_SCALE, -FONT_SCALE, 0);
+					graph_modify(curr_graph, t->x, t->y + t->font->height, font->scale, -font->scale, 0);
 					graph_draw(curr_graph, img, 0, 0, 1);
 				} break;
 				
@@ -433,13 +439,13 @@ static void nk_sdl_clipbard_copy(nk_handle usr, const char *text, int len){
 	free(str);
 }
 
-NK_API gui_obj* nk_sdl_init(shape *shx_font){
+NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
 	
 	gui_obj *gui = malloc(sizeof(gui_obj));
 	
 	if (gui){
 		gui->ctx = malloc(sizeof(struct nk_context));
-		gui->font = malloc(sizeof(struct nk_user_font));
+		gui->font = font;
 		gui->buf = calloc(1,FIXED_MEM);
 		gui->last = calloc(1,FIXED_MEM);
 		if((gui->ctx == NULL) || (gui->font == NULL) || (gui->buf == NULL) || (gui->last == NULL)){
@@ -447,26 +453,7 @@ NK_API gui_obj* nk_sdl_init(shape *shx_font){
 		}
 	}
 	else return NULL;
-		
 	
-	/* find the dimentions of SHX font */
-	double fnt_size = 0, fnt_above, fnt_below;
-	if(shx_font){ /* if the font exists */
-		if(shx_font->next){ /* the font descriptor is stored in first iten of list */
-			if(shx_font->next->cmd_size > 1){ /* check if the font is valid */
-				fnt_above = shx_font->next->cmds[0]; /* size above the base line of text */
-				fnt_below = shx_font->next->cmds[1]; /* size below the base line of text */
-				if((fnt_above + fnt_below) > 0){
-					fnt_size = fnt_above + fnt_below;
-				}
-			}
-		}
-	}
-	
-	struct nk_user_font *font = gui->font;
-	font->userdata = nk_handle_ptr(shx_font);
-	font->height = (float)FONT_SCALE*fnt_size;
-	font->width = nk_user_font_get_text_width;
 	nk_style_set_font(gui->ctx, font);
 	
 	//nk_init_default(gui->ctx, font);
