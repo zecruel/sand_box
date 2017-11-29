@@ -336,6 +336,20 @@ void draw_attractor(bmp_img *img, enum attract_type type, int x, int y, bmp_colo
 	}
 }
 
+void attrc_get_imgs(bmp_img *vec[], int num, int w, int h){
+	
+	bmp_color yellow = {.r = 255, .g = 255, .b =0, .a = 255};
+	bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+	
+	int i, attr = 1, x = w/2, y = h/2;
+	for (i = 0; i < num; i++){
+		vec[i] = bmp_new(w, h, transp, yellow);
+		draw_attractor(vec[i], attr, x, y, yellow);
+		attr <<= 1;
+	}
+	
+}
+
 void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, double *ofs_y){
 	double min_x, min_y, max_x, max_y;
 	double zoom_x, zoom_y;
@@ -584,12 +598,28 @@ int main(int argc, char** argv){
 	struct nk_image i_t_mc = nk_image_ptr(tool_vec[52]);
 	struct nk_image i_t_mr = nk_image_ptr(tool_vec[53]);
 	
+	bmp_img * attr_vec[15];
+	attrc_get_imgs(attr_vec, 15, 16, 16);
+	
 	struct nk_style_button b_icon_style;
 	if (gui){
 		b_icon_style = gui->ctx->style.button;
 	}
 	b_icon_style.image_padding.x = -4;
 	b_icon_style.image_padding.y = -4;
+	
+	struct nk_style_button b_icon_sel_style, b_icon_unsel_style;
+	if (gui){
+		b_icon_sel_style = gui->ctx->style.button;
+		b_icon_unsel_style = gui->ctx->style.button;
+	}
+	b_icon_unsel_style.normal = nk_style_item_color(nk_rgba(58, 67, 57, 255));
+	b_icon_unsel_style.hover = nk_style_item_color(nk_rgba(73, 84, 72, 255));
+	b_icon_unsel_style.active = nk_style_item_color(nk_rgba(81, 92, 80, 255));
+	b_icon_sel_style.image_padding.x = -4;
+	b_icon_sel_style.image_padding.y = -4;
+	b_icon_unsel_style.image_padding.x = -4;
+	b_icon_unsel_style.image_padding.y = -4;
 	
 	bmp_img * brazil_img = bmp_load_img2(brazil_flag.pixel_data, brazil_flag.width, brazil_flag.height);
 	struct nk_image i_brazil = nk_image_ptr(brazil_img);
@@ -1117,15 +1147,25 @@ int main(int argc, char** argv){
 				}
 				nk_tree_pop(gui->ctx);
 			}
-			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Attract", NK_MAXIMIZED)) {
+			/*if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Attract", NK_MAXIMIZED)) {
 				nk_layout_row_static(gui->ctx, 15, 40, 1);
 				int selected;
 				
 				//ATRC_END = 1,
 				selected = (curr_attr_t & ATRC_END);
-				nk_selectable_label(gui->ctx, "End", NK_TEXT_LEFT, &selected);
+				/*nk_selectable_label(gui->ctx, "End", NK_TEXT_LEFT, &selected);
 				if (selected) curr_attr_t |= ATRC_END;
 				else curr_attr_t &= ~ATRC_END;
+				
+				if (selected){
+					if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, i_delete)){
+						curr_attr_t &= ~ATRC_END;
+					}
+				}else {
+					if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, i_delete)){
+						curr_attr_t |= ATRC_END;
+					}
+				}
 				
 				//ATRC_MID = 2,
 				selected = (curr_attr_t & ATRC_MID);
@@ -1183,7 +1223,7 @@ int main(int argc, char** argv){
 				else curr_attr_t &= ~ATRC_ANY;
 				
 				nk_tree_pop(gui->ctx);
-			}
+			}*/
 		}
 		nk_end(gui->ctx);
 		
@@ -1301,7 +1341,7 @@ int main(int argc, char** argv){
 		}
 		
 		/* interface to the user visualize and enter coordinates distances*/
-		if (nk_begin(gui->ctx, "POS", nk_rect(0, height - 50, 600, 50),
+		if (nk_begin(gui->ctx, "POS", nk_rect(2, height - 48, width - 4, 50),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
@@ -1403,6 +1443,27 @@ int main(int argc, char** argv){
 				nk_edit_unfocus(gui->ctx);
 				keyEnter = 0;
 			}
+			/*-------------------------------*/
+			
+			int selected, i, attr = 1;
+				
+			for (i = 0; i < 15; i++){
+				selected = (curr_attr_t & attr);
+				
+				nk_layout_row_push(gui->ctx, 22);
+				if (selected){
+					if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(attr_vec[i]))){
+						curr_attr_t &= ~attr;
+					}
+				}else {
+					if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(attr_vec[i]))){
+						curr_attr_t |= attr;
+					}
+				}
+				
+				attr <<= 1;
+			}
+			
 			/*-------------------------------*/
 			nk_layout_row_end(gui->ctx);
 			
