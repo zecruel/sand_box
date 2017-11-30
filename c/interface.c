@@ -450,10 +450,12 @@ int main(int argc, char** argv){
 	int user_flag_x = 0, user_flag_y = 0;
 	int user_number = 0;
 	int en_distance = 0; /* enable distance entry */
+	int entry_relative = 1;
 	
 	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
 	double near_x, near_y;
 	int near_attr; /* flag */
+	int en_attr = 1;
 	
 	
 	//graph_obj *tmp_graph = NULL;
@@ -608,6 +610,7 @@ int main(int argc, char** argv){
 	b_icon_style.image_padding.x = -4;
 	b_icon_style.image_padding.y = -4;
 	
+	/* style for toggle buttons (or select buttons) with image */
 	struct nk_style_button b_icon_sel_style, b_icon_unsel_style;
 	if (gui){
 		b_icon_sel_style = gui->ctx->style.button;
@@ -615,7 +618,7 @@ int main(int argc, char** argv){
 	}
 	b_icon_unsel_style.normal = nk_style_item_color(nk_rgba(58, 67, 57, 255));
 	b_icon_unsel_style.hover = nk_style_item_color(nk_rgba(73, 84, 72, 255));
-	b_icon_unsel_style.active = nk_style_item_color(nk_rgba(81, 92, 80, 255));
+	//b_icon_unsel_style.active = nk_style_item_color(nk_rgba(81, 92, 80, 255));
 	b_icon_sel_style.image_padding.x = -4;
 	b_icon_sel_style.image_padding.y = -4;
 	b_icon_unsel_style.image_padding.x = -4;
@@ -878,7 +881,7 @@ int main(int argc, char** argv){
 		}
 		nk_end(gui->ctx);*/
 		
-		if (nk_begin(gui->ctx, "Main", nk_rect(0, 0, 1000, 32),
+		if (nk_begin(gui->ctx, "Main", nk_rect(2, 2, width - 4, 32),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
 			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 			nk_layout_row_push(gui->ctx, 20);
@@ -1344,13 +1347,12 @@ int main(int argc, char** argv){
 		if (nk_begin(gui->ctx, "POS", nk_rect(2, height - 48, width - 4, 50),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
-			float ratio[] = {0.1f, 0.4f, 0.1f, 0.4f};
 			nk_flags res;
 			/* flags to verify which coordinate is predominant */
 			int flag_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
 			int flag_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
 			
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 30);
 			
 			nk_layout_row_push(gui->ctx, 20);
 			/* X distance */
@@ -1362,7 +1364,7 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
 			}
 			/* verify if the user initiate a number entry during a drawing operation */
-			if ((en_distance) && (user_number) && (step > 0) && (step < 10) &&
+			if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
 			(!user_flag_x) && (flag_x)){
 				user_number = 0; /* clear user flag */
 				user_str_x[0] = 0; /* clear edit string */
@@ -1386,7 +1388,10 @@ int main(int argc, char** argv){
 				}
 			}
 			else { /* visualize mode */
-				if ((en_distance) && (step > 0) && (step < 10)){
+				if ((!entry_relative) && (step >= 0) && (step < 10)){
+					snprintf(user_str_x, 63, "%f", step_x[step]);
+				}
+				else if ((en_distance) && (step > 0) && (step < 10)){
 					snprintf(user_str_x, 63, "%f", step_x[step] - step_x[step - 1]);
 				}
 				else {
@@ -1408,7 +1413,7 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
 			}
 			/* verify if the user initiate a number entry during a drawing operation */
-			if ((en_distance) && (user_number) && (step > 0) && (step < 10) &&
+			if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
 			(!user_flag_y) && (flag_y)){
 				user_number = 0; /* clear user flag */
 				user_str_y[0] = 0; /* clear edit string */
@@ -1432,7 +1437,10 @@ int main(int argc, char** argv){
 				}
 			}
 			else { /* visualize mode */
-				if ((en_distance) && (step > 0) && (step < 10)){
+				if ((!entry_relative) && (step >= 0) && (step < 10)){
+					snprintf(user_str_y, 63, "%f", step_y[step]);
+				}
+				else if ((en_distance) && (step > 0) && (step < 10)){
 					snprintf(user_str_y, 63, "%f", step_y[step] - step_y[step - 1]);
 				}
 				else {
@@ -1443,27 +1451,44 @@ int main(int argc, char** argv){
 				nk_edit_unfocus(gui->ctx);
 				keyEnter = 0;
 			}
-			/*-------------------------------*/
 			
+			/* select if entry mode is in absolute coordinates or relative distance*/
+			nk_layout_row_push(gui->ctx, 70);
+			if (entry_relative){
+				nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
+				flag_x = 1;
+			}
+			else nk_selectable_label(gui->ctx, "Absolute", NK_TEXT_CENTERED, &entry_relative);
+			
+			/*----------- attractors --------------*/
+			nk_layout_row_push(gui->ctx, 160);
+			nk_label(gui->ctx, "Attractors ->", NK_TEXT_RIGHT);
+			
+			/* Toggle on/off attractors*/
+			nk_layout_row_push(gui->ctx, 30);
+			if (en_attr){
+				nk_selectable_label(gui->ctx, "On", NK_TEXT_CENTERED, &en_attr);
+			}
+			else nk_selectable_label(gui->ctx, "Off", NK_TEXT_CENTERED, &en_attr);
+			
+			/* Buttons to select attractor mode*/
 			int selected, i, attr = 1;
 				
 			for (i = 0; i < 15; i++){
 				selected = (curr_attr_t & attr);
-				
+				/* uses styles "sel" or "unsel", deppending each status*/
 				nk_layout_row_push(gui->ctx, 22);
 				if (selected){
 					if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(attr_vec[i]))){
-						curr_attr_t &= ~attr;
+						curr_attr_t &= ~attr; /* clear bit of current type*/
 					}
 				}else {
 					if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(attr_vec[i]))){
-						curr_attr_t |= attr;
+						curr_attr_t |= attr; /* set bit of current type*/
 					}
 				}
-				
-				attr <<= 1;
+				attr <<= 1; /* next attractor type (bit coded)*/
 			}
-			
 			/*-------------------------------*/
 			nk_layout_row_end(gui->ctx);
 			
@@ -1718,6 +1743,15 @@ int main(int argc, char** argv){
 					step_y[step] = step_y[step - 1] + user_y;
 				}
 			}
+			if ((!entry_relative) && (step >= 0) && (step < 10)){
+				/* check the user entry */
+				if (user_flag_x){
+					step_x[step] = user_x;
+				}
+				if (user_flag_y){
+					step_y[step] = user_y;
+				}
+			}
 			
 		}
 		
@@ -1818,6 +1852,7 @@ int main(int argc, char** argv){
 					element = new_el;
 					step = 1;
 					en_distance = 1;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1872,6 +1907,7 @@ int main(int argc, char** argv){
 					step = 1;
 					en_distance = 1;
 					draw_tmp = 1;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1929,6 +1965,7 @@ int main(int argc, char** argv){
 					element = new_el;
 					step = 1;
 					en_distance = 1;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -1980,6 +2017,7 @@ int main(int argc, char** argv){
 					element = new_el;
 					step = 1;
 					en_distance = 1;
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -2027,6 +2065,7 @@ int main(int argc, char** argv){
 				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 				step = 1;
+				goto next_step;
 			}
 			else{
 				if (leftMouseButtonClick){
@@ -2079,6 +2118,7 @@ int main(int argc, char** argv){
 					step = 1;
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -2126,6 +2166,7 @@ int main(int argc, char** argv){
 					step = 1;
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
@@ -2179,6 +2220,7 @@ int main(int argc, char** argv){
 					step = 1;
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
+					goto next_step;
 				}
 				else if (rightMouseButtonClick){
 					goto default_modal;
