@@ -151,7 +151,7 @@ void * stack_pop (vector_p *stack){
 
 void * dxf_mem_pool(enum dxf_pool_action action, int idx){
 	
-	static dxf_pool_slot mem_pool[DXF_NUM_POOL], line[DXF_NUM_POOL];
+	static dxf_pool_slot mem_pool[DXF_NUM_POOL];
 	int i;
 	
 	void *ret_ptr = NULL;

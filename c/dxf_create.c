@@ -1,5 +1,180 @@
 #include "dxf_create.h"
 
+void * do_mem_pool(enum dxf_pool_action action){
+	
+	static struct do_pool_slot entry, item;
+	int i;
+	
+	void *ret_ptr = NULL;
+	
+	/* initialize the pool, the first allocation */
+	if (entry.size < 1){
+		entry.pool[0] = malloc(DO_PAGE * sizeof(struct do_entry));
+		if (entry.pool){
+			entry.size = 1;
+			//printf("Init entry\n");
+		}
+	}
+	
+	/* if current page is full */
+	if ((entry.pos >= DO_PAGE) && (entry.size > 0)){
+		/* try to change to page previuosly allocated */
+		if (entry.page < entry.size - 1){
+			entry.page++;
+			entry.pos = 0;
+			//printf("change entry page\n");
+		}
+		/* or then allocatte a new page */
+		else if(entry.page < DO_PAGES-1){
+			entry.pool[entry.page + 1] = malloc(DO_PAGE * sizeof(struct do_entry));
+			if (entry.pool[entry.page + 1]){
+				entry.page++;
+				entry.size ++;
+				entry.pos = 0;
+				//printf("Realloc entry\n");
+			}
+		}
+	}
+	
+	/* initialize the pool, the first allocation */
+	if (item.size < 1){
+		item.pool[0] = malloc(DO_PAGE * sizeof(struct do_item));
+		if (item.pool){
+			item.size = 1;
+			//printf("Init item\n");
+		}
+	}
+	
+	/* if current page is full */
+	if ((item.pos >= DO_PAGE) && (item.size > 0)){
+		/* try to change to page previuosly allocated */
+		if (item.page < item.size - 1){
+			item.page++;
+			item.pos = 0;
+			//printf("change item page\n");
+		}
+		/* or then allocatte a new page */
+		else if(item.page < DO_PAGES-1){
+			item.pool[item.page + 1] = malloc(DO_PAGE * sizeof(struct do_item));
+			if (item.pool[item.page + 1]){
+				item.page++;
+				item.size ++;
+				item.pos = 0;
+				//printf("Realloc item\n");
+			}
+		}
+	}
+	
+	ret_ptr = NULL;
+	
+	if ((entry.pool[entry.page] != NULL)){
+		switch (action){
+			case ADD_DO_ENTRY:
+				if (entry.pos < DO_PAGE){
+					ret_ptr = &(((struct do_entry *)entry.pool[entry.page])[entry.pos]);
+					entry.pos++;
+				}
+				break;
+			case ZERO_DO_ENTRY:
+				entry.pos = 0;
+				entry.page = 0;
+				break;
+			case ADD_DO_ITEM:
+				if (item.pos < DO_PAGE){
+					ret_ptr = &(((struct do_item *)item.pool[item.page])[item.pos]);
+					item.pos++;
+				}
+				break;
+			case ZERO_DO_ITEM:
+				item.pos = 0;
+				item.page = 0;
+				break;
+			case FREE_DO_ALL:
+				for (i = 0; i < entry.size; i++){
+					free(entry.pool[i]);
+					entry.pool[i] = NULL;
+				}
+				entry.pos = 0;
+				entry.page = 0;
+				entry.size = 0;
+				for (i = 0; i < item.size; i++){
+					free(item.pool[i]);
+					item.pool[i] = NULL;
+				}
+				item.pos = 0;
+				item.page = 0;
+				item.size = 0;
+				break;
+		}
+	}
+
+	return ret_ptr;
+}
+
+int do_add_item(struct do_entry *entry, dxf_node *obj1, dxf_node *obj2){
+	int ret = 0;
+	if ((entry != NULL) && ((obj1 != NULL) || (obj2 != NULL))){
+		struct do_item *item = do_mem_pool(ADD_DO_ITEM);
+		if (item){
+			if ((entry->current) && (entry->list)){
+				entry->current->next = item;
+				item->prev = entry->current;
+				entry->current = item;
+			}
+			else{ /* initialize entry's list*/
+				entry->list = item;
+				entry->current = item;
+				item->prev = NULL;
+			}
+			item->next = NULL;
+			item->obj1 = obj1;
+			item->obj2 = obj2;
+			ret = 1;
+		}
+	}
+	return ret;
+};
+
+int do_add_entry(struct do_list *list, char *text){
+	int ret = 0;
+	if (list != NULL){
+		struct do_entry *entry = do_mem_pool(ADD_DO_ENTRY);
+		if ((entry) && (list->current) && (list->list)){
+			list->count++;
+			list->current->next = entry;
+			entry->prev = list->current;
+			entry->next = NULL;
+			list->current = entry;
+			
+			entry->text[0] = 0; /*initialize string*/
+			if (text){
+				strncpy(entry->text, text, ACT_CHARS);
+				entry->text[ACT_CHARS - 1] = 0; /*terminate string*/
+			}
+			ret = 1;
+		}
+	}
+	return ret;
+};
+
+int init_do_list(struct do_list *list){
+	int ret = 0;
+	if (list != NULL){
+		struct do_entry *entry = do_mem_pool(ADD_DO_ENTRY);
+		if (entry){
+			list->count = 0;
+			list->list = entry;
+			list->current = entry;
+			entry->prev = NULL;
+			entry->next = NULL;
+			
+			entry->text[0] = 0; /*initialize string*/
+			ret =1;
+		}
+	}
+	return ret;
+}
+
 int dxf_obj_append(dxf_node *master, dxf_node *obj){
 	if ((master) && (obj)){
 		if (master->type == DXF_ENT){
@@ -52,6 +227,100 @@ int dxf_obj_detach(dxf_node *obj){
 		return 1;
 	}
 	return 0;
+}
+
+int dxf_obj_subst(dxf_node *orig, dxf_node *repl){
+	/* substitute the orig object from its list for the replace obj */
+	if ((repl) && (orig)){
+		dxf_node *master = orig->master;
+		dxf_node *prev = orig->prev;
+		dxf_node *next = orig->next;
+		dxf_node *end = orig->end;
+		
+		/* substitute inherits orig's properties */
+		repl->master = master;
+		repl->prev = prev;
+		repl->next = next;
+		repl->end = end;
+		
+		/* rebuilt the insertion point */
+		if (prev){
+			prev->next = repl;
+		}
+		if (next){
+			next->prev = repl;
+		}
+		/* verify if the orig is at end of master list */
+		if (master){
+			if (orig == master->end){
+				master->end = repl;
+			}
+		}
+		return 1;
+	}
+	else if ((repl == NULL) && (orig)){
+		/* detach, but preserve orig properties*/
+		dxf_node *master = orig->master;
+		dxf_node *prev = orig->prev;
+		dxf_node *next = orig->next;
+		/* rebuilt the insertion point */
+		if (prev){
+			prev->next = next;
+		}
+		if (next){
+			next->prev = prev;
+		}
+		/* verify if the orig is at end of master list */
+		if (master){
+			if (orig == master->end){
+				master->end = prev;
+			}
+		}
+		return 1;
+	}
+	else if ((repl) && (orig == NULL)){
+		/* restore the repl at their referenced point*/
+		dxf_node *master = repl->master;
+		dxf_node *prev = repl->prev;
+		dxf_node *next = repl->next;
+		/* rebuilt the insertion point */
+		if (prev){
+			prev->next = next;
+		}
+		if (next){
+			next->prev = prev;
+		}
+		/* verify if the orig is at end of master list */
+		if (master){
+			if (prev == master->end){
+				master->end = repl;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+dxf_node * dxf_obj_cpy(dxf_node *orig, int pool){
+	/* copy a DXF object */
+	dxf_node *new_obj = NULL;
+	if (orig){
+		new_obj = (dxf_node *) dxf_mem_pool(ADD_DXF, pool);
+		if (new_obj){
+			new_obj->master = orig->master;
+			new_obj->prev = orig->prev;
+			new_obj->next = orig->next;
+			new_obj->end = orig->end;
+			new_obj->type = orig->type;
+			if (new_obj->type == DXF_ENT){
+				new_obj->obj = orig->obj;
+			}
+			else if (new_obj->type == DXF_ATTR){
+				new_obj->value = orig->value;
+			}
+		}
+	}
+	return new_obj;
 }
 
 int dxf_attr_append(dxf_node *master, int group, void *value){

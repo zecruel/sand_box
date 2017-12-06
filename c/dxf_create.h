@@ -1,8 +1,48 @@
 #ifndef _DXF_CREATE_LIB
 #define _DXF_CREATE_LIB
+#define ACT_CHARS 32
+#define DO_PAGES 1000
+#define DO_PAGE 10000
 
 #include "dxf.h"
 #include "list.h"
+
+struct do_item {
+	struct do_item *prev;
+	struct do_item *next;
+	dxf_node *obj1;
+	dxf_node *obj2;
+};
+
+struct do_entry {
+	struct do_entry *prev;
+	struct do_entry *next;
+	char text[ACT_CHARS];
+	struct do_item *list;
+	struct do_item *current;
+};
+
+struct do_list {
+	int count;
+	struct do_entry *list;
+	struct do_entry *current;
+};
+
+enum do_pool_action{
+	ADD_DO_ITEM,
+	ZERO_DO_ITEM,
+	ADD_DO_ENTRY,
+	ZERO_DO_ENTRY,
+	FREE_DO_ALL
+};
+
+struct do_pool_slot{
+	void *pool[DO_PAGES];
+	/* the pool is a vector of pages. The size of each page is out of this definition */
+	int pos; /* current position in current page vector */
+	int page; /* current page index */
+	int size; /* number of pages available in slot */
+};
 
 int dxf_obj_append(dxf_node *master, dxf_node *obj);
 

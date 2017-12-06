@@ -473,6 +473,8 @@ int main(int argc, char** argv){
 		EXPORT,
 		VIEW_ZOOM_EXT,
 		DELETE,
+		UNDO,
+		REDO,
 		EXIT
 	} action = NONE;
 	
@@ -520,6 +522,9 @@ int main(int argc, char** argv){
 	
 	/* initialize the selection list */
 	list_node * sel_list = list_new(NULL, 0);
+	
+	/* initialize the undo/redo list */
+	list_node * do_list = list_new(NULL, DWG_LIFE);
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
@@ -909,6 +914,23 @@ int main(int argc, char** argv){
 				show_app_about = 1;
 				//printf("HELP\n");
 			}
+			
+			/* put a simple separator*/
+			nk_layout_row_push(gui->ctx, 10);
+			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
+			
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_undo)){
+				action = UNDO;
+			}
+			nk_layout_row_push(gui->ctx, 20);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_redo)){
+				action = REDO;
+			}
+			/* put a simple separator*/
+			nk_layout_row_push(gui->ctx, 10);
+			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
+			
 			if (show_app_about){
 				/* about popup */
 				static struct nk_rect s = {20, 100, 400, 150};
@@ -1038,6 +1060,9 @@ int main(int argc, char** argv){
 			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
 			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick, 20.0d, 0.1d, 0.1d);
 			
+			/* put a simple separator*/
+			nk_layout_row_push(gui->ctx, 10);
+			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
 			
 			/* zoom*/
 			nk_layout_row_push(gui->ctx, 20);
