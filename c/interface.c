@@ -524,7 +524,9 @@ int main(int argc, char** argv){
 	list_node * sel_list = list_new(NULL, 0);
 	
 	/* initialize the undo/redo list */
-	list_node * do_list = list_new(NULL, DWG_LIFE);
+	struct do_list list_do;
+	init_do_list(&list_do);
+	
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(width, height, grey, red);
@@ -1633,6 +1635,9 @@ int main(int argc, char** argv){
 			action = NONE;
 		
 			if (sel_list != NULL){
+				
+				do_add_entry(&list_do, "DELETE");
+				
 				list_node *current = sel_list->next;
 				
 				// starts the content sweep 
@@ -1640,8 +1645,13 @@ int main(int argc, char** argv){
 					if (current->data){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							
+							if (do_add_item(list_do.current, (dxf_node *)current->data, NULL)) {
+								//printf("add item = %d\n", current->data);
+							}
+							
 							// -------------------------------------------
-							dxf_obj_detach((dxf_node *)current->data);
+							//dxf_obj_detach((dxf_node *)current->data);
+							dxf_obj_subst((dxf_node *)current->data, NULL);
 							
 							//---------------------------------------
 						}
@@ -1649,6 +1659,31 @@ int main(int argc, char** argv){
 					current = current->next;
 				}
 				list_clear(sel_list);
+			}
+			draw = 1;
+		}
+		else if(action == UNDO){
+			action = NONE;
+			
+			char *text = list_do.current->text;
+			
+			if (do_undo(&list_do)){
+				printf("UNDO: %s \n", text);
+			}
+			else{
+				printf("No actions to undo\n");
+			}
+			draw = 1;
+		}
+		
+		else if(action == REDO){
+			action = NONE;
+			
+			if (do_redo(&list_do)){
+				printf("REDO: %s \n", list_do.current->text);
+			}
+			else{
+				printf("No actions to redo\n");
 			}
 			draw = 1;
 		}

@@ -111,9 +111,9 @@ void * do_mem_pool(enum dxf_pool_action action){
 	return ret_ptr;
 }
 
-int do_add_item(struct do_entry *entry, dxf_node *obj1, dxf_node *obj2){
+int do_add_item(struct do_entry *entry, dxf_node *old_obj, dxf_node *new_obj){
 	int ret = 0;
-	if ((entry != NULL) && ((obj1 != NULL) || (obj2 != NULL))){
+	if ((entry != NULL) && ((old_obj != NULL) || (new_obj != NULL))){
 		struct do_item *item = do_mem_pool(ADD_DO_ITEM);
 		if (item){
 			if ((entry->current) && (entry->list)){
@@ -127,8 +127,8 @@ int do_add_item(struct do_entry *entry, dxf_node *obj1, dxf_node *obj2){
 				item->prev = NULL;
 			}
 			item->next = NULL;
-			item->obj1 = obj1;
-			item->obj2 = obj2;
+			item->old_obj = old_obj;
+			item->new_obj = new_obj;
 			ret = 1;
 		}
 	}
@@ -171,6 +171,41 @@ int init_do_list(struct do_list *list){
 			entry->text[0] = 0; /*initialize string*/
 			ret =1;
 		}
+	}
+	return ret;
+}
+
+int do_undo(struct do_list *list){
+	int ret = 0;
+	if (list != NULL){
+		struct do_entry *entry = list->current;
+		if (entry){ if (entry->prev){
+			struct do_item *curr_item = entry->list;
+			while (curr_item){
+				ret =1;
+				dxf_obj_subst(curr_item->new_obj, curr_item->old_obj);
+				curr_item = curr_item->next;
+			}
+			list->current = entry->prev; /* change current in the list to prev*/
+		}}
+	}
+	return ret;
+}
+
+int do_redo(struct do_list *list){
+	int ret = 0;
+	if (list != NULL){
+		struct do_entry *entry = list->current;
+		if (entry){ if (entry->next){
+			entry = entry->next;
+			struct do_item *curr_item = entry->list;
+			while (curr_item){
+				ret =1;
+				dxf_obj_subst(curr_item->old_obj, curr_item->new_obj);
+				curr_item = curr_item->next;
+			}
+			list->current = entry; /* change current in the list to next*/
+		}}
 	}
 	return ret;
 }
@@ -285,10 +320,10 @@ int dxf_obj_subst(dxf_node *orig, dxf_node *repl){
 		dxf_node *next = repl->next;
 		/* rebuilt the insertion point */
 		if (prev){
-			prev->next = next;
+			prev->next = repl;
 		}
 		if (next){
-			next->prev = prev;
+			next->prev = repl;
 		}
 		/* verify if the orig is at end of master list */
 		if (master){

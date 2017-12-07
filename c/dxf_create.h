@@ -10,8 +10,8 @@
 struct do_item {
 	struct do_item *prev;
 	struct do_item *next;
-	dxf_node *obj1;
-	dxf_node *obj2;
+	dxf_node *old_obj;
+	dxf_node *new_obj;
 };
 
 struct do_entry {
@@ -43,6 +43,18 @@ struct do_pool_slot{
 	int page; /* current page index */
 	int size; /* number of pages available in slot */
 };
+
+int do_add_item(struct do_entry *entry, dxf_node *old_obj, dxf_node *new_obj);
+
+int do_add_entry(struct do_list *list, char *text);
+
+int init_do_list(struct do_list *list);
+
+int do_undo(struct do_list *list);
+
+int do_redo(struct do_list *list);
+
+int dxf_obj_subst(dxf_node *orig, dxf_node *repl);
 
 int dxf_obj_append(dxf_node *master, dxf_node *obj);
 
