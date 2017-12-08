@@ -457,6 +457,9 @@ int main(int argc, char** argv){
 	int near_attr; /* flag */
 	int en_attr = 1;
 	
+	char log_msg[64];
+	log_msg[0] = 0;
+	
 	
 	//graph_obj *tmp_graph = NULL;
 	
@@ -1531,9 +1534,8 @@ int main(int argc, char** argv){
 			text_len = snprintf(text, 63, "(%f,  %f)", pos_x, pos_y);
 			nk_label(gui->ctx, text, NK_TEXT_CENTERED);
 			
-			nk_layout_row_push(gui->ctx, 90);
-			text_len = snprintf(text, 63, "Layers=%d", drawing->num_layers);
-			nk_label(gui->ctx, text, NK_TEXT_LEFT);
+			nk_layout_row_push(gui->ctx, 280);
+			nk_label(gui->ctx, log_msg, NK_TEXT_LEFT);
 			
 			nk_style_pop_font(gui->ctx); /* return to the default font*/
 			
@@ -1664,26 +1666,28 @@ int main(int argc, char** argv){
 		}
 		else if(action == UNDO){
 			action = NONE;
-			
+			list_clear(sel_list);
 			char *text = list_do.current->text;
 			
 			if (do_undo(&list_do)){
-				printf("UNDO: %s \n", text);
+				snprintf(log_msg, 63, "UNDO: %s", text);
+				goto first_step;
 			}
 			else{
-				printf("No actions to undo\n");
+				snprintf(log_msg, 63, "No actions to undo");
 			}
 			draw = 1;
 		}
 		
 		else if(action == REDO){
 			action = NONE;
-			
+			list_clear(sel_list);
 			if (do_redo(&list_do)){
-				printf("REDO: %s \n", list_do.current->text);
+				snprintf(log_msg, 63, "REDO: %s", list_do.current->text);
+				goto first_step;
 			}
 			else{
-				printf("No actions to redo\n");
+				snprintf(log_msg, 63, "No actions to redo");
 			}
 			draw = 1;
 		}
@@ -1926,6 +1930,9 @@ int main(int argc, char** argv){
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
 					
+					do_add_entry(&list_do, "LINE");
+					do_add_item(list_do.current, NULL, new_el);
+					
 					step_x[step - 1] = step_x[step];
 					step_y[step - 1] = step_y[step];
 					
@@ -1994,6 +2001,10 @@ int main(int argc, char** argv){
 						dxf_lwpoly_remove (new_el, -1);
 						new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 						drawing_ent_append(drawing, new_el);
+						
+						do_add_entry(&list_do, "POLYLINE");
+						do_add_item(list_do.current, NULL, new_el);
+						
 						step = 0;
 					}
 					element = NULL;
@@ -2037,6 +2048,9 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 40, &radius);
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
+					
+					do_add_entry(&list_do, "CIRCLE");
+					do_add_item(list_do.current, NULL, new_el);
 					
 					goto first_step;
 				}
@@ -2093,6 +2107,9 @@ int main(int argc, char** argv){
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
 					
+					do_add_entry(&list_do, "RECT");
+					do_add_item(list_do.current, NULL, new_el);
+					
 					goto first_step;
 				}
 				else if (rightMouseButtonClick){
@@ -2139,6 +2156,10 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					drawing_ent_append(drawing, new_el);
+					
+					do_add_entry(&list_do, "TEXT");
+					do_add_item(list_do.current, NULL, new_el);
+					
 					step_x[step - 1] = step_x[step];
 					step_y[step - 1] = step_y[step];
 					goto first_step;
@@ -2189,11 +2210,23 @@ int main(int argc, char** argv){
 					if (sel_list != NULL){
 						/* sweep the selection list */
 						list_node *current = sel_list->next;
+						dxf_node *new_ent = NULL;
+						if (current != NULL){
+							do_add_entry(&list_do, "MOVE");
+						}
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									dxf_edit_move((dxf_node *)current->data, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
-									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
+									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
+									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+									//drawing_ent_append(drawing, new_ent);
+									
+									dxf_obj_subst((dxf_node *)current->data, new_ent);
+									
+									do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+									
+									current->data = new_ent;
 								}
 							}
 							current = current->next;
@@ -2238,6 +2271,10 @@ int main(int argc, char** argv){
 						/* sweep the selection list */
 						list_node *current = sel_list->next;
 						dxf_node *new_ent = NULL;
+						if (current != NULL){
+							do_add_entry(&list_do, "DUPLI");
+						}
+						
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
@@ -2245,6 +2282,8 @@ int main(int argc, char** argv){
 									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
 									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
 									drawing_ent_append(drawing, new_ent);
+									
+									do_add_item(list_do.current, NULL, new_ent);
 									
 									current->data = new_ent;
 								}
@@ -2290,15 +2329,27 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					if (sel_list != NULL){
 						list_node *current = sel_list->next;
-						/* sweep the selection list */
+						dxf_node *new_ent = NULL;
+						if (current != NULL){
+							do_add_entry(&list_do, "SCALE");
+						}
 						while (current != NULL){
 							if (current->data){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									dxf_edit_scale((dxf_node *)current->data, scale, scale, scale);
-									dxf_edit_move((dxf_node *)current->data, step_x[step - 1]*(1 - scale), step_y[step - 1]*(1 - scale), 0.0);
-									dxf_edit_move((dxf_node *)current->data, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
+									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 									
-									((dxf_node *)current->data)->obj.graphics = dxf_graph_parse(drawing, ((dxf_node *)current->data), 0 , 0);
+									dxf_edit_scale(new_ent, scale, scale, scale);
+									dxf_edit_move(new_ent, step_x[step - 1]*(1 - scale), step_y[step - 1]*(1 - scale), 0.0);
+									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
+									
+									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+									//drawing_ent_append(drawing, new_ent);
+									
+									dxf_obj_subst((dxf_node *)current->data, new_ent);
+									
+									do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+									
+									current->data = new_ent;
 								}
 							}
 							current = current->next;
@@ -2417,6 +2468,8 @@ int main(int argc, char** argv){
 	graph_mem_pool(FREE_ALL, 1);
 	graph_mem_pool(FREE_ALL, 2);
 	
+	do_mem_pool(FREE_DO_ALL);
+	
 	bmp_free(img);
 	bmp_free(tool_img);
 	for(i = 0; i < 40; i++){
@@ -2428,6 +2481,7 @@ int main(int argc, char** argv){
 	nk_sdl_shutdown(gui);
 	shx_font_free(font.shx_font);
 	free(drawing);
+	
 		
 	return 0;
 }

@@ -591,7 +591,7 @@ void nk_sdl_shutdown(gui_obj *gui)
 		//nk_free(gui->ctx);
 		free(gui->ctx);
 		gui->ctx = NULL;
-		free(gui->font);
+		//free(gui->font);
 		gui->font = NULL;
 		
 		free(gui->buf);

@@ -877,10 +877,12 @@ int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 	dxf_node *current = NULL;
 	dxf_node *prev = NULL;
 	int ret = 0;
+	enum dxf_graph ent_type = DXF_NONE;
 	
 	if (obj){ 
 		if (obj->type == DXF_ENT){
 			if (obj->obj.content){
+				ent_type =  dxf_ident_ent_type (obj);
 				current = obj->obj.content->next;
 				prev = current;
 			}
@@ -899,14 +901,41 @@ int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 			}
 		}
 		else if (current->type == DXF_ATTR){ /* DXF attibute */
-			if ((current->value.group >= 10) && (current->value.group < 19)){ 
+			if (current->value.group == 10){ 
 				current->value.d_data += ofs_x;
 			}
-			if ((current->value.group >= 20) && (current->value.group < 29)){ 
+			if (current->value.group == 20){ 
 				current->value.d_data += ofs_y;
 			}
-			if ((current->value.group >= 30) && (current->value.group < 38)){ 
+			if (current->value.group == 30){ 
 				current->value.d_data += ofs_z;
+			}
+			
+			switch (ent_type){
+				case DXF_LINE:
+					if (current->value.group == 11){ 
+						current->value.d_data += ofs_x;
+					}
+					if (current->value.group == 21){ 
+						current->value.d_data += ofs_y;
+					}
+					if (current->value.group == 31){ 
+						current->value.d_data += ofs_z;
+					}
+					break;
+				case DXF_TEXT:
+					if (current->value.group == 11){ 
+						current->value.d_data += ofs_x;
+					}
+					if (current->value.group == 21){ 
+						current->value.d_data += ofs_y;
+					}
+					if (current->value.group == 31){ 
+						current->value.d_data += ofs_z;
+					}
+					break;
+				default:
+					break;
 			}
 		}
 		
