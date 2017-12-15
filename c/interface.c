@@ -191,6 +191,99 @@ set_style(struct nk_context *ctx, enum theme theme)
     }
 }
 
+void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
+	/* this function is non recursive */
+	int i = 0;
+	int indent = 0;
+	dxf_node *current, *prev;
+	int tree_st[1000];
+	char text[401];
+	
+	text[0] = 0;
+	id *= 1000;
+	
+	current = ent;
+	while (current){
+		prev = current;
+		if (current->type == DXF_ENT){ /* DXF entity */
+			if (current->obj.name){
+				if (indent == 0){
+					if (tree_st[indent] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+						nk_layout_row_dynamic(ctx, 13, 1);
+						id++;
+					}
+				}
+				else if (tree_st[indent - 1]){
+					if (tree_st[indent] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+						nk_layout_row_dynamic(ctx, 13, 1);
+						id++;
+					}
+				}
+				else{
+					tree_st[indent] = 0;
+				}
+			}
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				indent++;
+			}
+		}
+		else if (current->type == DXF_ATTR){ /* DXF attibute */
+			
+			i = snprintf (text, 400, "%d = ", current->value.group); /* print the DFX group */
+			/* print the value of atrribute, acording its type */
+			switch (current->value.t_data) {
+				case DXF_STR:
+					if(current->value.s_data){
+						i += snprintf (text + i, 400 - i, current->value.s_data);
+					}
+					break;
+				case DXF_FLOAT:
+					i += snprintf (text + i, 400 - i, "%f", current->value.d_data);
+					break;
+				case DXF_INT:
+					i += snprintf (text + i, 400 - i, "%d", current->value.i_data);
+			}
+			//printf("\n");
+			if (tree_st[indent - 1]){
+				nk_label(ctx, text, NK_TEXT_LEFT);
+			}
+			i = 0;
+			text[0] = 0;
+			current = current->next; /* go to the next in the list */
+		}
+		while (current == NULL){
+			if (prev == ent){
+				if (tree_st[indent - 1]){
+					nk_tree_pop(ctx);
+				}
+				current = NULL;
+				break;
+			}
+			prev = prev->master;
+			if (prev){
+				current = prev->next;
+				
+				indent --;
+				if (tree_st[indent]){
+					nk_tree_pop(ctx);
+				}
+				if (prev == ent){
+					current = NULL;
+					//printf("fim loop ");
+					break;
+				}
+			}
+			else{
+				current = NULL;
+				break;
+			}
+		}
+	}
+}
+
+
 void toolbox_get_imgs(bmp_img *img, int w, int h, bmp_img *vec[], int num){
 	if (vec){
 		int i, col = 0, lin = 0;
@@ -397,7 +490,7 @@ double font_scale(shape *font, float height){
 	return fnt_scale;
 }
 
-int main(int argc, char** argv){
+int WinMain(int argc, char** argv){
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
 	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
@@ -428,10 +521,14 @@ int main(int argc, char** argv){
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int show_app_about = 0;
+	int show_info = 0;
 	int i;
 	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
 	vector_p *phanton = NULL;
 	struct nk_color background;
+	
+	char info_buffer[512];
+	info_buffer[0] = 0;
 	
 	int leftMouseButtonDown = 0;
 	int rightMouseButtonDown = 0;
@@ -1080,7 +1177,9 @@ int main(int argc, char** argv){
 			}
 			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
-				printf("ZOOM win\n");
+				//printf("ZOOM win\n");
+				if (show_info) show_info = 0;
+				else show_info = 1;
 			}
 			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
@@ -1089,6 +1188,34 @@ int main(int argc, char** argv){
 			}
 			
 			nk_layout_row_end(gui->ctx);
+			
+			if (show_info){
+				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
+					if (sel_list != NULL){				
+						list_node *current = sel_list->next;
+						// starts the content sweep 
+						i = 1;
+						while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+										
+									// -------------------------------------------
+									nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
+									i++;
+									
+									//---------------------------------------
+								}
+							}
+							current = current->next;
+						}
+					}
+					nk_popup_end(gui->ctx);
+				} else show_info = nk_false;
+			}
+			
+			
 		}
 		nk_end(gui->ctx);
 		
