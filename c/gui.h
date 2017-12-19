@@ -185,48 +185,122 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					img->frg = color;
 					/*change tickness */
 					img->tick = (unsigned int) r->line_thickness;
-					/*
-					bmp_line(img, r->x,r->y, r->x + r->w, r->y);
-					bmp_line(img, r->x + r->w, r->y, r->x + r->w, r->y + r->h);
-					bmp_line(img, r->x + r->w, r->y + r->h, r->x, r->y + r->h);
-					bmp_line(img, r->x, r->y + r->h, r->x, r->y);*/
+					
+					int x0, y0, x1, y1, i, cx, cy;
+					
 					bmp_line(img, r->x + r->rounding, r->y, r->x + r->w -r->rounding, r->y);
-					bmp_line(img, r->x + r->w - r->rounding, r->y, r->x + r->w, r->y + r->rounding);
+					x0 =  r->x + r->w - r->rounding;
+					cx = x0;
+					y0 = r->y;
+					cy = r->y + r->rounding;
+					for (i=13; i <= 16; i++){
+						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+						bmp_line(img, x0, y0, x1, y1);
+						x0 = x1;
+						y0 = y1;
+					}
 					bmp_line(img, r->x + r->w, r->y + r->rounding, r->x + r->w, r->y + r->h - r->rounding);
-					bmp_line(img, r->x + r->w, r->y + r->h - r->rounding, r->x + r->w - r->rounding, r->y + r->h);
+					cx = r->x + r->w - r->rounding;
+					x0 = r->x + r->w;
+					y0 = r->y + r->h - r->rounding;
+					cy = y0;
+					for (i=1; i <= 4; i++){
+						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+						bmp_line(img, x0, y0, x1, y1);
+						x0 = x1;
+						y0 = y1;
+					}
 					bmp_line(img, r->x + r->w - r->rounding, r->y + r->h, r->x + r->rounding, r->y + r->h);
-					bmp_line(img, r->x + r->rounding, r->y + r->h, r->x, r->y + r->h - r->rounding);
+					x0 = r->x + r->rounding;
+					cx = x0;
+					y0 = r->y + r->h;
+					cy = r->y + r->h - r->rounding;
+					for (i=5; i <= 8; i++){
+						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+						bmp_line(img, x0, y0, x1, y1);
+						x0 = x1;
+						y0 = y1;
+					}
 					bmp_line(img, r->x, r->y + r->h - r->rounding, r->x, r->y + r->rounding);
-					bmp_line(img, r->x, r->y + r->rounding,  r->x + r->rounding, r->y);
+					cx = r->x + r->rounding;
+					x0 = r->x;
+					y0 = r->y + r->rounding;
+					cy = y0;
+					for (i=9; i <= 12; i++){
+						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+						bmp_line(img, x0, y0, x1, y1);
+						x0 = x1;
+						y0 = y1;
+					}
 				} break;
 				
 				case NK_COMMAND_RECT_FILLED: {
 					const struct nk_command_rect_filled *r = (const struct nk_command_rect_filled *)cmd;
-					/*int vert_x[4] = {r->x, r->x + r->w, r->x + r->w, r->x};
-					int vert_y[4] = {r->y, r->y, r->y + r->h, r->y + r->h};*/
 					
-					int vert_x[8] = {r->x + r->rounding,
-						r->x + r->w - r->rounding, 
-						r->x + r->w,
-						r->x + r->w,
-						r->x + r->w - r->rounding,
-						r->x + r->rounding,
-						r->x,
-						r->x};
-					int vert_y[8] = {r->y, 
-						r->y, 
-						r->y + r->rounding,
-						r->y + r->h - r->rounding,
-						r->y + r->h,
-						r->y + r->h,
-						r->y + r->h - r->rounding,
-						r->y + r->rounding};
+					int vert_x[20], vert_y[20];
+					int i, cx, cy;
+					
+					vert_x[0] = r->x + r->rounding;
+					vert_x[1] = r->x + r->w - r->rounding;
+					
+					cx =  r->x + r->w - r->rounding;
+					cy = r->y + r->rounding;
+					for (i=13; i < 16; i++){
+						vert_x[i-11] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						vert_y[i-11] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+					}
+					
+					vert_x[5] = r->x + r->w;
+					vert_x[6] = r->x + r->w;
+					
+					cx = r->x + r->w - r->rounding;
+					cy = r->y + r->h - r->rounding;
+					for (i=1; i < 4; i++){
+						vert_x[i+6] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						vert_y[i+6] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+					}
+					
+					vert_x[10] = r->x + r->w - r->rounding;
+					vert_x[11] = r->x + r->rounding;
+					
+					cx = r->x + r->rounding;
+					cy = r->y + r->h - r->rounding;
+					for (i=5; i < 8; i++){
+						vert_x[i+7] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						vert_y[i+7] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+					}
+					
+					vert_x[15] = r->x;
+					vert_x[16] = r->x;
+					
+					cx = r->x + r->rounding;
+					cy = r->y + r->rounding;
+					for (i=9; i < 12; i++){
+						vert_x[i+8] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
+						vert_y[i+8] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
+					}
+					
+					vert_y[0] = r->y;
+					vert_y[1] = r->y;
+					
+					vert_y[5] = r->y + r->rounding;
+					vert_y[6] = r->y + r->h - r->rounding;
+					
+					vert_y[10] = r->y + r->h;
+					vert_y[11] = r->y + r->h;
+					
+					vert_y[15] = r->y + r->h - r->rounding;
+					vert_y[16] = r->y + r->rounding;
 					
 					color = nk_to_bmp_color(r->color);
 					/*change the color */
 					img->frg = color;
 					
-					bmp_poly_fill(img, 8, vert_x, vert_y);
+					bmp_poly_fill(img, 20, vert_x, vert_y);
 				} break;
 				
 				case NK_COMMAND_CIRCLE: {
