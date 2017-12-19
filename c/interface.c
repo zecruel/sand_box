@@ -192,47 +192,51 @@ set_style(struct nk_context *ctx, enum theme theme)
 }
 
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
+	/* use Nuklear widgets to show a DXF entity structure */
 	/* this function is non recursive */
 	int i = 0;
-	int indent = 0;
+	int level = 0;
 	dxf_node *current, *prev;
-	int tree_st[1000];
+	int tree_st[10]; /* max of ten levels of entities inside entities*/
 	char text[401];
 	
 	text[0] = 0;
-	id *= 1000;
+	id *= 1000; /* each Tree widget has a unique id, up to 1000 inside main entity*/
 	
 	current = ent;
 	while (current){
 		prev = current;
-		if (current->type == DXF_ENT){ /* DXF entity */
+		if (current->type == DXF_ENT){
+			/* DXF entities are show as Tree widget */
 			if (current->obj.name){
-				if (indent == 0){
-					if (tree_st[indent] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+				if (level == 0){ /* verify if is the first Tree */
+					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+						/* if Tree is not minimized, start the placement of child widgets */
 						nk_layout_row_dynamic(ctx, 13, 1);
-						id++;
+						id++; /* increment id for child Trees */
 					}
 				}
-				else if (tree_st[indent - 1]){
-					if (tree_st[indent] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+				else if (tree_st[level - 1]){ /* verify if the up level Tree is not minimized */
+					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
+						/* if Tree is not minimized, start the placement of child widgets */
 						nk_layout_row_dynamic(ctx, 13, 1);
-						id++;
+						id++; /* increment id for child Trees */
 					}
 				}
 				else{
-					tree_st[indent] = 0;
+					tree_st[level] = 0;
 				}
 			}
 			if (current->obj.content){
-				/* starts the content sweep */
+				/* starts entity content sweep */
 				current = current->obj.content->next;
-				indent++;
+				level++;
 			}
 		}
-		else if (current->type == DXF_ATTR){ /* DXF attibute */
-			
-			i = snprintf (text, 400, "%d = ", current->value.group); /* print the DFX group */
-			/* print the value of atrribute, acording its type */
+		else if (current->type == DXF_ATTR){
+			/* DXF attributes are show as Label widget */
+			/* combine Group and Value, acording its type, in a string */
+			i = snprintf (text, 400, "%d = ", current->value.group);
 			switch (current->value.t_data) {
 				case DXF_STR:
 					if(current->value.s_data){
@@ -245,40 +249,48 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 				case DXF_INT:
 					i += snprintf (text + i, 400 - i, "%d", current->value.i_data);
 			}
-			//printf("\n");
-			if (tree_st[indent - 1]){
+			if (tree_st[level - 1]){ /* verify if the up level Tree is not minimized */
 				nk_label(ctx, text, NK_TEXT_LEFT);
 			}
-			i = 0;
-			text[0] = 0;
+			/* clear string */
+			i = 0; text[0] = 0;
+			
 			current = current->next; /* go to the next in the list */
 		}
-		while (current == NULL){
-			if (prev == ent){
-				if (tree_st[indent - 1]){
+		/* if the contents sweep reachs to end, try to up in structure */
+		while (current == NULL){ 
+			if (prev == ent){ /* back to original entity */
+				/* ends the top level Tree, if not minimized */
+				if (tree_st[level - 1]){
 					nk_tree_pop(ctx);
 				}
-				current = NULL;
+				current = NULL; /* ends loop */
 				break;
 			}
+			
 			prev = prev->master;
 			if (prev){
-				current = prev->next;
-				
-				indent --;
-				if (tree_st[indent]){
+				current = prev->next; /* continue loop */
+				level --; /* up in structure*/
+				/* ends the current Tree, if not minimized */
+				if (tree_st[level]){
 					nk_tree_pop(ctx);
 				}
+				/* back to original entity */
 				if (prev == ent){
-					current = NULL;
-					//printf("fim loop ");
+					current = NULL; /* ends loop */
 					break;
 				}
 			}
-			else{
-				current = NULL;
+			else{ /* if structure ends */
+				current = NULL; /* ends loop */
 				break;
 			}
+		}
+		
+		if ((level < 0) || (level > 9)){/* verify if level is out of admissible range */
+			current = NULL; /* ends loop */
+			break;
 		}
 	}
 }
@@ -499,7 +511,7 @@ int WinMain(int argc, char** argv){
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL, *near_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
-	double thick = 0.0;
+	double thick = 0.0, thick_prev = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
@@ -575,6 +587,10 @@ int WinMain(int argc, char** argv){
 		DELETE,
 		UNDO,
 		REDO,
+		LAYER_CHANGE,
+		COLOR_CHANGE,
+		LTYPE_CHANGE,
+		THICK_CHANGE,
 		EXIT
 	} action = NONE;
 	
@@ -1067,6 +1083,7 @@ int WinMain(int argc, char** argv){
 					//strcpy(layer_nam[i], drawing->layers[i].name);
 					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
 						layer_idx = i;
+						action = LAYER_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					if (drawing->layers[i].off){
@@ -1125,12 +1142,14 @@ int WinMain(int argc, char** argv){
 					};
 					if(nk_button_color(gui->ctx, b_color)){
 						color_idx = i;
+						action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 				}
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
 					if (nk_button_label(gui->ctx, "By Layer")){
 						color_idx = 256;
+						action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 				nk_combo_end(gui->ctx);
@@ -1146,6 +1165,7 @@ int WinMain(int argc, char** argv){
 					
 					if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
 						ltypes_idx = i;
+						action = LTYPE_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
@@ -1160,7 +1180,12 @@ int WinMain(int argc, char** argv){
 			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
 			
 			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
-			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick, 20.0d, 0.1d, 0.1d);
+			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick_prev, 20.0d, 0.1d, 0.1d);
+			if (thick_prev != thick){
+				action = THICK_CHANGE;
+				//printf ("thick change\n");
+			}
+			thick_prev = thick;
 			
 			/* put a simple separator*/
 			nk_layout_row_push(gui->ctx, 10);
@@ -1815,6 +1840,125 @@ int WinMain(int argc, char** argv){
 			}
 			else{
 				snprintf(log_msg, 63, "No actions to redo");
+			}
+			draw = 1;
+		}
+		
+		else if(action == LAYER_CHANGE){
+			action = NONE;
+			if (sel_list != NULL){
+				/* sweep the selection list */
+				list_node *current = sel_list->next;
+				dxf_node *new_ent = NULL;
+				if (current != NULL){
+					do_add_entry(&list_do, "CHANGE LAYER");
+				}
+				while (current != NULL){
+					if (current->data){
+						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+							
+							dxf_attr_change(new_ent, 8, drawing->layers[layer_idx].name);
+							
+							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							
+							dxf_obj_subst((dxf_node *)current->data, new_ent);
+							
+							do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+
+							current->data = new_ent;
+						}
+					}
+					current = current->next;
+				}
+			}
+			draw = 1;
+		}
+		
+		else if(action == COLOR_CHANGE){
+			action = NONE;
+			if (sel_list != NULL){
+				/* sweep the selection list */
+				list_node *current = sel_list->next;
+				dxf_node *new_ent = NULL;
+				if (current != NULL){
+					do_add_entry(&list_do, "CHANGE COLOR");
+				}
+				while (current != NULL){
+					if (current->data){
+						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+							
+							dxf_attr_change(new_ent, 62, &color_idx);
+							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							
+							dxf_obj_subst((dxf_node *)current->data, new_ent);
+							
+							do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+
+							current->data = new_ent;
+						}
+					}
+					current = current->next;
+				}
+			}
+			draw = 1;
+		}
+		else if(action == LTYPE_CHANGE){
+			action = NONE;
+			if (sel_list != NULL){
+				/* sweep the selection list */
+				list_node *current = sel_list->next;
+				dxf_node *new_ent = NULL;
+				if (current != NULL){
+					do_add_entry(&list_do, "CHANGE LINE TYPE");
+				}
+				while (current != NULL){
+					if (current->data){
+						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+							
+							dxf_attr_change(new_ent, 6, drawing->ltypes[ltypes_idx].name);
+							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							
+							dxf_obj_subst((dxf_node *)current->data, new_ent);
+							
+							do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+
+							current->data = new_ent;
+						}
+					}
+					current = current->next;
+				}
+			}
+			draw = 1;
+		}
+		else if(action == THICK_CHANGE){
+			action = NONE;
+			if (sel_list != NULL){
+				/* sweep the selection list */
+				list_node *current = sel_list->next;
+				dxf_node *new_ent = NULL;
+				if (current != NULL){
+					do_add_entry(&list_do, "CHANGE THICKNESS");
+				}
+				while (current != NULL){
+					if (current->data){
+						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
+							
+							dxf_attr_change(new_ent, 39, &thick);
+							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							
+							dxf_obj_subst((dxf_node *)current->data, new_ent);
+							
+							do_add_item(list_do.current, (dxf_node *)current->data, new_ent);
+
+							current->data = new_ent;
+						}
+					}
+					current = current->next;
+				}
 			}
 			draw = 1;
 		}

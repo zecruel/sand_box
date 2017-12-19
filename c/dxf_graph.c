@@ -2438,18 +2438,23 @@ vector_p * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, in
 
 int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	dxf_node *current = NULL;
+	int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
 		
 		// starts the content sweep 
 		while (current != NULL){
-			if (current->type == DXF_ENT){ // DXF entity 
+			if (current->type == DXF_ENT){ // DXF entity
+				/*verify if entity layer is on and thaw */
+				lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
 				
-				// -------------------------------------------
-				vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
-				
-				//---------------------------------------
+					// -------------------------------------------
+					vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
+					
+					//---------------------------------------
+				}
 			}
 			current = current->next;
 		}
@@ -2466,7 +2471,6 @@ int dxf_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, do
 		while (current != NULL){
 			if (current->data){
 				if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-					
 					// -------------------------------------------
 					vec_graph_draw_fix(((dxf_node *)current->data)->obj.graphics, img, ofs_x, ofs_y, scale, color);
 					
@@ -2481,6 +2485,7 @@ int dxf_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, do
 int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * max_x, double * max_y){
 	dxf_node *current = NULL;
 	int ext_ini = 0;
+	int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2488,8 +2493,11 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 		// starts the content sweep 
 		while (current != NULL){
 			if (current->type == DXF_ENT){
-				
-				vec_graph_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
+				/*verify if entity layer is thaw */
+				lay_idx = dxf_layer_get(drawing, current);
+				if (!drawing->layers[lay_idx].frozen){
+					vec_graph_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
+				}
 				
 				/* -------------------------------------------
 				if (ext_ini == 0){
@@ -2515,6 +2523,7 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 
 dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_pt2[2]){
 	dxf_node *current = NULL;
+	int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2522,17 +2531,20 @@ dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_
 		// starts the content sweep 
 		while (current != NULL){
 			if (current->type == DXF_ENT){ // DXF entity 
-				
-				// -------------------------------------------
-				//vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
-				
-				//graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
-				if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
-					return current;
+				/*verify if entity layer is on and thaw */
+				lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
+					// -------------------------------------------
+					//vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
+					
+					//graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
+					if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+						return current;
+					}
+					
+					
+					//---------------------------------------
 				}
-				
-				
-				//---------------------------------------
 			}
 			current = current->next;
 		}
@@ -2546,6 +2558,7 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 	
 	dxf_node *current = NULL;
 	int num = 0;
+	int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && /*verify the integrity of drawing */
 	(drawing->main_struct != NULL)
@@ -2557,17 +2570,21 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 		current = drawing->ents->obj.content->next;
 		while (current != NULL){
 			if (current->type == DXF_ENT){ /* found a DXF entity  */
-				/* look for a instersect in entity's visible graphics */
-				if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
-					/* append entity,  if it does not already exist in the list */
-					if (list_find_data(list, current)){
-						//printf ("DEBUG: already exists!\n");
-					}
-					else{
-						list_node * new_el = list_new(current, 1);
-						if (new_el){
-							list_push(list, new_el);
-							num++;
+				/*verify if entity layer is on and thaw */
+				lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
+					/* look for a instersect in entity's visible graphics */
+					if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+						/* append entity,  if it does not already exist in the list */
+						if (list_find_data(list, current)){
+							//printf ("DEBUG: already exists!\n");
+						}
+						else{
+							list_node * new_el = list_new(current, 1);
+							if (new_el){
+								list_push(list, new_el);
+								num++;
+							}
 						}
 					}
 				}
