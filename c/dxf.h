@@ -35,7 +35,8 @@ enum dxf_graph {
 	DXF_DIMENSION,
 	DXF_ELLIPSE,
 	DXF_MTEXT,
-	DXF_BLK
+	DXF_BLK,
+	DXF_ENDBLK
 };
 
 enum dxf_pool_action{

@@ -209,18 +209,19 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 		if (current->type == DXF_ENT){
 			/* DXF entities are show as Tree widget */
 			if (current->obj.name){
+				id++; /* increment id for child Trees */
 				if (level == 0){ /* verify if is the first Tree */
 					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
 						/* if Tree is not minimized, start the placement of child widgets */
 						nk_layout_row_dynamic(ctx, 13, 1);
-						id++; /* increment id for child Trees */
+						nk_label(ctx, "-----", NK_TEXT_LEFT);
 					}
 				}
 				else if (tree_st[level - 1]){ /* verify if the up level Tree is not minimized */
 					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
 						/* if Tree is not minimized, start the placement of child widgets */
 						nk_layout_row_dynamic(ctx, 13, 1);
-						id++; /* increment id for child Trees */
+						nk_label(ctx, "-----", NK_TEXT_LEFT);
 					}
 				}
 				else{
@@ -229,6 +230,7 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 			}
 			if (current->obj.content){
 				/* starts entity content sweep */
+				prev = current->obj.content;
 				current = current->obj.content->next;
 				level++;
 			}
@@ -781,8 +783,11 @@ int WinMain(int argc, char** argv){
 	while (dxf_read (drawing, (char *)dxf_seed_2007, strlen(dxf_seed_2007), &progress) > 0){
 		
 	}
+	
+	//dxf_ent_print2(drawing->blks);
 	//printf(dxf_seed_r12);
 	dxf_ents_parse(drawing);
+	
 
 	/* init the SDL2 */
 	SDL_Init(SDL_INIT_VIDEO);
@@ -1203,8 +1208,7 @@ int WinMain(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
 				//printf("ZOOM win\n");
-				if (show_info) show_info = 0;
-				else show_info = 1;
+				show_info = 1;
 			}
 			nk_layout_row_push(gui->ctx, 20);
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
@@ -1214,35 +1218,49 @@ int WinMain(int argc, char** argv){
 			
 			nk_layout_row_end(gui->ctx);
 			
-			if (show_info){
-				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
-					if (sel_list != NULL){				
-						list_node *current = sel_list->next;
-						// starts the content sweep 
-						i = 1;
-						while (current != NULL){
-							if (current->data){
-								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-										
-									// -------------------------------------------
-									nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
-									i++;
-									
-									//---------------------------------------
-								}
-							}
-							current = current->next;
-						}
-					}
-					nk_popup_end(gui->ctx);
-				} else show_info = nk_false;
-			}
+			
 			
 			
 		}
 		nk_end(gui->ctx);
+		
+		
+		if (show_info){
+			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
+			if (nk_begin(gui->ctx, "Info", nk_rect(310, 50, 200, 300),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				nk_label(gui->ctx, "BLK:", NK_TEXT_LEFT);
+				i = 1;
+				nk_dxf_ent_info (gui->ctx, drawing->blks, i);
+				
+				nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
+				if (sel_list != NULL){				
+					list_node *current = sel_list->next;
+					// starts the content sweep 
+					i = 2;
+					while (current != NULL){
+						if (current->data){
+							if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+								// -------------------------------------------
+								nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
+								i++;
+								
+								//---------------------------------------
+							}
+						}
+						current = current->next;
+					}
+				}
+				//nk_popup_end(gui->ctx);
+			} else show_info = nk_false;
+			nk_end(gui->ctx);
+		}
+		
+		
+		
 		
 		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 500),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
@@ -1714,6 +1732,8 @@ int WinMain(int argc, char** argv){
 				file_buf = NULL;
 				file_size = 0;
 				
+				//dxf_ent_print2(drawing->blks);
+				
 				dxf_ents_parse(drawing);				
 				action = VIEW_ZOOM_EXT;
 				layer_idx = 0;
@@ -2148,7 +2168,7 @@ int WinMain(int argc, char** argv){
 				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
 				if (element){
 					if(element->type == DXF_ENT){
-						dxf_ent_print2(element);
+						//dxf_ent_print2(element);
 						/*
 						printf("%s\n",element->obj.name);
 						if (dxf_ident_ent_type (element)  ==  DXF_INSERT){
@@ -2159,7 +2179,7 @@ int WinMain(int argc, char** argv){
 						}*/
 					}
 				}
-				double ret_x, ret_y;
+				//double ret_x, ret_y;
 				
 				/*---------------------------------------------  */
 			}

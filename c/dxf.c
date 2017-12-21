@@ -236,6 +236,7 @@ void dxf_ent_print2 (dxf_node *ent){ /* print the entity structure */
 			}
 			if (current->obj.content){
 				/* starts the content sweep */
+				prev = current->obj.content;
 				current = current->obj.content->next;
 				indent++;
 			}
@@ -1112,13 +1113,14 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 	static long f_index = 0;  /*  indexes the file´s lines */
 	int line_size = 0;
 
-	static dxf_node *new_node = NULL;
+	static dxf_node *new_node = NULL, *blk = NULL, *cplx = NULL;
 	
 	static int group = 0; /* current group */
 	static int t_data = DXF_STR; /* current type of data */
 	static double d_data;
 	static int i_data;
 	static vector_p part;
+	static int blk_end = 0, cplx_end = 0; /* close block and include ENDBLOCK in structure*/
 	
 	if (state == INIT){
 		if ((!drawing)||(!buf)){
@@ -1190,6 +1192,22 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 				
 				switch(group){
 					case 0:
+						if (blk_end) { /* End Block after ENDBLK entity */
+							blk_end = 0;
+							/* back to the previous level on hierarchy */
+							master = blk->master;
+							last_obj = master;
+							prev = blk;
+						} 
+						else if (cplx_end) { /* End Complex after SEQEND entity */
+							cplx_end = 0;
+							/* back to the previous level on hierarchy */
+							master = cplx->master;
+							last_obj = master;
+							prev = cplx;
+						} 
+						else prev = master->end;
+					
 						str_upp(line); /* upper case the line */
 					
 						/* Find the end of the master's content list */
@@ -1197,7 +1215,7 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 						//while(tmp->next != NULL)
 						//	tmp = tmp->next;
 						//prev = tmp; /* new objs will append here */
-						prev = master->end;
+						
 					
 					
 						/* new level of hierarchy  */
@@ -1216,6 +1234,8 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 								master->end = new_node;
 								last_obj = new_node;
 								
+								if (strcmp(line, "BLOCK") == 0) blk = new_node;
+								
 								/* the new becomes the master */
 								master = new_node;
 								prev = new_node->obj.content; /* new objs will append here */
@@ -1223,9 +1243,9 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 						}
 						/* back to the previous level on hierarchy */
 						else if((strcmp(line, "ENDSEC") == 0) ||
-							(strcmp(line, "ENDTAB") == 0) ||
-							(strcmp(line, "ENDBLK") == 0)||
-							(strcmp(line, "SEQEND") == 0)){
+							(strcmp(line, "ENDTAB") == 0) ){//||
+							//(strcmp(line, "ENDBLK") == 0)||
+							//(strcmp(line, "SEQEND") == 0)){
 							if(master->master){
 								/* back to master's master ;) */
 								master = master->master;
@@ -1252,8 +1272,16 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 								new_node->next = NULL; /* append at end of list */
 								master->end = new_node;
 								prev = new_node->obj.content; /* new attrs will append here */
+								new_node->end = new_node->obj.content;
 								last_obj = new_node;
+								
+								if (strcmp(line, "ENDBLK") == 0){
+									blk_end = 1;
+									//blk = master;
+								}
+								if (strcmp(line, "SEQEND") == 0) cplx_end = 1;
 							}
+							
 						}
 						//new_node = NULL;
 						break;
@@ -1274,6 +1302,7 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 					
 						if (i_data != 0){
 							/* new level of hierarchy */
+							cplx = last_obj;
 							master = last_obj; /*  the last obj becomes the master */
 							
 							/* Find the end of the master's content list */

@@ -555,7 +555,7 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
 		
 		int color = 256, paper = 0;
-		int lay_idx, ltype_idx, i;
+		int lay_idx, ltype_idx, i, vert = 0;
 		
 		/*flags*/
 		int pt1 = 0, init = 0;
@@ -692,6 +692,7 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 				
 				if ((strcmp(current->obj.name, "VERTEX") == 0) && (current->obj.content)){
 					current = current->obj.content->next;
+					vert = 1;
 					//printf("vertice\n");
 					continue;
 				}
@@ -699,8 +700,8 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 			current = current->next; /* go to the next in the list */
 		
 		
-			if (current == NULL){
-				
+			if ((current == NULL) && (vert)){
+				vert = 0;
 				if((first != 0) && (curr_graph != NULL)){
 					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, pt1_x, pt1_y);
 					if (prev_bulge == 0){
