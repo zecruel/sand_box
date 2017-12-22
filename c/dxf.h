@@ -197,6 +197,8 @@ vector_p dxf_find_obj(dxf_node * obj, char *name);
 
 vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr);
 
+dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr);
+
 void dxf_layer_assemb (dxf_drawing *drawing);
 
 void dxf_ltype_assemb (dxf_drawing *drawing);

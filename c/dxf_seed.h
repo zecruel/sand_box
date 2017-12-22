@@ -157,7 +157,7 @@ const char *dxf_seed_2007 =
 "71\n1\n0\nDIMSTYLE\n105\n1A\n100\nAcDbSymbolTableRecord\n"
 "100\nAcDbDimStyleTableRecord\n2\nStandard\n70\n0\n340\nC\n"
 "0\nENDTAB\n0\nTABLE\n2\nBLOCK_RECORD\n5\n1B\n100\n"
-"AcDbSymbolTable\n70\n2\n0\nBLOCK_RECORD\n5\n1C\n100\n"
+"AcDbSymbolTable\n70\n9999\n0\nBLOCK_RECORD\n5\n1C\n100\n"
 "AcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n2\n"
 "*Model_Space\n70\n0\n0\nBLOCK_RECORD\n5\n1D\n100\n"
 "AcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n2\n"

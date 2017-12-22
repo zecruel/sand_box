@@ -92,11 +92,16 @@ double r, double thick, int color, char *layer, char *ltype, int paper);
 dxf_node * dxf_new_text (double x0, double y0, double z0, double h,
 char *txt, double thick, int color, char *layer, char *ltype, int paper);
 
+int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list, struct do_list *list_do);
+
+
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z);
 
 int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z);
 
 int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale_z);
+
+int ent_handle(dxf_drawing *drawing, dxf_node *element);
 
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element);
 

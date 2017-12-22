@@ -784,8 +784,14 @@ int WinMain(int argc, char** argv){
 		
 	}
 	
-	//dxf_ent_print2(drawing->blks);
+	
 	//printf(dxf_seed_r12);
+	
+	//dxf_new_block(drawing, "teste", "0");
+	//dxf_ent_print2(drawing->blks);
+	//dxf_ent_print2(drawing->blks_rec);
+	
+	
 	dxf_ents_parse(drawing);
 	
 
@@ -1339,7 +1345,9 @@ int WinMain(int argc, char** argv){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
-					
+					dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
+					dxf_ent_print2(drawing->blks);
+					dxf_ent_print2(drawing->blks_rec);
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_ungroup)){
 					

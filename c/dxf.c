@@ -307,6 +307,7 @@ void dxf_ent_print_f (dxf_node *ent, char *path){ /* print the entity structure 
 			}
 			if (current->obj.content){
 				/* starts the content sweep */
+				prev = current->obj.content;
 				current = current->obj.content->next;
 				indent++;
 			}
@@ -677,6 +678,25 @@ vector_p dxf_find_obj(dxf_node * obj, char *name){
 	return list;
 }
 
+dxf_node * dxf_find_obj2(dxf_node * obj, char *name){
+	dxf_node *current;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				if (current->type == DXF_ENT){
+					if(strcmp(current->obj.name, name) == 0){ /* success */
+						return current;
+					}
+				}
+				current = current->next;
+			}
+		}
+	}
+	return NULL;
+}
+
 vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	int size = 0;
 	dxf_node **data = NULL;
@@ -715,6 +735,32 @@ vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	list.size = size;
 	list.data = data;
 	return list;
+}
+
+dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr){
+	dxf_node *current, *descr_attr;
+	
+	if(obj != NULL){ /* check if obj exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){ /* sweep master content */
+				if (current->type == DXF_ENT){ /* look for dxf entities */
+					if(strcmp(current->obj.name, name) == 0){ /* match obj's name */
+						descr_attr = dxf_find_attr2(current, 2); /* look for descriptor in group 2 attribute */
+						if (descr_attr){ /* found attribute */
+							/* match descriptor */
+							if(strcmp(descr_attr->value.s_data, descr) == 0){
+								/* success */
+								return current;
+							}
+						}
+					}
+				}
+				current = current->next;
+			}
+		}
+	}
+	return NULL;
 }
 
 void dxf_layer_assemb (dxf_drawing *drawing){
@@ -1028,18 +1074,19 @@ int dxf_save (char *path, dxf_drawing *drawing){
 						else if(strcmp(current->obj.name, "TABLE") == 0){
 							fprintf(file, "0\nENDTAB\n");
 						}
+						/*
 						else if(strcmp(current->obj.name, "BLOCK") == 0){
 							fprintf(file, "0\nENDBLK\n");
 						}
 						else{
-							attr = dxf_find_attr(current, 66); /* look for entities folow flag*/
-							if (attr.data){ /* if flag is found and */
-								if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero */
+							attr = dxf_find_attr(current, 66); /* look for entities folow flag
+							if (attr.data){ /* if flag is found and 
+								if(((dxf_node **) attr.data)[0]->value.i_data != 0){ /* its value is non zero 
 									fprintf(file, "0\nSEQEND\n");
 								}
 								free(attr.data);
 							}
-						}
+						}*/
 						current = current->next; /* go to the next in the list */
 					}
 				}
@@ -1417,6 +1464,11 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "DIMSTYLE");
 		if (part.data){
 			drawing->t_dimst = ((dxf_node **) part.data)[0];
+			free(part.data);
+		}
+		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "BLOCK_RECORD");
+		if (part.data){
+			drawing->blks_rec = ((dxf_node **) part.data)[0];
 			free(part.data);
 		}
 		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "APPID");

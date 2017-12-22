@@ -851,6 +851,153 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	return NULL;
 }
 
+dxf_node * dxf_new_endblk (char *layer, char *owner){
+	/* create a new ENDBLK entity */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbBlockEnd";
+	int ok = 1;
+	dxf_node * new_endblk = dxf_obj_new ("ENDBLK");
+	
+	ok &= dxf_attr_append(new_endblk, 5, (void *) handle);
+	ok &= dxf_attr_append(new_endblk, 330, (void *) owner);
+	ok &= dxf_attr_append(new_endblk, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(new_endblk, 8, (void *) layer);
+	ok &= dxf_attr_append(new_endblk, 100, (void *) dxf_subclass);
+	
+	if(ok){
+		return new_endblk;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_new_begblk (char *name, char *layer, char *owner){
+	/* create a new ENDBLK entity */
+	const char *handle = "0";
+	const char *str_zero = "";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbBlockBegin";
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0;
+	dxf_node * blk = dxf_obj_new ("BLOCK");
+	
+	ok &= dxf_attr_append(blk, 5, (void *) handle);
+	ok &= dxf_attr_append(blk, 330, (void *) owner);
+	ok &= dxf_attr_append(blk, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(blk, 8, (void *) layer);
+	ok &= dxf_attr_append(blk, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(blk, 2, (void *) name);
+	ok &= dxf_attr_append(blk, 70, (void *) &int_zero);
+	ok &= dxf_attr_append(blk, 10, (void *) &d_zero);
+	ok &= dxf_attr_append(blk, 20, (void *) &d_zero);
+	ok &= dxf_attr_append(blk, 30, (void *) &d_zero);
+	ok &= dxf_attr_append(blk, 3, (void *) name);
+	ok &= dxf_attr_append(blk, 1, (void *) str_zero);
+	
+	if(ok){
+		return blk;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_new_blkrec (char *name){
+	/* create a new BLOCK_RECORD */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbSymbolTableRecord";
+	const char *dxf_subclass = "AcDbBlockTableRecord";
+	int ok = 1, int_zero = 0;
+	dxf_node * blk = dxf_obj_new ("BLOCK_RECORD");
+	
+	ok &= dxf_attr_append(blk, 5, (void *) handle);
+	ok &= dxf_attr_append(blk, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(blk, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(blk, 2, (void *) name);
+	ok &= dxf_attr_append(blk, 70, (void *) &int_zero);
+	
+	if(ok){
+		return blk;
+	}
+
+	return NULL;
+}
+
+
+int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list, struct do_list *list_do){
+	int ok = 0;
+	
+	if ((drawing) && (name)){
+		dxf_node *blkrec = NULL, *blk = NULL, *endblk = NULL, *handle = NULL;
+		dxf_node *obj, *new_ent;
+		
+		/* verify if block not exist */
+		if (dxf_find_obj_descr2(drawing->blks, "BLOCK", name) == NULL){
+			double max_x = 0.0, max_y = 0.0;
+			double min_x = 0.0, min_y = 0.0;
+			int init_ext = 0;
+			
+			/* create BLOCK_RECORD table entry*/
+			blkrec = dxf_new_blkrec (name);
+			ok = ent_handle(drawing, blkrec);
+			if (ok) handle = dxf_find_attr2(blkrec, 5); ok = 0;
+			
+			/* begin block */
+			if (handle) blk = dxf_new_begblk (name, layer, (char *)handle->value.s_data);
+			/* get a handle */
+			ok = ent_handle(drawing, blk);
+			/* use the handle to owning the ENDBLK ent */
+			if (ok) handle = dxf_find_attr2(blk, 5); ok = 0;
+			if (handle) endblk = dxf_new_endblk (layer, (char *)handle->value.s_data);
+			
+			if (list != NULL){ /* append list of objects in block*/
+				list_node *current = list->next;
+				/* first get the list coordinates extention */
+				while (current != NULL){
+					if (current->data){
+						obj = (dxf_node *)current->data;
+						if (obj->type == DXF_ENT){ /* DXF entity  */
+							vec_graph_ext(obj->obj.graphics, &init_ext, &min_x, &min_y, &max_x, &max_y);
+						}
+					}
+					current = current->next;
+				}
+				/*then copy the entities of list and apply offset in their coordinates*/
+				current = list->next;
+				while (current != NULL){
+					if (current->data){
+						obj = (dxf_node *)current->data;
+						if (obj->type == DXF_ENT){ /* DXF entity  */
+							new_ent = dxf_ent_copy(obj, 0);
+							ent_handle(drawing, new_ent);
+							dxf_edit_move(new_ent, -min_x, -min_y, 0.0);
+							dxf_obj_append(blk, new_ent);
+							
+						}
+					}
+					current = current->next;
+				}
+			}
+			
+			
+			/* end the block*/
+			if (endblk) ok = ent_handle(drawing, endblk);
+			if (ok) ok = dxf_obj_append(blk, endblk);
+			
+			/*attach to blocks section*/
+			if (ok) do_add_entry(list_do, "NEW BLOCK"); /* undo/redo list*/
+			if (ok) ok = dxf_obj_append(drawing->blks_rec, blkrec);
+			if (ok) do_add_item(list_do->current, NULL, blkrec);/* undo/redo list*/
+			if (ok) ok = dxf_obj_append(drawing->blks, blk);
+			if (ok) do_add_item(list_do->current, NULL, blk);/* undo/redo list*/
+			
+		}
+	}
+	
+	return ok;
+}
+
+
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 	/* move the object relactive to offset distances */
 	if (obj){
@@ -1044,7 +1191,8 @@ int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale
 	return ret;
 }
 
-void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
+int ent_handle(dxf_drawing *drawing, dxf_node *element){
+	int ok = 0;
 	if (drawing && element){
 		if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 			/* get current handle and increment the handle seed*/
@@ -1052,15 +1200,29 @@ void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
 			char hdl_str[DXF_MAX_CHARS];
 			
 			if (drawing->hand_seed){
-				handle = strtol(drawing->hand_seed->value.s_data, NULL, 16); /* get the last handle value and convert to integer */
-				snprintf(hdl_str, DXF_MAX_CHARS, "%X", handle); /* convert back to hexadecimal string, to write in element */
-				snprintf(drawing->hand_seed->value.s_data, DXF_MAX_CHARS, "%X", handle + 1); /* increment value of seed and write back */
+				/* get the last handle value and convert to integer */
+				handle = strtol(drawing->hand_seed->value.s_data, NULL, 16);
+				/* convert back to hexadecimal string, to write in element */
+				snprintf(hdl_str, DXF_MAX_CHARS, "%X", handle);
+				/* increment value of seed and write back */
+				snprintf(drawing->hand_seed->value.s_data, DXF_MAX_CHARS, "%X", handle + 1);
 			}
 			
 			/* change element handle */
 			if (handle){
-				dxf_attr_change(element, 5, hdl_str);
+				ok = dxf_attr_change(element, 5, hdl_str);
 			}
+		}
+	}
+	
+	return ok;
+}
+
+void drawing_ent_append(dxf_drawing *drawing, dxf_node *element){
+	if (drawing && element){
+		if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
+			/* get current handle and increment the handle seed*/
+			ent_handle(drawing, element);
 			
 			/*  append drawing entities's list */
 			element->master = drawing->ents;
