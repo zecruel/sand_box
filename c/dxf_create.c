@@ -997,6 +997,48 @@ int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list
 	return ok;
 }
 
+dxf_node * dxf_new_insert (char *name, double x0, double y0, double z0,
+int color, char *layer, char *ltype, int paper){
+	/* create a new INSERT */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbBlockReference";
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0, d_one = 1.0;
+	dxf_node * ins = dxf_obj_new ("INSERT");
+	
+	ok &= dxf_attr_append(ins, 5, (void *) handle);
+	ok &= dxf_attr_append(ins, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(ins, 67, (void *) &paper);
+	ok &= dxf_attr_append(ins, 8, (void *) layer);
+	ok &= dxf_attr_append(ins, 6, (void *) ltype);
+	ok &= dxf_attr_append(ins, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(ins, 100, (void *) dxf_subclass);
+	ok &= dxf_attr_append(ins, 66, (void *) &int_zero);
+	ok &= dxf_attr_append(ins, 2, (void *) name);
+	
+	/* insert point */
+	ok &= dxf_attr_append(ins, 10, (void *) &x0);
+	ok &= dxf_attr_append(ins, 20, (void *) &y0);
+	ok &= dxf_attr_append(ins, 30, (void *) &z0);
+	
+	/* scales */
+	ok &= dxf_attr_append(ins, 41, (void *) &d_one);
+	ok &= dxf_attr_append(ins, 42, (void *) &d_one);
+	ok &= dxf_attr_append(ins, 43, (void *) &d_one);
+	
+	/* rotation */
+	ok &= dxf_attr_append(ins, 50, (void *) &d_zero);
+	
+	
+	if(ok){
+		return ins;
+	}
+
+	return NULL;
+}
+
 
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 	/* move the object relactive to offset distances */

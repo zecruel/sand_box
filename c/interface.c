@@ -606,7 +606,9 @@ int WinMain(int argc, char** argv){
 		ARC,
 		DUPLI,
 		MOVE,
-		SCALE
+		SCALE,
+		NEW_BLK,
+		INSERT
 	}modal = SELECT, prev_modal = SELECT;
 	
 	char recv_comm[64];
@@ -1345,12 +1347,15 @@ int WinMain(int argc, char** argv){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
-					dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","NEW_BLK");
+					/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
 					dxf_ent_print2(drawing->blks);
-					dxf_ent_print2(drawing->blks_rec);
+					dxf_ent_print2(drawing->blks_rec);*/
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_ungroup)){
-					
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lib)){
+					recv_comm_flag = 1;
+					snprintf(recv_comm, 64, "%s","INSERT");
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_delete)){
 					recv_comm_flag = 1;
@@ -1523,6 +1528,24 @@ int WinMain(int argc, char** argv){
 						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
 					}
 					scale = nk_propertyd(gui->ctx, "Scale", 0.0d, scale, 100.0d, 0.1d, 0.1d);
+					break;
+				case NEW_BLK:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Create a new block from selection", NK_TEXT_LEFT);
+					nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
+					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+					break;
+				case INSERT:
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Place a block", NK_TEXT_LEFT);
+					if (step == 0){
+						nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
+						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+					}
+					else{
+						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					}
 					break;
 			}
 		}
@@ -2034,6 +2057,14 @@ int WinMain(int argc, char** argv){
 				modal = SCALE;
 				step = 0;
 			}
+			else if (strcmp(recv_comm, "NEW_BLK") == 0){
+				modal = NEW_BLK;
+				step = 0;
+			}
+			else if (strcmp(recv_comm, "INSERT") == 0){
+				modal = INSERT;
+				step = 0;
+			}
 		}
 		
 		/* if user hit the enter key during a drawing operation, toggle axis lock */
@@ -2481,6 +2512,67 @@ int WinMain(int argc, char** argv){
 					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+			}
+		}
+		if (modal == INSERT){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					/* verify if block exist */
+					if (dxf_find_obj_descr2(drawing->blks, "BLOCK", txt)){
+						draw_tmp = 1;
+						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
+						new_el = dxf_new_insert (txt,
+							step_x[step], step_y[step], 0.0, /* pt1 */
+							color_idx, drawing->layers[layer_idx].name, /* color, layer */
+							drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						element = new_el;
+						step = 1;
+						en_distance = 1;
+						goto next_step;
+					}
+				}
+				else if (rightMouseButtonClick){
+					goto default_modal;
+				}
+			}
+			else{
+				if (leftMouseButtonClick){
+					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
+					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					drawing_ent_append(drawing, new_el);
+					
+					do_add_entry(&list_do, "INSERT");
+					do_add_item(list_do.current, NULL, new_el);
+					
+					step_x[step - 1] = step_x[step];
+					step_y[step - 1] = step_y[step];
+					goto first_step;
+				}
+				else if (rightMouseButtonClick){
+					goto default_modal;
+				}
+				if (MouseMotion){
+					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
+					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
+					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
+					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 62, &color_idx);					
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+				}
+			}
+		}
+		if (modal == NEW_BLK){
+			if (step == 0){
+				if (leftMouseButtonClick){
+					/* verify if text is valid */
+					if (strlen(txt) > 0){
+						dxf_new_block(drawing, txt, "0", sel_list, &list_do);
+					}
+				}
+				else if (rightMouseButtonClick){
+					goto default_modal;
 				}
 			}
 		}

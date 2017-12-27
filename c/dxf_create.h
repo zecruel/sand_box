@@ -94,6 +94,8 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper);
 
 int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list, struct do_list *list_do);
 
+dxf_node * dxf_new_insert (char *name, double x0, double y0, double z0,
+int color, char *layer, char *ltype, int paper);
 
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z);
 
