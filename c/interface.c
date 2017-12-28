@@ -774,6 +774,15 @@ int WinMain(int argc, char** argv){
 	font_tiny.scale = font_scale(font_tiny.shx_font, font_tiny_nk.height);
 	font_tiny_nk.width = nk_user_font_get_text_width;
 	
+	
+	bmp_img * blk_prvw[12];
+	for (i = 0; i < 12; i++){
+		blk_prvw[i] = bmp_new(80, 80, grey, red);
+	}
+	//struct nk_image i_blk_prvw = nk_image_ptr(blk_prvw);
+	char blk_name[DXF_MAX_CHARS];
+	blk_name[0] = 0;
+	
 	/* init comands */
 	recv_comm[0] = 0;
 	txt[0] = 0;
@@ -1539,6 +1548,43 @@ int WinMain(int argc, char** argv){
 				case INSERT:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Place a block", NK_TEXT_LEFT);
+				
+					if (nk_combo_begin_label(gui->ctx, blk_name, nk_vec2(300,200))){
+						nk_layout_row_static(gui->ctx, 90, 90, 3);
+						i = 0;
+						vector_p *blk_g;
+						dxf_node *blk, *blk_name;
+						int blk_ei;
+						double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y;
+						for (i = 0; i < 12; i++){
+							blk = dxf_find_obj_i(drawing->blks, "BLOCK", i);
+							if(!blk) break;
+						
+							blk_name = dxf_find_attr2(blk, 2);
+							blk_ei = 0;
+							blk_g = dxf_graph_parse(drawing, blk , 0 , 1); // test
+							vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
+							
+							z_x = (blk_x1 - blk_x0)/blk_prvw[i]->width;
+							z_y = (blk_y1 - blk_y0)/blk_prvw[i]->height;
+							z = (z_x > z_y) ? z_x : z_y;
+							if (z <= 0) z =1;
+							else z = 1/(1.1 * z);
+							
+							bmp_fill(blk_prvw[i], blk_prvw[i]->bkg); /* clear bitmap */
+							vec_graph_draw(blk_g, blk_prvw[i], -blk_x0, -blk_x0, z);
+							free(blk_g);
+							
+							if (blk_name){
+							//if (nk_button_label(gui->ctx, blk_name->value.s_data)){
+							if (nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw[i]))){
+								nk_combo_close(gui->ctx);
+							}}
+						}
+						
+						nk_combo_end(gui->ctx);
+					}
+					
 					if (step == 0){
 						nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
 						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
@@ -2519,7 +2565,17 @@ int WinMain(int argc, char** argv){
 			if (step == 0){
 				if (leftMouseButtonClick){
 					/* verify if block exist */
-					if (dxf_find_obj_descr2(drawing->blks, "BLOCK", txt)){
+					dxf_node * blk; //test
+					
+					if (blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", txt)){
+						
+						vector_p *blk_g = dxf_graph_parse(drawing, blk , 0 , 1); // test
+						int blk_ei;
+						double blk_x0, blk_y0, blk_x1, blk_y1;
+						vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
+						printf ("%0.2f,%0.2f,%0.2f,%0.2f\n",blk_x0, blk_y0, blk_x1, blk_y1);
+						free(blk_g);
+						
 						draw_tmp = 1;
 						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
 						new_el = dxf_new_insert (txt,

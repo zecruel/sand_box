@@ -144,6 +144,8 @@ int do_add_entry(struct do_list *list, char *text){
 			list->current->next = entry;
 			entry->prev = list->current;
 			entry->next = NULL;
+			entry->list = NULL;
+			entry->current = NULL;
 			list->current = entry;
 			
 			entry->text[0] = 0; /*initialize string*/

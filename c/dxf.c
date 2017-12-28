@@ -697,6 +697,36 @@ dxf_node * dxf_find_obj2(dxf_node * obj, char *name){
 	return NULL;
 }
 
+dxf_node * dxf_find_obj_i(dxf_node * obj, char *name, int idx){
+	/* return the match of  index (idx) */
+	/* if the idx is zero, will return the first occurency. If is negative, will return the last occurency.*/
+	dxf_node *current;
+	dxf_node *found = NULL;
+	int i = 0;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				if (current->type == DXF_ENT){
+					/* verify if matchs */
+					if(strcmp(current->obj.name, name) == 0){
+						found = current;
+						/* and if is the index wanted */
+						if (idx == i){
+							return found; /* success */
+						}
+						i++; /* increment and continues the search */
+					}
+				}
+				current = current->next;
+			}
+		}
+	}
+	if (idx < 0) return found; /* return the last element found */
+	else return NULL;
+}
+
 vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	int size = 0;
 	dxf_node **data = NULL;
