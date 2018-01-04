@@ -853,6 +853,251 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	return NULL;
 }
 
+dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
+char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF TEXT */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass1 = "AcDbText";
+	const char *dxf_subclass2 = "AcDbAttributeDefinition";
+	const char *t_style = "STANDARD";
+	const char *prompt = "value:";
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0;
+	dxf_node * attdef = dxf_obj_new ("ATTDEF");
+	
+	ok &= dxf_attr_append(attdef, 5, (void *) handle);
+	ok &= dxf_attr_append(attdef, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(attdef, 67, (void *) &paper);
+	ok &= dxf_attr_append(attdef, 8, (void *) layer);
+	ok &= dxf_attr_append(attdef, 6, (void *) ltype);
+	ok &= dxf_attr_append(attdef, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(attdef, 100, (void *) dxf_subclass1);
+	ok &= dxf_attr_append(attdef, 39, (void *) &thick);
+	/* place the first vertice */
+	ok &= dxf_attr_append(attdef, 10, (void *) &x0);
+	ok &= dxf_attr_append(attdef, 20, (void *) &y0);
+	ok &= dxf_attr_append(attdef, 30, (void *) &z0);
+	ok &= dxf_attr_append(attdef, 40, (void *) &h);
+	ok &= dxf_attr_append(attdef, 1, (void *) txt);
+	ok &= dxf_attr_append(attdef, 50, (void *) &d_zero);
+	ok &= dxf_attr_append(attdef, 7, (void *) t_style);
+	ok &= dxf_attr_append(attdef, 72, (void *) &int_zero);
+	
+	ok &= dxf_attr_append(attdef, 11, (void *) &x0);
+	ok &= dxf_attr_append(attdef, 21, (void *) &y0);
+	ok &= dxf_attr_append(attdef, 31, (void *) &z0);
+	ok &= dxf_attr_append(attdef, 100, (void *) dxf_subclass2);
+	ok &= dxf_attr_append(attdef, 3, (void *) prompt);
+	ok &= dxf_attr_append(attdef, 2, (void *) tag);
+	ok &= dxf_attr_append(attdef, 70, (void *) &int_zero);
+	ok &= dxf_attr_append(attdef, 74, (void *) &int_zero);
+	
+	if(ok){
+		return attdef;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_new_attrib (double x0, double y0, double z0, double h,
+char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
+	/* create a new DXF TEXT */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass1 = "AcDbText";
+	const char *dxf_subclass2 = "AcDbAttribute";
+	const char *t_style = "STANDARD";
+	const char *prompt = "value:";
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0;
+	dxf_node * attrib = dxf_obj_new ("ATTRIB");
+	
+	ok &= dxf_attr_append(attrib, 5, (void *) handle);
+	ok &= dxf_attr_append(attrib, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(attrib, 67, (void *) &paper);
+	ok &= dxf_attr_append(attrib, 8, (void *) layer);
+	ok &= dxf_attr_append(attrib, 6, (void *) ltype);
+	ok &= dxf_attr_append(attrib, 62, (void *) &color);
+	
+	ok &= dxf_attr_append(attrib, 100, (void *) dxf_subclass1);
+	ok &= dxf_attr_append(attrib, 39, (void *) &thick);
+	/* place the first vertice */
+	ok &= dxf_attr_append(attrib, 10, (void *) &x0);
+	ok &= dxf_attr_append(attrib, 20, (void *) &y0);
+	ok &= dxf_attr_append(attrib, 30, (void *) &z0);
+	ok &= dxf_attr_append(attrib, 40, (void *) &h);
+	ok &= dxf_attr_append(attrib, 1, (void *) txt);
+	ok &= dxf_attr_append(attrib, 50, (void *) &d_zero);
+	//ok &= dxf_attr_append(attrib, 41, (void *) &d_zero);
+	//ok &= dxf_attr_append(attrib, 51, (void *) &d_zero);
+	ok &= dxf_attr_append(attrib, 7, (void *) t_style);
+	//ok &= dxf_attr_append(attrib, 71, (void *) t_style);
+	ok &= dxf_attr_append(attrib, 72, (void *) &int_zero);
+	ok &= dxf_attr_append(attrib, 11, (void *) &x0);
+	ok &= dxf_attr_append(attrib, 21, (void *) &y0);
+	ok &= dxf_attr_append(attrib, 31, (void *) &z0);
+	//ok &= dxf_attr_append(attrib, 210, (void *) t_style);
+	//ok &= dxf_attr_append(attrib, 220, (void *) t_style);
+	//ok &= dxf_attr_append(attrib, 230, (void *) t_style);
+	
+	ok &= dxf_attr_append(attrib, 100, (void *) dxf_subclass2);
+	ok &= dxf_attr_append(attrib, 2, (void *) tag);
+	ok &= dxf_attr_append(attrib, 70, (void *) &int_zero);
+	ok &= dxf_attr_append(attrib, 74, (void *) &int_zero);
+	
+	if(ok){
+		return attrib;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0){
+	if(attdef){
+		if (attdef->type != DXF_ENT){
+			return NULL; /*Fail - wrong type */
+		}
+		if (strcmp(attdef->obj.name, "ATTDEF") != 0){
+			return NULL; /*Fail - wrong attdef */
+		}
+		
+		double x1= 0.0, y1 = 0.0, z1 = 0.0;
+		double x2= 0.0, y2 = 0.0, z2 = 0.0;
+		double h = 1.0, rot = 0.0, thick = 0.0, t_scale_x = 1.0;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0;
+		char txt[DXF_MAX_CHARS], tag[DXF_MAX_CHARS];
+		char layer[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
+		char t_style[DXF_MAX_CHARS];
+		int color = 256, paper = 0;
+		int t_alin_v = 0, t_alin_h = 0;
+		
+		
+		/* clear the strings */
+		txt[0] = 0;
+		tag[0] = 0;
+		layer[0] = 0;
+		l_type[0] = 0;
+		t_style[0] = 0;
+		
+		dxf_node *current = NULL;
+		if (attdef->obj.content){
+			current = attdef->obj.content->next;
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 1:
+						strcpy(txt, current->value.s_data);
+						break;
+					case 2:
+						strcpy(tag, current->value.s_data);
+						break;
+					case 7:
+						strcpy(t_style, current->value.s_data);
+						break;
+					case 6:
+						strcpy(l_type, current->value.s_data);
+						break;
+					case 8:
+						strcpy(layer, current->value.s_data);
+						break;
+					case 10:
+						x1 = current->value.d_data;
+						break;
+					case 11:
+						x2 = current->value.d_data;
+						break;
+					case 20:
+						y1 = current->value.d_data;
+						break;
+					case 21:
+						y2 = current->value.d_data;
+						break;
+					case 30:
+						z1 = current->value.d_data;
+						break;
+					case 31:
+						z2 = current->value.d_data;
+						break;
+					case 40:
+						h = current->value.d_data;
+						break;
+					case 41:
+						t_scale_x = current->value.d_data;
+						break;
+					case 50:
+						rot = current->value.d_data;
+						break;
+					case 39:
+						thick = current->value.d_data;
+						break;
+					case 62:
+						color = current->value.i_data;
+						break;
+					case 67:
+						paper = current->value.i_data;
+						break;
+					case 72:
+						t_alin_h = current->value.i_data;
+						break;
+					case 74:
+						t_alin_v = current->value.i_data;
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+						break;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		
+		dxf_node * attrib = dxf_new_attrib (x1 + x0, x1 + y0, z1 + z0, h,
+			txt, tag, thick, color, layer, l_type, paper);
+		
+		dxf_attr_change(attrib, 11, (void *)(double[]){x2 + x0});
+		dxf_attr_change(attrib, 21, (void *)(double[]){y2 + y0});
+		dxf_attr_change(attrib, 31, (void *)(double[]){z2 + z0});
+		dxf_attr_change(attrib, 50, (void *)&rot);
+		dxf_attr_change(attrib, 7, (void *)t_style);
+		dxf_attr_change(attrib, 41, (void *)&t_scale_x);
+		dxf_attr_change(attrib, 72, (void *)&t_alin_h);
+		dxf_attr_change(attrib, 74, (void *)&t_alin_v);
+		dxf_attr_change(attrib, 210, (void *)&extru_x);
+		dxf_attr_change(attrib, 220, (void *)&extru_y);
+		dxf_attr_change(attrib, 230, (void *)&extru_z);
+		
+		return attrib;
+	}
+
+	return NULL;
+}
+
+dxf_node * dxf_new_seqend (char *layer){
+	/* create a new SEQEND entity */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	int ok = 1;
+	dxf_node * seqend = dxf_obj_new ("SEQEND");
+	
+	ok &= dxf_attr_append(seqend, 5, (void *) handle);
+	ok &= dxf_attr_append(seqend, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(seqend, 8, (void *) layer);
+	
+	if(ok){
+		return seqend;
+	}
+
+	return NULL;
+}
+
 dxf_node * dxf_new_endblk (char *layer, char *owner){
 	/* create a new ENDBLK entity */
 	const char *handle = "0";
@@ -875,7 +1120,7 @@ dxf_node * dxf_new_endblk (char *layer, char *owner){
 }
 
 dxf_node * dxf_new_begblk (char *name, char *layer, char *owner){
-	/* create a new ENDBLK entity */
+	/* create a new begin BLOCK entity */
 	const char *handle = "0";
 	const char *str_zero = "";
 	const char *dxf_class = "AcDbEntity";
@@ -925,6 +1170,38 @@ dxf_node * dxf_new_blkrec (char *name){
 	return NULL;
 }
 
+
+int dxf_block_append(dxf_node *blk, dxf_node *obj){
+	int ok = 0;
+	if((blk) && (obj)){
+		if ((blk->type != DXF_ENT) || (obj->type != DXF_ENT)){
+			return 0; /*Fail - wrong types */
+		}
+		if (strcmp(blk->obj.name, "BLOCK") != 0){
+			return 0; /*Fail - wrong block */
+		}
+		if (strcmp(obj->obj.name, "BLOCK") == 0){
+			return 0; /*Fail - try to nested blocks*/
+		}
+		
+		/*try to find ENDBLK*/
+		dxf_node *endblk = dxf_find_obj2(blk, "ENDBLK");
+		if (endblk){
+			/* append object between endblk and rest of blk contents */
+			obj->prev = endblk->prev;
+			if (obj->prev){
+				obj->prev->next = obj;
+			}
+			obj->next = endblk;
+			endblk->prev = obj;
+		}
+		else { /* ENDBLK not found */
+			/* in this case, simply append object in block */
+			dxf_obj_append(blk, obj);
+		}
+	}
+	return ok;
+}
 
 int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list, struct do_list *list_do){
 	int ok = 0;
@@ -1039,6 +1316,45 @@ int color, char *layer, char *ltype, int paper){
 	}
 
 	return NULL;
+}
+
+int dxf_insert_append(dxf_drawing *drawing, dxf_node *ins, dxf_node *obj){
+	int ok = 0;
+	if((ins) && (obj)){
+		if ((ins->type != DXF_ENT) || (obj->type != DXF_ENT)){
+			return 0; /*Fail - wrong types */
+		}
+		if (strcmp(ins->obj.name, "INSERT") != 0){
+			return 0; /*Fail - wrong insert */
+		}
+		if (strcmp(obj->obj.name, "ATTRIB") != 0){
+			return 0; /*Fail - only acept ATTRIB ents*/
+		}
+		
+		/* set ents follow flag*/
+		dxf_attr_change(ins, 66, (int[]){1});
+		
+		/*try to find SEQEND*/
+		dxf_node *seqend = dxf_find_obj2(ins, "SEQEND");
+		if (seqend){
+			/* append object between seqend and rest of insert contents */
+			obj->prev = seqend->prev;
+			if (obj->prev){
+				obj->prev->next = obj;
+			}
+			obj->next = seqend;
+			seqend->prev = obj;
+		}
+		else { /* SEQEND not found */
+			/* in this case, append object in insert, create and append a valid SEQEND */
+			dxf_obj_append(ins, obj);
+			seqend = dxf_new_seqend ("0");
+			ent_handle(drawing, seqend);
+			dxf_obj_append(ins, seqend);
+		}
+		ok = 1;
+	}
+	return ok;
 }
 
 

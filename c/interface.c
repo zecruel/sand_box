@@ -503,8 +503,11 @@ double font_scale(shape *font, float height){
 	if (fnt_size != 0) fnt_scale = height/fnt_size;
 	return fnt_scale;
 }
-
+#ifdef __MINGW32__
 int WinMain(int argc, char** argv){
+#else
+int main(int argc, char** argv){
+#endif
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	
 	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
@@ -783,6 +786,7 @@ int WinMain(int argc, char** argv){
 	blk_prvw_big = bmp_new(160, 160, grey, red);
 	char blk_name[DXF_MAX_CHARS];
 	blk_name[0] = 0;
+	int show_hidden_blks = 0;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -1564,7 +1568,7 @@ int WinMain(int argc, char** argv){
 							dxf_node *blk, *blk_nm; /* current block and its name attribute */
 							int blk_ei; /*extents flag of current block */
 							/* extents and zoom parameters */
-							double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y;
+							double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y, o_x, o_y;
 							
 							nk_layout_row_dynamic(gui->ctx, 200, 2);
 							i = 0;
@@ -1576,9 +1580,11 @@ int WinMain(int argc, char** argv){
 									/* get name of current block */
 									blk_nm = dxf_find_attr2(blk, 2);
 									if (blk_nm){
-										if (nk_button_label(gui->ctx, blk_nm->value.s_data)){
-											blk_idx = i;
-											strncpy(txt, blk_nm->value.s_data, DXF_MAX_CHARS-1);
+										if((blk_nm->value.s_data[0] != '*') || (show_hidden_blks)){
+											if (nk_button_label(gui->ctx, blk_nm->value.s_data)){
+												blk_idx = i;
+												strncpy(blk_name, blk_nm->value.s_data, DXF_MAX_CHARS-1);
+											}
 										}
 									}
 									
@@ -1597,25 +1603,59 @@ int WinMain(int argc, char** argv){
 								vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
 								
 								/* calcule the zoom and offset for preview */
-								z_x = (blk_x1 - blk_x0)/blk_prvw_big->width;
-								z_y = (blk_y1 - blk_y0)/blk_prvw_big->height;
+								z_x = fabs(blk_x1 - blk_x0)/blk_prvw_big->width;
+								z_y = fabs(blk_y1 - blk_y0)/blk_prvw_big->height;
 								z = (z_x > z_y) ? z_x : z_y;
 								if (z <= 0) z =1;
 								else z = 1/(1.1 * z);
+								o_x = blk_x0 - (fabs((blk_x1 - blk_x0)*z - blk_prvw_big->width)/2)/z;
+								o_y = blk_y0 - (fabs((blk_y1 - blk_y0)*z - blk_prvw_big->height)/2)/z;
+								
+								snprintf(txt, DXF_MAX_CHARS, "x0=%0.2f,y0=%0.2f,x1=%0.2f,y1=%0.2f,z=%0.2f", blk_x0, blk_y0, blk_x1, blk_y1, z);
 								
 								/* draw graphics in current preview bitmap */
 								bmp_fill(blk_prvw_big, blk_prvw_big->bkg); /* clear bitmap */
-								vec_graph_draw(blk_g, blk_prvw_big, -blk_x0, -blk_x0, z);
+								vec_graph_draw(blk_g, blk_prvw_big, o_x, o_y, z);
 								free(blk_g);
 							}
 							nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw_big));
 							
 							
+							nk_layout_row_dynamic(gui->ctx, 20, 2);
+							
+							nk_checkbox_label(gui->ctx, "Hidden", &show_hidden_blks);
+							nk_label(gui->ctx, blk_name, NK_TEXT_CENTERED);
+							
 							nk_layout_row_dynamic(gui->ctx, 20, 1);
+							
+							nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
+							nk_label(gui->ctx, txt, NK_TEXT_LEFT);
+							nk_style_pop_font(gui->ctx); /* back to default font*/
+							
 							if (nk_button_label(gui->ctx, "Select")){
 								show_blk_pp = 0;
 								nk_popup_close(gui->ctx);
 							}
+							
+							if (nk_button_label(gui->ctx, "test")){
+								//snprintf(txt, DXF_MAX_CHARS, "text");
+								blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name);
+								if(blk){
+									/* create a new attdef text */
+									//dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
+									//char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
+
+									dxf_node * new_el = dxf_new_attdef (
+										0.0, 0.0, 0.0, 1.0, /* pt1, height */
+										"test", "tag1",(double) thick, /* text, thickness */
+										color_idx, drawing->layers[layer_idx].name, /* color, layer */
+										drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+									ent_handle(drawing, new_el);
+									dxf_block_append(blk, new_el);
+									snprintf(txt, DXF_MAX_CHARS, "attdef");
+								}
+							}
+							
 							nk_popup_end(gui->ctx);
 						}
 						else show_blk_pp = 0;
@@ -2669,21 +2709,11 @@ int WinMain(int argc, char** argv){
 		if (modal == INSERT){
 			if (step == 0){
 				if (leftMouseButtonClick){
-					/* verify if block exist */
-					dxf_node * blk; //test
-					
-					if (blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", txt)){
-						
-						vector_p *blk_g = dxf_graph_parse(drawing, blk , 0 , 1); // test
-						int blk_ei;
-						double blk_x0, blk_y0, blk_x1, blk_y1;
-						vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
-						printf ("%0.2f,%0.2f,%0.2f,%0.2f\n",blk_x0, blk_y0, blk_x1, blk_y1);
-						free(blk_g);
-						
+					/* verify if block exist */					
+					if (dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name)){
 						draw_tmp = 1;
 						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
-						new_el = dxf_new_insert (txt,
+						new_el = dxf_new_insert (blk_name,
 							step_x[step], step_y[step], 0.0, /* pt1 */
 							color_idx, drawing->layers[layer_idx].name, /* color, layer */
 							drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
@@ -2701,9 +2731,24 @@ int WinMain(int argc, char** argv){
 				if (leftMouseButtonClick){
 					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					
 					drawing_ent_append(drawing, new_el);
 					
+					
+					/*=========================*/
+					dxf_node *blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name);
+					dxf_node *attdef, *attrib;
+					i = 0;
+					while (attdef = dxf_find_obj_i(blk, "ATTDEF", i)){
+						attrib = dxf_attrib_cpy(attdef, step_x[step], step_y[step], 0.0);
+						ent_handle(drawing, attrib);
+						dxf_insert_append(drawing, new_el, attrib);
+						
+						i++;
+					}
+					
+					/*===================*/
+					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
 					do_add_entry(&list_do, "INSERT");
 					do_add_item(list_do.current, NULL, new_el);
 					
@@ -3027,6 +3072,13 @@ int WinMain(int argc, char** argv){
 	for(i = 0; i < 40; i++){
 		bmp_free(tool_vec[i]);
 	}
+	for (i = 0; i < 12; i++){
+		bmp_free(blk_prvw[i]);
+	}
+	bmp_free(blk_prvw_big);
+	
+	
+	
 	for (i = 0; i<drawing->num_fonts; i++){
 		shx_font_free(drawing->text_fonts[i].shx_font);
 	}
