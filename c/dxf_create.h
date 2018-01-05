@@ -98,6 +98,8 @@ char *txt, char *tag, double thick, int color, char *layer, char *ltype, int pap
 dxf_node * dxf_new_attrib (double x0, double y0, double z0, double h,
 char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper);
 
+dxf_node * dxf_attdef_cpy (dxf_node *text, char *tag, double x0, double y0, double z0);
+
 dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0);
 
 dxf_node * dxf_new_seqend (char *layer);
@@ -105,6 +107,8 @@ dxf_node * dxf_new_seqend (char *layer);
 int dxf_block_append(dxf_node *blk, dxf_node *obj);
 
 int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list, struct do_list *list_do);
+
+int dxf_new_block2(dxf_drawing *drawing, char *name, char *mark, char *layer, list_node *list, struct do_list *list_do);
 
 dxf_node * dxf_new_insert (char *name, double x0, double y0, double z0,
 int color, char *layer, char *ltype, int paper);

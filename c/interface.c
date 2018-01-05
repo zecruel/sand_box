@@ -778,15 +778,11 @@ int main(int argc, char** argv){
 	font_tiny_nk.width = nk_user_font_get_text_width;
 	
 	int show_blk_pp = 0;
-	bmp_img * blk_prvw[12];
-	for (i = 0; i < 12; i++){
-		blk_prvw[i] = bmp_new(80, 80, grey, red);
-	}
 	bmp_img * blk_prvw_big;
 	blk_prvw_big = bmp_new(160, 160, grey, red);
-	char blk_name[DXF_MAX_CHARS];
+	char blk_name[DXF_MAX_CHARS], tag_mark[DXF_MAX_CHARS];
 	blk_name[0] = 0;
-	int show_hidden_blks = 0;
+	int show_hidden_blks = 0, text2tag = 0;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -1546,22 +1542,26 @@ int main(int argc, char** argv){
 				case NEW_BLK:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Create a new block from selection", NK_TEXT_LEFT);
-					nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
+					//nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
 					nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
 					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+					nk_checkbox_label(gui->ctx, "Text to Tags", &text2tag);
+					nk_label(gui->ctx, "Tag mark:", NK_TEXT_LEFT);
+					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, tag_mark, DXF_MAX_CHARS, nk_filter_default);
 					break;
 				case INSERT:
 					
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Place a block", NK_TEXT_LEFT);
 					
-					nk_layout_row_dynamic(gui->ctx, 20, 2);
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
 					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, blk_name, DXF_MAX_CHARS, nk_filter_default);
 					
 					if (nk_button_label(gui->ctx, "Explore")) show_blk_pp = 1;
 					if (show_blk_pp){
 						/* select block popup */
-						static struct nk_rect s = {20, 100, 400, 400};
+						static struct nk_rect s = {20, 10, 420, 330};
 						if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Block", NK_WINDOW_CLOSABLE, s)){
 							
 							vector_p *blk_g; /*graphic object of current block */
@@ -1570,7 +1570,7 @@ int main(int argc, char** argv){
 							/* extents and zoom parameters */
 							double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y, o_x, o_y;
 							
-							nk_layout_row_dynamic(gui->ctx, 200, 2);
+							nk_layout_row_dynamic(gui->ctx, 225, 2);
 							i = 0;
 							int blk_idx = -1;
 							if (nk_group_begin(gui->ctx, "Block_names", NK_WINDOW_BORDER)) {
@@ -1611,131 +1611,62 @@ int main(int argc, char** argv){
 								o_x = blk_x0 - (fabs((blk_x1 - blk_x0)*z - blk_prvw_big->width)/2)/z;
 								o_y = blk_y0 - (fabs((blk_y1 - blk_y0)*z - blk_prvw_big->height)/2)/z;
 								
-								snprintf(txt, DXF_MAX_CHARS, "x0=%0.2f,y0=%0.2f,x1=%0.2f,y1=%0.2f,z=%0.2f", blk_x0, blk_y0, blk_x1, blk_y1, z);
+								snprintf(txt, DXF_MAX_CHARS, "(%0.2f,%0.2f)-(%0.2f,%0.2f)", blk_x0, blk_y0, blk_x1, blk_y1);
 								
 								/* draw graphics in current preview bitmap */
 								bmp_fill(blk_prvw_big, blk_prvw_big->bkg); /* clear bitmap */
 								vec_graph_draw(blk_g, blk_prvw_big, o_x, o_y, z);
 								free(blk_g);
 							}
-							nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw_big));
-							
-							
-							nk_layout_row_dynamic(gui->ctx, 20, 2);
-							
-							nk_checkbox_label(gui->ctx, "Hidden", &show_hidden_blks);
-							nk_label(gui->ctx, blk_name, NK_TEXT_CENTERED);
+							if (nk_group_begin(gui->ctx, "Block_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+								/* preview img */
+								nk_layout_row_dynamic(gui->ctx, 175, 1);
+								nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw_big));
+								
+								/* current block name */
+								nk_layout_row_dynamic(gui->ctx, 20, 1);
+								nk_label(gui->ctx, blk_name, NK_TEXT_CENTERED);
+								
+								/* current block corners */
+								nk_layout_row_dynamic(gui->ctx, 15, 1);
+								nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
+								nk_label(gui->ctx, txt, NK_TEXT_CENTERED);
+								nk_style_pop_font(gui->ctx); /* back to default font*/
+								
+								nk_group_end(gui->ctx);
+							}
 							
 							nk_layout_row_dynamic(gui->ctx, 20, 1);
 							
-							nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
-							nk_label(gui->ctx, txt, NK_TEXT_LEFT);
-							nk_style_pop_font(gui->ctx); /* back to default font*/
+							nk_checkbox_label(gui->ctx, "Hidden", &show_hidden_blks);
 							
 							if (nk_button_label(gui->ctx, "Select")){
 								show_blk_pp = 0;
 								nk_popup_close(gui->ctx);
 							}
-							
+							/*
 							if (nk_button_label(gui->ctx, "test")){
 								//snprintf(txt, DXF_MAX_CHARS, "text");
 								blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name);
 								if(blk){
-									/* create a new attdef text */
+									/* create a new attdef text 
 									//dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
 									//char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
 
 									dxf_node * new_el = dxf_new_attdef (
-										0.0, 0.0, 0.0, 1.0, /* pt1, height */
-										"test", "tag1",(double) thick, /* text, thickness */
-										color_idx, drawing->layers[layer_idx].name, /* color, layer */
-										drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+										0.0, 0.0, 0.0, 1.0, /* pt1, height 
+										"test", "tag1",(double) thick, /* text, thickness 
+										color_idx, drawing->layers[layer_idx].name, /* color, layer 
+										drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space 
 									ent_handle(drawing, new_el);
 									dxf_block_append(blk, new_el);
 									snprintf(txt, DXF_MAX_CHARS, "attdef");
 								}
-							}
+							}*/
 							
 							nk_popup_end(gui->ctx);
 						}
 						else show_blk_pp = 0;
-					}
-				
-					if (nk_combo_begin_label(gui->ctx, blk_name, nk_vec2(320,400))){
-						//nk_layout_row_static(gui->ctx, 135, 110, 3);
-						
-						vector_p *blk_g; /*graphic object of current block */
-						dxf_node *blk, *blk_nm; /* current block and its name attribute */
-						int blk_ei; /*extents flag of current block */
-						/* extents and zoom parameters */
-						double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y;
-						
-						char blk_names[12][DXF_MAX_CHARS];
-						for (i = 0; i < 12; i++){
-							blk_names[i][0] = 0;
-						}
-						
-						for (i = 0; i < 12; i++){
-							blk = dxf_find_obj_i(drawing->blks, "BLOCK", i);
-							if(!blk) break;
-							
-							/* get name of current block */
-							blk_nm = dxf_find_attr2(blk, 2);
-							if (blk_nm){
-								strncpy(blk_names[i], blk_nm->value.s_data, DXF_MAX_CHARS-1);
-							}
-							
-							blk_ei = 0;
-							/* get graphics of current block*/
-							blk_g = dxf_graph_parse(drawing, blk, 0, FRAME_LIFE);
-							/* get extents parameters of current block*/
-							vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
-							
-							/* calcule the zoom and offset for preview */
-							z_x = (blk_x1 - blk_x0)/blk_prvw[i]->width;
-							z_y = (blk_y1 - blk_y0)/blk_prvw[i]->height;
-							z = (z_x > z_y) ? z_x : z_y;
-							if (z <= 0) z =1;
-							else z = 1/(1.1 * z);
-							
-							/* draw graphics in current preview bitmap */
-							bmp_fill(blk_prvw[i], blk_prvw[i]->bkg); /* clear bitmap */
-							vec_graph_draw(blk_g, blk_prvw[i], -blk_x0, -blk_x0, z);
-							free(blk_g);
-						}
-						nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
-						for (i = 0; i < 12; i+=3){
-							/* show blocks names*/
-							nk_layout_row_dynamic(gui->ctx, 15, 3);
-							nk_label(gui->ctx, blk_names[i], NK_TEXT_LEFT);
-							nk_label(gui->ctx, blk_names[i+1], NK_TEXT_LEFT);
-							nk_label(gui->ctx, blk_names[i+2], NK_TEXT_LEFT);
-							
-							/* show preview bitmaps*/
-							nk_layout_row_dynamic(gui->ctx, 95, 3);
-							if (nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw[i]))){
-								strncpy(blk_name, blk_names[i], DXF_MAX_CHARS-1);
-								nk_combo_close(gui->ctx);
-							}
-							if (nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw[i+1]))){
-								strncpy(blk_name, blk_names[i+1], DXF_MAX_CHARS-1);
-								nk_combo_close(gui->ctx);
-							}
-							if (nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw[i+2]))){
-								strncpy(blk_name, blk_names[i+2], DXF_MAX_CHARS-1);
-								nk_combo_close(gui->ctx);
-							}
-						}
-						nk_combo_end(gui->ctx);
-						nk_style_pop_font(gui->ctx); /* back to default font*/
-					}
-					
-					if (step == 0){
-						nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
-						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
-					}
-					else{
-						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
 					}
 					break;
 			}
@@ -2774,7 +2705,9 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					/* verify if text is valid */
 					if (strlen(txt) > 0){
-						dxf_new_block(drawing, txt, "0", sel_list, &list_do);
+						if(!text2tag) dxf_new_block(drawing, txt, "0", sel_list, &list_do);
+						
+						else dxf_new_block2(drawing, txt, tag_mark, "0", sel_list, &list_do);
 					}
 				}
 				else if (rightMouseButtonClick){
@@ -3071,9 +3004,6 @@ int main(int argc, char** argv){
 	bmp_free(tool_img);
 	for(i = 0; i < 40; i++){
 		bmp_free(tool_vec[i]);
-	}
-	for (i = 0; i < 12; i++){
-		bmp_free(blk_prvw[i]);
 	}
 	bmp_free(blk_prvw_big);
 	
