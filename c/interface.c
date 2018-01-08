@@ -2993,6 +2993,7 @@ int main(int argc, char** argv){
 	
 	list_mem_pool(FREE_LIST, 0);
 	list_mem_pool(FREE_LIST, 1);
+	list_mem_pool(FREE_LIST, ONE_TIME);
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
