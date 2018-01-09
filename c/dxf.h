@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 
 
@@ -208,6 +209,10 @@ void dxf_ltype_assemb (dxf_drawing *drawing);
 int dxf_lay_idx (dxf_drawing *drawing, char *name);
 
 int dxf_ltype_idx (dxf_drawing *drawing, char *name);
+
+int dxf_font_idx (dxf_drawing *drawing, char *name);
+
+int dxf_layer_get(dxf_drawing *drawing, dxf_node * obj);
 
 int dxf_save (char *path, dxf_drawing *drawing);
 

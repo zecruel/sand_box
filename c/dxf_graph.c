@@ -2066,7 +2066,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 	};
 	
 	ins_stack[0] = ins_zero;
-	int ins_flag = 0;
+	int ins_flag = 0, parse_attdef = 1;
 	/* ---- */
 	
 	double pt1_x = 0, pt1_y = 0, pt1_z = 0;
@@ -2182,17 +2182,25 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				ent_type = DXF_ATTRIB;
 				curr_graph = dxf_attrib_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
-					/* store the graph in the return vector */
-					//stack_push(v_return, curr_graph);
 					/* store the graph in a temporary list.
-					this approach avoid to modify the attributes inside inserts*/
+					this approach avoid to modify the attributes inside INSERTs*/
 					list_node * att_el = list_new(curr_graph, ONE_TIME);
 					if (att_el){
 						list_push(att_list, att_el);
 					}
 				}
-				
-				
+			}
+			else if ((strcmp(current->obj.name, "ATTDEF") == 0) && parse_attdef){
+				ent_type = DXF_ATTRIB;
+				curr_graph = dxf_attrib_parse(drawing, current, p_space, pool_idx);
+				if (curr_graph){
+					/* store the graph in a temporary list.
+					this approach avoid to modify the attributes inside INSERTs*/
+					list_node * att_el = list_new(curr_graph, ONE_TIME);
+					if (att_el){
+						list_push(att_list, att_el);
+					}
+				}
 			}
 			else if (strcmp(current->obj.name, "POINT") == 0){
 				ent_type = DXF_POINT;
@@ -2236,6 +2244,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				ent_type = DXF_INSERT;
 				insert_ent = current;
 				ins_flag = 1;
+				parse_attdef = 0;
 				
 				if (current->obj.content){
 					/* starts the content sweep */
@@ -2259,6 +2268,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				/* a dimension will draw as a insert entity */
 				insert_ent = current;
 				ins_flag = 1;
+				parse_attdef = 0;
 				
 				if (current->obj.content){
 					/* starts the content sweep */

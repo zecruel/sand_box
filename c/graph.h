@@ -89,4 +89,17 @@ void vec_graph_rot(vector_p * vec, double base_x, double base_y , double rot);
 
 void vec_graph_rot_idx(vector_p * vec, double base_x, double base_y , double rot, int start_idx, int end_idx);
 
+void graph_mod_axis(graph_obj * master, double normal[3]);
+
+void vec_graph_mod_ax(vector_p * vec, double normal[3], int start_idx, int end_idx);
+
+void vec_graph_modify_idx(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx);
+
+void knot(int n, int c, int x[]);
+
+void rbasis(int c, double t, int npts, int x[], double h[], double r[]);
+
+void rbspline(int npts, int k, int p1, double b[], double h[], double p[]);
+
+
 #endif

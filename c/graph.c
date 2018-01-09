@@ -787,11 +787,7 @@ int main (void){
 
 
 
-knot(n,c,x)
-
-int n,c;
-int x[];
-
+void knot(int n, int c, int x[]){
 	/*
 	Subroutine to generate a B-spline open knot vector with multiplicity
 	equal to the order at the ends.
@@ -802,7 +798,7 @@ int x[];
 	nplusc       = maximum value of the knot vector -- $n + c$
 	x()          = array containing the knot vector
 	*/
-{
+	
 	int nplusc,nplus2,i;
 
 	nplusc = n + c;
@@ -819,14 +815,7 @@ int x[];
 	}
 }	
 
-rbasis(c,t,npts,x,h,r)
-
-int c,npts;
-double t;
-int x[];
-double h[];
-double r[];
-
+void rbasis(int c, double t, int npts, int x[], double h[], double r[]){
 	/*  Subroutine to generate rational B-spline basis functions--open knot vector
 
 	C code for An Introduction to NURBS
@@ -850,8 +839,7 @@ double r[];
 	temp[]   = temporary array
 	x[]      = knot vector
 	*/
-
-{
+	
 	int nplusc;
 	int i,j,k;
 	double d,e;
@@ -925,14 +913,7 @@ double r[];
 	}
 }
 
-rbspline(npts,k,p1,b,h,p)
-
-int npts,k,p1;
-
-double b[];
-double h[];
-double p[];
-
+void rbspline(int npts, int k, int p1, double b[], double h[], double p[]){
 	/*  Subroutine to generate a rational B-spline curve using an uniform open knot vector
 
 	C code for An Introduction to NURBS
@@ -961,8 +942,7 @@ double p[];
 	t           = parameter value 0 <= t <= npts - k + 1
 	x[]         = array containing the knot vector
 	*/
-
-{
+	
 	int i,j,icount,jcount;
 	int i1;
 	int x[MAX_SPLINE_PTS];		/* allows for 20 data points with basis function of order 5 */

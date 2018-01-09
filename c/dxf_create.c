@@ -1059,7 +1059,7 @@ dxf_node * dxf_attdef_cpy (dxf_node *text, char *tag, double x0, double y0, doub
 			current = current->next; /* go to the next in the list */
 		}
 		
-		dxf_node * attdef = dxf_new_attdef (x1 - x0, x1 - y0, z1 - z0, h,
+		dxf_node * attdef = dxf_new_attdef (x1 - x0, y1 - y0, z1 - z0, h,
 			txt, tag, thick, color, layer, l_type, paper);
 		
 		dxf_attr_change(attdef, 11, (void *)(double[]){x2 - x0});
@@ -1187,7 +1187,7 @@ dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0){
 			current = current->next; /* go to the next in the list */
 		}
 		
-		dxf_node * attrib = dxf_new_attrib (x1 + x0, x1 + y0, z1 + z0, h,
+		dxf_node * attrib = dxf_new_attrib (x1 + x0, y1 + y0, z1 + z0, h,
 			txt, tag, thick, color, layer, l_type, paper);
 		
 		dxf_attr_change(attrib, 11, (void *)(double[]){x2 + x0});
