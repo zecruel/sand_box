@@ -30,7 +30,21 @@
 #include "gui.h"
 #include "images.c"
 
+#define NANOSVG_IMPLEMENTATION
+#include "nanosvg.h"
+#define NANOSVGRAST_IMPLEMENTATION
+#include "nanosvgrast.h"
+
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
+
+char svg_trash[] =
+"<svg width=\"24\" height=\"24\" xmlns=\"http://www.w3.org/2000/svg\" "
+"fill-rule=\"evenodd\" clip-rule=\"evenodd\"><path d=\"M19 24h-14c-1.104 "
+"0-2-.896-2-2v-16h18v16c0 1.104-.896 2-2 2m-9-14c0-.552-.448-1-1-1s-1 "
+".448-1 1v9c0 .552.448 1 1 1s1-.448 1-1v-9zm6 0c0-.552-.448-1-1-1s-1 "
+".448-1 1v9c0 .552.448 1 1 1s1-.448 1-1v-9zm6-5h-20v-2h6v-1.5c0-.827.673-1.5 "
+"1.5-1.5h5c.825 0 1.5.671 1.5 1.5v1.5h6v2zm-12-2h4v-1h-4v1z\" "
+"fill=\"#F9F9F9\"/></svg>";
 
 void
 set_style(struct nk_context *ctx, enum theme theme)
@@ -297,6 +311,58 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 	}
 }
 
+void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_y, double *zoom, double *ofs_x, double *ofs_y){
+	double zoom_x, zoom_y;
+	
+	zoom_x = fabs(max_x - min_x)/img->width;
+	zoom_y = fabs(max_y - min_y)/img->height;
+	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+	*zoom = 1/(1.1 * (*zoom));
+	
+	*ofs_x = min_x - (fabs((max_x - min_x)*(*zoom) - img->width)/2);
+	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2);
+}
+
+int get_svg_bmp(bmp_img *img, char *svg){
+	NSVGimage *curves = NULL;
+	NSVGrasterizer *rast = NULL;
+	int w, h, ok = 1;
+	double ofs_x, ofs_y, zoom;
+	
+	/*copy the svg string to preserve them */
+	char *str = malloc(strlen(svg) + 1);
+	if (str){
+		strcpy(str, svg);
+	}
+	else return 0;
+	
+	curves = nsvgParse(str, "px", 96.0f);
+	if (curves == NULL) {
+		ok =0;
+		goto error_get_svg_bmp;
+	}
+	w = img->width;
+	h = img->height;
+	
+
+	rast = nsvgCreateRasterizer();
+	if (rast == NULL) {
+		ok =0;
+		goto error_get_svg_bmp;
+	}
+	img->r_i = 0;
+	img->g_i = 1;
+	img->b_i = 2;
+	img->a_i = 3;
+	bmp_fit(img, 0, 0, curves->width, curves->height, &zoom, &ofs_x, &ofs_y);
+	nsvgRasterize(rast, curves, -ofs_x, -ofs_y, zoom, img->buf, w, h, w*4);
+
+error_get_svg_bmp:
+	nsvgDeleteRasterizer(rast);
+	nsvgDelete(curves);
+	free(str);
+	return ok;
+}
 
 void toolbox_get_imgs(bmp_img *img, int w, int h, bmp_img *vec[], int num){
 	if (vec){
@@ -729,6 +795,8 @@ int main(int argc, char** argv){
 	struct nk_image i_t_ml = nk_image_ptr(tool_vec[51]);
 	struct nk_image i_t_mc = nk_image_ptr(tool_vec[52]);
 	struct nk_image i_t_mr = nk_image_ptr(tool_vec[53]);
+	
+	get_svg_bmp(tool_vec[24], svg_trash);
 	
 	bmp_img * attr_vec[15];
 	attrc_get_imgs(attr_vec, 15, 16, 16);
