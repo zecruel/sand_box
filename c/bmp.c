@@ -85,6 +85,18 @@ int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
 	return accept;
 }
 
+void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_y, double *zoom, double *ofs_x, double *ofs_y){
+	double zoom_x, zoom_y;
+	
+	zoom_x = fabs(max_x - min_x)/img->width;
+	zoom_y = fabs(max_y - min_y)/img->height;
+	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+	*zoom = 1/(1.1 * (*zoom));
+	
+	*ofs_x = min_x - (fabs((max_x - min_x)*(*zoom) - img->width)/2);
+	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2);
+}
+
 int bmp_fill (bmp_img *img, bmp_color color){
 	/* fill the bmp image with passed color */
 	

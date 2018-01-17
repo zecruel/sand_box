@@ -3,13 +3,13 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = dxf.c bmp.c graph.c dxf_graph.c dxf_attract.c interface.c shape2.c list.c dxf_create.c tinyfiledialogs.c
+OBJS = dxf.c bmp.c graph.c dxf_graph.c dxf_attract.c interface.c shape2.c list.c dxf_create.c tinyfiledialogs.c i_svg_media.c
 
 #CC specifies which compiler we're using
 CC = gcc
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -I. -Iinclude\SDL2
+INCLUDE_PATHS = -I. -I/usr/include/SDL2
 
 #LIBRARY_PATHS specifies the additional library paths we'll need
 LIBRARY_PATHS = -Llib
@@ -20,7 +20,7 @@ LIBRARY_PATHS = -Llib
 COMPILER_FLAGS = -g
 
 #LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lcomdlg32 -lole32
+LINKER_FLAGS = -lSDL2main -lSDL2 -lcomdlg32 -lole32
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = teste9.exe

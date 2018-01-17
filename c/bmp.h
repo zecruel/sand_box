@@ -63,6 +63,8 @@ typedef struct Bmp_img bmp_img;
 
 rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax);
 
+void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_y, double *zoom, double *ofs_x, double *ofs_y);
+
 int bmp_fill (bmp_img *img, bmp_color color);
 
 bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_color frg);

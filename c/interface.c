@@ -11,6 +11,7 @@
 
 #include "dxf_colors.h"
 #include "dxf_seed.h"
+#include "I_svg_media.h"
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -311,32 +312,20 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 	}
 }
 
-void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_y, double *zoom, double *ofs_x, double *ofs_y){
-	double zoom_x, zoom_y;
-	
-	zoom_x = fabs(max_x - min_x)/img->width;
-	zoom_y = fabs(max_y - min_y)/img->height;
-	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-	*zoom = 1/(1.1 * (*zoom));
-	
-	*ofs_x = min_x - (fabs((max_x - min_x)*(*zoom) - img->width)/2);
-	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2);
-}
-
 int get_svg_bmp(bmp_img *img, char *svg){
 	NSVGimage *curves = NULL;
 	NSVGrasterizer *rast = NULL;
 	int w, h, ok = 1;
 	double ofs_x, ofs_y, zoom;
 	
-	/*copy the svg string to preserve them */
+	/*copy the svg string to preserve them 
 	char *str = malloc(strlen(svg) + 1);
 	if (str){
 		strcpy(str, svg);
 	}
-	else return 0;
+	else return 0;*/
 	
-	curves = nsvgParse(str, "px", 96.0f);
+	curves = nsvgParse(svg, "px", 96.0f);
 	if (curves == NULL) {
 		ok =0;
 		goto error_get_svg_bmp;
@@ -360,7 +349,7 @@ int get_svg_bmp(bmp_img *img, char *svg){
 error_get_svg_bmp:
 	nsvgDeleteRasterizer(rast);
 	nsvgDelete(curves);
-	free(str);
+	//free(str);
 	return ok;
 }
 
@@ -738,6 +727,11 @@ int main(int argc, char** argv){
 	gui->ctx->style.edit.padding = nk_vec2(4, -6);
 	
 	/* init the toolbox image */
+	NSVGimage **svg_curves = i_svg_all_curves();
+	bmp_img **svg_bmp = i_svg_all_bmp(svg_curves, 24, 24);
+	
+	
+	
 	bmp_img * tool_img = bmp_load_img("tool4.png");
 	bmp_img * tool_vec[54];
 	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 54);
@@ -796,7 +790,9 @@ int main(int argc, char** argv){
 	struct nk_image i_t_mc = nk_image_ptr(tool_vec[52]);
 	struct nk_image i_t_mr = nk_image_ptr(tool_vec[53]);
 	
-	get_svg_bmp(tool_vec[24], svg_trash);
+	//get_svg_bmp(tool_vec[24], svg_trash);
+	//get_svg_bmp(tool_vec[24], (char[])[SVG_TRASH]{svg_media();});
+	
 	
 	bmp_img * attr_vec[15];
 	attrc_get_imgs(attr_vec, 15, 16, 16);
@@ -1366,65 +1362,65 @@ int main(int argc, char** argv){
 				}
 			}*/
 			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Place", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 20, 20, 2);
+				nk_layout_row_static(gui->ctx, 28, 28, 2);
 				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_select)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CURSOR]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","SELECT");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_line)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LINE]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","LINE");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_poly)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PLINE]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","POLYLINE");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_block)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RECT]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","RECT");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_text)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","TEXT");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_circle)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CIRCLE]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","CIRCLE");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_arc)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ARC]))){
 					
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_spline)){
 					
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_elipse)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ELIPSE]))){
 					
 				}
 				nk_tree_pop(gui->ctx);
 			}
 			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Modify", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 20, 20, 2);
+				nk_layout_row_static(gui->ctx, 28, 28, 2);
 				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_move)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MOVE]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","MOVE");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_dupli)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DUPLI]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","DUPLI");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_scale)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SCALE]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","SCALE");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_rotate)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ROT]))){
 					
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_mirror)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
 					
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_group)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BRICK]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","NEW_BLK");
 					/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
@@ -1435,7 +1431,7 @@ int main(int argc, char** argv){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","INSERT");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_delete)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
 					recv_comm_flag = 1;
 					snprintf(recv_comm, 64, "%s","DELETE");
 				}
@@ -3076,6 +3072,8 @@ int main(int argc, char** argv){
 	}
 	bmp_free(blk_prvw_big);
 	
+	i_svg_free_bmp(svg_bmp);
+	i_svg_free_curves(svg_curves);
 	
 	
 	for (i = 0; i<drawing->num_fonts; i++){
