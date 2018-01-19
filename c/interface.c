@@ -38,15 +38,6 @@
 
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
-char svg_trash[] =
-"<svg width=\"24\" height=\"24\" xmlns=\"http://www.w3.org/2000/svg\" "
-"fill-rule=\"evenodd\" clip-rule=\"evenodd\"><path d=\"M19 24h-14c-1.104 "
-"0-2-.896-2-2v-16h18v16c0 1.104-.896 2-2 2m-9-14c0-.552-.448-1-1-1s-1 "
-".448-1 1v9c0 .552.448 1 1 1s1-.448 1-1v-9zm6 0c0-.552-.448-1-1-1s-1 "
-".448-1 1v9c0 .552.448 1 1 1s1-.448 1-1v-9zm6-5h-20v-2h6v-1.5c0-.827.673-1.5 "
-"1.5-1.5h5c.825 0 1.5.671 1.5 1.5v1.5h6v2zm-12-2h4v-1h-4v1z\" "
-"fill=\"#F9F9F9\"/></svg>";
-
 void
 set_style(struct nk_context *ctx, enum theme theme)
 {
@@ -312,62 +303,6 @@ void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print t
 	}
 }
 
-int get_svg_bmp(bmp_img *img, char *svg){
-	NSVGimage *curves = NULL;
-	NSVGrasterizer *rast = NULL;
-	int w, h, ok = 1;
-	double ofs_x, ofs_y, zoom;
-	
-	/*copy the svg string to preserve them 
-	char *str = malloc(strlen(svg) + 1);
-	if (str){
-		strcpy(str, svg);
-	}
-	else return 0;*/
-	
-	curves = nsvgParse(svg, "px", 96.0f);
-	if (curves == NULL) {
-		ok =0;
-		goto error_get_svg_bmp;
-	}
-	w = img->width;
-	h = img->height;
-	
-
-	rast = nsvgCreateRasterizer();
-	if (rast == NULL) {
-		ok =0;
-		goto error_get_svg_bmp;
-	}
-	img->r_i = 0;
-	img->g_i = 1;
-	img->b_i = 2;
-	img->a_i = 3;
-	bmp_fit(img, 0, 0, curves->width, curves->height, &zoom, &ofs_x, &ofs_y);
-	nsvgRasterize(rast, curves, -ofs_x, -ofs_y, zoom, img->buf, w, h, w*4);
-
-error_get_svg_bmp:
-	nsvgDeleteRasterizer(rast);
-	nsvgDelete(curves);
-	//free(str);
-	return ok;
-}
-
-void toolbox_get_imgs(bmp_img *img, int w, int h, bmp_img *vec[], int num){
-	if (vec){
-		int i, col = 0, lin = 0;
-		for (i = 0; i < num; i++){
-			vec[i] = NULL;
-			vec[i] = bmp_sub_img(img, col * w, lin * h, w, h);
-			col++;
-			if ((col * w) + w > (int) img->width){
-				col = 0;
-				lin++;
-			}
-		}
-	}
-}
-
 void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
 	/* draw cursor */
 	/* set the pattern */
@@ -584,8 +519,18 @@ int main(int argc, char** argv){
 	#define T_AL_H_LEN 6
 	int t_al_h = 0;
 	
-	unsigned int width = 1024;
-	unsigned int height = 600;
+	/* Window dimension */
+	unsigned int win_w = 1200;
+	unsigned int win_h = 800;
+	
+	/* background image dimension */
+	unsigned int main_w = 1200;
+	unsigned int main_h = 800;
+	
+	/*gui pos variables */
+	int next_win_x = 0, next_win_y = 0, next_win_w = 0, next_win_h = 0;
+	
+	
 	int open_prg = 0;
 	int progress = 0;
 	int progr_win = 0;
@@ -644,6 +589,13 @@ int main(int argc, char** argv){
 		FILE_SAVE,
 		EXPORT,
 		VIEW_ZOOM_EXT,
+		VIEW_ZOOM_P,
+		VIEW_ZOOM_M,
+		VIEW_ZOOM_W,
+		VIEW_PAN_U,
+		VIEW_PAN_D,
+		VIEW_PAN_L,
+		VIEW_PAN_R,
 		DELETE,
 		UNDO,
 		REDO,
@@ -707,7 +659,7 @@ int main(int argc, char** argv){
 	
 	
 	/* init the main image */
-	bmp_img * img = bmp_new(width, height, grey, red);
+	bmp_img * img = bmp_new(main_w, main_h, grey, red);
 	
 	/* init Nuklear GUI */
 	struct font_obj font;
@@ -727,71 +679,10 @@ int main(int argc, char** argv){
 	gui->ctx->style.edit.padding = nk_vec2(4, -6);
 	
 	/* init the toolbox image */
+	#define ICON_SIZE 24
+	
 	NSVGimage **svg_curves = i_svg_all_curves();
-	bmp_img **svg_bmp = i_svg_all_bmp(svg_curves, 24, 24);
-	
-	
-	
-	bmp_img * tool_img = bmp_load_img("tool4.png");
-	bmp_img * tool_vec[54];
-	toolbox_get_imgs(tool_img, 16, 16, tool_vec, 54);
-	struct nk_image i_new = nk_image_ptr(tool_vec[0]);
-	struct nk_image i_open = nk_image_ptr(tool_vec[1]);
-	struct nk_image i_save = nk_image_ptr(tool_vec[2]);
-	struct nk_image i_close = nk_image_ptr(tool_vec[3]);
-	struct nk_image i_export = nk_image_ptr(tool_vec[4]);
-	struct nk_image i_import = nk_image_ptr(tool_vec[5]);
-	struct nk_image i_print = nk_image_ptr(tool_vec[6]);
-	struct nk_image i_help = nk_image_ptr(tool_vec[7]);
-	struct nk_image i_copy = nk_image_ptr(tool_vec[8]);
-	struct nk_image i_cut = nk_image_ptr(tool_vec[9]);
-	struct nk_image i_paste = nk_image_ptr(tool_vec[10]);
-	struct nk_image i_undo = nk_image_ptr(tool_vec[11]);
-	struct nk_image i_redo = nk_image_ptr(tool_vec[12]);
-	struct nk_image i_view = nk_image_ptr(tool_vec[13]);
-	struct nk_image i_unview = nk_image_ptr(tool_vec[14]);
-	struct nk_image i_unlock = nk_image_ptr(tool_vec[15]);
-	struct nk_image i_lock = nk_image_ptr(tool_vec[16]);
-	struct nk_image i_select = nk_image_ptr(tool_vec[17]);
-	struct nk_image i_move = nk_image_ptr(tool_vec[18]);
-	struct nk_image i_dupli = nk_image_ptr(tool_vec[19]);
-	struct nk_image i_rotate = nk_image_ptr(tool_vec[20]);
-	struct nk_image i_mirror = nk_image_ptr(tool_vec[21]);
-	struct nk_image i_group = nk_image_ptr(tool_vec[22]);
-	struct nk_image i_ungroup = nk_image_ptr(tool_vec[23]);
-	struct nk_image i_delete = nk_image_ptr(tool_vec[24]);
-	struct nk_image i_line = nk_image_ptr(tool_vec[25]);
-	struct nk_image i_poly = nk_image_ptr(tool_vec[26]);
-	struct nk_image i_block = nk_image_ptr(tool_vec[27]);
-	struct nk_image i_circle = nk_image_ptr(tool_vec[28]);
-	struct nk_image i_arc = nk_image_ptr(tool_vec[29]);
-	struct nk_image i_text = nk_image_ptr(tool_vec[30]);
-	struct nk_image i_spline = nk_image_ptr(tool_vec[31]);
-	struct nk_image i_z_plus = nk_image_ptr(tool_vec[32]);
-	struct nk_image i_z_minus = nk_image_ptr(tool_vec[33]);
-	struct nk_image i_z_win = nk_image_ptr(tool_vec[34]);
-	struct nk_image i_z_all = nk_image_ptr(tool_vec[35]);
-	struct nk_image i_meas = nk_image_ptr(tool_vec[36]);
-	struct nk_image i_layer = nk_image_ptr(tool_vec[37]);
-	struct nk_image i_image = nk_image_ptr(tool_vec[38]);
-	struct nk_image i_lib = nk_image_ptr(tool_vec[39]);
-	struct nk_image i_scale = nk_image_ptr(tool_vec[40]);
-	struct nk_image i_elipse = nk_image_ptr(tool_vec[41]);
-	struct nk_image i_t_l = nk_image_ptr(tool_vec[42]);
-	struct nk_image i_t_c = nk_image_ptr(tool_vec[43]);
-	struct nk_image i_t_r = nk_image_ptr(tool_vec[44]);
-	struct nk_image i_t_bl = nk_image_ptr(tool_vec[45]);
-	struct nk_image i_t_bc = nk_image_ptr(tool_vec[46]);
-	struct nk_image i_t_br = nk_image_ptr(tool_vec[47]);
-	struct nk_image i_t_tl = nk_image_ptr(tool_vec[48]);
-	struct nk_image i_t_tc = nk_image_ptr(tool_vec[49]);
-	struct nk_image i_t_tr = nk_image_ptr(tool_vec[50]);
-	struct nk_image i_t_ml = nk_image_ptr(tool_vec[51]);
-	struct nk_image i_t_mc = nk_image_ptr(tool_vec[52]);
-	struct nk_image i_t_mr = nk_image_ptr(tool_vec[53]);
-	
-	//get_svg_bmp(tool_vec[24], svg_trash);
-	//get_svg_bmp(tool_vec[24], (char[])[SVG_TRASH]{svg_media();});
+	bmp_img **svg_bmp = i_svg_all_bmp(svg_curves, ICON_SIZE, ICON_SIZE);
 	
 	
 	bmp_img * attr_vec[15];
@@ -878,8 +769,8 @@ int main(int argc, char** argv){
 		"CadZinho", /* title */
 		SDL_WINDOWPOS_UNDEFINED, /* x position */
 		SDL_WINDOWPOS_UNDEFINED, /* y position */
-		width, /* width */
-		height, /* height */
+		win_w, /* width */
+		win_h, /* height */
 		0); /* flags */
 	
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
@@ -925,8 +816,8 @@ int main(int argc, char** argv){
 		renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STATIC, 
-		width, /* width */
-		height); /* height */
+		main_w, /* width */
+		main_h); /* height */
 		
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
@@ -961,7 +852,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONUP:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = height - mouse_y;
+						mouse_y = win_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 0;
 						}
@@ -972,7 +863,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONDOWN:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = height - mouse_y;
+						mouse_y = win_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 1;
 							leftMouseButtonClick = 1;
@@ -986,7 +877,7 @@ int main(int argc, char** argv){
 						MouseMotion = 1;
 						mouse_x = event.motion.x;
 						mouse_y = event.motion.y;
-						mouse_y = height - mouse_y;
+						mouse_y = win_h - mouse_y;
 						pos_x = (double) mouse_x/zoom + ofs_x;
 						pos_y = (double) mouse_y/zoom + ofs_y;
 						draw = 1;
@@ -996,7 +887,7 @@ int main(int argc, char** argv){
 						zoom = zoom + event.wheel.y * 0.2 * zoom;
 						
 						SDL_GetMouseState(&mouse_x, &mouse_y);
-						mouse_y = height - mouse_y;
+						mouse_y = win_h - mouse_y;
 						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
 						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
 						draw = 1;
@@ -1016,8 +907,26 @@ int main(int argc, char** argv){
 						}
 						break;
 					case SDL_KEYDOWN:
-						if (event.key.keysym.sym == SDLK_RETURN){
+						if ((event.key.keysym.sym == SDLK_RETURN) || (event.key.keysym.sym == SDLK_RETURN2)){
 							keyEnter = 1;
+						}
+						else if (event.key.keysym.sym == SDLK_UP){
+							action = VIEW_PAN_U;
+						}
+						else if (event.key.keysym.sym == SDLK_DOWN){
+							action = VIEW_PAN_D;
+						}
+						else if (event.key.keysym.sym == SDLK_LEFT){
+							action = VIEW_PAN_L;
+						}
+						else if (event.key.keysym.sym == SDLK_RIGHT){
+							action = VIEW_PAN_R;
+						}
+						else if (event.key.keysym.sym == SDLK_KP_MINUS){
+							action = VIEW_ZOOM_M;
+						}
+						else if (event.key.keysym.sym == SDLK_KP_PLUS){
+							action = VIEW_ZOOM_P;
 						}
 						break;
 					case SDL_TEXTINPUT:
@@ -1031,110 +940,292 @@ int main(int argc, char** argv){
 			}
 		}
 		
-		/* GUI */
-		/* main toolbox, for open files, save or exit */
-		/*if (nk_begin(gui->ctx, "Main", nk_rect(5, 5, 200, 40),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE)){
-			/*
-			nk_layout_row_dynamic(gui->ctx, 30, 1);
-			if (nk_button_label(gui->ctx, "Open")){
-				action = FILE_OPEN;
-			}
-			if (nk_button_label(gui->ctx, "Save")){
-				action = FILE_SAVE;
-			}
-			if (nk_button_label(gui->ctx, "Exit")){
-				action = EXIT;
-				quit = 1;
-			}*/
-			/*main menu 
-			nk_menubar_begin(gui->ctx);
-			nk_layout_row_dynamic(gui->ctx, 15, 3);
-			/* new menu
-			if (nk_menu_begin_label(gui->ctx, "FILE", NK_TEXT_LEFT, nk_vec2(120, 200))){
-				nk_layout_row_dynamic(gui->ctx, 15, 1);
-				if (nk_menu_item_label(gui->ctx, "Open", NK_TEXT_LEFT)){
+		next_win_h = 6 + 4 + ICON_SIZE + 4 + 6 + 4 + ICON_SIZE + 4 + 6;
+		next_win_x = 2;
+		next_win_y = 2;
+		
+		if (nk_begin(gui->ctx, "Main", nk_rect(next_win_x, next_win_y, win_w - 4, next_win_h),
+		NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)){
+			/* first line */
+			nk_layout_row_begin(gui->ctx, NK_STATIC, ICON_SIZE + 12, 8);
+			
+			/* file tools*/
+			nk_layout_row_push(gui->ctx, 6*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "file", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NEW]))){
+					printf("NEW\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_OPEN]))){
 					action = FILE_OPEN;
 				}
-				if (nk_menu_item_label(gui->ctx, "Save", NK_TEXT_LEFT)){
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SAVE]))){
 					action = FILE_SAVE;
 				}
-				if (nk_menu_item_label(gui->ctx, "Exit", NK_TEXT_LEFT)){
-					action = EXIT;
-					quit = 1;
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EXPORT]))){
+					action = EXPORT;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CLOSE]))){
+					printf("CLOSE\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PRINT]))){
+					printf("PRINT\n");
 				}
 				
-				nk_menu_end(gui->ctx);
+				nk_group_end(gui->ctx);
 			}
-			/* new menu
-			if (nk_menu_begin_label(gui->ctx, "VIEW", NK_TEXT_LEFT, nk_vec2(120, 200))){
-				nk_layout_row_dynamic(gui->ctx, 15, 1);
-				if (nk_menu_item_label(gui->ctx, "Extend", NK_TEXT_LEFT)){
+			
+			/* clipboard tools*/
+			nk_layout_row_push(gui->ctx, 3*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "clipboard", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				
+				
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_COPY]))){
+					printf("Copy\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CUT]))){
+					printf("Cut\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PASTE]))){
+					printf("Paste\n");
+				}
+				
+				nk_group_end(gui->ctx);
+			}
+			
+			/* undo/redo tools*/
+			nk_layout_row_push(gui->ctx, 2*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "undo-redo", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNDO]))){
+					action = UNDO;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_REDO]))){
+					action = REDO;
+				}
+				nk_group_end(gui->ctx);
+			}
+			
+			/* managers*/
+			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "managers", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LAYERS]))){
+					printf("Layers\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FONT]))){
+					printf("FONT\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LTYPE]))){
+					printf("Line types\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PUZZLE]))){
+					printf("Blocks\n");
+				}
+				nk_group_end(gui->ctx);
+			}
+			
+			/* zoom tools*/
+			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "zoom", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_P]))){
+					action = VIEW_ZOOM_P;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_M]))){
+					action = VIEW_ZOOM_M;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_W]))){
+					action = VIEW_ZOOM_W;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_A]))){
 					action = VIEW_ZOOM_EXT;
 				}
-				if (nk_menu_item_label(gui->ctx, "Zoom in", NK_TEXT_LEFT)){
-					//action = FILE_OPEN;
-				}
-				nk_menu_end(gui->ctx);
+				nk_group_end(gui->ctx);
 			}
-			/* new menu
-			if (nk_menu_begin_label(gui->ctx, "HELP", NK_TEXT_LEFT, nk_vec2(120, 200))){
-				nk_layout_row_dynamic(gui->ctx, 15, 1);
-				if (nk_menu_item_label(gui->ctx, "About", NK_TEXT_LEFT)){
-					//action = FILE_OPEN;
+			
+			/* pan tools*/
+			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "pan", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UP]))){
+					action = VIEW_PAN_U;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DOWN]))){
+					action = VIEW_PAN_D;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LEFT]))){
+					action = VIEW_PAN_L;
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RIGTH]))){
+					action = VIEW_PAN_R;
+				}
+				nk_group_end(gui->ctx);
+			}
+			
+			/* config tools*/
+			nk_layout_row_push(gui->ctx, 3*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "config", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_INFO]))){
+					show_info = 1;
+					//printf("Info\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TOOL]))){
+					printf("Tools\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_GEAR]))){
+					printf("Config\n");
+				}
+				nk_group_end(gui->ctx);
+			}
+			
+			/* config tools*/
+			nk_layout_row_push(gui->ctx, 1*(ICON_SIZE + 4 + 4) + 13);
+			if (nk_group_begin(gui->ctx, "help", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_HELP]))){
+					show_app_about = 1;
+					//printf("HELP\n");
+				}
+				nk_group_end(gui->ctx);
+			}
+			
+			nk_layout_row_end(gui->ctx);
+			/*------------ end first line --------------*/
+			
+			/* second line */
+			nk_layout_row_begin(gui->ctx, NK_STATIC, ICON_SIZE + 4, ICON_SIZE + 4);
+			
+			static char text[64];
+			int text_len;
+			nk_layout_row_push(gui->ctx, 680);
+			if (nk_group_begin(gui->ctx, "Prop", NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
+				
+				/*layer*/
+				nk_layout_row_push(gui->ctx, 200);
+				if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(300,300))){
+					float wid[] = {120, 28, 28};
+					nk_layout_row(gui->ctx, NK_STATIC, 28, 3, wid);
+					int num_layers = drawing->num_layers;
+					for (i = 0; i < num_layers; i++){
+						//strcpy(layer_nam[i], drawing->layers[i].name);
+						if (nk_button_label(gui->ctx, drawing->layers[i].name)){
+							layer_idx = i;
+							action = LAYER_CHANGE;
+							nk_combo_close(gui->ctx);
+						}
+						if (drawing->layers[i].off){
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
+								drawing->layers[i].off = 0;
+							}
+						}
+						else{
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
+								drawing->layers[i].off = 1;
+							}
+						}
+						if (drawing->layers[i].lock){
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
+								drawing->layers[i].lock = 0;
+							}
+						}
+						else{
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNLOCK]))){
+								drawing->layers[i].lock = 1;
+							}
+						}
+					}
+					
+					nk_combo_end(gui->ctx);
 				}
 				
-				nk_menu_end(gui->ctx);
+				/*color picker */
+				int c_idx = color_idx;
+				if (c_idx >255){
+					c_idx = drawing->layers[layer_idx].color;
+					if (c_idx >255){
+						c_idx = 0;
+					}
+				}
+				/* fill the tiny bitmap with selected color*/
+				bmp_fill(color_img, dxf_colors[c_idx]);
+				
+				/* print the name (number) of color */
+				if (color_idx <256){
+					text_len = snprintf(text, 63, "%d", color_idx);
+				}
+				else{
+					text_len = snprintf(text, 63, "%s", "ByL");
+				}
+				
+				nk_layout_row_push(gui->ctx, 70);
+				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
+					nk_layout_row_static(gui->ctx, 15, 15, 10);
+					for (i = 0; i < 256; i++){
+						struct nk_color b_color = {
+							.r = dxf_colors[i].r,
+							.g = dxf_colors[i].g,
+							.b = dxf_colors[i].b,
+							.a = dxf_colors[i].a
+						};
+						if(nk_button_color(gui->ctx, b_color)){
+							color_idx = i;
+							action = COLOR_CHANGE;
+							nk_combo_close(gui->ctx);
+						}
+					}
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+						if (nk_button_label(gui->ctx, "By Layer")){
+							color_idx = 256;
+							action = COLOR_CHANGE;
+							nk_combo_close(gui->ctx);
+						}
+					nk_combo_end(gui->ctx);
+				}
+				
+				/*line type*/
+				nk_layout_row_push(gui->ctx, 200);
+				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
+					nk_layout_row_dynamic(gui->ctx, 25, 2);
+					int num_ltypes = drawing->num_ltypes;
+					
+					for (i = 0; i < num_ltypes; i++){
+						
+						if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
+							ltypes_idx = i;
+							action = LTYPE_CHANGE;
+							nk_combo_close(gui->ctx);
+						}
+						nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
+					}
+					
+					nk_combo_end(gui->ctx);
+				}
+				
+				/* thickness */
+				nk_layout_row_push(gui->ctx, 150);
+				//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
+				//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
+				
+				//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
+				thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick_prev, 20.0d, 0.1d, 0.1d);
+				if (thick_prev != thick){
+					action = THICK_CHANGE;
+					//printf ("thick change\n");
+				}
+				thick_prev = thick;
+				
+				nk_layout_row_end(gui->ctx);
+				
+				nk_group_end(gui->ctx);
 			}
 			
-			nk_menubar_end(gui->ctx);
-		}
-		nk_end(gui->ctx);*/
-		
-		if (nk_begin(gui->ctx, "Main", nk_rect(2, 2, width - 4, 32),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR)){
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_new)){
-				printf("NEW\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_open)){
-				action = FILE_OPEN;
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_save)){
-				action = FILE_SAVE;
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_export)){
-				action = EXPORT;
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_close)){
-				printf("CLOSE\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_help)){
-				show_app_about = 1;
-				//printf("HELP\n");
-			}
-			
-			/* put a simple separator*/
-			nk_layout_row_push(gui->ctx, 10);
-			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
-			
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_undo)){
-				action = UNDO;
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_redo)){
-				action = REDO;
-			}
-			/* put a simple separator*/
-			nk_layout_row_push(gui->ctx, 10);
-			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
+			nk_layout_row_end(gui->ctx);
+			/*------------ end second line --------------*/
 			
 			if (show_app_about){
 				/* about popup */
@@ -1156,370 +1247,121 @@ int main(int argc, char** argv){
 					nk_popup_end(gui->ctx);
 				} else show_app_about = nk_false;
 			}
-			
-			static char text[64];
-			int text_len;
-			
-			/*layer*/
-			nk_layout_row_push(gui->ctx, 200);
-			if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(200,200))){
-				float wid[] = {120, 20, 20};
-				nk_layout_row(gui->ctx, NK_STATIC, 20, 3, wid);
-				int num_layers = drawing->num_layers;
-				for (i = 0; i < num_layers; i++){
-					//strcpy(layer_nam[i], drawing->layers[i].name);
-					if (nk_button_label(gui->ctx, drawing->layers[i].name)){
-						layer_idx = i;
-						action = LAYER_CHANGE;
-						nk_combo_close(gui->ctx);
-					}
-					if (drawing->layers[i].off){
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unview)){
-							drawing->layers[i].off = 0;
-						}
-					}
-					else{
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_view)){
-							drawing->layers[i].off = 1;
-						}
-					}
-					if (drawing->layers[i].lock){
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lock)){
-							drawing->layers[i].lock = 0;
-						}
-					}
-					else{
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, i_unlock)){
-							drawing->layers[i].lock = 1;
-						}
-					}
-				}
-				
-				nk_combo_end(gui->ctx);
-			}
-			
-			/*color picker */
-			int c_idx = color_idx;
-			if (c_idx >255){
-				c_idx = drawing->layers[layer_idx].color;
-				if (c_idx >255){
-					c_idx = 0;
-				}
-			}
-			/* fill the tiny bitmap with selected color*/
-			bmp_fill(color_img, dxf_colors[c_idx]);
-			
-			/* print the name (number) of color */
-			if (color_idx <256){
-				text_len = snprintf(text, 63, "%d", color_idx);
-			}
-			else{
-				text_len = snprintf(text, 63, "%s", "ByL");
-			}
-			
-			nk_layout_row_push(gui->ctx, 70);
-			if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
-				nk_layout_row_static(gui->ctx, 15, 15, 10);
-				for (i = 0; i < 256; i++){
-					struct nk_color b_color = {
-						.r = dxf_colors[i].r,
-						.g = dxf_colors[i].g,
-						.b = dxf_colors[i].b,
-						.a = dxf_colors[i].a
-					};
-					if(nk_button_color(gui->ctx, b_color)){
-						color_idx = i;
-						action = COLOR_CHANGE;
-						nk_combo_close(gui->ctx);
-					}
-				}
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-					if (nk_button_label(gui->ctx, "By Layer")){
-						color_idx = 256;
-						action = COLOR_CHANGE;
-						nk_combo_close(gui->ctx);
-					}
-				nk_combo_end(gui->ctx);
-			}
-			
-			/*line type*/
-			nk_layout_row_push(gui->ctx, 200);
-			if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
-				nk_layout_row_dynamic(gui->ctx, 25, 2);
-				int num_ltypes = drawing->num_ltypes;
-				
-				for (i = 0; i < num_ltypes; i++){
-					
-					if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
-						ltypes_idx = i;
-						action = LTYPE_CHANGE;
-						nk_combo_close(gui->ctx);
-					}
-					nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
-				}
-				
-				nk_combo_end(gui->ctx);
-			}
-			
-			/* thickness */
-			nk_layout_row_push(gui->ctx, 150);
-			//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
-			//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
-			
-			//double nk_propertyd(struct nk_context*, const char *name, double min, double val, double max, double step, float inc_per_pixel);
-			thick = nk_propertyd(gui->ctx, "Thickness", 0.0d, thick_prev, 20.0d, 0.1d, 0.1d);
-			if (thick_prev != thick){
-				action = THICK_CHANGE;
-				//printf ("thick change\n");
-			}
-			thick_prev = thick;
-			
-			/* put a simple separator*/
-			nk_layout_row_push(gui->ctx, 10);
-			nk_label_colored(gui->ctx, "|", NK_TEXT_CENTERED, nk_rgba(46, 46, 46, 255));
-			
-			/* zoom*/
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_plus)){
-				printf("ZOOM +\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_minus)){
-				printf("ZOOM -\n");
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_win)){
-				//printf("ZOOM win\n");
-				show_info = 1;
-			}
-			nk_layout_row_push(gui->ctx, 20);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, i_z_all)){
-				printf("ZOOM all\n");
-				action = VIEW_ZOOM_EXT;
-			}
-			
-			nk_layout_row_end(gui->ctx);
-			
-			
-			
-			
 		}
 		nk_end(gui->ctx);
 		
-		
-		if (show_info){
-			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
-			if (nk_begin(gui->ctx, "Info", nk_rect(310, 50, 200, 300),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				nk_label(gui->ctx, "BLK:", NK_TEXT_LEFT);
-				i = 1;
-				nk_dxf_ent_info (gui->ctx, drawing->blks, i);
-				
-				nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
-				if (sel_list != NULL){				
-					list_node *current = sel_list->next;
-					// starts the content sweep 
-					i = 2;
-					while (current != NULL){
-						if (current->data){
-							if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-								// -------------------------------------------
-								nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
-								i++;
-								
-								//---------------------------------------
-							}
-						}
-						current = current->next;
-					}
-				}
-				//nk_popup_end(gui->ctx);
-			} else show_info = nk_false;
-			nk_end(gui->ctx);
+		/*
+		if (nk_begin(gui->ctx, "Icons", nk_rect(500, 50, 200, 500),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
+			nk_layout_row_static(gui->ctx, 28, 28, 6);
+			for (i = 0; i <  SVG_MEDIA_SIZE; i++){
+				nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[i]));
+			}
+			
 		}
+		nk_end(gui->ctx);*/
 		
+		next_win_y += next_win_h + 3;
+		next_win_w = 200;
+		next_win_h = 500;
 		
-		
-		
-		if (nk_begin(gui->ctx, "Toolbox", nk_rect(2, 50, 100, 500),
+		if (nk_begin(gui->ctx, "Toolbox", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			
-			/*
-			struct nk_image tool;
-			for (i = 0; i < 40; i++){
-				tool = nk_image_ptr(tool_vec[i]);
-				tool.w = tool_vec[0]->width;
-				tool.h = tool_vec[0]->height;
-				tool.region[2] = (unsigned short)tool_vec[0]->width;
-				tool.region[3] = (unsigned short)tool_vec[0]->height;
-				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, tool)){
-					printf("i = %d\n", i);
-				}
-			}*/
-			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Place", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 28, 28, 2);
-				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CURSOR]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","SELECT");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LINE]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","LINE");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PLINE]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","POLYLINE");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RECT]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","RECT");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","TEXT");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CIRCLE]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","CIRCLE");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ARC]))){
-					
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_spline)){
-					
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ELIPSE]))){
-					
-				}
-				nk_tree_pop(gui->ctx);
+			//if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Place", NK_MAXIMIZED)) {
+			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			nk_label(gui->ctx, "Modify:", NK_TEXT_LEFT);
+			
+			nk_layout_row_static(gui->ctx, 28, 28, 4);
+			
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CURSOR]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","SELECT");
 			}
-			if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Modify", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 28, 28, 2);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT_E]))){
 				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MOVE]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","MOVE");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DUPLI]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","DUPLI");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SCALE]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","SCALE");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ROT]))){
-					
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
-					
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BRICK]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","NEW_BLK");
-					/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
-					dxf_ent_print2(drawing->blks);
-					dxf_ent_print2(drawing->blks_rec);*/
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, i_lib)){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","INSERT");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
-					recv_comm_flag = 1;
-					snprintf(recv_comm, 64, "%s","DELETE");
-				}
-				nk_tree_pop(gui->ctx);
 			}
-			/*if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Attract", NK_MAXIMIZED)) {
-				nk_layout_row_static(gui->ctx, 15, 40, 1);
-				int selected;
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MOVE]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","MOVE");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DUPLI]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","DUPLI");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SCALE]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","SCALE");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ROT]))){
 				
-				//ATRC_END = 1,
-				selected = (curr_attr_t & ATRC_END);
-				/*nk_selectable_label(gui->ctx, "End", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_END;
-				else curr_attr_t &= ~ATRC_END;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
 				
-				if (selected){
-					if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, i_delete)){
-						curr_attr_t &= ~ATRC_END;
-					}
-				}else {
-					if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, i_delete)){
-						curr_attr_t |= ATRC_END;
-					}
-				}
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","DELETE");
+			}
 				
-				//ATRC_MID = 2,
-				selected = (curr_attr_t & ATRC_MID);
-				nk_selectable_label(gui->ctx, "Mid", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_MID;
-				else curr_attr_t &= ~ATRC_MID;
+			
+			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			nk_label(gui->ctx, "Place:", NK_TEXT_LEFT);
 				
-				//ATRC_CENTER = 4,
-				selected = (curr_attr_t & ATRC_CENTER);
-				nk_selectable_label(gui->ctx, "Cen", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_CENTER;
-				else curr_attr_t &= ~ATRC_CENTER;
+			nk_layout_row_static(gui->ctx, 28, 28, 4);
+			
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LINE]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","LINE");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PLINE]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","POLYLINE");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RECT]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","RECT");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","TEXT");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CIRCLE]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","CIRCLE");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ELIPSE]))){
 				
-				//ATRC_QUAD = 8,
-				selected = (curr_attr_t & ATRC_QUAD);
-				nk_selectable_label(gui->ctx, "Quad", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_QUAD;
-				else curr_attr_t &= ~ATRC_QUAD;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ARC]))){
 				
-				//ATRC_INTER = 16,
-				selected = (curr_attr_t & ATRC_INTER);
-				nk_selectable_label(gui->ctx, "Int", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_INTER;
-				else curr_attr_t &= ~ATRC_INTER;
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SPLINE]))){
 				
-				selected = (curr_attr_t & ATRC_INS);
-				nk_selectable_label(gui->ctx, "Ins", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_INS;
-				else curr_attr_t &= ~ATRC_INS;
+			}
+			
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","NEW_BLK");
+				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
+				dxf_ent_print2(drawing->blks);
+				dxf_ent_print2(drawing->blks_rec);*/
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BOOK]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","INSERT");
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_IMAGE]))){
 				
-				selected = (curr_attr_t & ATRC_NODE);
-				nk_selectable_label(gui->ctx, "Node", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_NODE;
-				else curr_attr_t &= ~ATRC_NODE;
-				
-				selected = (curr_attr_t & ATRC_TAN);
-				nk_selectable_label(gui->ctx, "TAN", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_TAN;
-				else curr_attr_t &= ~ATRC_TAN;
-				
-				selected = (curr_attr_t & ATRC_PERP);
-				nk_selectable_label(gui->ctx, "PERP", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_PERP;
-				else curr_attr_t &= ~ATRC_PERP;
-				
-				//ATRC_PERP = 32,
-				//ATRC_INS = 64,
-				//ATRC_CTRL = 128,
-				//ATRC_KEY = 256,
-				
-				//ATRC_ANY = 512
-				selected = (curr_attr_t & ATRC_ANY);
-				nk_selectable_label(gui->ctx, "Any", NK_TEXT_LEFT, &selected);
-				if (selected) curr_attr_t |= ATRC_ANY;
-				else curr_attr_t &= ~ATRC_ANY;
-				
-				nk_tree_pop(gui->ctx);
-			}*/
-		}
-		nk_end(gui->ctx);
+			}
+			
+			struct nk_vec2 w_pos = nk_widget_position(gui->ctx);
+			struct nk_rect w_cont = nk_window_get_content_region(gui->ctx);
 		
-		if (nk_begin(gui->ctx, "Tool", nk_rect(110, 50, 200, 200),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
+			nk_layout_row_dynamic(gui->ctx, w_cont.h - (w_pos.y - w_cont.y), 1);
+			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 			switch (modal) {
 				case SELECT:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -1734,8 +1576,49 @@ int main(int argc, char** argv){
 					}
 					break;
 			}
+			nk_group_end(gui->ctx);
+			}
 		}
 		nk_end(gui->ctx);
+		
+		next_win_x += next_win_w + 3;
+		//next_win_y += next_win_h + 3;
+		next_win_w = 200;
+		next_win_h = 300;
+		
+		if (show_info){
+			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
+			if (nk_begin(gui->ctx, "Info", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				nk_label(gui->ctx, "BLK:", NK_TEXT_LEFT);
+				i = 1;
+				nk_dxf_ent_info (gui->ctx, drawing->blks, i);
+				
+				nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
+				if (sel_list != NULL){				
+					list_node *current = sel_list->next;
+					// starts the content sweep 
+					i = 2;
+					while (current != NULL){
+						if (current->data){
+							if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+								// -------------------------------------------
+								nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
+								i++;
+								
+								//---------------------------------------
+							}
+						}
+						current = current->next;
+					}
+				}
+				//nk_popup_end(gui->ctx);
+			} else show_info = nk_false;
+			nk_end(gui->ctx);
+		}
 		
 		if (progr_win){
 			/* opening */
@@ -1761,7 +1644,7 @@ int main(int argc, char** argv){
 		}
 		
 		/* interface to the user visualize and enter coordinates distances*/
-		if (nk_begin(gui->ctx, "POS", nk_rect(2, height - 48, width - 4, 50),
+		if (nk_begin(gui->ctx, "POS", nk_rect(2, win_h - 48, win_w - 4, 50),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
 		{
 			nk_flags res;
@@ -1878,16 +1761,24 @@ int main(int argc, char** argv){
 			else nk_selectable_label(gui->ctx, "Absolute", NK_TEXT_CENTERED, &entry_relative);
 			
 			/*----------- attractors --------------*/
-			nk_layout_row_push(gui->ctx, 160);
-			nk_label(gui->ctx, "Attractors ->", NK_TEXT_RIGHT);
+			//nk_layout_row_push(gui->ctx, 160);
+			//nk_label(gui->ctx, "Attractors ->", NK_TEXT_RIGHT);
 			
 			/* Toggle on/off attractors*/
 			nk_layout_row_push(gui->ctx, 30);
-			if (en_attr){
+			/*if (en_attr){
 				nk_selectable_label(gui->ctx, "On", NK_TEXT_CENTERED, &en_attr);
 			}
-			else nk_selectable_label(gui->ctx, "Off", NK_TEXT_CENTERED, &en_attr);
-			
+			else nk_selectable_label(gui->ctx, "Off", NK_TEXT_CENTERED, &en_attr);*/
+			if (en_attr){
+				if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(svg_bmp[SVG_MAGNET]))){
+					en_attr = 0;
+				}
+			}else {
+				if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(svg_bmp[SVG_MAGNET]))){
+					en_attr = 1;
+				}
+			}
 			/* Buttons to select attractor mode*/
 			int selected, i, attr = 1;
 				
@@ -2020,6 +1911,43 @@ int main(int argc, char** argv){
 		else if(action == VIEW_ZOOM_EXT){
 			action = NONE;
 			zoom_ext(drawing, img, &zoom, &ofs_x, &ofs_y);
+			draw = 1;
+		}
+		else if(action == VIEW_ZOOM_P){
+			action = NONE;
+			
+			prev_zoom = zoom;
+			zoom = zoom + 0.2 * zoom;
+			ofs_x += (win_w/2)*(1/prev_zoom - 1/zoom);
+			ofs_y += (win_h/2)*(1/prev_zoom - 1/zoom);
+			draw = 1;
+		}
+		else if(action == VIEW_ZOOM_M){
+			action = NONE;
+			prev_zoom = zoom;
+			zoom = zoom - 0.2 * zoom;
+			ofs_x += (win_w/2)*(1/prev_zoom - 1/zoom);
+			ofs_y += (win_h/2)*(1/prev_zoom - 1/zoom);
+			draw = 1;
+		}
+		else if(action == VIEW_PAN_U){
+			action = NONE;
+			ofs_y += (win_h*0.1)/zoom;
+			draw = 1;
+		}
+		else if(action == VIEW_PAN_D){
+			action = NONE;
+			ofs_y -= (win_h*0.1)/zoom;
+			draw = 1;
+		}
+		else if(action == VIEW_PAN_L){
+			action = NONE;
+			ofs_x -= (win_w*0.1)/zoom;
+			draw = 1;
+		}
+		else if(action == VIEW_PAN_R){
+			action = NONE;
+			ofs_x += (win_w*0.1)/zoom;
 			draw = 1;
 		}
 		else if(action == DELETE){
@@ -3023,7 +2951,7 @@ int main(int argc, char** argv){
 			
 			nk_sdl_render(gui, img);
 			
-			SDL_UpdateTexture(canvas, NULL, img->buf, width * 4);
+			SDL_UpdateTexture(canvas, NULL, img->buf, main_w * 4);
 			SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, NULL, NULL);
 			SDL_RenderPresent(renderer);
@@ -3066,10 +2994,10 @@ int main(int argc, char** argv){
 	do_mem_pool(FREE_DO_ALL);
 	
 	bmp_free(img);
-	bmp_free(tool_img);
+	/*bmp_free(tool_img);
 	for(i = 0; i < 40; i++){
 		bmp_free(tool_vec[i]);
-	}
+	}*/
 	bmp_free(blk_prvw_big);
 	
 	i_svg_free_bmp(svg_bmp);
