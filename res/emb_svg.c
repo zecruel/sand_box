@@ -40,7 +40,7 @@ int listdir(char *dir, char *type) {
 		return 0;
 	}
 	
-	ret_file = fopen("../svg_media.h", "w");
+	ret_file = fopen("svg_media.h", "w");
 	if (ret_file == NULL){
 		perror("Failed to open return file\n");
 		return 0;
@@ -83,7 +83,7 @@ int listdir(char *dir, char *type) {
 	
 	fprintf (ret_file, "    SVG_MEDIA_SIZE\n} svg_list;\n\n");
 	
-	fprintf (ret_file, "char * svg_media[] = {\n");
+	fprintf (ret_file, "char * svg_data[] = {\n");
 	
 	rewinddir(work);
 	while((entry = readdir(work))){
@@ -105,10 +105,10 @@ int listdir(char *dir, char *type) {
 					end = name;
 					while (*end= toupper(*end)) end++;
 					
-					fprintf (ret_file, "[SVG_%s] = (char[]){\"", name);
+					fprintf (ret_file, "\t[SVG_%s] = (char[]){\"", name);
 					while( ( ch = fgetc(curr_file) ) != EOF ){
 						if (ch == '\"') fprintf (ret_file, "\\\"");
-						else if (ch == '\n') fprintf (ret_file, "\"\n\"");
+						else if (ch == '\n') fprintf (ret_file, "\"\n\t\"");
 						else fputc(ch, ret_file);
 					}
 					fprintf (ret_file, "\"},\n\n");

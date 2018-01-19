@@ -1,9 +1,9 @@
 <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
-  <polygon stroke="#000000" stroke-width="2" points="11.220155715942383,7.165107727050781 7.3665971755981445,12.469076156616211 1.13140869140625,10.44313907623291 1.13140869140625,3.887075662612915 7.3665971755981445,1.861140251159668 11.220155715942383,7.165107727050781 " fill="none" id="svg_27"/>
-  <polygon stroke="#000000" stroke-width="2" points="12.504858016967773,16.751941680908203 16.45220375061035,11.31888484954834 22.83914566040039,13.394128799438477 22.83914566040039,20.109752655029297 16.45220375061035,22.184999465942383 12.504858016967773,16.751941680908203 " fill="none" id="svg_2"/>
-  <line stroke="#000000" id="svg_1" y2="23.16259" x2="3.59051" y1="20.26599" x1="5.793" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
-  <line id="svg_4" stroke="#000000" y2="18.24431" x2="7.23523" y1="15.34771" x1="9.43771" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
-  <line id="svg_5" stroke="#000000" y2="13.13855" x2="11.03952" y1="10.24195" x1="13.242" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
-  <line id="svg_6" stroke="#000000" y2="8.33313" x2="14.64358" y1="5.43653" x1="16.84607" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
-  <line id="svg_7" stroke="#000000" y2="3.62783" x2="18.04742" y1="0.73123" x1="20.24991" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <polygon stroke="#000000" stroke-width="2" points="11.220155715942383,7.165107727050781 7.3665971755981445,12.469076156616211 1.13140869140625,10.44313907623291 1.13140869140625,3.887075662612915 7.3665971755981445,1.861140251159668 11.220155715942383,7.165107727050781 " fill="none" id="mirror1"/>
+  <polygon stroke="#000000" stroke-width="2" points="12.504858016967773,16.751941680908203 16.45220375061035,11.31888484954834 22.83914566040039,13.394128799438477 22.83914566040039,20.109752655029297 16.45220375061035,22.184999465942383 12.504858016967773,16.751941680908203 " fill="none" id="mirror2"/>
+  <line stroke="#000000" id="mirror3" y2="23.16259" x2="3.59051" y1="20.26599" x1="5.793" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="mirror4" stroke="#000000" y2="18.24431" x2="7.23523" y1="15.34771" x1="9.43771" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="mirror5" stroke="#000000" y2="13.13855" x2="11.03952" y1="10.24195" x1="13.242" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="mirror6" stroke="#000000" y2="8.33313" x2="14.64358" y1="5.43653" x1="16.84607" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="mirror7" stroke="#000000" y2="3.62783" x2="18.04742" y1="0.73123" x1="20.24991" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
 </svg>

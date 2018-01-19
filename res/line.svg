@@ -1,5 +1,5 @@
 <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
-  <line stroke="#000000" stroke-width="2" id="svg_2" y2="3.95966" x2="19.96678" y1="19.50219" x1="4.46648" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" fill="none"/>
-  <rect stroke="#000000" id="svg_6" height="2.2807" width="2.32293" y="2.05908" x="19.65001" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" fill="none"/>
-  <rect id="svg_7" stroke="#000000" height="2.2807" width="2.32293" y="19.18543" x="2.41808" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" fill="none"/>
+  <line fill="none" stroke-dasharray="null" stroke-linejoin="null" stroke-linecap="null" x1="4.46648" y1="19.50219" x2="19.96678" y2="3.95966" id="line1" stroke-width="2" stroke="#000000"/>
+  <rect stroke-width="2" stroke="#000000" fill="none" stroke-dasharray="null" stroke-linejoin="null" stroke-linecap="null" x="1.16667" y="19.02206" width="3.82462" height="3.75509" id="line2"/>
+  <rect id="line3" stroke-width="2" stroke="#000000" fill="none" stroke-dasharray="null" stroke-linejoin="null" stroke-linecap="null" x="18.99834" y="1.21301" width="3.82462" height="3.75509"/>
 </svg>
