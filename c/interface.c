@@ -11,7 +11,7 @@
 
 #include "dxf_colors.h"
 #include "dxf_seed.h"
-#include "I_svg_media.h"
+#include "i_svg_media.h"
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -29,7 +29,6 @@
 #define NK_ZERO_COMMAND_MEMORY
 #include "nuklear.h"
 #include "gui.h"
-#include "images.c"
 
 #define NANOSVG_IMPLEMENTATION
 #include "nanosvg.h"
@@ -461,6 +460,19 @@ void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, d
 	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2)/(*zoom);
 }
 
+void zoom_ext2(dxf_drawing *drawing, int x, int y, int width, int height, double *zoom, double *ofs_x, double *ofs_y){
+	double min_x, min_y, max_x, max_y;
+	double zoom_x, zoom_y;
+	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
+	zoom_x = fabs(max_x - min_x)/width;
+	zoom_y = fabs(max_y - min_y)/height;
+	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
+	*zoom = 1/(1.1 * (*zoom));
+	
+	*ofs_x = min_x - ((fabs((max_x - min_x)*(*zoom) - width)/2)+x)/(*zoom);
+	*ofs_y = min_y - ((fabs((max_y - min_y)*(*zoom) - height)/2)+y)/(*zoom);
+}
+
 void sel_list_append(list_node *list, dxf_node *ent){
 	if (list && ent){
 		if (list_find_data(list, ent)){
@@ -499,6 +511,49 @@ int WinMain(int argc, char** argv){
 int main(int argc, char** argv){
 #endif
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
+	int i, ok;
+	
+	
+	/* background image dimension */
+	unsigned int main_w = 0;
+	unsigned int main_h = 0;
+	
+	/* Window dimension */
+	unsigned int win_w = 1200;
+	unsigned int win_h = 715;
+	SDL_Rect win_r;
+	
+	/* init the SDL2 */
+	SDL_Init(SDL_INIT_VIDEO);
+	
+	SDL_Window * window = SDL_CreateWindow(
+		"CadZinho", /* title */
+		SDL_WINDOWPOS_UNDEFINED, /* x position */
+		SDL_WINDOWPOS_UNDEFINED, /* y position */
+		win_w, /* width */
+		win_h, /* height */
+		SDL_WINDOW_RESIZABLE); /* flags */
+		
+	SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
+	
+	SDL_RendererInfo rend_info;
+	
+	SDL_GetRendererInfo(renderer, &rend_info);
+	
+	main_w = rend_info.max_texture_width;
+	main_h = rend_info.max_texture_height;
+	
+	SDL_Texture * canvas = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STATIC, 
+		main_w, /* width */
+		main_h); /* height */
+		
+	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+	
+	
+	
 	
 	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
 	double prev_zoom;
@@ -519,13 +574,9 @@ int main(int argc, char** argv){
 	#define T_AL_H_LEN 6
 	int t_al_h = 0;
 	
-	/* Window dimension */
-	unsigned int win_w = 1200;
-	unsigned int win_h = 800;
 	
-	/* background image dimension */
-	unsigned int main_w = 1200;
-	unsigned int main_h = 800;
+	
+	
 	
 	/*gui pos variables */
 	int next_win_x = 0, next_win_y = 0, next_win_w = 0, next_win_h = 0;
@@ -539,7 +590,7 @@ int main(int argc, char** argv){
 	unsigned int wait_open = 0;
 	int show_app_about = 0;
 	int show_info = 0;
-	int i;
+	
 	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
 	vector_p *phanton = NULL;
 	struct nk_color background;
@@ -709,15 +760,6 @@ int main(int argc, char** argv){
 	b_icon_unsel_style.image_padding.x = -4;
 	b_icon_unsel_style.image_padding.y = -4;
 	
-	bmp_img * brazil_img = bmp_load_img2(brazil_flag.pixel_data, brazil_flag.width, brazil_flag.height);
-	struct nk_image i_brazil = nk_image_ptr(brazil_img);
-	
-	bmp_img * cz_img = bmp_load_img2(cz.pixel_data, cz.width, cz.height);
-	struct nk_image i_cz = nk_image_ptr(cz_img);
-	
-	bmp_img * cz48_img = bmp_load_img2(cz48.pixel_data, cz48.width, cz48.height);
-	struct nk_image i_cz48 = nk_image_ptr(cz48_img);
-	
 	bmp_img * color_img = bmp_new(15, 13, black, red);
 	struct nk_image i_color = nk_image_ptr(color_img);
 	
@@ -762,20 +804,16 @@ int main(int argc, char** argv){
 	dxf_ents_parse(drawing);
 	
 
-	/* init the SDL2 */
-	SDL_Init(SDL_INIT_VIDEO);
-
-	SDL_Window * window = SDL_CreateWindow(
-		"CadZinho", /* title */
-		SDL_WINDOWPOS_UNDEFINED, /* x position */
-		SDL_WINDOWPOS_UNDEFINED, /* y position */
-		win_w, /* width */
-		win_h, /* height */
-		0); /* flags */
+	
+	
+	
+	
 	
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
-		(void *)cz16.pixel_data, cz16.width, cz16.height,
-		32, cz16.width * 4,
+		(void *)svg_bmp[SVG_CZ]->buf,
+		svg_bmp[SVG_CZ]->width,
+		svg_bmp[SVG_CZ]->height,
+		32, svg_bmp[SVG_CZ]->width * 4,
 		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 
 	// The icon is attached to the window pointer
@@ -784,7 +822,7 @@ int main(int argc, char** argv){
 	// ...and the surface containing the icon pixel data is no longer required.
 	SDL_FreeSurface(surface);
 
-	SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
+	
 	/*
 	SDL_RendererInfo info;
 	if (SDL_GetRenderDriverInfo(0, &info) == 0){
@@ -811,17 +849,10 @@ int main(int argc, char** argv){
 		}
 	}
 	*/
-	
-	SDL_Texture * canvas = SDL_CreateTexture(
-		renderer,
-		SDL_PIXELFORMAT_ARGB8888,
-		SDL_TEXTUREACCESS_STATIC, 
-		main_w, /* width */
-		main_h); /* height */
+
 		
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
-	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	
 	/* main loop */
 	while (quit == 0){
@@ -852,7 +883,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONUP:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = win_h - mouse_y;
+						mouse_y = main_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 0;
 						}
@@ -863,7 +894,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONDOWN:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = win_h - mouse_y;
+						mouse_y = main_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 1;
 							leftMouseButtonClick = 1;
@@ -877,7 +908,7 @@ int main(int argc, char** argv){
 						MouseMotion = 1;
 						mouse_x = event.motion.x;
 						mouse_y = event.motion.y;
-						mouse_y = win_h - mouse_y;
+						mouse_y = main_h - mouse_y;
 						pos_x = (double) mouse_x/zoom + ofs_x;
 						pos_y = (double) mouse_y/zoom + ofs_y;
 						draw = 1;
@@ -887,7 +918,7 @@ int main(int argc, char** argv){
 						zoom = zoom + event.wheel.y * 0.2 * zoom;
 						
 						SDL_GetMouseState(&mouse_x, &mouse_y);
-						mouse_y = win_h - mouse_y;
+						mouse_y = main_h - mouse_y;
 						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
 						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
 						draw = 1;
@@ -940,12 +971,12 @@ int main(int argc, char** argv){
 			}
 		}
 		
-		next_win_h = 6 + 4 + ICON_SIZE + 4 + 6 + 4 + ICON_SIZE + 4 + 6;
+		next_win_h = 6 + 4 + ICON_SIZE + 4 + 6 + 4 + ICON_SIZE + 4 + 6 + 8;
 		next_win_x = 2;
 		next_win_y = 2;
 		
 		if (nk_begin(gui->ctx, "Main", nk_rect(next_win_x, next_win_y, win_w - 4, next_win_h),
-		NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)){
+		NK_WINDOW_BORDER)){
 			/* first line */
 			nk_layout_row_begin(gui->ctx, NK_STATIC, ICON_SIZE + 12, 8);
 			
@@ -1233,14 +1264,14 @@ int main(int argc, char** argv){
 				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "About", NK_WINDOW_CLOSABLE, s)){
 					nk_layout_row_dynamic(gui->ctx, 50, 2);
 					nk_label(gui->ctx, "CadZinho", NK_TEXT_RIGHT);
-					nk_image(gui->ctx, i_cz48);
+					nk_image(gui->ctx, nk_image_ptr(svg_bmp[SVG_CZ]));
 					//nk_layout_row_dynamic(gui->ctx, 165, 1);
 					//nk_image(gui->ctx, i_cz);
 					nk_layout_row_begin(gui->ctx, NK_DYNAMIC, 20, 2);
 					nk_layout_row_push(gui->ctx, 0.7f);
 					nk_label(gui->ctx, "By Ezequiel Rabelo de Aguiar", NK_TEXT_RIGHT);
 					nk_layout_row_push(gui->ctx, 0.3f);
-					nk_image(gui->ctx, i_brazil);
+					nk_image(gui->ctx, nk_image_ptr(svg_bmp[SVG_BRAZIL]));
 					nk_layout_row_end(gui->ctx);
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
@@ -1263,18 +1294,18 @@ int main(int argc, char** argv){
 		nk_end(gui->ctx);*/
 		
 		next_win_y += next_win_h + 3;
-		next_win_w = 200;
+		next_win_w = 210;
 		next_win_h = 500;
 		
 		if (nk_begin(gui->ctx, "Toolbox", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
+		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_NO_SCROLLBAR)){
 			
 			//if (nk_tree_push(gui->ctx, NK_TREE_TAB, "Place", NK_MAXIMIZED)) {
 			nk_layout_row_dynamic(gui->ctx, 20, 1);
 			nk_label(gui->ctx, "Modify:", NK_TEXT_LEFT);
 			
-			nk_layout_row_static(gui->ctx, 28, 28, 4);
+			nk_layout_row_static(gui->ctx, 28, 28, 6);
 			
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CURSOR]))){
 				recv_comm_flag = 1;
@@ -1310,7 +1341,7 @@ int main(int argc, char** argv){
 			nk_layout_row_dynamic(gui->ctx, 20, 1);
 			nk_label(gui->ctx, "Place:", NK_TEXT_LEFT);
 				
-			nk_layout_row_static(gui->ctx, 28, 28, 4);
+			nk_layout_row_static(gui->ctx, 28, 28, 6);
 			
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LINE]))){
 				recv_comm_flag = 1;
@@ -1357,10 +1388,13 @@ int main(int argc, char** argv){
 				
 			}
 			
-			struct nk_vec2 w_pos = nk_widget_position(gui->ctx);
-			struct nk_rect w_cont = nk_window_get_content_region(gui->ctx);
+			nk_layout_row_dynamic(gui->ctx, 20, 1); /*space*/
+			
+			struct nk_vec2 wid_pos = nk_widget_position(gui->ctx);
+			struct nk_vec2 win_pos = nk_window_get_position(gui->ctx);
+			struct nk_rect win_cont = nk_window_get_content_region(gui->ctx);
 		
-			nk_layout_row_dynamic(gui->ctx, w_cont.h - (w_pos.y - w_cont.y), 1);
+			nk_layout_row_dynamic(gui->ctx, win_cont.h - (wid_pos.y - win_pos.y), 1);
 			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 			switch (modal) {
 				case SELECT:
@@ -1644,121 +1678,127 @@ int main(int argc, char** argv){
 		}
 		
 		/* interface to the user visualize and enter coordinates distances*/
-		if (nk_begin(gui->ctx, "POS", nk_rect(2, win_h - 48, win_w - 4, 50),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR))
+		if (nk_begin(gui->ctx, "POS", nk_rect(2, win_h - 80, win_w - 4, 78),
+		NK_WINDOW_BORDER))
 		{
 			nk_flags res;
 			/* flags to verify which coordinate is predominant */
 			int flag_x = fabs(step_x[step] - step_x[step - 1]) >= fabs(step_y[step] - step_y[step - 1]);
 			int flag_y = fabs(step_x[step] - step_x[step - 1]) < fabs(step_y[step] - step_y[step - 1]);
 			
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 30);
-			
-			nk_layout_row_push(gui->ctx, 20);
-			/* X distance */
-			/* hilite coordinate, if coord is predominant during a drawing operation*/
-			if ((en_distance) && (step > 0) && (step < 10) && (flag_x)){
-				nk_label_colored(gui->ctx, "X=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
-			}
-			else {
-				nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
-			}
-			/* verify if the user initiate a number entry during a drawing operation */
-			if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
-			(!user_flag_x) && (flag_x)){
-				user_number = 0; /* clear user flag */
-				user_str_x[0] = 0; /* clear edit string */
-				/* set focus to edit */
-				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
-			}
-			
-			nk_layout_row_push(gui->ctx, 120);
-			/* edit to visualize or enter distance */
-			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
-			if (res & NK_EDIT_ACTIVE){ /* enter mode */
-				if (strlen(user_str_x)){
-					/* sinalize the distance of user entry */
-					user_x = atof(user_str_x);
-					user_flag_x = 1;
-				}
-				else{ /* if the user clear the string */
-					/* cancel the enter mode*/
-					user_flag_x = 0;
-					nk_edit_unfocus(gui->ctx);
-				}
-			}
-			else { /* visualize mode */
-				if ((!entry_relative) && (step >= 0) && (step < 10)){
-					snprintf(user_str_x, 63, "%f", step_x[step]);
-				}
-				else if ((en_distance) && (step > 0) && (step < 10)){
-					snprintf(user_str_x, 63, "%f", step_x[step] - step_x[step - 1]);
+			nk_layout_row_begin(gui->ctx, NK_STATIC, 32, 5);
+			nk_layout_row_push(gui->ctx, 380);
+			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 10);
+				nk_layout_row_push(gui->ctx, 20);
+				/* X distance */
+				/* hilite coordinate, if coord is predominant during a drawing operation*/
+				if ((en_distance) && (step > 0) && (step < 10) && (flag_x)){
+					nk_label_colored(gui->ctx, "X=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
 				}
 				else {
-					snprintf(user_str_x, 63, "%f", 0.0);
+					nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
 				}
-			}
-			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
-				nk_edit_unfocus(gui->ctx);
-				keyEnter = 0;
-			}
-			
-			nk_layout_row_push(gui->ctx, 20);
-			/* Y distance */
-			/* hilite coordinate, if coord is predominant during a drawing operation*/
-			if ((en_distance) && (step > 0) && (step < 10) && (flag_y)){
-				nk_label_colored(gui->ctx, "Y=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
-			}
-			else {
-				nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
-			}
-			/* verify if the user initiate a number entry during a drawing operation */
-			if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
-			(!user_flag_y) && (flag_y)){
-				user_number = 0; /* clear user flag */
-				user_str_y[0] = 0; /* clear edit string */
-				/* set focus to edit */
-				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
-			}
-			
-			nk_layout_row_push(gui->ctx, 120);
-			/* edit to visualize or enter distance */
-			res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
-			if (res & NK_EDIT_ACTIVE){ /* enter mode */
-				if (strlen(user_str_y)){
-					/* sinalize the distance of user entry */
-					user_y = atof(user_str_y);
-					user_flag_y = 1;
+				/* verify if the user initiate a number entry during a drawing operation */
+				if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
+				(!user_flag_x) && (flag_x)){
+					user_number = 0; /* clear user flag */
+					user_str_x[0] = 0; /* clear edit string */
+					/* set focus to edit */
+					nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 				}
-				else{ /* if the user clear the string */
-					/* cancel the enter mode*/
-					user_flag_y = 0;
+				
+				nk_layout_row_push(gui->ctx, 120);
+				/* edit to visualize or enter distance */
+				res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
+				if (res & NK_EDIT_ACTIVE){ /* enter mode */
+					if (strlen(user_str_x)){
+						/* sinalize the distance of user entry */
+						user_x = atof(user_str_x);
+						user_flag_x = 1;
+					}
+					else{ /* if the user clear the string */
+						/* cancel the enter mode*/
+						user_flag_x = 0;
+						nk_edit_unfocus(gui->ctx);
+					}
+				}
+				else { /* visualize mode */
+					if ((!entry_relative) && (step >= 0) && (step < 10)){
+						snprintf(user_str_x, 63, "%f", step_x[step]);
+					}
+					else if ((en_distance) && (step > 0) && (step < 10)){
+						snprintf(user_str_x, 63, "%f", step_x[step] - step_x[step - 1]);
+					}
+					else {
+						snprintf(user_str_x, 63, "%f", 0.0);
+					}
+				}
+				if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
 					nk_edit_unfocus(gui->ctx);
+					keyEnter = 0;
 				}
-			}
-			else { /* visualize mode */
-				if ((!entry_relative) && (step >= 0) && (step < 10)){
-					snprintf(user_str_y, 63, "%f", step_y[step]);
-				}
-				else if ((en_distance) && (step > 0) && (step < 10)){
-					snprintf(user_str_y, 63, "%f", step_y[step] - step_y[step - 1]);
+				
+				nk_layout_row_push(gui->ctx, 20);
+				/* Y distance */
+				/* hilite coordinate, if coord is predominant during a drawing operation*/
+				if ((en_distance) && (step > 0) && (step < 10) && (flag_y)){
+					nk_label_colored(gui->ctx, "Y=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
 				}
 				else {
-					snprintf(user_str_y, 63, "%f", 0.0);
+					nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
 				}
-			}
-			if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
-				nk_edit_unfocus(gui->ctx);
-				keyEnter = 0;
+				/* verify if the user initiate a number entry during a drawing operation */
+				if (((en_distance)||(!entry_relative)) && (user_number) && (step >= 0) && (step < 10) &&
+				(!user_flag_y) && (flag_y)){
+					user_number = 0; /* clear user flag */
+					user_str_y[0] = 0; /* clear edit string */
+					/* set focus to edit */
+					nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
+				}
+				
+				nk_layout_row_push(gui->ctx, 120);
+				/* edit to visualize or enter distance */
+				res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
+				if (res & NK_EDIT_ACTIVE){ /* enter mode */
+					if (strlen(user_str_y)){
+						/* sinalize the distance of user entry */
+						user_y = atof(user_str_y);
+						user_flag_y = 1;
+					}
+					else{ /* if the user clear the string */
+						/* cancel the enter mode*/
+						user_flag_y = 0;
+						nk_edit_unfocus(gui->ctx);
+					}
+				}
+				else { /* visualize mode */
+					if ((!entry_relative) && (step >= 0) && (step < 10)){
+						snprintf(user_str_y, 63, "%f", step_y[step]);
+					}
+					else if ((en_distance) && (step > 0) && (step < 10)){
+						snprintf(user_str_y, 63, "%f", step_y[step] - step_y[step - 1]);
+					}
+					else {
+						snprintf(user_str_y, 63, "%f", 0.0);
+					}
+				}
+				if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
+					nk_edit_unfocus(gui->ctx);
+					keyEnter = 0;
+				}
+				
+				/* select if entry mode is in absolute coordinates or relative distance*/
+				nk_layout_row_push(gui->ctx, 70);
+				if (entry_relative){
+					nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
+					flag_x = 1;
+				}
+				else nk_selectable_label(gui->ctx, "Absolute", NK_TEXT_CENTERED, &entry_relative);
+				nk_group_end(gui->ctx);
 			}
 			
-			/* select if entry mode is in absolute coordinates or relative distance*/
-			nk_layout_row_push(gui->ctx, 70);
-			if (entry_relative){
-				nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
-				flag_x = 1;
-			}
-			else nk_selectable_label(gui->ctx, "Absolute", NK_TEXT_CENTERED, &entry_relative);
+			
 			
 			/*----------- attractors --------------*/
 			//nk_layout_row_push(gui->ctx, 160);
@@ -1779,25 +1819,29 @@ int main(int argc, char** argv){
 					en_attr = 1;
 				}
 			}
-			/* Buttons to select attractor mode*/
-			int selected, i, attr = 1;
-				
-			for (i = 0; i < 15; i++){
-				selected = (curr_attr_t & attr);
-				/* uses styles "sel" or "unsel", deppending each status*/
-				nk_layout_row_push(gui->ctx, 22);
-				if (selected){
-					if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(attr_vec[i]))){
-						curr_attr_t &= ~attr; /* clear bit of current type*/
+			nk_layout_row_push(gui->ctx, 16*(22 + 3) + 13);
+			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+				/* Buttons to select attractor mode*/
+				int selected, i, attr = 1;
+				nk_layout_row_static(gui->ctx, 22, 22, 15);
+				for (i = 0; i < 15; i++){
+					selected = (curr_attr_t & attr);
+					/* uses styles "sel" or "unsel", deppending each status*/
+					//nk_layout_row_push(gui->ctx, 22);
+					if (selected){
+						if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(attr_vec[i]))){
+							curr_attr_t &= ~attr; /* clear bit of current type*/
+						}
+					}else {
+						if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(attr_vec[i]))){
+							curr_attr_t |= attr; /* set bit of current type*/
+						}
 					}
-				}else {
-					if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(attr_vec[i]))){
-						curr_attr_t |= attr; /* set bit of current type*/
-					}
+					attr <<= 1; /* next attractor type (bit coded)*/
 				}
-				attr <<= 1; /* next attractor type (bit coded)*/
+				/*-------------------------------*/
+				nk_group_end(gui->ctx);
 			}
-			/*-------------------------------*/
 			nk_layout_row_end(gui->ctx);
 			
 			nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
@@ -1910,7 +1954,7 @@ int main(int argc, char** argv){
 		}
 		else if(action == VIEW_ZOOM_EXT){
 			action = NONE;
-			zoom_ext(drawing, img, &zoom, &ofs_x, &ofs_y);
+			zoom_ext2(drawing, 0, main_h - win_h, win_w, win_h, &zoom, &ofs_x, &ofs_y);
 			draw = 1;
 		}
 		else if(action == VIEW_ZOOM_P){
@@ -2951,14 +2995,31 @@ int main(int argc, char** argv){
 			
 			nk_sdl_render(gui, img);
 			
+			SDL_GetWindowSize(window, &win_w, &win_h);
+			
+			if (win_w > main_w){
+				win_w = main_w;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
+			
+			if (win_h > main_h){
+				win_h = main_h;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
+			
+			
+			win_r.x = 0; win_r.y = 0;
+			win_r.w = win_w; win_r.h = win_h;
+			
 			SDL_UpdateTexture(canvas, NULL, img->buf, main_w * 4);
 			SDL_RenderClear(renderer);
-			SDL_RenderCopy(renderer, canvas, NULL, NULL);
+			SDL_RenderCopy(renderer, canvas, &win_r, NULL);
 			SDL_RenderPresent(renderer);
 			
 			//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 			SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEMOTION);
 			draw = 0;
+			
 		}
 		
 		leftMouseButtonClick = 0;
@@ -2994,10 +3055,7 @@ int main(int argc, char** argv){
 	do_mem_pool(FREE_DO_ALL);
 	
 	bmp_free(img);
-	/*bmp_free(tool_img);
-	for(i = 0; i < 40; i++){
-		bmp_free(tool_vec[i]);
-	}*/
+	bmp_free(color_img);
 	bmp_free(blk_prvw_big);
 	
 	i_svg_free_bmp(svg_bmp);
