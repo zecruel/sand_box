@@ -220,6 +220,8 @@ char * dxf_load_file(char *path, long *fsize);
 
 int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog);
 
+dxf_node * dxf_find_obj2(dxf_node * obj, char *name);
 
+void * dxf_mem_pool(enum dxf_pool_action action, int idx);
 
 #endif

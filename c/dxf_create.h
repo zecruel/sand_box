@@ -6,6 +6,7 @@
 
 #include "dxf.h"
 #include "list.h"
+#include "graph.h"
 
 struct do_item {
 	struct do_item *prev;
@@ -43,6 +44,8 @@ struct do_pool_slot{
 	int page; /* current page index */
 	int size; /* number of pages available in slot */
 };
+
+void * do_mem_pool(enum dxf_pool_action action);
 
 int do_add_item(struct do_entry *entry, dxf_node *old_obj, dxf_node *new_obj);
 

@@ -101,5 +101,13 @@ void rbasis(int c, double t, int npts, int x[], double h[], double r[]);
 
 void rbspline(int npts, int k, int p1, double b[], double h[], double p[]);
 
+void vec_graph_draw_fix(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color);
+
+graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
+
+
+
+
+
 
 #endif

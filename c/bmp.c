@@ -30,8 +30,8 @@ int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
 	P0 = (*x0, *y0) to P1 = (*x1, *y1) against a rectangle of bitmap image */
 	
 	/* compute outcodes for P0, P1, and whatever point lies outside the clip rectangle */
-	rect_pos pos_p0 = rect_find_pos(*x0, *y0, 0, 0, img->width, img->height);
-	rect_pos pos_p1 = rect_find_pos(*x1, *y1, 0, 0, img->width, img->height);
+	rect_pos pos_p0 = rect_find_pos(*x0, *y0, img->clip_x, img->clip_y, img->clip_x + img->clip_w, img->clip_y + img->clip_h);
+	rect_pos pos_p1 = rect_find_pos(*x1, *y1, img->clip_x, img->clip_y, img->clip_x + img->clip_w, img->clip_y + img->clip_h);
 	
 	int accept = 0;
 
@@ -117,6 +117,49 @@ int bmp_fill (bmp_img *img, bmp_color color){
 			img->buf[i+b_i] = color.b;
 			img->buf[i+a_i] = color.a;
 		}
+		return 1; /*return success*/
+	}
+	return 0; /* return fail */
+}
+
+int bmp_fill_clip (bmp_img *img, bmp_color color){
+	/* fill the bmp image with passed color */
+	
+	unsigned int i, j, r_i, g_i, b_i, a_i, ofs_x, ofs_y, ofs_src;
+	
+	if (img){
+		/* get the order of color components */
+		r_i = img->r_i;
+		g_i = img->g_i;
+		b_i = img->b_i;
+		a_i = img->a_i;
+		
+		
+		/* sweep the new image */
+		for (i=0; i < img->clip_w; i++){
+			for (j=0; j < img->clip_h; j++){
+				ofs_x = i +  img->clip_x;
+				if (img->zero_tl != 0){
+					ofs_y = j +  img->clip_y;
+				}
+				else{
+					ofs_y = img->height - 1 - (j + img->clip_y);
+				}
+				//ofs_y = j ;
+				
+				if((ofs_x >= 0) && (ofs_x < img->width) && 
+				(ofs_y >= 0) && (ofs_y < img->height)){
+					/* find the position on destination buffer */
+					ofs_src = 4 * ((ofs_y * img->width) + ofs_x);
+					/* store each component in memory buffer */
+					img->buf[ofs_src + r_i] = color.r;
+					img->buf[ofs_src + g_i] = color.g;
+					img->buf[ofs_src + b_i] = color.b;
+					img->buf[ofs_src + a_i] = color.a;
+				}
+			}
+		}
+		
 		return 1; /*return success*/
 	}
 	return 0; /* return fail */

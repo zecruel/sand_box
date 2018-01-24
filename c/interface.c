@@ -521,7 +521,7 @@ int main(int argc, char** argv){
 	/* Window dimension */
 	unsigned int win_w = 1200;
 	unsigned int win_h = 715;
-	SDL_Rect win_r;
+	SDL_Rect win_r, display_r;
 	
 	/* init the SDL2 */
 	SDL_Init(SDL_INIT_VIDEO);
@@ -1040,7 +1040,7 @@ int main(int argc, char** argv){
 			}
 			
 			/* managers*/
-			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
+			nk_layout_row_push(gui->ctx, 5*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "managers", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LAYERS]))){
@@ -1054,6 +1054,9 @@ int main(int argc, char** argv){
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PUZZLE]))){
 					printf("Blocks\n");
+				}
+				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAGS]))){
+					printf("APPID\n");
 				}
 				nk_group_end(gui->ctx);
 			}
@@ -1132,11 +1135,13 @@ int main(int argc, char** argv){
 			
 			static char text[64];
 			int text_len;
-			nk_layout_row_push(gui->ctx, 680);
+			nk_layout_row_push(gui->ctx, 900);
 			if (nk_group_begin(gui->ctx, "Prop", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 				
 				/*layer*/
+				nk_layout_row_push(gui->ctx, 60);
+				nk_label(gui->ctx, "Layer: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(300,300))){
 					float wid[] = {120, 28, 28};
@@ -1192,7 +1197,8 @@ int main(int argc, char** argv){
 				else{
 					text_len = snprintf(text, 63, "%s", "ByL");
 				}
-				
+				nk_layout_row_push(gui->ctx, 60);
+				nk_label(gui->ctx, "Color: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 70);
 				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
 					nk_layout_row_static(gui->ctx, 15, 15, 10);
@@ -1219,6 +1225,8 @@ int main(int argc, char** argv){
 				}
 				
 				/*line type*/
+				nk_layout_row_push(gui->ctx, 90);
+				nk_label(gui->ctx, "Line type: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
 					nk_layout_row_dynamic(gui->ctx, 25, 2);
@@ -1332,6 +1340,34 @@ int main(int argc, char** argv){
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
 				
 			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","NEW_BLK");
+				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
+				dxf_ent_print2(drawing->blks);
+				dxf_ent_print2(drawing->blks_rec);*/
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EXPLODE]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EDIT]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG_E]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FIND]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RULER]))){
+				
+			}
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_STYLE]))){
+				
+			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","DELETE");
@@ -1371,14 +1407,6 @@ int main(int argc, char** argv){
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SPLINE]))){
 				
-			}
-			
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
-				recv_comm_flag = 1;
-				snprintf(recv_comm, 64, "%s","NEW_BLK");
-				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
-				dxf_ent_print2(drawing->blks);
-				dxf_ent_print2(drawing->blks_rec);*/
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BOOK]))){
 				recv_comm_flag = 1;
@@ -1665,7 +1693,7 @@ int main(int argc, char** argv){
 				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				text_len = snprintf(text, 63, "Opening...");
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
-				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
+				nk_progress(gui->ctx, (nk_size *)&progress, 100, NK_FIXED);
 				//nk_popup_end(gui->ctx);
 				nk_end(gui->ctx);
 			}
@@ -1688,7 +1716,7 @@ int main(int argc, char** argv){
 			
 			nk_layout_row_begin(gui->ctx, NK_STATIC, 32, 5);
 			nk_layout_row_push(gui->ctx, 380);
-			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+			if (nk_group_begin(gui->ctx, "coord", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 10);
 				nk_layout_row_push(gui->ctx, 20);
 				/* X distance */
@@ -1820,7 +1848,7 @@ int main(int argc, char** argv){
 				}
 			}
 			nk_layout_row_push(gui->ctx, 16*(22 + 3) + 13);
-			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+			if (nk_group_begin(gui->ctx, "attractors", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 				/* Buttons to select attractor mode*/
 				int selected, i, attr = 1;
 				nk_layout_row_static(gui->ctx, 22, 22, 15);
@@ -1841,6 +1869,15 @@ int main(int argc, char** argv){
 				}
 				/*-------------------------------*/
 				nk_group_end(gui->ctx);
+			}
+			
+			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PREV]))){
+				
+			}
+			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NEXT]))){
+				
 			}
 			nk_layout_row_end(gui->ctx);
 			
@@ -2968,8 +3005,25 @@ int main(int argc, char** argv){
 		}
 		
 		if (draw != 0){
+			/*get current window size */
+			SDL_GetWindowSize(window, &win_w, &win_h);
+			if (win_w > main_w){ /* if window exceedes main image */
+				/* fit windo to main image size*/
+				win_w = main_w;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
+			if (win_h > main_h){/* if window exceedes main image */
+				/* fit windo to main image size*/
+				win_h = main_h;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
+			
+			/* set image visible window*/
+			img->clip_x = 0; img->clip_y = main_h - win_h;
+			img->clip_w = win_w;
+			img->clip_h = win_h;
 		
-			bmp_fill(img, img->bkg); /* clear bitmap */
+			bmp_fill_clip(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
@@ -2993,19 +3047,14 @@ int main(int argc, char** argv){
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
 			
+			
+			/* set image visible window*/
+			img->clip_x = 0; img->clip_y = 0;
+			
+			/*draw gui*/
 			nk_sdl_render(gui, img);
 			
-			SDL_GetWindowSize(window, &win_w, &win_h);
 			
-			if (win_w > main_w){
-				win_w = main_w;
-				SDL_SetWindowSize(window, win_w, win_h);
-			}
-			
-			if (win_h > main_h){
-				win_h = main_h;
-				SDL_SetWindowSize(window, win_w, win_h);
-			}
 			
 			
 			win_r.x = 0; win_r.y = 0;

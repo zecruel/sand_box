@@ -67,6 +67,8 @@ void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_
 
 int bmp_fill (bmp_img *img, bmp_color color);
 
+int bmp_fill_clip (bmp_img *img, bmp_color color);
+
 bmp_img * bmp_new (unsigned int width, unsigned int height, bmp_color bkg, bmp_color frg);
 
 void bmp_free(bmp_img *img);
@@ -94,5 +96,9 @@ bmp_img * bmp_sub_img(bmp_img *orig, int x, int y, int w, int h);
 bmp_img * bmp_load_img(char *url);
 
 bmp_img * bmp_load_img2(unsigned char *data, int w, int h);
+
+void bmp_circle(bmp_img *img, int x0, int y0, int radius);
+
+void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius);
 
 #endif

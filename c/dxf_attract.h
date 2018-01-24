@@ -4,6 +4,7 @@
 #include "dxf.h"
 #include <math.h>
 #include "shape2.h"
+#include "dxf_graph.h"
 
 enum attract_type {
 	/* bit coded */
