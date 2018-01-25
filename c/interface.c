@@ -555,7 +555,7 @@ int main(int argc, char** argv){
 	
 	
 	
-	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
+	double zoom = 20.0 , ofs_x = -11.0, ofs_y = -71.0;
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
@@ -853,6 +853,12 @@ int main(int argc, char** argv){
 		
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
+	
+	/*===================== teste ===============*/
+	vector_p tt_test;
+	//graph_obj *tt_test = tt_parse(0, "abcd e", &test_w);
+	tt_parse2(&tt_test, 0, "Ezequiel Rabelo de Aguiar");
+	/*===================== teste ===============*/
 	
 	/* main loop */
 	while (quit == 0){
@@ -3025,6 +3031,10 @@ int main(int argc, char** argv){
 		
 			bmp_fill_clip(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			
+			/*===================== teste ===============*/
+			vec_graph_draw(&tt_test, img, ofs_x, ofs_y, zoom);
+			/*===================== teste ===============*/
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
 			
