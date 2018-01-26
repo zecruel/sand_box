@@ -87,68 +87,6 @@ char *str_replace(char *orig, char *rep, char *with) {
 	return result;
 }
 
-vector_p * vect_new (void){
-	vector_p * new_vect = malloc(sizeof(vector_p));
-	if(new_vect){
-		new_vect->size = 0;
-		new_vect->data = NULL;
-	}
-	return new_vect;
-}
-
-int stack_push (vector_p *stack, void *new_ptr){
-	int size;
-	void **data;
-	
-	if (stack){ /* check if stack exists */
-		size = stack->size + 1;
-		/* try to allocate more memory */
-		data = realloc(stack->data, size * sizeof(void *));
-		if (data){ /*success on memory allocation */
-			/* change the stack */
-			stack->data = data; 
-			stack->size = size;
-			/* store new pointer at end of stack */
-			data[size-1] = new_ptr;
-			return 1; /* return success */
-		}
-		/* if memory allocation fails, the stack is unchanged */
-	}
-	return 0; /* return fail */
-}
-
-void * stack_pop (vector_p *stack){
-	int size;
-	void **data, *last = NULL;
-	
-	if ((stack->size > 0) && (stack->data != NULL)){ /* check if stack is not empty*/
-		size = stack->size - 1;
-		data = stack->data;
-		
-		/* get the last element of stack */
-		last = data[size];
-		
-		if (size == 0){ /* stack will be empty */
-			free(stack->data); /* free the data */
-			stack->data = NULL;
-			stack->size = 0;
-			return last; /* return success */
-		}
-		else{
-			/* try to shrink memory of stack*/
-			data = realloc(stack->data, size * sizeof(void *));
-			if (data){ /*success on memory allocation */
-				/* change the stack */
-				stack->data = data; 
-				stack->size = size;
-				return last; /* return success */
-			}
-			/* if memory allocation fails, the stack is unchanged */
-		}
-	}
-	return NULL; /* return fail */
-}
-
 void * dxf_mem_pool(enum dxf_pool_action action, int idx){
 	
 	static dxf_pool_slot mem_pool[DXF_NUM_POOL];
@@ -563,7 +501,7 @@ dxf_node * dxf_attr_new (int group, int type, void *value){
 	}
 	return new_attr;
 }
-
+#if 0
 vector_p dxf_find_attr(dxf_node * obj, int attr){
 	int size = 0;
 	dxf_node **data = NULL;
@@ -595,6 +533,7 @@ vector_p dxf_find_attr(dxf_node * obj, int attr){
 	list.data = data;
 	return list;
 }
+#endif
 
 dxf_node * dxf_find_attr2(dxf_node * obj, int attr){
 	/* return the first match */
@@ -646,6 +585,7 @@ dxf_node * dxf_find_attr_i(dxf_node * obj, int attr, int idx){
 	else return NULL;
 }
 
+#if 0
 vector_p dxf_find_obj(dxf_node * obj, char *name){
 	int size = 0;
 	dxf_node **data = NULL;
@@ -677,6 +617,7 @@ vector_p dxf_find_obj(dxf_node * obj, char *name){
 	list.data = data;
 	return list;
 }
+#endif
 
 dxf_node * dxf_find_obj2(dxf_node * obj, char *name){
 	dxf_node *current;
@@ -727,6 +668,7 @@ dxf_node * dxf_find_obj_i(dxf_node * obj, char *name, int idx){
 	else return NULL;
 }
 
+#if 0
 vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	int size = 0;
 	dxf_node **data = NULL;
@@ -766,6 +708,7 @@ vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr){
 	list.data = data;
 	return list;
 }
+#endif
 
 dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr){
 	dxf_node *current, *descr_attr;
@@ -794,9 +737,8 @@ dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr){
 }
 
 void dxf_layer_assemb (dxf_drawing *drawing){
-	vector_p v_search;
 	int i, flags;
-	dxf_node *current;
+	dxf_node *current = NULL, *curr_layer = NULL;
 	
 	char name[DXF_MAX_CHARS];
 	int color;
@@ -816,63 +758,61 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 	drawing->layers[0].lock = 0;
 	drawing->layers[0].off = 0;
 	
-	v_search = dxf_find_obj(drawing->t_layer, "LAYER"); /* get the list of layers */
-	if (v_search.data){
-		drawing->num_layers += v_search.size;
-		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LAYERS-1)); i++){
-			name[0] = 0;
-			color = 0;
-			ltype[0] = 0;
-			line_w = 0;
-			frozen = 0;
-			lock = 0;
-			off = 0;
-			
-			current = ((dxf_node **) v_search.data)[i]; /* get the layer */
-			/* and sweep its content */
-			current = current->obj.content->next;
-			while (current){
-				if (current->type == DXF_ATTR){
-					switch (current->value.group){
-						case 2: /* layer name */
-							strcpy(name, current->value.s_data);
-							break;
-						case 6: /* layer line type name */
-							strcpy(ltype, current->value.s_data);
-							break;
-						case 62: /* layer color */
-							color = current->value.i_data;
-							if (color < 0) {
-								off = 1;
-								color = abs(color);
-							}
-							break;
-						case 70: /* flags */
-							flags = current->value.i_data;
-							if (flags & 1) frozen = 1;
-							if (flags & 4) lock = 1;
-					}
+	i = 0;
+	while (curr_layer = dxf_find_obj_i(drawing->t_layer, "LAYER", i)){/* get the next layer */
+	
+		name[0] = 0;
+		color = 0;
+		ltype[0] = 0;
+		line_w = 0;
+		frozen = 0;
+		lock = 0;
+		off = 0;
+		
+		/* and sweep its content */
+		if (curr_layer->obj.content) current = curr_layer->obj.content->next;
+		while (current){
+			if (current->type == DXF_ATTR){
+				switch (current->value.group){
+					case 2: /* layer name */
+						strcpy(name, current->value.s_data);
+						break;
+					case 6: /* layer line type name */
+						strcpy(ltype, current->value.s_data);
+						break;
+					case 62: /* layer color */
+						color = current->value.i_data;
+						if (color < 0) {
+							off = 1;
+							color = abs(color);
+						}
+						break;
+					case 70: /* flags */
+						flags = current->value.i_data;
+						if (flags & 1) frozen = 1;
+						if (flags & 4) lock = 1;
 				}
-				current = current->next;
 			}
-			/* set the variables on the current layer in drawing structure */
-			strcpy(drawing->layers[i+1].name, name);
-			strcpy(drawing->layers[i+1].ltype, ltype);
-			drawing->layers[i+1].color = color;
-			drawing->layers[i+1].line_w = line_w;
-			drawing->layers[i+1].frozen = frozen;
-			drawing->layers[i+1].lock = lock;
-			drawing->layers[i+1].off = off;
+			current = current->next;
 		}
-		//printf("Num Layers = %d\n", drawing->num_layers);
-		free(v_search.data);
+		/* set the variables on the current layer in drawing structure */
+		strcpy(drawing->layers[i+1].name, name);
+		strcpy(drawing->layers[i+1].ltype, ltype);
+		drawing->layers[i+1].color = color;
+		drawing->layers[i+1].line_w = line_w;
+		drawing->layers[i+1].frozen = frozen;
+		drawing->layers[i+1].lock = lock;
+		drawing->layers[i+1].off = off;
+		
+		i++;
 	}
+	drawing->num_layers += i;
+	//printf("Num Layers = %d\n", drawing->num_layers);
 }
 
 void dxf_ltype_assemb (dxf_drawing *drawing){
-	vector_p v_search;
 	int i, j, pat_idx;
-	dxf_node *current;
+	dxf_node *current = NULL, *curr_ltype = NULL;
 	
 	char name[DXF_MAX_CHARS], descr[DXF_MAX_CHARS];
 	int size;
@@ -887,76 +827,74 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	drawing->ltypes[0].pat[0] = 0;
 	drawing->ltypes[0].length = 0;
 	
-	v_search = dxf_find_obj(drawing->t_ltype, "LTYPE"); /* get the list of ltypes */
-	if (v_search.data){
-		drawing->num_ltypes += v_search.size;
-		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_LTYPES-1)); i++){
-			name[0] = 0;
-			descr[0] = 0;
-			size = 0;
-			pat[0] = 0;
-			pat_idx = 0;
-			length = 0;
-			
-			current = ((dxf_node **) v_search.data)[i]; /* get the ltype */
-			/* and sweep its content */
-			current = current->obj.content->next;
-			while (current){
-				if (current->type == DXF_ATTR){
-					switch (current->value.group){
-						case 2: /* ltype name */
-							strcpy(name, current->value.s_data);
-							break;
-						case 3: /* ltype descriptive text */
-							strcpy(descr, current->value.s_data);
-							break;
-						case 40: /* pattern length */
-							length = current->value.d_data;
-							break;
-						case 49: /* pattern element */
-							if (pat_idx < DXF_MAX_PAT) {
-								pat[pat_idx] = current->value.d_data;
-								pat_idx++;
-							}
-							break;
-						case 73: /* num of pattern elements */
-							size = current->value.i_data;
-							if (size > DXF_MAX_PAT) {
-								size < DXF_MAX_PAT;}
-					}
-				}
-				current = current->next;
-			}
-			
-			/* adjust pattern to pixel units */
-			/* first, find the max patt length*/
-			max = 0.0;
-			for(j = 0; j < size; j++){
-				if (max < fabs(pat[j])){
-					max = fabs(pat[j]);
+	i = 0;
+	while (curr_ltype = dxf_find_obj_i(drawing->t_ltype, "LTYPE", i)){/* get the next layer */
+	
+		name[0] = 0;
+		descr[0] = 0;
+		size = 0;
+		pat[0] = 0;
+		pat_idx = 0;
+		length = 0;
+		
+		if (curr_ltype->obj.content) current = curr_ltype->obj.content->next;
+		
+		while (current){
+			if (current->type == DXF_ATTR){
+				switch (current->value.group){
+					case 2: /* ltype name */
+						strcpy(name, current->value.s_data);
+						break;
+					case 3: /* ltype descriptive text */
+						strcpy(descr, current->value.s_data);
+						break;
+					case 40: /* pattern length */
+						length = current->value.d_data;
+						break;
+					case 49: /* pattern element */
+						if (pat_idx < DXF_MAX_PAT) {
+							pat[pat_idx] = current->value.d_data;
+							pat_idx++;
+						}
+						break;
+					case 73: /* num of pattern elements */
+						size = current->value.i_data;
+						if (size > DXF_MAX_PAT) {
+							size < DXF_MAX_PAT;}
 				}
 			}
-			if (max == 0.0) max = 1.0;
-			/* then normalize each value in pattern */
-			for(j = 0; j < size; j++){
-				pat[j] = pat[j]/max;
-			}
-			
-			/* set the variables on the current ltype in drawing structure */
-			strcpy(drawing->ltypes[i+1].name, name);
-			strcpy(drawing->ltypes[i+1].descr, descr);
-			memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));
-			drawing->ltypes[i+1].size = size;
-			drawing->ltypes[i+1].length = length;
+			current = current->next;
 		}
-		free(v_search.data);
+		
+		/* adjust pattern to pixel units */
+		/* first, find the max patt length*/
+		max = 0.0;
+		for(j = 0; j < size; j++){
+			if (max < fabs(pat[j])){
+				max = fabs(pat[j]);
+			}
+		}
+		if (max == 0.0) max = 1.0;
+		/* then normalize each value in pattern */
+		for(j = 0; j < size; j++){
+			pat[j] = pat[j]/max;
+		}
+		
+		/* set the variables on the current ltype in drawing structure */
+		strcpy(drawing->ltypes[i+1].name, name);
+		strcpy(drawing->ltypes[i+1].descr, descr);
+		memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));
+		drawing->ltypes[i+1].size = size;
+		drawing->ltypes[i+1].length = length;
+		
+		i++;
 	}
+	drawing->num_ltypes += i;
 }
 
 void dxf_fonts_assemb (dxf_drawing *drawing){
-	vector_p v_search;
 	int i, flags;
-	dxf_node *current;
+	dxf_node *current = NULL, *curr_font = NULL;
 	
 	char name[DXF_MAX_CHARS];
 	char file_name[DXF_MAX_CHARS];
@@ -973,38 +911,37 @@ void dxf_fonts_assemb (dxf_drawing *drawing){
 		drawing->text_fonts[0].shx_font = shx_font;
 	}
 	
-	v_search = dxf_find_obj(drawing->t_style, "STYLE"); /* get the list of fonts */
-	if (v_search.data){
-		drawing->num_fonts += v_search.size;
-		for (i = 0; ((i < v_search.size) && (i < DXF_MAX_FONTS-1)); i++){
-			name[0] = 0;
-			file_name[0] = 0;
+	i = 0;
+	while (curr_font = dxf_find_obj_i(drawing->t_style, "STYLE", i)){/* get the next layer */
+	
+		name[0] = 0;
+		file_name[0] = 0;
 			
-			current = ((dxf_node **) v_search.data)[i]; /* get the font */
-			/* and sweep its content */
-			current = current->obj.content->next;
-			while (current){
-				if (current->type == DXF_ATTR){
-					switch (current->value.group){
-						case 2: /* font name */
-							strcpy(name, current->value.s_data);
-							break;
-						case 3: /* file name */
-							strcpy(file_name, current->value.s_data);
-							break;
-						case 70: /* flags */
-							flags = current->value.i_data;
-					}
+		if (curr_font->obj.content) current = curr_font->obj.content->next;
+		
+		while (current){
+			if (current->type == DXF_ATTR){
+				switch (current->value.group){
+					case 2: /* font name */
+						strcpy(name, current->value.s_data);
+						break;
+					case 3: /* file name */
+						strcpy(file_name, current->value.s_data);
+						break;
+					case 70: /* flags */
+						flags = current->value.i_data;
 				}
-				current = current->next;
 			}
-			/* set the variables on the current layer in drawing structure */
-			strcpy(drawing->text_fonts[i+1].name, name);
-			shx_font = shx_font_open(file_name);
-			drawing->text_fonts[i+1].shx_font = shx_font;
+			current = current->next;
 		}
-		free(v_search.data);
+		/* set the variables on the current layer in drawing structure */
+		strcpy(drawing->text_fonts[i+1].name, name);
+		shx_font = shx_font_open(file_name);
+		drawing->text_fonts[i+1].shx_font = shx_font;
+		
+		i++;
 	}
+	drawing->num_fonts += i;
 }
 
 int dxf_lay_idx (dxf_drawing *drawing, char *name){
@@ -1077,13 +1014,13 @@ int dxf_font_idx (dxf_drawing *drawing, char *name){
 int dxf_save (char *path, dxf_drawing *drawing){
 	
 	FILE *file;
-	vector_p stack, attr;
+	list_node *stack, *item ;
 	dxf_node *current;
 	int ret_success;
 	
 	/* initialize the stack */
-	stack.size = 0;
-	stack.data = NULL;
+	int stack_size = 0;
+	stack = list_new(NULL, ONE_TIME);
 	
 	ret_success = 0;
 	if (drawing){
@@ -1092,10 +1029,15 @@ int dxf_save (char *path, dxf_drawing *drawing){
 		
 		if ((file != NULL) && (drawing->main_struct != NULL)){
 			current = drawing->main_struct->obj.content->next;
-			while ((current != NULL) || (stack.size > 0)){
+			while ((current != NULL) || (stack_size > 0)){
 				if (current == NULL){ /* end of list sweeping */
 					/* try to up in the structure hierarchy */
-					current = stack_pop (&stack);
+					item = list_pop(stack);
+					if (item){
+						stack_size--;
+						current = (dxf_node *)item->data;
+					}
+					//current = stack_pop (&stack);
 					if (current){
 						/* write the end of complex entities, acording its type */
 						if(strcmp(current->obj.name, "SECTION") == 0){
@@ -1122,7 +1064,9 @@ int dxf_save (char *path, dxf_drawing *drawing){
 				}
 				else if (current->type == DXF_ENT){ /* DXF entity */
 					/* down in the structure hierarchy */
-					stack_push (&stack, current);
+					list_push(stack, list_new((void *)current, ONE_TIME));
+					stack_size++;
+					//stack_push (&stack, current);
 					if (current->obj.name){
 						fprintf(file, "0\n%s\n", current->obj.name); /* write the start of entity */
 					}
@@ -1149,7 +1093,7 @@ int dxf_save (char *path, dxf_drawing *drawing){
 			}
 			ret_success = 1; /* return success */
 		}
-		
+		list_mem_pool(ZERO_LIST, ONE_TIME);
 		fclose(file);
 	}
 	return ret_success;
@@ -1190,13 +1134,13 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 	static long f_index = 0;  /*  indexes the file´s lines */
 	int line_size = 0;
 
-	static dxf_node *new_node = NULL, *blk = NULL, *cplx = NULL;
+	static dxf_node *new_node = NULL, *blk = NULL, *cplx = NULL, *part = NULL;
 	
 	static int group = 0; /* current group */
 	static int t_data = DXF_STR; /* current type of data */
 	static double d_data;
 	static int i_data;
-	static vector_p part;
+	//static vector_p part;
 	static int blk_end = 0, cplx_end = 0; /* close block and include ENDBLOCK in structure*/
 	
 	if (state == INIT){
@@ -1439,73 +1383,42 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 		
 		/* disassembly the drawing structure */
 		/* the main sections */
-		part = dxf_find_obj_descr(main_struct, "SECTION", "HEADER");
-		if (part.data){
-			drawing->head = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(main_struct, "SECTION", "TABLES");
-		if (part.data){
-			drawing->tabs = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(main_struct, "SECTION", "BLOCKS");
-		if (part.data){
-			drawing->blks = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(main_struct, "SECTION", "ENTITIES");
-		if (part.data){
-			drawing->ents = ((dxf_node **) part.data)[0]; 
-			free(part.data);
-		}
+		part = dxf_find_obj_descr2(main_struct, "SECTION", "HEADER");
+		if (part) drawing->head = part;
+		part = dxf_find_obj_descr2(main_struct, "SECTION", "TABLES");
+		if (part) drawing->tabs = part;
+		part = dxf_find_obj_descr2(main_struct, "SECTION", "BLOCKS");
+		if (part) drawing->blks = part;
+		part = dxf_find_obj_descr2(main_struct, "SECTION", "ENTITIES");
+		if (part) drawing->ents = part;
 		
 		/* the tables */
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "LTYPE");
-		if (part.data){
-			drawing->t_ltype = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "LAYER");
-		if (part.data){
-			drawing->t_layer = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "STYLE");
-		if (part.data){
-			drawing->t_style = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "VIEW");
-		if (part.data){
-			drawing->t_view = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "UCS");
-		if (part.data){
-			drawing->t_ucs = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "VPORT");
-		if (part.data){
-			drawing->t_vport = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "DIMSTYLE");
-		if (part.data){
-			drawing->t_dimst = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "BLOCK_RECORD");
-		if (part.data){
-			drawing->blks_rec = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
-		part = dxf_find_obj_descr(drawing->tabs, "TABLE", "APPID");
-		if (part.data){
-			drawing->t_appid = ((dxf_node **) part.data)[0];
-			free(part.data);
-		}
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "LTYPE");
+		if (part) drawing->t_ltype = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "LAYER");
+		if (part) drawing->t_layer = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "STYLE");
+		if (part) drawing->t_style = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "VIEW");
+		if (part) drawing->t_view = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "UCS");
+		if (part) drawing->t_ucs = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "VPORT");
+		if (part) drawing->t_vport = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "DIMSTYLE");
+		if (part) drawing->t_dimst = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "BLOCK_RECORD");
+		if (part) drawing->blks_rec = part;
+		
+		part = dxf_find_obj_descr2(drawing->tabs, "TABLE", "APPID");
+		if (part) drawing->t_appid = part;
 		
 		/* assemble the layers list */
 		dxf_layer_assemb (drawing);

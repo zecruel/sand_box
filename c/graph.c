@@ -429,55 +429,6 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 	}
 }
 
-void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale){
-	int i;
-	if (vec){
-		for(i = 0; i < vec->size; i++){
-			graph_draw(((graph_obj **)vec->data)[i], img, ofs_x, ofs_y, scale);
-			//printf("%f\n", scale);
-			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
-		}
-	}
-}
-
-void vec_graph_draw_fix(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
-	int i;
-	if (vec){
-		for(i = 0; i < vec->size; i++){
-			graph_draw_fix(((graph_obj **)vec->data)[i], img, ofs_x, ofs_y, scale, color);
-			//printf("%f\n", scale);
-			//printf("desenha %d = %d\n", i, ((graph_obj **)vec->data)[i]);
-		}
-	}
-}
-
-int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y){
-	int i;
-	if (vec){
-		graph_obj * current;
-		for(i = 0; i < vec->size; i++){
-			current = ((graph_obj **)vec->data)[i];
-			if (current){
-				if (*init == 0){
-					*init = 1;
-					*min_x = current->ext_min_x;
-					*min_y = current->ext_min_y;
-					*max_x = current->ext_max_x;
-					*max_y = current->ext_max_y;
-				}
-				else{
-					*min_x = (*min_x < current->ext_min_x) ? *min_x : current->ext_min_x;
-					*min_y = (*min_y < current->ext_min_y) ? *min_y : current->ext_min_y;
-					*max_x = (*max_x > current->ext_max_x) ? *max_x : current->ext_max_x;
-					*max_y = (*max_y > current->ext_max_y) ? *max_y : current->ext_max_y;
-				}
-			}
-		}
-		return 1;
-	}
-	return 0;
-}
-
 void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig){
 	if (master){
 		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
@@ -723,42 +674,6 @@ void graph_rot(graph_obj * master, double base_x, double base_y, double rot){
 				
 				current = current->next; /* go to next */
 			}
-		}
-	}
-}
-
-void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot){
-	int i;
-	if (vec){
-		for(i = 0; i < vec->size; i++){
-			graph_modify(((graph_obj **)vec->data)[i], ofs_x, ofs_y, scale_x, scale_y, rot);
-		}
-	}
-}
-
-void vec_graph_modify_idx(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx){
-	int i;
-	if (vec){
-		for(i = start_idx; i <= end_idx; i++){
-			graph_modify(((graph_obj **)vec->data)[i], ofs_x, ofs_y, scale_x, scale_y, rot);
-		}
-	}
-}
-
-void vec_graph_rot(vector_p * vec, double base_x, double base_y , double rot){
-	int i;
-	if (vec){
-		for(i = 0; i < vec->size; i++){
-			graph_rot(((graph_obj **)vec->data)[i], base_x, base_y, rot);
-		}
-	}
-}
-
-void vec_graph_rot_idx(vector_p * vec, double base_x, double base_y , double rot, int start_idx, int end_idx){
-	int i;
-	if (vec){
-		for(i = start_idx; i <= end_idx; i++){
-			graph_rot(((graph_obj **)vec->data)[i], base_x, base_y, rot);
 		}
 	}
 }
@@ -1119,15 +1034,6 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 	}
 }
 
-void vec_graph_mod_ax(vector_p * vec, double normal[3], int start_idx, int end_idx){
-	int i;
-	if (vec){
-		for(i = start_idx; i <= end_idx; i++){
-			graph_mod_axis(((graph_obj **)vec->data)[i], normal);
-		}
-	}
-}
-
 int l_r_isect(double lin_pt1[2], double lin_pt2[2], double rect_pt1[2], double rect_pt2[2]){
 	/* check if a line instersect a rectangle */
 	
@@ -1186,13 +1092,214 @@ int graph_isect(graph_obj * master, double rect_pt1[2], double rect_pt2[2]){
 	return 0;
 }
 
-graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]){
-	int i;
-	if (vec){
-		for(i = 0; i < vec->size; i++){
-			if(graph_isect(((graph_obj **)vec->data)[i], rect_pt1, rect_pt2)){
-				return ((graph_obj **)vec->data)[i];
+int graph_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, double scale){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				graph_draw(curr_graph, img, ofs_x, ofs_y, scale);
 			}
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_draw_fix(list_node *list, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				graph_draw_fix(curr_graph, img, ofs_x, ofs_y, scale, color);
+			}
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_ext(list_node *list, int *init, double * min_x, double * min_y, double * max_x, double * max_y){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				if (*init == 0){
+					*init = 1;
+					*min_x = curr_graph->ext_min_x;
+					*min_y = curr_graph->ext_min_y;
+					*max_x = curr_graph->ext_max_x;
+					*max_y = curr_graph->ext_max_y;
+				}
+				else{
+					*min_x = (*min_x < curr_graph->ext_min_x) ? *min_x : curr_graph->ext_min_x;
+					*min_y = (*min_y < curr_graph->ext_min_y) ? *min_y : curr_graph->ext_min_y;
+					*max_x = (*max_x > curr_graph->ext_max_x) ? *max_x : curr_graph->ext_max_x;
+					*max_y = (*max_y > curr_graph->ext_max_y) ? *max_y : curr_graph->ext_max_y;
+				}
+			}
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_modify(list_node *list, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				graph_modify(curr_graph, ofs_x, ofs_y, scale_x, scale_y, rot);
+			}
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_modify_idx(list_node *list, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0, i = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				if(i >= start_idx){
+					graph_modify(curr_graph, ofs_x, ofs_y, scale_x, scale_y, rot);
+				}
+			}
+			if(i >= end_idx) break;
+			i++;
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_rot(list_node *list, double base_x, double base_y , double rot){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				graph_rot(curr_graph, base_x, base_y, rot);
+			}
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_rot_idx(list_node *list, double base_x, double base_y , double rot, int start_idx, int end_idx){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0, i = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				if(i >= start_idx){
+					graph_rot(curr_graph, base_x, base_y, rot);
+				}
+			}
+			if(i >= end_idx) break;
+			i++;
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+int graph_list_mod_ax(list_node *list, double normal[3], int start_idx, int end_idx){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+	int ok = 0, i = 0;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				if(i >= start_idx){
+					graph_mod_axis(curr_graph, normal);
+				}
+			}
+			if(i >= end_idx) break;
+			i++;
+			current = current->next;
+		}
+		ok = 1;
+	}
+	return ok;
+}
+
+graph_obj * graph_list_isect(list_node *list, double rect_pt1[2], double rect_pt2[2]){
+	list_node *current = NULL;
+	graph_obj *curr_graph = NULL;
+		
+	if (list != NULL){
+		current = list->next;
+		
+		/* sweep the main list */
+		while (current != NULL){
+			if (current->data){
+				curr_graph = (graph_obj *)current->data;
+				if(graph_isect(curr_graph, rect_pt1, rect_pt2)){
+					return curr_graph;
+				}
+			}
+			current = current->next;
 		}
 	}
 	return NULL;

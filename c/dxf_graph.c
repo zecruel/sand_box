@@ -2033,13 +2033,13 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 	return NULL;
 }
 
-int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* this function is non recursive */
 	
-	vector_p v_search;
+	
 	dxf_node *current = NULL, *insert_ent = NULL, *blk = NULL , *prev;
 	enum dxf_graph ent_type;
-	int lay_idx, ltype_idx;
+	int lay_idx, ltype_idx, mod_idx = 0;
 	graph_obj * curr_graph = NULL;
 	
 	/* for attrib and attdef objects */
@@ -2084,7 +2084,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 	int i;
 	int blk_flag = 0;
 	
-	if (v_return){
+	if (list_ret){
 		current = ent;
 	}
 	else{
@@ -2101,7 +2101,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_line_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 			}
@@ -2109,7 +2110,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_text_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				ent_type = DXF_TEXT;
 				
@@ -2120,7 +2122,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_circle_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 			}
@@ -2129,7 +2132,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_arc_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 			}
@@ -2138,7 +2142,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_pline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 			}
@@ -2157,7 +2162,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_solid_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 				
@@ -2167,7 +2173,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_lwpline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 			}
 			else if (strcmp(current->obj.name, "SPLINE") == 0){
@@ -2175,7 +2182,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_spline_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 			}
 			else if (strcmp(current->obj.name, "ATTRIB") == 0){
@@ -2228,7 +2236,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				curr_graph = dxf_ellipse_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					/* store the graph in the return vector */
-					stack_push(v_return, curr_graph);
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					mod_idx++;
 				}
 				
 			}
@@ -2359,14 +2368,14 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 			((ins_flag != 0) && (current != NULL) && (current != insert_ent) && (current->type == DXF_ENT))){
 			ins_flag = 0;
 			/* look for block */
-			v_search = dxf_find_obj_descr(drawing->blks, "BLOCK", name1);
-			if ((v_search.data) && /* block found */
+			blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", name1);
+			if ((blk) && /* block found */
 			/* Also check the paper space parameter */
 			(((p_space == 0) && (paper == 0)) || 
 			((p_space != 0) && (paper != 0)))){ 
-				blk = ((dxf_node **) v_search.data)[0];
+				
 				//printf ("bloco %s\n", name1);
-				free(v_search.data);
+				
 				/* save current entity for future process */
 				ins_stack_pos++;
 				ins_stack[ins_stack_pos].ins_ent = blk;
@@ -2396,12 +2405,8 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 					ins_stack[ins_stack_pos].normal[1] = 0.0;
 					ins_stack[ins_stack_pos].normal[2] = 1.0;
 				}
-				if (v_return->size > 0){
-					ins_stack[ins_stack_pos].start_idx = v_return->size;
-				}
-				else{
-					ins_stack[ins_stack_pos].start_idx = 0;
-				}
+				ins_stack[ins_stack_pos].start_idx = mod_idx;
+				
 				
 				/* now, current is the block */
 				prev = blk;
@@ -2462,31 +2467,22 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 				current = prev->next;
 				//indent --;
 				if (prev == ins_stack[ins_stack_pos].ins_ent){/* back on initial entity */
-					if (v_return->size > 0){
-						vec_graph_modify_idx(v_return,
+					if (mod_idx > 0){
+						graph_list_modify_idx(list_ret,
 							ins_stack[ins_stack_pos].ofs_x,
 							ins_stack[ins_stack_pos].ofs_y,
 							ins_stack[ins_stack_pos].scale_x,
 							ins_stack[ins_stack_pos].scale_y,
 							ins_stack[ins_stack_pos].rot,
 							ins_stack[ins_stack_pos].start_idx,
-							v_return->size - 1
+							mod_idx - 1
 							);
-						vec_graph_mod_ax(v_return,
+						graph_list_mod_ax(list_ret,
 							ins_stack[ins_stack_pos].normal,
 							ins_stack[ins_stack_pos].start_idx,
-							v_return->size - 1
+							mod_idx - 1
 							);
 					}
-					/*printf("%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d\n",
-						ins_stack[ins_stack_pos].ofs_x,
-						ins_stack[ins_stack_pos].ofs_y,
-						ins_stack[ins_stack_pos].scale_x,
-						ins_stack[ins_stack_pos].scale_y,
-						ins_stack[ins_stack_pos].rot,
-						ins_stack[ins_stack_pos].start_idx,
-						v_return->size - 1
-					);*/
 					if (ins_stack_pos < 1){
 						/* stop the search if back on initial entity */
 						current = NULL;
@@ -2512,7 +2508,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 	list_node *att_curr = att_list->next;
 	while (att_curr != NULL){
 		if (att_curr->data){
-			stack_push(v_return, att_curr->data);
+			list_push(list_ret, list_new((void *)att_curr->data, pool_idx));
 		}
 		att_curr = att_curr->next;
 	}
@@ -2525,7 +2521,7 @@ int dxf_obj_parse(vector_p *v_return, dxf_drawing *drawing, dxf_node * ent, int 
 
 int dxf_ents_parse(dxf_drawing *drawing){
 	dxf_node *current = NULL;
-	vector_p *vec_graph;
+	list_node *vec_graph;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2550,22 +2546,22 @@ int dxf_ents_parse(dxf_drawing *drawing){
 	}
 }
 
-vector_p * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+list_node * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* Initialize */
 	/*create the vector of returned values */
-	vector_p *v_return = vect_new ();
-	dxf_obj_parse(v_return, drawing, ent, p_space, pool_idx);
-	return v_return;
+	list_node * list_ret = list_new(NULL, pool_idx);
+	dxf_obj_parse(list_ret, drawing, ent, p_space, pool_idx);
+	return list_ret;
 }
 
-vector_p * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, int pool_idx){
+list_node * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, int pool_idx){
 	list_node *current = NULL;
 	
 		
 	if (list != NULL){
 		/* Initialize */
 		/*create the vector of returned values */
-		vector_p *v_return = vect_new ();
+		list_node * list_ret = list_new(NULL, pool_idx);
 		
 		current = list->next;
 		
@@ -2575,14 +2571,14 @@ vector_p * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, in
 				if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 					
 					// -------------------------------------------
-					dxf_obj_parse(v_return, drawing, ((dxf_node *)current->data), p_space, pool_idx);
+					dxf_obj_parse(list_ret, drawing, ((dxf_node *)current->data), p_space, pool_idx);
 					
 					//---------------------------------------
 				}
 			}
 			current = current->next;
 		}
-		return v_return;
+		return list_ret;
 	}
 	return NULL;
 }
@@ -2602,7 +2598,7 @@ int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_
 				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
 				
 					// -------------------------------------------
-					vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
+					graph_list_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
 					
 					//---------------------------------------
 				}
@@ -2623,7 +2619,7 @@ int dxf_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, do
 			if (current->data){
 				if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 					// -------------------------------------------
-					vec_graph_draw_fix(((dxf_node *)current->data)->obj.graphics, img, ofs_x, ofs_y, scale, color);
+					graph_list_draw_fix(((dxf_node *)current->data)->obj.graphics, img, ofs_x, ofs_y, scale, color);
 					
 					//---------------------------------------
 				}
@@ -2647,7 +2643,7 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 				/*verify if entity layer is thaw */
 				lay_idx = dxf_layer_get(drawing, current);
 				if (!drawing->layers[lay_idx].frozen){
-					vec_graph_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
+					graph_list_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
 				}
 				
 				/* -------------------------------------------
@@ -2686,10 +2682,10 @@ dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_
 				lay_idx = dxf_layer_get(drawing, current);
 				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
 					// -------------------------------------------
-					//vec_graph_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
+					//graph_list_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
 					
-					//graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
-					if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+					//graph_obj * graph_list_isect(list_node * vec, double rect_pt1[2], double rect_pt2[2]);
+					if(graph_list_isect(current->obj.graphics, rect_pt1, rect_pt2)){
 						return current;
 					}
 					
@@ -2725,7 +2721,7 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 				lay_idx = dxf_layer_get(drawing, current);
 				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
 					/* look for a instersect in entity's visible graphics */
-					if(vec_graph_isect(current->obj.graphics, rect_pt1, rect_pt2)){
+					if(graph_list_isect(current->obj.graphics, rect_pt1, rect_pt2)){
 						/* append entity,  if it does not already exist in the list */
 						if (list_find_data(list, current)){
 							//printf ("DEBUG: already exists!\n");

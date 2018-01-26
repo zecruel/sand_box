@@ -1364,7 +1364,7 @@ int dxf_new_block(dxf_drawing *drawing, char *name, char *layer, list_node *list
 					if (current->data){
 						obj = (dxf_node *)current->data;
 						if (obj->type == DXF_ENT){ /* DXF entity  */
-							vec_graph_ext(obj->obj.graphics, &init_ext, &min_x, &min_y, &max_x, &max_y);
+							graph_list_ext(obj->obj.graphics, &init_ext, &min_x, &min_y, &max_x, &max_y);
 						}
 					}
 					current = current->next;
@@ -1442,7 +1442,7 @@ int dxf_new_block2(dxf_drawing *drawing, char *name, char *mark, char *layer, li
 					if (current->data){
 						obj = (dxf_node *)current->data;
 						if (obj->type == DXF_ENT){ /* DXF entity  */
-							vec_graph_ext(obj->obj.graphics, &init_ext, &min_x, &min_y, &max_x, &max_y);
+							graph_list_ext(obj->obj.graphics, &init_ext, &min_x, &min_y, &max_x, &max_y);
 						}
 					}
 					current = current->next;

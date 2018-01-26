@@ -68,7 +68,7 @@ int tt_load_font (char *path, stbtt_fontinfo *font, double *scale){
 	return ok;
 }
 
-int tt_parse2(vector_p *v_return, int pool_idx, const char *txt){
+int tt_parse2(list_node *list_ret, int pool_idx, const char *txt){
 	int ok = 0;
 	stbtt_fontinfo font;
 	double scale;
@@ -103,7 +103,7 @@ int tt_parse2(vector_p *v_return, int pool_idx, const char *txt){
 					
 					graph_modify(curr, ofs_x, 0.0, 1.0, 1.0, 0.0);
 					/* store the graph in the return vector */
-					stack_push(v_return, curr);
+					list_push(list_ret, list_new((void *)curr, pool_idx));
 					
 					ofs_x = new_ofs_x;
 					

@@ -1905,7 +1905,6 @@ double pos_x, double pos_y, double ref_x, double ref_y, double sensi, double *re
 	double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0;
 	
 	/* for insert objects */
-	vector_p v_search;
 	dxf_node *insert_ent = NULL, *blk = NULL;
 	
 	struct ins_space ins_stack[10];
@@ -2251,11 +2250,11 @@ double pos_x, double pos_y, double ref_x, double ref_y, double sensi, double *re
 				((ins_flag != 0) && (current != NULL) && (current != insert_ent) && (current->type == DXF_ENT))){
 				ins_flag = 0;
 				/* look for block */
-				v_search = dxf_find_obj_descr(drawing->blks, "BLOCK", name1);
-				if (v_search.data) { 
-					blk = ((dxf_node **) v_search.data)[0];
+				blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", name1);
+				if (blk) { 
+					
 					//printf ("bloco %s\n", name1);
-					free(v_search.data);
+					
 					/* save current entity for future process */
 					ins_stack_pos++;
 					ins_stack[ins_stack_pos].ins_ent = blk;

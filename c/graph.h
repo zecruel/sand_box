@@ -7,6 +7,7 @@
 
 #include "dxf.h"
 #include "bmp.h"
+#include "list.h"
 
 #define MAX_SPLINE_PTS 1000
 #define GRAPH_POOL_PAGES 1000
@@ -63,10 +64,6 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
-void vec_graph_draw(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale);
-
-int vec_graph_ext(vector_p * vec, int *init, double * min_x, double * min_y, double * max_x, double * max_y);
-
 void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig);
 
 void graph_arc_bulge(graph_obj * master, 
@@ -83,17 +80,7 @@ void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x
 
 void graph_rot(graph_obj * master, double base_x, double base_y, double rot);
 
-void vec_graph_modify(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot);
-
-void vec_graph_rot(vector_p * vec, double base_x, double base_y , double rot);
-
-void vec_graph_rot_idx(vector_p * vec, double base_x, double base_y , double rot, int start_idx, int end_idx);
-
 void graph_mod_axis(graph_obj * master, double normal[3]);
-
-void vec_graph_mod_ax(vector_p * vec, double normal[3], int start_idx, int end_idx);
-
-void vec_graph_modify_idx(vector_p * vec, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx);
 
 void knot(int n, int c, int x[]);
 
@@ -101,13 +88,23 @@ void rbasis(int c, double t, int npts, int x[], double h[], double r[]);
 
 void rbspline(int npts, int k, int p1, double b[], double h[], double p[]);
 
-void vec_graph_draw_fix(vector_p * vec, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color);
+int graph_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
-graph_obj * vec_graph_isect(vector_p * vec, double rect_pt1[2], double rect_pt2[2]);
+int graph_list_draw_fix(list_node *list, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color);
 
+int graph_list_ext(list_node *list, int *init, double * min_x, double * min_y, double * max_x, double * max_y);
 
+int graph_list_modify(list_node *list, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot);
 
+int graph_list_modify_idx(list_node *list, double ofs_x, double ofs_y , double scale_x, double scale_y, double rot, int start_idx, int end_idx);
 
+int graph_list_rot(list_node *list, double base_x, double base_y , double rot);
+
+int graph_list_rot_idx(list_node *list, double base_x, double base_y , double rot, int start_idx, int end_idx);
+
+int graph_list_mod_ax(list_node *list, double normal[3], int start_idx, int end_idx);
+
+graph_obj * graph_list_isect(list_node *list, double rect_pt1[2], double rect_pt2[2]);
 
 
 #endif

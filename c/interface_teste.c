@@ -460,19 +460,6 @@ void zoom_ext(dxf_drawing *drawing, bmp_img *img, double *zoom, double *ofs_x, d
 	*ofs_y = min_y - (fabs((max_y - min_y)*(*zoom) - img->height)/2)/(*zoom);
 }
 
-void zoom_ext2(dxf_drawing *drawing, int x, int y, int width, int height, double *zoom, double *ofs_x, double *ofs_y){
-	double min_x, min_y, max_x, max_y;
-	double zoom_x, zoom_y;
-	dxf_ents_ext(drawing, &min_x, &min_y, &max_x, &max_y);
-	zoom_x = fabs(max_x - min_x)/width;
-	zoom_y = fabs(max_y - min_y)/height;
-	*zoom = (zoom_x > zoom_y) ? zoom_x : zoom_y;
-	*zoom = 1/(1.1 * (*zoom));
-	
-	*ofs_x = min_x - ((fabs((max_x - min_x)*(*zoom) - width)/2)+x)/(*zoom);
-	*ofs_y = min_y - ((fabs((max_y - min_y)*(*zoom) - height)/2)+y)/(*zoom);
-}
-
 void sel_list_append(list_node *list, dxf_node *ent){
 	if (list && ent){
 		if (list_find_data(list, ent)){
@@ -521,7 +508,7 @@ int main(int argc, char** argv){
 	/* Window dimension */
 	unsigned int win_w = 1200;
 	unsigned int win_h = 715;
-	SDL_Rect win_r, display_r;
+	SDL_Rect win_r;
 	
 	/* init the SDL2 */
 	SDL_Init(SDL_INIT_VIDEO);
@@ -550,12 +537,28 @@ int main(int argc, char** argv){
 		main_w, /* width */
 		main_h); /* height */
 		
-	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+	SDL_Texture * aux_t = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STATIC, 
+		main_w, /* width */
+		main_h); /* height */
+		
+	SDL_SetTextureBlendMode(aux_t, SDL_BLENDMODE_BLEND);
+	
+	SDL_Texture * gui_t = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STATIC, 
+		main_w, /* width */
+		main_h); /* height */
+		
+	SDL_SetTextureBlendMode(gui_t, SDL_BLENDMODE_BLEND);
 	
 	
 	
 	
-	double zoom = 20.0 , ofs_x = -11.0, ofs_y = -71.0;
+	double zoom = 20.0 , ofs_x = 0.0, ofs_y = 0.0;
 	double prev_zoom;
 	int color_idx = 256;
 	int layer_idx = 0, ltypes_idx = 0;
@@ -591,8 +594,8 @@ int main(int argc, char** argv){
 	int show_app_about = 0;
 	int show_info = 0;
 	
-	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
-	list_node *phanton = NULL;
+	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0, draw_gui = 0, draw_aux =0, updt_tex = 0;
+	vector_p *phanton = NULL;
 	struct nk_color background;
 	
 	char info_buffer[512];
@@ -711,6 +714,8 @@ int main(int argc, char** argv){
 	
 	/* init the main image */
 	bmp_img * img = bmp_new(main_w, main_h, grey, red);
+	bmp_img * aux_i = bmp_new(main_w, main_h, transp, red);
+	bmp_img * gui_i = bmp_new(main_w, main_h, transp, red);
 	
 	/* init Nuklear GUI */
 	struct font_obj font;
@@ -854,12 +859,6 @@ int main(int argc, char** argv){
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
 	
-	/*===================== teste ===============*/
-	list_node * tt_test = list_new(NULL, 0);
-	//graph_obj *tt_test = tt_parse(0, "abcd e", &test_w);
-	tt_parse2(tt_test, 0, "Ezequiel Rabelo de Aguiar");
-	/*===================== teste ===============*/
-	
 	/* main loop */
 	while (quit == 0){
 		ev_type = 0;
@@ -917,7 +916,7 @@ int main(int argc, char** argv){
 						mouse_y = main_h - mouse_y;
 						pos_x = (double) mouse_x/zoom + ofs_x;
 						pos_y = (double) mouse_y/zoom + ofs_y;
-						draw = 1;
+						draw_aux = 1;
 						break;
 					case SDL_MOUSEWHEEL:
 						prev_zoom = zoom;
@@ -927,7 +926,7 @@ int main(int argc, char** argv){
 						mouse_y = main_h - mouse_y;
 						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
 						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
-						draw = 1;
+						draw_aux = 1;
 						break;
 					
 					case (SDL_DROPFILE): {      // In case if dropped file
@@ -1046,7 +1045,7 @@ int main(int argc, char** argv){
 			}
 			
 			/* managers*/
-			nk_layout_row_push(gui->ctx, 5*(ICON_SIZE + 4 + 4) + 13);
+			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "managers", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LAYERS]))){
@@ -1060,9 +1059,6 @@ int main(int argc, char** argv){
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PUZZLE]))){
 					printf("Blocks\n");
-				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAGS]))){
-					printf("APPID\n");
 				}
 				nk_group_end(gui->ctx);
 			}
@@ -1141,13 +1137,11 @@ int main(int argc, char** argv){
 			
 			static char text[64];
 			int text_len;
-			nk_layout_row_push(gui->ctx, 900);
+			nk_layout_row_push(gui->ctx, 680);
 			if (nk_group_begin(gui->ctx, "Prop", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 				
 				/*layer*/
-				nk_layout_row_push(gui->ctx, 60);
-				nk_label(gui->ctx, "Layer: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(300,300))){
 					float wid[] = {120, 28, 28};
@@ -1203,8 +1197,7 @@ int main(int argc, char** argv){
 				else{
 					text_len = snprintf(text, 63, "%s", "ByL");
 				}
-				nk_layout_row_push(gui->ctx, 60);
-				nk_label(gui->ctx, "Color: ", NK_TEXT_RIGHT);
+				
 				nk_layout_row_push(gui->ctx, 70);
 				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
 					nk_layout_row_static(gui->ctx, 15, 15, 10);
@@ -1231,8 +1224,6 @@ int main(int argc, char** argv){
 				}
 				
 				/*line type*/
-				nk_layout_row_push(gui->ctx, 90);
-				nk_label(gui->ctx, "Line type: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
 					nk_layout_row_dynamic(gui->ctx, 25, 2);
@@ -1346,34 +1337,6 @@ int main(int argc, char** argv){
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
-				recv_comm_flag = 1;
-				snprintf(recv_comm, 64, "%s","NEW_BLK");
-				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
-				dxf_ent_print2(drawing->blks);
-				dxf_ent_print2(drawing->blks_rec);*/
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EXPLODE]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EDIT]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG_E]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FIND]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RULER]))){
-				
-			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_STYLE]))){
-				
-			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","DELETE");
@@ -1413,6 +1376,14 @@ int main(int argc, char** argv){
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SPLINE]))){
 				
+			}
+			
+			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
+				recv_comm_flag = 1;
+				snprintf(recv_comm, 64, "%s","NEW_BLK");
+				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
+				dxf_ent_print2(drawing->blks);
+				dxf_ent_print2(drawing->blks_rec);*/
 			}
 			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BOOK]))){
 				recv_comm_flag = 1;
@@ -1538,7 +1509,7 @@ int main(int argc, char** argv){
 						static struct nk_rect s = {20, 10, 420, 330};
 						if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Block", NK_WINDOW_CLOSABLE, s)){
 							
-							list_node *blk_g; /*graphic object of current block */
+							vector_p *blk_g; /*graphic object of current block */
 							dxf_node *blk, *blk_nm; /* current block and its name attribute */
 							int blk_ei; /*extents flag of current block */
 							/* extents and zoom parameters */
@@ -1574,7 +1545,7 @@ int main(int argc, char** argv){
 								/* get graphics of current block*/
 								blk_g = dxf_graph_parse(drawing, blk, 0, FRAME_LIFE);
 								/* get extents parameters of current block*/
-								graph_list_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
+								vec_graph_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
 								
 								/* calcule the zoom and offset for preview */
 								z_x = fabs(blk_x1 - blk_x0)/blk_prvw_big->width;
@@ -1589,8 +1560,8 @@ int main(int argc, char** argv){
 								
 								/* draw graphics in current preview bitmap */
 								bmp_fill(blk_prvw_big, blk_prvw_big->bkg); /* clear bitmap */
-								graph_list_draw(blk_g, blk_prvw_big, o_x, o_y, z);
-								
+								vec_graph_draw(blk_g, blk_prvw_big, o_x, o_y, z);
+								free(blk_g);
 							}
 							if (nk_group_begin(gui->ctx, "Block_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 								/* preview img */
@@ -1699,7 +1670,7 @@ int main(int argc, char** argv){
 				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				text_len = snprintf(text, 63, "Opening...");
 				nk_label(gui->ctx, text, NK_TEXT_LEFT);
-				nk_progress(gui->ctx, (nk_size *)&progress, 100, NK_FIXED);
+				nk_progress(gui->ctx, &progress, 100, NK_FIXED);
 				//nk_popup_end(gui->ctx);
 				nk_end(gui->ctx);
 			}
@@ -1722,7 +1693,7 @@ int main(int argc, char** argv){
 			
 			nk_layout_row_begin(gui->ctx, NK_STATIC, 32, 5);
 			nk_layout_row_push(gui->ctx, 380);
-			if (nk_group_begin(gui->ctx, "coord", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 10);
 				nk_layout_row_push(gui->ctx, 20);
 				/* X distance */
@@ -1854,7 +1825,7 @@ int main(int argc, char** argv){
 				}
 			}
 			nk_layout_row_push(gui->ctx, 16*(22 + 3) + 13);
-			if (nk_group_begin(gui->ctx, "attractors", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 				/* Buttons to select attractor mode*/
 				int selected, i, attr = 1;
 				nk_layout_row_static(gui->ctx, 22, 22, 15);
@@ -1875,15 +1846,6 @@ int main(int argc, char** argv){
 				}
 				/*-------------------------------*/
 				nk_group_end(gui->ctx);
-			}
-			
-			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PREV]))){
-				
-			}
-			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NEXT]))){
-				
 			}
 			nk_layout_row_end(gui->ctx);
 			
@@ -1997,7 +1959,7 @@ int main(int argc, char** argv){
 		}
 		else if(action == VIEW_ZOOM_EXT){
 			action = NONE;
-			zoom_ext2(drawing, 0, main_h - win_h, win_w, win_h, &zoom, &ofs_x, &ofs_y);
+			zoom_ext(drawing, img, &zoom, &ofs_x, &ofs_y);
 			draw = 1;
 		}
 		else if(action == VIEW_ZOOM_P){
@@ -2359,8 +2321,8 @@ int main(int argc, char** argv){
 			step = 0;
 			draw_phanton = 0;
 			if (phanton){
-				//free(phanton->data);
-				//free(phanton);
+				free(phanton->data);
+				free(phanton);
 				phanton = NULL;
 			}
 			lock_ax_x = 0;
@@ -2848,7 +2810,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (MouseMotion){
-					graph_list_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
 				}
@@ -2907,7 +2869,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (MouseMotion){
-					graph_list_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
 				}
@@ -2919,7 +2881,7 @@ int main(int argc, char** argv){
 					draw_tmp = 1;
 					/* phantom object */
 					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
-					graph_list_modify(phanton, step_x[step]*(1 - scale), step_y[step]*(1 - scale), scale, scale, 0.0);
+					vec_graph_modify(phanton, step_x[step]*(1 - scale), step_y[step]*(1 - scale), scale, scale, 0.0);
 					element = NULL;
 					draw_phanton = 1;
 					en_distance = 1;
@@ -2971,7 +2933,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (MouseMotion){
-					graph_list_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
+					vec_graph_modify(phanton, step_x[step] - step_x[step + 1], step_y[step] - step_y[step + 1], 1.0, 1.0, 0.0);
 					step_x[step + 1] = step_x[step];
 					step_y[step + 1] = step_y[step];
 				}
@@ -2988,8 +2950,8 @@ int main(int argc, char** argv){
 			step = 0;
 			draw_phanton = 0;
 			if (phanton){
-				//free(phanton->data);
-				//free(phanton);
+				free(phanton->data);
+				free(phanton);
 				phanton = NULL;
 			}
 		next_step:
@@ -3007,36 +2969,29 @@ int main(int argc, char** argv){
 		}
 		
 		if (gui_check_draw(gui) != 0){
-			draw = 1;
+			//draw = 1;
+			bmp_fill(gui_i, gui_i->bkg); /* clear bitmap */
+			nk_sdl_render(gui, gui_i);
+			SDL_UpdateTexture(gui_t, NULL, gui_i->buf, main_w * 4);
+			updt_tex = 1;
 		}
 		
-		if (draw != 0){
-			/*get current window size */
-			SDL_GetWindowSize(window, &win_w, &win_h);
-			if (win_w > main_w){ /* if window exceedes main image */
-				/* fit windo to main image size*/
-				win_w = main_w;
-				SDL_SetWindowSize(window, win_w, win_h);
-			}
-			if (win_h > main_h){/* if window exceedes main image */
-				/* fit windo to main image size*/
-				win_h = main_h;
-				SDL_SetWindowSize(window, win_w, win_h);
-			}
+		if (draw_aux != 0)
+		{
+			draw_aux = 0;
+			bmp_fill(aux_i, aux_i->bkg); /* clear bitmap */
+			draw_cursor(aux_i, mouse_x, mouse_y, cursor);
+			SDL_UpdateTexture(aux_t, NULL, aux_i->buf, main_w * 4);
+			updt_tex = 1;
+		}
 			
-			/* set image visible window*/
-			img->clip_x = 0; img->clip_y = main_h - win_h;
-			img->clip_w = win_w;
-			img->clip_h = win_h;
 		
-			bmp_fill_clip(img, img->bkg); /* clear bitmap */
+		if (draw != 0){
+			draw = 0;
+			bmp_fill(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			/*===================== teste ===============*/
-			graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
-			/*===================== teste ===============*/
 			
-			draw_cursor(img, mouse_x, mouse_y, cursor);
 			
 			if (near_attr){ /* check if needs to draw an attractor mark */
 				/* convert entities coordinates to screen coordinates */
@@ -3049,35 +3004,46 @@ int main(int argc, char** argv){
 				element->obj.graphics = dxf_graph_parse(drawing, element, 0 , 1);
 			}
 			if(element != NULL){
-				graph_list_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
+				vec_graph_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
 			}
 			if((draw_phanton)&&(phanton)){
 				//dxf_list_draw(sel_list, img, ofs_x - (x1 - x0), ofs_y - (y1 - y0), zoom, hilite);
-				graph_list_draw_fix(phanton, img, ofs_x, ofs_y, zoom, hilite);
+				vec_graph_draw_fix(phanton, img, ofs_x, ofs_y, zoom, hilite);
 			}
 			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
+			SDL_UpdateTexture(canvas, NULL, img->buf, main_w * 4);
+			updt_tex = 1;
+		}
+		if (updt_tex != 0){
+			updt_tex = 0;
+			SDL_GetWindowSize(window, &win_w, &win_h);
 			
+			if (win_w > main_w){
+				win_w = main_w;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
 			
-			/* set image visible window*/
-			img->clip_x = 0; img->clip_y = 0;
-			
-			/*draw gui*/
-			nk_sdl_render(gui, img);
-			
-			
+			if (win_h > main_h){
+				win_h = main_h;
+				SDL_SetWindowSize(window, win_w, win_h);
+			}
 			
 			
 			win_r.x = 0; win_r.y = 0;
 			win_r.w = win_w; win_r.h = win_h;
 			
-			SDL_UpdateTexture(canvas, NULL, img->buf, main_w * 4);
+			
+			
+			
 			SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, &win_r, NULL);
+			SDL_RenderCopy(renderer, aux_t, &win_r, NULL);
+			SDL_RenderCopy(renderer, gui_t, &win_r, NULL);
 			SDL_RenderPresent(renderer);
 			
 			//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 			SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEMOTION);
-			draw = 0;
+			
 			
 		}
 		
@@ -3099,6 +3065,8 @@ int main(int argc, char** argv){
 	
 	/* safe quit */
 	SDL_DestroyTexture(canvas);
+	SDL_DestroyTexture(aux_t);
+	SDL_DestroyTexture(gui_t);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -3114,6 +3082,8 @@ int main(int argc, char** argv){
 	do_mem_pool(FREE_DO_ALL);
 	
 	bmp_free(img);
+	bmp_free(aux_i);
+	bmp_free(gui_i);
 	bmp_free(color_img);
 	bmp_free(blk_prvw_big);
 	

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
-
+#include "list.h"
 
 #define DXF_MAX_LAYERS 50
 #define DXF_MAX_LTYPES 50
@@ -158,23 +158,10 @@ struct Dxf_drawing{
 };
 typedef struct Dxf_drawing dxf_drawing;
 
-/* structure to store vectors (arrays) */
-struct Vector_p{
-	int size;
-	void *data;
-};
-typedef struct Vector_p vector_p;
-
 /* functions*/
 void str_upp(char *str);
 
 char * trimwhitespace(char *str);
-
-vector_p * vect_new (void);
-
-int stack_push (vector_p *stack, void *new_ptr);
-
-void * stack_pop (vector_p *stack);
 
 void dxf_ent_print2 (dxf_node *ent);
 
@@ -188,17 +175,17 @@ int dxf_ident_ent_type (dxf_node *obj);
 
 dxf_node * dxf_attr_new (int group, int type, void *value);
 
-vector_p dxf_find_attr(dxf_node * obj, int attr);
+//vector_p dxf_find_attr(dxf_node * obj, int attr);
 
 dxf_node * dxf_find_attr2(dxf_node * obj, int attr);
 
 dxf_node * dxf_find_attr_i(dxf_node * obj, int attr, int idx);
 
-vector_p dxf_find_obj(dxf_node * obj, char *name);
+//vector_p dxf_find_obj(dxf_node * obj, char *name);
 
 dxf_node * dxf_find_obj_i(dxf_node * obj, char *name, int idx);
 
-vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr);
+//vector_p dxf_find_obj_descr(dxf_node * obj, char *name, char *descr);
 
 dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr);
 
