@@ -90,6 +90,8 @@ void i_svg_free_curves(NSVGimage **curves);
 
 bmp_img ** i_svg_all_bmp(NSVGimage **curves, int w, int h);
 
+bmp_img * i_svg_bmp(NSVGimage *curve, int w, int h);
+
 void i_svg_free_bmp(bmp_img **img);
 
 #endif

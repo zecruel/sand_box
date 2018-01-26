@@ -735,6 +735,22 @@ int main(int argc, char** argv){
 	NSVGimage **svg_curves = i_svg_all_curves();
 	bmp_img **svg_bmp = i_svg_all_bmp(svg_curves, ICON_SIZE, ICON_SIZE);
 	
+	bmp_free(svg_bmp[SVG_LOCK]);
+	svg_bmp[SVG_LOCK] = i_svg_bmp(svg_curves[SVG_LOCK], 16, 16);
+	bmp_free(svg_bmp[SVG_UNLOCK]);
+	svg_bmp[SVG_UNLOCK] = i_svg_bmp(svg_curves[SVG_UNLOCK], 16, 16);
+	bmp_free(svg_bmp[SVG_EYE]);
+	svg_bmp[SVG_EYE] = i_svg_bmp(svg_curves[SVG_EYE], 16, 16);
+	bmp_free(svg_bmp[SVG_NO_EYE]);
+	svg_bmp[SVG_NO_EYE] = i_svg_bmp(svg_curves[SVG_NO_EYE], 16, 16);
+	bmp_free(svg_bmp[SVG_SUN]);
+	svg_bmp[SVG_SUN] = i_svg_bmp(svg_curves[SVG_SUN], 16, 16);
+	bmp_free(svg_bmp[SVG_FREEZE]);
+	svg_bmp[SVG_FREEZE] = i_svg_bmp(svg_curves[SVG_FREEZE], 16, 16);
+	bmp_free(svg_bmp[SVG_CZ]);
+	svg_bmp[SVG_CZ] = i_svg_bmp(svg_curves[SVG_CZ], 16, 16);
+	
+	bmp_img *i_cz48 = i_svg_bmp(svg_curves[SVG_CZ], 48, 48);
 	
 	bmp_img * attr_vec[15];
 	attrc_get_imgs(attr_vec, 15, 16, 16);
@@ -854,9 +870,8 @@ int main(int argc, char** argv){
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
 	
-	/*===================== teste ===============*/
+	/*===================== teste ===============
 	list_node * tt_test = list_new(NULL, 0);
-	//graph_obj *tt_test = tt_parse(0, "abcd e", &test_w);
 	tt_parse2(tt_test, 0, "Ezequiel Rabelo de Aguiar");
 	/*===================== teste ===============*/
 	
@@ -1150,8 +1165,8 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Layer: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(300,300))){
-					float wid[] = {120, 28, 28};
-					nk_layout_row(gui->ctx, NK_STATIC, 28, 3, wid);
+					float wid[] = {175, 20, 20, 20, 20};
+					nk_layout_row(gui->ctx, NK_STATIC, 20, 5, wid);
 					int num_layers = drawing->num_layers;
 					for (i = 0; i < num_layers; i++){
 						//strcpy(layer_nam[i], drawing->layers[i].name);
@@ -1160,6 +1175,17 @@ int main(int argc, char** argv){
 							action = LAYER_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
+						
+						struct nk_color b_color = {
+							.r = dxf_colors[drawing->layers[i].color].r,
+							.g = dxf_colors[drawing->layers[i].color].g,
+							.b = dxf_colors[drawing->layers[i].color].b,
+							.a = dxf_colors[drawing->layers[i].color].a
+						};
+						if(nk_button_color(gui->ctx, b_color)){
+							
+						}
+						
 						if (drawing->layers[i].off){
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
 								drawing->layers[i].off = 0;
@@ -1168,6 +1194,16 @@ int main(int argc, char** argv){
 						else{
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
 								drawing->layers[i].off = 1;
+							}
+						}
+						if (drawing->layers[i].frozen){
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FREEZE]))){
+								drawing->layers[i].frozen = 0;
+							}
+						}
+						else{
+							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
+								drawing->layers[i].frozen= 1;
 							}
 						}
 						if (drawing->layers[i].lock){
@@ -1180,6 +1216,7 @@ int main(int argc, char** argv){
 								drawing->layers[i].lock = 1;
 							}
 						}
+						
 					}
 					
 					nk_combo_end(gui->ctx);
@@ -1235,7 +1272,7 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Line type: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
-					nk_layout_row_dynamic(gui->ctx, 25, 2);
+					nk_layout_row_dynamic(gui->ctx, 20, 2);
 					int num_ltypes = drawing->num_ltypes;
 					
 					for (i = 0; i < num_ltypes; i++){
@@ -1278,7 +1315,7 @@ int main(int argc, char** argv){
 				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "About", NK_WINDOW_CLOSABLE, s)){
 					nk_layout_row_dynamic(gui->ctx, 50, 2);
 					nk_label(gui->ctx, "CadZinho", NK_TEXT_RIGHT);
-					nk_image(gui->ctx, nk_image_ptr(svg_bmp[SVG_CZ]));
+					nk_image(gui->ctx, nk_image_ptr(i_cz48));
 					//nk_layout_row_dynamic(gui->ctx, 165, 1);
 					//nk_image(gui->ctx, i_cz);
 					nk_layout_row_begin(gui->ctx, NK_DYNAMIC, 20, 2);
@@ -3032,7 +3069,7 @@ int main(int argc, char** argv){
 			bmp_fill_clip(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			/*===================== teste ===============*/
+			/*===================== teste ===============
 			graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
 			/*===================== teste ===============*/
 			
@@ -3116,6 +3153,7 @@ int main(int argc, char** argv){
 	bmp_free(img);
 	bmp_free(color_img);
 	bmp_free(blk_prvw_big);
+	bmp_free(i_cz48);
 	
 	i_svg_free_bmp(svg_bmp);
 	i_svg_free_curves(svg_curves);

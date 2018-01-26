@@ -413,6 +413,33 @@ bmp_img ** i_svg_all_bmp(NSVGimage **curves, int w, int h){
 	return img;
 }
 
+bmp_img * i_svg_bmp(NSVGimage *curve, int w, int h){
+	bmp_color transp = {.r = 255, .g = 255, .b = 255, .a = 0};
+	bmp_color red = {.r = 255, .g = 0, .b =0, .a = 255};
+	bmp_img * img;
+	double ofs_x, ofs_y, zoom;
+	
+	NSVGrasterizer *rast = nsvgCreateRasterizer();
+	if (rast == NULL) {
+		return NULL;
+	}
+	
+	img  = bmp_new(w, h, transp, red);
+	
+	if (img && curve){
+		img->r_i = 0;
+		img->g_i = 1;
+		img->b_i = 2;
+		img->a_i = 3;
+		bmp_fit(img, 0, 0, curve->width, curve->height, &zoom, &ofs_x, &ofs_y);
+		nsvgRasterize(rast, curve, -ofs_x, -ofs_y, zoom, img->buf, w, h, w*4);
+	}
+	
+	
+	nsvgDeleteRasterizer(rast);
+	return img;
+}
+
 void i_svg_free_bmp(bmp_img **img){
 	int i = 0;
 	
