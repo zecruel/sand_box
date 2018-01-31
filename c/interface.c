@@ -543,6 +543,11 @@ int main(int argc, char** argv){
 	main_w = rend_info.max_texture_width;
 	main_h = rend_info.max_texture_height;
 	
+	if ((main_w <= 0) || (main_h <= 0)){
+		main_w = 2048;
+		main_h = 2048;
+	}
+	
 	SDL_Texture * canvas = SDL_CreateTexture(
 		renderer,
 		SDL_PIXELFORMAT_ARGB8888,
@@ -870,9 +875,9 @@ int main(int argc, char** argv){
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	
 	
-	/*===================== teste ===============
-	list_node * tt_test = list_new(NULL, 0);
-	tt_parse2(tt_test, 0, "Ezequiel Rabelo de Aguiar");
+	/*===================== teste ===============*/
+	list_node * tt_test = list_new(NULL, PRG_LIFE);
+	tt_parse2(tt_test, PRG_LIFE, "Ezequiel Rabelo de Aguiar  AV");
 	/*===================== teste ===============*/
 	
 	/* main loop */
@@ -3069,7 +3074,7 @@ int main(int argc, char** argv){
 			bmp_fill_clip(img, img->bkg); /* clear bitmap */
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
-			/*===================== teste ===============
+			/*===================== teste ===============*/
 			graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
 			/*===================== teste ===============*/
 			
@@ -3107,7 +3112,7 @@ int main(int argc, char** argv){
 			win_r.x = 0; win_r.y = 0;
 			win_r.w = win_w; win_r.h = win_h;
 			
-			SDL_UpdateTexture(canvas, NULL, img->buf, main_w * 4);
+			SDL_UpdateTexture(canvas, &win_r, img->buf, main_w * 4);
 			SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, &win_r, NULL);
 			SDL_RenderPresent(renderer);
@@ -3147,6 +3152,7 @@ int main(int argc, char** argv){
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
 	graph_mem_pool(FREE_ALL, 2);
+	graph_mem_pool(FREE_ALL, PRG_LIFE);
 	
 	do_mem_pool(FREE_DO_ALL);
 	

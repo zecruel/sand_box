@@ -89,7 +89,7 @@ void bmp_thick_line(bmp_img *img, int x0, int y0, int x1, int y1);
 
 void bmp_thin_line(bmp_img *img, int x0, int y0, int x1, int y1) ;
 
-void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[]);
+void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[], int stroke[]);
 
 bmp_img * bmp_sub_img(bmp_img *orig, int x, int y, int w, int h);
 

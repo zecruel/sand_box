@@ -300,7 +300,7 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					/*change the color */
 					img->frg = color;
 					
-					bmp_poly_fill(img, 20, vert_x, vert_y);
+					bmp_poly_fill(img, 20, vert_x, vert_y, NULL);
 				} break;
 				
 				case NK_COMMAND_CIRCLE: {
@@ -346,7 +346,7 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					/*change the color */
 					img->frg = color;
 					
-					bmp_poly_fill(img, 3, vert_x, vert_y);
+					bmp_poly_fill(img, 3, vert_x, vert_y, NULL);
 				} break;
 				
 				case NK_COMMAND_POLYGON: {

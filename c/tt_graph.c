@@ -25,6 +25,7 @@ graph_obj * tt_parse_v(stbtt_vertex *vertices, int num_verts, double scale, int 
 		line_list = graph_new(pool_idx);
 		if(line_list) line_list->fill = 1;
 		for (i=0; i < num_verts; i++){
+			//printf ("vert %d = %d,%d\n", vertices[i].type, vertices[i].x, vertices[i].y);
 			px = vertices[i].x * scale;
 			py = vertices[i].y * scale;
 			if (vertices[i].type == 3){ /*quadratic bezier curve */
@@ -62,7 +63,7 @@ int tt_load_font (char *path, stbtt_fontinfo *font, double *scale){
 	
 	ttf_buffer = dxf_load_file(path, &fsize);
 	ok = stbtt_InitFont(font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer,0));
-	free(ttf_buffer);
+	//free(ttf_buffer);
 	*scale = stbtt_ScaleForPixelHeight(font, 1);
 	
 	return ok;
@@ -72,14 +73,15 @@ int tt_parse2(list_node *list_ret, int pool_idx, const char *txt){
 	int ok = 0;
 	stbtt_fontinfo font;
 	double scale;
-	graph_obj *curr;
+	graph_obj *curr = NULL;
 	
-	if(tt_load_font("c:/windows/fonts/arial.ttf", &font, &scale)){
-	
-		int i, str_len, num_verts;
+	//if(tt_load_font("C:/Windows/Fonts/arialbd.ttf", &font, &scale)){
+	if(tt_load_font("Lato-Light.ttf", &font, &scale)){
+		int i, str_len, num_verts = 0;
 		wchar_t str_uni[255];
 		double ofs_x = 0.0, ofs_y = 0.0, curr_pos, new_ofs_x = 0.0;
 		stbtt_vertex *vertices = NULL;
+		int prev_glyph, glyph;
 	
 		//converte o texto em uma string unicode
 		str_len = mbstowcs(str_uni, txt, 255);
@@ -87,19 +89,25 @@ int tt_parse2(list_node *list_ret, int pool_idx, const char *txt){
 		int adv = 0, ls = 0, kadv = 0;
 	
 		for(i = 0; i < str_len; i++){
+			
+			glyph = stbtt_FindGlyphIndex(&font, (int)str_uni[i]);
+			
 			if ((str_uni[i] != 9) && (str_uni[i] != 32)){
-				num_verts = stbtt_GetCodepointShape(&font, str_uni[i], &vertices);
+				num_verts = stbtt_GetGlyphShape(&font, glyph, &vertices);
 				
 				curr = tt_parse_v(vertices, num_verts, scale, pool_idx, &curr_pos);
 				
-				//stbtt_GetCodepointHMetrics(&font, str_uni[i], &adv, &ls);
-				if(i>0) kadv = stbtt_GetCodepointKernAdvance(&font, str_uni[i-1], str_uni[i]);
+				stbtt_GetGlyphHMetrics(&font, glyph, &adv, &ls);
+				if(i>0) kadv = stbtt_GetGlyphKernAdvance(&font, prev_glyph, glyph);
 				
 				stbtt_FreeShape(&font, vertices);
 				if (curr){
 					
-					ofs_x += kadv * scale + 0.05;
-					new_ofs_x = ofs_x + curr->ext_max_x;
+					//ofs_x += kadv * scale + 0.05;
+					//new_ofs_x = ofs_x + curr->ext_max_x;
+					
+					ofs_x += kadv * scale;
+					new_ofs_x = ofs_x + adv * scale;
 					
 					graph_modify(curr, ofs_x, 0.0, 1.0, 1.0, 0.0);
 					/* store the graph in the return vector */
@@ -116,10 +124,14 @@ int tt_parse2(list_node *list_ret, int pool_idx, const char *txt){
 			else if ((str_uni[i] == 32)){ /* SPACE */
 				ofs_x += 0.3;
 			}
+			
+			prev_glyph = glyph;
 		}
 		ok = 1;
 	}
-
+	
+	free(font.data);
+	
 	return ok;
 }
 

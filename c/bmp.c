@@ -2,6 +2,39 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+// Quick sort function
+void quick_sort(int *a, int left, int right) {
+    int i, j, x, y;
+     
+    i = left;
+    j = right;
+    x = a[(left + right) / 2];
+     
+    while(i <= j) {
+        while(a[i] < x && i < right) {
+            i++;
+        }
+        while(a[j] > x && j > left) {
+            j--;
+        }
+        if(i <= j) {
+            y = a[i];
+            a[i] = a[j];
+            a[j] = y;
+            i++;
+            j--;
+        }
+    }
+     
+    if(j > left) {
+        quick_sort(a, left, j);
+    }
+    if(i < right) {
+        quick_sort(a, i, right);
+    }
+}
+
+
 rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax){
 /* Compute the bit code for a point (x, y) using the clip rectangle
  bounded diagonally by (xmin, ymin), and (xmax, ymax) */
@@ -466,13 +499,12 @@ void bmp_circle_fill(bmp_img *img, int x0, int y0, int radius){
 	}
 }
 
-void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[]){
+void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[], int stroke[]){
 	int i, w = img->width, h = img->height;
 	int x0, y0, x1, y1;
-	//int vert_x[1000], vert_y[1000], verts = 0;
 	int min_x, max_x, min_y, max_y;
 	int nodes = 0, node_x[1000], swap;
-	int pix_x, pix_y;
+	int pix_x, pix_y, strk = 0;
 	
 	
 	/* find min and max in coordinates*/
@@ -500,43 +532,52 @@ void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[]){
 		
 		for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
 			nodes = 0;
-			x0 = vert_x[verts - 1];
-			y0 = vert_y[verts - 1];
-			for (i = 0; i < verts; i++){
+			x0 = vert_x[0];
+			y0 = vert_y[0];
+			for (i = 1; i < verts; i++){
 				/* create a list of nodes (intersections of sweep line on polygon) */
 				x1 = vert_x[i];
 				y1 = vert_y[i];
+				
+				strk = (stroke)? stroke[i] : 1; 
 				/* verify intersection */
-				if ((nodes < 1000) && (
-				((y0 < pix_y) && (y1 >= pix_y)) || 
-				((y1 < pix_y) && (y0 >= pix_y)))){
+				if ((nodes < 1000) && (strk != 0)){
+					if(((y0 < pix_y) && (y1 >= pix_y)) || 
+					((y1 < pix_y) && (y0 >= pix_y))){
+						/* find x coord of intersection and add to list */
+						node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+						node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
+						node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
+						nodes++;
+					}
+				}
+				x0 = vert_x[i];
+				y0 = vert_y[i];
+			}
+			/* last vertice -> close polygon by default or if stroke[0] is 1 */
+			x1 = vert_x[0];
+			y1 = vert_y[0];
+			strk = (stroke)? stroke[0] : 1; 
+			if ((nodes < 1000) && (strk != 0)){
+				if(((y0 < pix_y) && (y1 >= pix_y)) || 
+				((y1 < pix_y) && (y0 >= pix_y))){
 					/* find x coord of intersection and add to list */
 					node_x[nodes] = (int) ceil(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
 					node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
 					node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
 					nodes++;
 				}
-				x0 = vert_x[i];
-				y0 = vert_y[i];
 			}
-			/* sort the nodes, via simple "Buble" sort */
-			i = 0;
-			while (i < nodes - 1){
-				if (node_x[i] > node_x[i + 1]){
-					swap = node_x[i];
-					node_x[i] = node_x[i + 1];
-					node_x[i + 1] = swap;
-					if (i) i--;
-				}
-				else{
-					i++;
-				}
-			}
+			
+			/* sort the nodes, via quick sort*/
+			quick_sort(node_x, 0, nodes - 1);
 				
 			/*fill the pixels between node pairs*/
 			for (i = 0; i < nodes ; i += 2){
-				for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
-					bmp_point_raw(img, pix_x, pix_y);
+				if (i+1 < nodes){
+					for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+						bmp_point_raw(img, pix_x, pix_y);
+					}
 				}
 			}
 		}
@@ -576,7 +617,7 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	img->end_y[3] = img->end_y[2] + normal_y;
 	if ((img->tick > 1) && (img->prev_x == x0) && (img->prev_y == y0)){ /* if the point have a tickness */
 		/* draw a filled  polygon as line conection*/
-		bmp_poly_fill(img, 4, img->end_x, img->end_y);
+		bmp_poly_fill(img, 4, img->end_x, img->end_y, NULL);
 	}
 	
 	/*update line conection parameters for next line*/

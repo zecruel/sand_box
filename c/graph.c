@@ -331,7 +331,7 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			int x0, y0, x1, y1;
 			line_node *current = master->list->next;
 			int corners = 0, prev_x, prev_y; /* for fill */
-			int corner_x[1000], corner_y[1000];
+			int corner_x[1000], corner_y[1000], stroke[1000];
 			
 			/* set the pattern */
 			patt_change(img, master->pattern, master->patt_size);
@@ -353,13 +353,15 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				
 				if (master->fill && (corners < 1000)){ /* check if object is filled */
 					/*build the lists of corners */
-					if (((x0 != prev_x)&&(y0 != prev_y))||(corners == 0)){
+					if (((x0 != prev_x)||(y0 != prev_y))||(corners == 0)){
 						corner_x[corners] = x0;
 						corner_y[corners] = y0;
+						stroke[corners] = 0;
 						corners++;
 					}
 					corner_x[corners] = x1;
 					corner_y[corners] = y1;
+					stroke[corners] = 1;
 					corners++;
 					
 					prev_x = x1;
@@ -371,7 +373,7 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			
 			if (master->fill && corners){ /* check if object is filled */
 				/* draw a filled polygon */
-				bmp_poly_fill(img, corners, corner_x, corner_y);
+				bmp_poly_fill(img, corners, corner_x, corner_y, stroke);
 			}
 		}
 	}
@@ -383,7 +385,7 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 			int x0, y0, x1, y1;
 			line_node *current = master->list->next;
 			int corners = 0, prev_x, prev_y; /* for fill */
-			int corner_x[1000], corner_y[1000];
+			int corner_x[1000], corner_y[1000], stroke[1000];
 			
 			/* set the pattern */
 			patt_change(img, master->pattern, master->patt_size);
@@ -405,13 +407,15 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 				
 				if (master->fill && (corners < 1000)){ /* check if object is filled */
 					/*build the lists of corners */
-					if (((x0 != prev_x)&&(y0 != prev_y))||(corners == 0)){
+					if (((x0 != prev_x)||(y0 != prev_y))||(corners == 0)){
 						corner_x[corners] = x0;
 						corner_y[corners] = y0;
+						stroke[corners] = 0;
 						corners++;
 					}
 					corner_x[corners] = x1;
 					corner_y[corners] = y1;
+					stroke[corners] = 1;
 					corners++;
 					
 					prev_x = x1;
@@ -423,7 +427,7 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 			
 			if (master->fill && corners){ /* check if object is filled */
 				/* draw a filled polygon */
-				bmp_poly_fill(img, corners, corner_x, corner_y);
+				bmp_poly_fill(img, corners, corner_x, corner_y, stroke);
 			}
 		}
 	}
