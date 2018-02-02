@@ -35,6 +35,12 @@
 #define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvgrast.h"
 
+#ifdef __linux__
+#define OS_LINUX
+#elif defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
+#define OS_WIN
+#endif
+
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
 void
@@ -557,8 +563,24 @@ int main(int argc, char** argv){
 		
 	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	
+	char fonts_path[DXF_MAX_CHARS];
+	fonts_path[0] = 0;
 	
+	char *base_path = SDL_GetBasePath();
 	
+	strncpy(fonts_path, base_path, DXF_MAX_CHARS);
+	strncat(fonts_path, "fonts/", DXF_MAX_CHARS - strlen(fonts_path));
+	
+	#ifdef OS_WIN
+	char *sys_fonts_path = "C:/Windows/Fonts/";
+	#elif defined(OS_LINUX)
+	char *sys_fonts_path = "/usr/share/fonts/";
+	#else
+	char *sys_fonts_path = NULL;
+	#endif
+	
+	printf(fonts_path);
+	printf(sys_fonts_path);
 	
 	double zoom = 20.0 , ofs_x = -11.0, ofs_y = -71.0;
 	double prev_zoom;
@@ -877,7 +899,7 @@ int main(int argc, char** argv){
 	
 	/*===================== teste ===============*/
 	list_node * tt_test = list_new(NULL, PRG_LIFE);
-	tt_parse2(tt_test, PRG_LIFE, "Ezequiel Rabelo de Aguiar  AV");
+	tt_parse4(tt_test, PRG_LIFE, "Ezequiel Rabelo de Aguiar  AV çβμπ");
 	/*===================== teste ===============*/
 	
 	/* main loop */
@@ -3140,6 +3162,7 @@ int main(int argc, char** argv){
 	}
 	
 	/* safe quit */
+	SDL_free(base_path);
 	SDL_DestroyTexture(canvas);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);

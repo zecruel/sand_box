@@ -301,6 +301,8 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 	/* draw one pixel on x,y coordinates in bmp image */
 	
 	unsigned int ofs, r_i, g_i, b_i, a_i;
+	unsigned char *buf_r, *buf_g, *buf_b, *buf_a;
+	bmp_color frg;
 	
 	if(img != NULL){
 		/* get the order of color components */
@@ -324,14 +326,23 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 				ofs = 4 * (((img->height - 1 - y) * img->width) + x);
 			}
 			
-			if (img->frg.a < 255){
+			/* get the buffer components */
+			
+			buf_r = img->buf + ofs + r_i;
+			buf_g = img->buf + ofs + g_i;
+			buf_b = img->buf + ofs + b_i;
+			buf_a = img->buf + ofs + a_i;
+			frg = img->frg;
+			
+			if (frg.a < 255){
 				/* Alpha compositing */
 				struct {double r,g,b,a;} out;
 				double dst_a, src_a;
 				
 				/*normalize alfa channels */
-				src_a = (double) img->frg.a / 255;
-				dst_a = ((double)img->buf[ofs+a_i] / 255)*(1 - src_a);
+				src_a = (double) frg.a / 255;
+				dst_a = ((double)(*buf_a) / 255)*(1 - src_a);
+				//dst_a = ((double)img->buf[ofs+a_i] / 255)*(1 - src_a);
 				
 				out.a = src_a + dst_a;
 				if (out.a == 0){
@@ -340,23 +351,23 @@ void bmp_point_raw (bmp_img *img, int x, int y){
 					out.b = 0;
 				}
 				else{
-					out.r = (img->frg.r*src_a + img->buf[ofs+r_i]*dst_a)/out.a;
-					out.g = (img->frg.g*src_a + img->buf[ofs+g_i]*dst_a)/out.a;
-					out.b = (img->frg.b*src_a + img->buf[ofs+b_i]*dst_a)/out.a;
+					out.r = (frg.r*src_a + *buf_r*dst_a)/out.a;
+					out.g = (frg.g*src_a + *buf_g*dst_a)/out.a;
+					out.b = (frg.b*src_a + *buf_b*dst_a)/out.a;
 					out.a *= 255;
 				}
-				img->buf[ofs+r_i] = (unsigned char) (out.r);
-				img->buf[ofs+g_i] = (unsigned char) (out.g );
-				img->buf[ofs+b_i] = (unsigned char) (out.b );
-				img->buf[ofs+a_i] = (unsigned char) (out.a );
+				*buf_r = (unsigned char) (out.r);
+				*buf_g = (unsigned char) (out.g );
+				*buf_b = (unsigned char) (out.b );
+				*buf_a = (unsigned char) (out.a );
 			}
 			else{
 				/* store each component in memory buffer 
 				with the image´s foreground color*/
-				img->buf[ofs+r_i] = img->frg.r;
-				img->buf[ofs+g_i] = img->frg.g;
-				img->buf[ofs+b_i] = img->frg.b;
-				img->buf[ofs+a_i] = 255;
+				*buf_r = frg.r;
+				*buf_g = frg.g;
+				*buf_b = frg.b;
+				*buf_a = 255;
 			}
 		}
 	}
@@ -562,7 +573,7 @@ void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[], int stro
 				if(((y0 < pix_y) && (y1 >= pix_y)) || 
 				((y1 < pix_y) && (y0 >= pix_y))){
 					/* find x coord of intersection and add to list */
-					node_x[nodes] = (int) ceil(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+					node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
 					node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
 					node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
 					nodes++;
@@ -702,6 +713,8 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 	double alpha_d, alpha_s;
 	struct {double r,g,b,a;} out;
 	
+	unsigned char *buf_r, *buf_g, *buf_b, *buf_a;
+	
 	if((src != NULL) && (dst != NULL)){
 		/* get the order of color components */
 		src_r= src->r_i;
@@ -740,11 +753,16 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 						ofs_src = 4 * (((src->height - 1 - j) * src->width) + i);
 					}
 					
+					buf_r = dst->buf + ofs_dst + dst_r;
+					buf_g = dst->buf + ofs_dst + dst_g;
+					buf_b = dst->buf + ofs_dst + dst_b;
+					buf_a = dst->buf + ofs_dst + dst_a;
+					
 					if (src->buf[ofs_src + src_a] < 255){
 						/* Alpha compositing */
 						/*normalize alfa channels */
 						alpha_s = (double) src->buf[ofs_src + src_a] / 255;
-						alpha_d = ((double)dst->buf[ofs_dst + dst_a] / 255)*(1 - alpha_s);
+						alpha_d = ((double)*buf_a / 255)*(1 - alpha_s);
 						
 						out.a = alpha_s + alpha_d;
 						if (out.a == 0){
@@ -753,22 +771,22 @@ void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y){
 							out.b = 0;
 						}
 						else{
-							out.r = (src->buf[ofs_src + src_r]*alpha_s + dst->buf[ofs_dst + dst_r]*alpha_d)/out.a;
-							out.g = (src->buf[ofs_src + src_g]*alpha_s + dst->buf[ofs_dst + dst_g]*alpha_d)/out.a;
-							out.b = (src->buf[ofs_src + src_b]*alpha_s + dst->buf[ofs_dst + dst_b]*alpha_d)/out.a;
+							out.r = (src->buf[ofs_src + src_r]*alpha_s + *buf_r*alpha_d)/out.a;
+							out.g = (src->buf[ofs_src + src_g]*alpha_s + *buf_g*alpha_d)/out.a;
+							out.b = (src->buf[ofs_src + src_b]*alpha_s + *buf_b*alpha_d)/out.a;
 							out.a *= 255;
 						}
-						dst->buf[ofs_dst + dst_r] = (unsigned char) (out.r);
-						dst->buf[ofs_dst + dst_g] = (unsigned char) (out.g);
-						dst->buf[ofs_dst + dst_b] = (unsigned char) (out.b);
-						dst->buf[ofs_dst + dst_a] = (unsigned char) (out.a);
+						*buf_r = (unsigned char) (out.r);
+						*buf_g = (unsigned char) (out.g);
+						*buf_b = (unsigned char) (out.b);
+						*buf_a = (unsigned char) (out.a);
 					}
 					else{
 						/* store each component in memory buffer */
-						dst->buf[ofs_dst + dst_r] = src->buf[ofs_src + src_r];
-						dst->buf[ofs_dst + dst_g] = src->buf[ofs_src + src_g];
-						dst->buf[ofs_dst + dst_b] = src->buf[ofs_src + src_b];
-						dst->buf[ofs_dst + dst_a] = src->buf[ofs_src + src_a];
+						*buf_r = src->buf[ofs_src + src_r];
+						*buf_g = src->buf[ofs_src + src_g];
+						*buf_b = src->buf[ofs_src + src_b];
+						*buf_a = src->buf[ofs_src + src_a];
 					}
 				}
 			}
