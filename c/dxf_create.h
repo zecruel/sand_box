@@ -118,6 +118,8 @@ int color, char *layer, char *ltype, int paper);
 
 int dxf_insert_append(dxf_drawing *drawing, dxf_node *ins, dxf_node *obj);
 
+int dxf_new_layer (dxf_drawing *drawing, char *name, int color, char *ltype);
+
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z);
 
 int dxf_edit_move (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z);

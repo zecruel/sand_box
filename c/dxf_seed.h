@@ -138,7 +138,7 @@ const char *dxf_seed_2007 =
 "_____ _ _ _____ _ _ _____ _ _ _____\n72\n65\n73\n6\n40\n2.5\n"
 "49\n1.25\n74\n0\n49\n-0.25\n74\n0\n49\n0.25\n74\n0\n49\n"
 "-0.25\n74\n0\n49\n0.25\n74\n0\n49\n-0.25\n74\n0\n0\nENDTAB\n"
-"0\nTABLE\n2\nLAYER\n5\n10\n100\nAcDbSymbolTable\n70\n100\n"
+"0\nTABLE\n2\nLAYER\n5\n10\n100\nAcDbSymbolTable\n70\n1000\n"
 "0\nLAYER\n5\n11\n100\nAcDbSymbolTableRecord\n100\n"
 "AcDbLayerTableRecord\n2\n0\n70\n0\n62\n7\n6\nCONTINUOUS\n"
 "370\n0\n390\n0\n0\nENDTAB\n0\nTABLE\n2\nSTYLE\n5\n12\n"

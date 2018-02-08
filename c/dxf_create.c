@@ -1591,6 +1591,52 @@ int dxf_insert_append(dxf_drawing *drawing, dxf_node *ins, dxf_node *obj){
 	return ok;
 }
 
+int dxf_new_layer (dxf_drawing *drawing, char *name, int color, char *ltype){
+
+	if (!drawing) 
+		return 0; /* error -  not drawing */
+	
+	if ((drawing->t_layer == NULL) || (drawing->main_struct == NULL)) 
+		return 0; /* error -  not main structure */
+	
+	/* verify if not exists */
+	if (dxf_find_obj_descr2(drawing->t_layer, "LAYER", name) != NULL) 
+		return 0; /* error -  exists layer with same name */
+	
+	
+	const char *handle = "0";
+	const char *dxf_class = "AcDbSymbolTableRecord";
+	const char *dxf_subclass = "AcDbLayerTableRecord";
+	int int_zero = 0, ok = 0;
+	
+	/* create a new LAYER */
+	dxf_node * lay = dxf_obj_new ("LAYER");
+	
+	if (lay) {
+		ok = 1;
+		ok &= dxf_attr_append(lay, 5, (void *) handle);
+		ok &= dxf_attr_append(lay, 100, (void *) dxf_class);
+		ok &= dxf_attr_append(lay, 100, (void *) dxf_subclass);
+		ok &= dxf_attr_append(lay, 2, (void *) name);
+		ok &= dxf_attr_append(lay, 70, (void *) &int_zero);
+		ok &= dxf_attr_append(lay, 62, (void *) &color);
+		ok &= dxf_attr_append(lay, 6, (void *) ltype);
+		ok &= dxf_attr_append(lay, 370, (void *) &int_zero);
+		ok &= dxf_attr_append(lay, 390, (void *) handle);
+		
+		/* get current handle and increment the handle seed*/
+		ok &= ent_handle(drawing, lay);
+		
+		/* append the layer to correpondent table */
+		dxf_append(drawing->t_layer, lay);
+		
+		/* update the layers in drawing  */
+		dxf_layer_assemb (drawing);
+	}
+	
+	return ok;
+}
+
 
 int dxf_edit_move2 (dxf_node * obj, double ofs_x, double ofs_y, double ofs_z){
 	/* move the object relactive to offset distances */

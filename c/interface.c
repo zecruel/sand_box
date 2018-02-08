@@ -615,7 +615,7 @@ int main(int argc, char** argv){
 	int progr_end = 0;
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
-	int show_app_about = 0;
+	int show_app_about = 0, show_lay_mng = 0, sel_tmp = 0;
 	int show_info = 0;
 	
 	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
@@ -1092,7 +1092,9 @@ int main(int argc, char** argv){
 			if (nk_group_begin(gui->ctx, "managers", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LAYERS]))){
-					printf("Layers\n");
+					//printf("Layers\n");
+					show_lay_mng = 1;
+					sel_tmp = -1;
 				}
 				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FONT]))){
 					printf("FONT\n");
@@ -1355,6 +1357,129 @@ int main(int argc, char** argv){
 					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
 					nk_popup_end(gui->ctx);
 				} else show_app_about = nk_false;
+			}
+			if (show_lay_mng){
+				/* layer manager */
+				static struct nk_rect s = {430, 20, 330, 300};
+				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Manager", NK_WINDOW_CLOSABLE, s)){
+					nk_layout_row_dynamic(gui->ctx, 150, 1);
+					if (nk_group_begin(gui->ctx, "Lay_view", NK_WINDOW_BORDER)) {
+					
+						nk_layout_row(gui->ctx, NK_STATIC, 20, 5, (float[]){175, 20, 20, 20, 20});
+						int num_layers = drawing->num_layers;
+						
+						for (i = 0; i < num_layers; i++){
+							//strcpy(layer_nam[i], drawing->layers[i].name);
+							//nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
+							
+							if (sel_tmp == i){
+								if (nk_button_label_styled(gui->ctx, &b_icon_sel_style, drawing->layers[i].name)){
+									sel_tmp = -1;
+								}
+							}
+							else {
+								if (nk_button_label_styled(gui->ctx,&b_icon_unsel_style, drawing->layers[i].name)){
+									sel_tmp = i;
+								}
+							}
+							//if (nk_button_label(gui->ctx, drawing->layers[i].name)){
+								//layer_idx = i;
+								//action = LAYER_CHANGE;
+								//nk_combo_close(gui->ctx);
+							//}
+							
+							struct nk_color b_color = {
+								.r = dxf_colors[drawing->layers[i].color].r,
+								.g = dxf_colors[drawing->layers[i].color].g,
+								.b = dxf_colors[drawing->layers[i].color].b,
+								.a = dxf_colors[drawing->layers[i].color].a
+							};
+							if(nk_button_color(gui->ctx, b_color)){
+								/*
+								int j;
+								nk_layout_row_static(gui->ctx, 15, 15, 10);
+								for (j = 0; j < 256; j++){
+									
+									b_color.r = dxf_colors[j].r,
+									b_color.g = dxf_colors[j].g,
+									b_color.b = dxf_colors[j].b,
+									b_color.a = dxf_colors[j].a
+									
+									if(nk_button_color(gui->ctx, b_color)){
+										color_idx = i;
+									}
+								}
+								*/
+							}
+							
+							if (drawing->layers[i].off){
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
+									drawing->layers[i].off = 0;
+								}
+							}
+							else{
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
+									drawing->layers[i].off = 1;
+								}
+							}
+							if (drawing->layers[i].frozen){
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FREEZE]))){
+									drawing->layers[i].frozen = 0;
+								}
+							}
+							else{
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
+									drawing->layers[i].frozen= 1;
+								}
+							}
+							if (drawing->layers[i].lock){
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
+									drawing->layers[i].lock = 0;
+								}
+							}
+							else{
+								if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNLOCK]))){
+									drawing->layers[i].lock = 1;
+								}
+							}
+							
+						}
+						nk_group_end(gui->ctx);
+					}
+
+					
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Layer Name:",  NK_TEXT_LEFT);
+					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+					if (nk_button_label(gui->ctx, "Create")){
+						if (dxf_new_layer (drawing, txt, color_idx, drawing->ltypes[ltypes_idx].name)){
+							nk_label(gui->ctx, "OK",  NK_TEXT_LEFT);
+							txt[0] = 0;
+						}
+						else nk_label(gui->ctx, "Exists",  NK_TEXT_LEFT);
+					}
+					
+					/*static struct nk_rect s = {830, 20, 330, 300};
+					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Manager", NK_WINDOW_CLOSABLE, s)){
+						
+						int j;
+						nk_layout_row_static(gui->ctx, 15, 15, 10);
+						struct nk_color b_color;
+						for (j = 0; j < 256; j++){
+							
+							b_color.r = dxf_colors[j].r;
+							b_color.g = dxf_colors[j].g;
+							b_color.b = dxf_colors[j].b;
+							b_color.a = dxf_colors[j].a;
+							
+							if(nk_button_color(gui->ctx, b_color)){
+								color_idx = i;
+							}
+						}
+						nk_popup_end(gui->ctx);
+					}*/
+					nk_popup_end(gui->ctx);
+				} else show_lay_mng = nk_false;
 			}
 		}
 		nk_end(gui->ctx);

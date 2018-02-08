@@ -212,4 +212,6 @@ dxf_node * dxf_find_obj2(dxf_node * obj, char *name);
 
 void * dxf_mem_pool(enum dxf_pool_action action, int idx);
 
+void dxf_append(dxf_node *master, dxf_node *new_node);
+
 #endif
