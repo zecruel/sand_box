@@ -758,6 +758,9 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 	drawing->layers[0].lock = 0;
 	drawing->layers[0].off = 0;
 	
+	drawing->layers[0].num_el = 0;
+	drawing->layers[0].obj = NULL;
+	
 	i = 0;
 	while (curr_layer = dxf_find_obj_i(drawing->t_layer, "LAYER", i)){/* get the next layer */
 	
@@ -803,6 +806,8 @@ void dxf_layer_assemb (dxf_drawing *drawing){
 		drawing->layers[i+1].frozen = frozen;
 		drawing->layers[i+1].lock = lock;
 		drawing->layers[i+1].off = off;
+		drawing->layers[i+1].num_el = 0;
+		drawing->layers[i+1].obj = curr_layer;
 		
 		i++;
 	}
@@ -826,6 +831,8 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 	drawing->ltypes[0].size = 1;
 	drawing->ltypes[0].pat[0] = 0;
 	drawing->ltypes[0].length = 0;
+	drawing->ltypes[0].num_el = 0;
+	drawing->ltypes[0].obj = NULL;
 	
 	i = 0;
 	while (curr_ltype = dxf_find_obj_i(drawing->t_ltype, "LTYPE", i)){/* get the next layer */
@@ -886,6 +893,8 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 		memcpy(drawing->ltypes[i+1].pat, pat, size * sizeof(double));
 		drawing->ltypes[i+1].size = size;
 		drawing->ltypes[i+1].length = length;
+		drawing->ltypes[i+1].num_el = 0;
+		drawing->ltypes[i+1].obj = curr_ltype;
 		
 		i++;
 	}
@@ -909,6 +918,8 @@ void dxf_fonts_assemb (dxf_drawing *drawing){
 		drawing->num_fonts = 1;
 		drawing->text_fonts[0].name[0] = 0;
 		drawing->text_fonts[0].shx_font = shx_font;
+		drawing->text_fonts[0].num_el = 0;
+		drawing->text_fonts[0].obj = NULL;
 	}
 	
 	i = 0;
@@ -938,6 +949,8 @@ void dxf_fonts_assemb (dxf_drawing *drawing){
 		strcpy(drawing->text_fonts[i+1].name, name);
 		shx_font = shx_font_open(file_name);
 		drawing->text_fonts[i+1].shx_font = shx_font;
+		drawing->text_fonts[i+1].num_el = 0;
+		drawing->text_fonts[i+1].obj = curr_font;
 		
 		i++;
 	}

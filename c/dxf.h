@@ -104,6 +104,8 @@ struct Dxf_layer{
 	int frozen;
 	int lock;
 	int off;
+	int num_el;
+	dxf_node *obj;
 };
 typedef struct Dxf_layer dxf_layer;
 
@@ -113,12 +115,16 @@ struct Dxf_ltype{
 	int size;
 	double pat[DXF_MAX_PAT];
 	double length;
+	int num_el;
+	dxf_node *obj;
 };
 typedef struct Dxf_ltype dxf_ltype;
 
 struct Dxf_tfont{
 	char name[DXF_MAX_CHARS];
 	void *shx_font;
+	int num_el;
+	dxf_node *obj;
 };
 typedef struct Dxf_tfont dxf_tfont;
 
