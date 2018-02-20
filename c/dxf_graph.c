@@ -17,6 +17,7 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 		
 		int color = 256, paper = 0;
 		int lay_idx, ltype_idx, i;
+		int lw = 0;
 		
 		/*flags*/
 		int pt1 = 0, pt2 = 0;
@@ -82,6 +83,9 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 					case 67:
 						paper = current->value.i_data;
 						break;
+					case 370:
+						lw = current->value.i_data;
+						break;
 					case 999:
 						strcpy(comment, current->value.s_data);
 				}
@@ -107,6 +111,12 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 					strcpy(l_type, drawing->layers[lay_idx].ltype);
 				}
 				
+				/* check if  object's lineweight  is definied by layer,
+				then look for layer's lineweight */
+				if (lw <= -1){
+					lw = 0; /* TODO*/
+				}
+				
 				/* find the ltype index */
 				ltype_idx = dxf_ltype_idx(drawing, l_type);
 				
@@ -120,7 +130,12 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 				curr_graph->color = dxf_colors[color];
 				
 				/*change tickness */
-				curr_graph->tick = tick;
+				curr_graph->tick = 0;
+				if (lw > 0){
+					curr_graph->tick = (double)lw * 0.07109;
+					curr_graph->thick_const = 1;
+				}
+				//curr_graph->tick = tick;
 				//printf ("%0.2f\n", curr_graph->tick);
 				
 				/* add the line */

@@ -511,11 +511,9 @@ double font_scale(shape *font, float height){
 	if (fnt_size != 0) fnt_scale = height/fnt_size;
 	return fnt_scale;
 }
-#ifdef __MINGW32__
-int WinMain(int argc, char** argv){
-#else
+
 int main(int argc, char** argv){
-#endif
+
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	int i, ok;
 	
@@ -3301,6 +3299,7 @@ int main(int argc, char** argv){
 	list_mem_pool(FREE_LIST, 0);
 	list_mem_pool(FREE_LIST, 1);
 	list_mem_pool(FREE_LIST, ONE_TIME);
+	list_mem_pool(FREE_LIST, PRG_LIFE);
 	dxf_mem_pool(FREE_DXF, 0);
 	graph_mem_pool(FREE_ALL, 0);
 	graph_mem_pool(FREE_ALL, 1);
@@ -3327,4 +3326,4 @@ int main(int argc, char** argv){
 	
 		
 	return 0;
-}
+};

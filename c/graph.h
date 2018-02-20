@@ -41,6 +41,7 @@ struct Graph_obj{
 	bmp_color color;
 	double rot, scale, ofs_x, ofs_y, ofs_z;
 	double tick;
+	int thick_const;
 	/* pattern information */
 	double pattern[20];
 	int patt_size;

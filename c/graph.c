@@ -249,6 +249,7 @@ graph_obj * graph_new(int pool_idx){
 		new_obj->ofs_x = 0;
 		new_obj->ofs_y = 0;
 		new_obj->tick = 0;
+		new_obj->thick_const = 0;
 		new_obj->fill = 0;
 		
 		/* initialize with a solid line pattern */
@@ -337,8 +338,10 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			patt_change(img, master->pattern, master->patt_size);
 			/* set the color */
 			img->frg = master->color;
+			
 			/* set the tickness */
-			img->tick = (int) round(master->tick * scale);
+			if (master->thick_const) img->tick = (int) round(master->tick);
+			else img->tick = (int) round(master->tick * scale);
 			
 			/* draw the lines */
 			while(current){ /*sweep the list content */
@@ -392,7 +395,8 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 			/* set the color */
 			img->frg = color;
 			/* set the tickness */
-			img->tick = (int) round(master->tick * scale) + 3;
+			if (master->thick_const) img->tick = (int) round(master->tick) + 3;
+			else img->tick = (int) round(master->tick * scale) + 3;
 			
 			/* draw the lines */
 			while(current){ /*sweep the list content */
