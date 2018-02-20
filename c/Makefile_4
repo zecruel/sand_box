@@ -1,30 +1,21 @@
-#Copyright Notice:
-#The files within this zip file are copyrighted by Lazy Foo' Productions (2004-2014)
-#and may not be redistributed without written permission.
+SRC_PATH=./src/
+CC=gcc
+COMPILER_FLAGS = -g -c
+LINKER_FLAGS = -lSDL2main -lSDL2 -lcomdlg32 -lole32 -lmingw32
+INCLUDE_PATHS = -I. -I./src/ -I/usr/include/SDL2
+LIBRARY_PATHS = -Llib -L/usr/lib
+EXE=teste9.exe
 
-#OBJS specifies which files to compile as part of the project
-OBJS = bmp.c graph.c shape2.c nuklear_teste.c
+SRC=$(wildcard $(SRC_PATH)*.c)
+OBJ=$(subst ./src, ./obj, $(SRC:.c=.o))
 
-#CC specifies which compiler we're using
-CC = gcc
+all: $(SRC) $(EXE)
 
-#INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -I. -Iinclude\SDL2
+$(EXE): $(OBJ)
+	$(CC) $(LINKER_FLAGS) $(OBJ) $(LINKER_FLAGS) -o $@
 
-#LIBRARY_PATHS specifies the additional library paths we'll need
-LIBRARY_PATHS = -Llib
+./obj/%.o: ./src/%.c
+	$(CC) $(INCLUDE_PATHS) $(COMPILER_FLAGS) -o $@ $<
 
-#COMPILER_FLAGS specifies the additional compilation options we're using
-# -w suppresses all warnings
-# -Wl,-subsystem,windows gets rid of the console window
-COMPILER_FLAGS =
-
-#LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2
-
-#OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = nuklear_demo.exe
-
-#This is the target that compiles our executable
-all : $(OBJS)
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+clean:
+	rm -rf run $(OBJ)
