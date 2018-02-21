@@ -8,9 +8,9 @@
 
 #include "list.h"
 
-#define DXF_MAX_LAYERS 50
-#define DXF_MAX_LTYPES 50
-#define DXF_MAX_FONTS 50
+#define DXF_MAX_LAYERS 1000
+#define DXF_MAX_LTYPES 1000
+#define DXF_MAX_FONTS 1000
 #define DXF_MAX_CHARS 250
 #define DXF_MAX_PAT 10
 #define DXF_POOL_PAGES 1000

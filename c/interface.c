@@ -513,6 +513,36 @@ double font_scale(shape *font, float height){
 }
 
 int main(int argc, char** argv){
+	
+	/* DXF lineweight*/
+	int dxf_lw[] = {0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106, 120, 140, 158, 200, 211};
+	static const char *dxf_lw_descr[] = {
+		"0.00 mm",
+		"0.05 mm",
+		"0.09 mm",
+		"0.13 mm",
+		"0.15 mm",
+		"0.18 mm",
+		"0.20 mm",
+		"0.25 mm",
+		"0.30 mm",
+		"0.35 mm",
+		"0.40 mm",
+		"0.50 mm",
+		"0.53 mm",
+		"0.60 mm",
+		"0.70 mm",
+		"0.80 mm",
+		"0.90 mm",
+		"1.00 mm",
+		"1.06 mm",
+		"1.20 mm",
+		"1.40 mm",
+		"1.58 mm",
+		"2.00 mm",
+		"2.11 mm"
+	};
+	#define DXF_LW_LEN 24
 
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	int i, ok;
@@ -1725,7 +1755,7 @@ int main(int argc, char** argv){
 		if (show_lay_mng){
 			next_win_x += next_win_w + 3;
 			//next_win_y += next_win_h + 3;
-			next_win_w = 520;
+			next_win_w = 620;
 			next_win_h = 400;
 			
 			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
@@ -1734,11 +1764,12 @@ int main(int argc, char** argv){
 			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
 				
 				static int sel_lay = -1;
+				int lw_idx;
 				
 				nk_layout_row_dynamic(gui->ctx, 200, 1);
 				if (nk_group_begin(gui->ctx, "Lay_view", NK_WINDOW_BORDER)) {
 				
-					nk_layout_row(gui->ctx, NK_STATIC, 20, 6, (float[]){175, 20, 20, 20, 20, 175});
+					nk_layout_row(gui->ctx, NK_STATIC, 20, 7, (float[]){175, 20, 20, 20, 20, 175, 100});
 					int num_layers = drawing->num_layers;
 					
 					for (i = 0; i < num_layers; i++){
@@ -1799,6 +1830,21 @@ int main(int argc, char** argv){
 						}
 						if (nk_button_label(gui->ctx, drawing->layers[i].ltype)){
 							
+						}
+						
+						/* look for lw index */
+						lw_idx = 0;
+						int j;
+						for (j = 0; j < DXF_LW_LEN; j++){
+							if (dxf_lw[j] == drawing->layers[i].line_w){
+								lw_idx = j;
+								break;
+							}
+						}
+						lw_idx = nk_combo(gui->ctx, dxf_lw_descr, DXF_LW_LEN, lw_idx, 15, nk_vec2(100,205));
+						if (drawing->layers[i].line_w != dxf_lw[lw_idx]){
+							dxf_attr_change(drawing->layers[i].obj, 370, &(dxf_lw[lw_idx]));
+							drawing->layers[i].line_w = dxf_lw[lw_idx];
 						}
 					}
 					nk_group_end(gui->ctx);

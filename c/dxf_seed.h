@@ -89,7 +89,8 @@ const char *dxf_seed_r14 =
 const char *dxf_seed_2007 =
 "999\nCreated by ZeCruel 2017\n0\nSECTION\n2\nHEADER\n9\n"
 "$ACADVER\n1\nAC1021\n9\n$HANDSEED\n5\n24\n9\n$INSUNITS\n"
-"70\n4\n0\nENDSEC\n0\nSECTION\n2\nCLASSES\n0\nENDSEC\n0\n"
+"70\n4\n9\n$LWDISPLAY\n290\n1\n0\nENDSEC\n0\nSECTION\n2\n"
+"CLASSES\n0\nENDSEC\n0\n"
 "SECTION\n2\nTABLES\n0\nTABLE\n2\nVPORT\n5\n1\n100\n"
 "AcDbSymbolTable\n70\n1\n0\nVPORT\n5\n2\n100\n"
 "AcDbSymbolTableRecord\n100\nAcDbViewportTableRecord\n2\n"
