@@ -1755,7 +1755,7 @@ int main(int argc, char** argv){
 		if (show_lay_mng){
 			next_win_x += next_win_w + 3;
 			//next_win_y += next_win_h + 3;
-			next_win_w = 620;
+			next_win_w = 670;
 			next_win_h = 400;
 			
 			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
@@ -1764,12 +1764,47 @@ int main(int argc, char** argv){
 			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
 				
 				static int sel_lay = -1;
-				int lw_idx;
+				int lw_idx, j, sel_ltype;
+				
+				char str_tmp[DXF_MAX_CHARS];
+				
+				nk_layout_row_dynamic(gui->ctx, 32, 1);
+				if (nk_group_begin(gui->ctx, "Lay_head", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+				
+					nk_layout_row(gui->ctx, NK_STATIC, 22, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
+				
+					if (nk_button_label(gui->ctx,  "Name")){
+						
+					}
+					if (nk_button_label(gui->ctx,  "C")){
+						
+					}
+					if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
+						
+					}
+					if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
+						
+					}
+					if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
+						
+					}
+					if (nk_button_label(gui->ctx,  "Line type")){
+						
+					}
+					if (nk_button_label(gui->ctx,  "Line weight")){
+						
+					}
+					if (nk_button_label(gui->ctx,  "Used")){
+						
+					}
+					
+					nk_group_end(gui->ctx);
+				}
 				
 				nk_layout_row_dynamic(gui->ctx, 200, 1);
 				if (nk_group_begin(gui->ctx, "Lay_view", NK_WINDOW_BORDER)) {
 				
-					nk_layout_row(gui->ctx, NK_STATIC, 20, 7, (float[]){175, 20, 20, 20, 20, 175, 100});
+					nk_layout_row(gui->ctx, NK_STATIC, 20, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
 					int num_layers = drawing->num_layers;
 					
 					for (i = 0; i < num_layers; i++){
@@ -1828,13 +1863,42 @@ int main(int argc, char** argv){
 								drawing->layers[i].lock = 1;
 							}
 						}
-						if (nk_button_label(gui->ctx, drawing->layers[i].ltype)){
+						
+						
+						sel_ltype = -1;
+						if (nk_combo_begin_label(gui->ctx, drawing->layers[i].ltype, nk_vec2(300,200))){
+							nk_layout_row_dynamic(gui->ctx, 20, 2);
+							int num_ltypes = drawing->num_ltypes;
 							
+							for (j = 0; j < num_ltypes; j++){
+								strncpy(str_tmp, drawing->ltypes[j].name, DXF_MAX_CHARS);
+								str_upp(str_tmp);
+								
+								if (strlen(str_tmp) == 0) continue;
+								if (strcmp(str_tmp, "BYBLOCK") == 0) continue;
+								if (strcmp(str_tmp, "BYLAYER") == 0) continue;
+								
+								if (nk_button_label(gui->ctx, drawing->ltypes[j].name)){
+									sel_ltype = j;
+									nk_combo_close(gui->ctx);
+								}
+								nk_label(gui->ctx, drawing->ltypes[j].descr, NK_TEXT_LEFT);
+							}
+							nk_combo_end(gui->ctx);
 						}
+						
+						if (sel_ltype >= 0){
+							strncpy(drawing->layers[i].ltype, drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
+						}
+						
+						
+						//if (nk_button_label(gui->ctx, drawing->layers[i].ltype)){
+							
+						//}
 						
 						/* look for lw index */
 						lw_idx = 0;
-						int j;
+						
 						for (j = 0; j < DXF_LW_LEN; j++){
 							if (dxf_lw[j] == drawing->layers[i].line_w){
 								lw_idx = j;
@@ -1846,6 +1910,9 @@ int main(int argc, char** argv){
 							dxf_attr_change(drawing->layers[i].obj, 370, &(dxf_lw[lw_idx]));
 							drawing->layers[i].line_w = dxf_lw[lw_idx];
 						}
+						
+						
+						nk_label(gui->ctx, "x",  NK_TEXT_CENTERED);
 					}
 					nk_group_end(gui->ctx);
 				}

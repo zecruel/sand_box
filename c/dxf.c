@@ -1166,6 +1166,7 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 	static int i_data;
 	//static vector_p part;
 	static int blk_end = 0, cplx_end = 0; /* close block and include ENDBLOCK in structure*/
+	static int ins_flag = 0; /* inside INSERT entity - for cascadind ATTRIB ents */
 	
 	if (state == INIT){
 		if ((!drawing)||(!buf)){
@@ -1261,12 +1262,13 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 						//	tmp = tmp->next;
 						//prev = tmp; /* new objs will append here */
 						
-					
+						ins_flag = 0;
 					
 						/* new level of hierarchy  */
 						if((strcmp(line, "SECTION") == 0) ||
 							(strcmp(line, "TABLE") == 0) ||
-							(strcmp(line, "BLOCK") == 0)){
+							(strcmp(line, "BLOCK") == 0) ||
+							(strcmp(line, "POLYLINE") == 0)){
 							new_node = dxf_obj_new (line); /* new object */
 							if (new_node){
 								/*  append new to master's list */
@@ -1280,12 +1282,14 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 								last_obj = new_node;
 								
 								if (strcmp(line, "BLOCK") == 0) blk = new_node;
+								if (strcmp(line, "POLYLINE") == 0) cplx = new_node;
 								
 								/* the new becomes the master */
 								master = new_node;
 								prev = new_node->obj.content; /* new objs will append here */
 							}
 						}
+						
 						/* back to the previous level on hierarchy */
 						else if((strcmp(line, "ENDSEC") == 0) ||
 							(strcmp(line, "ENDTAB") == 0) ){//||
@@ -1306,6 +1310,8 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 						
 						/*  new ordinary DXF object */
 						else {
+							if (strcmp(line, "INSERT") == 0) ins_flag = 1;
+							
 							new_node = dxf_obj_new (line); /* new object */
 							if (new_node){
 								/*  append new to master's list */
@@ -1331,7 +1337,8 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 						//new_node = NULL;
 						break;
 						
-					case 66: /* Entities follow flag */
+					case 66: /* Entities follow flag -  for INSERT ents only*/
+						
 						i_data = atoi(line);
 						new_node = dxf_attr_new (group, t_data, (void *) &i_data);
 						if (new_node){
@@ -1345,7 +1352,7 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 							last_obj->end = new_node;
 						}
 					
-						if (i_data != 0){
+						if ((i_data != 0) && (ins_flag != 0)){
 							/* new level of hierarchy */
 							cplx = last_obj;
 							master = last_obj; /*  the last obj becomes the master */
@@ -1357,6 +1364,7 @@ int dxf_read (dxf_drawing *drawing, char *buf, long fsize, int *prog){
 							//prev = tmp; /* new objs will append here */
 							prev = master->end;
 						}
+						else prev = new_node;
 						break;
 					default:
 						switch(t_data) {
