@@ -1625,15 +1625,21 @@ int dxf_insert_append(dxf_drawing *drawing, dxf_node *ins, dxf_node *obj){
 }
 
 int dxf_new_layer (dxf_drawing *drawing, char *name, int color, char *ltype){
-
+	
 	if (!drawing) 
 		return 0; /* error -  not drawing */
 	
 	if ((drawing->t_layer == NULL) || (drawing->main_struct == NULL)) 
 		return 0; /* error -  not main structure */
 	
+	char name_cpy[DXF_MAX_CHARS], *new_name;
+	strncpy(name_cpy, name, DXF_MAX_CHARS);
+	new_name = trimwhitespace(name_cpy);
+	
+	if (strlen(new_name) == 0) return 0; /* error -  no name */
+	
 	/* verify if not exists */
-	if (dxf_find_obj_descr2(drawing->t_layer, "LAYER", name) != NULL) 
+	if (dxf_find_obj_descr2(drawing->t_layer, "LAYER", new_name) != NULL) 
 		return 0; /* error -  exists layer with same name */
 	
 	if ((abs(color) > 255) || (color == 0)) color = 7;
@@ -1651,7 +1657,7 @@ int dxf_new_layer (dxf_drawing *drawing, char *name, int color, char *ltype){
 		ok &= dxf_attr_append(lay, 5, (void *) handle);
 		ok &= dxf_attr_append(lay, 100, (void *) dxf_class);
 		ok &= dxf_attr_append(lay, 100, (void *) dxf_subclass);
-		ok &= dxf_attr_append(lay, 2, (void *) name);
+		ok &= dxf_attr_append(lay, 2, (void *) new_name);
 		ok &= dxf_attr_append(lay, 70, (void *) &int_zero);
 		ok &= dxf_attr_append(lay, 62, (void *) &color);
 		ok &= dxf_attr_append(lay, 6, (void *) ltype);

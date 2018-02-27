@@ -715,14 +715,34 @@ dxf_node * dxf_find_obj_descr2(dxf_node * obj, char *name, char *descr){
 	
 	if(obj != NULL){ /* check if obj exist */
 		if (obj->type == DXF_ENT){
+			
+			char name_cpy[DXF_MAX_CHARS], *new_name;
+			char descr_cpy[DXF_MAX_CHARS], *new_descr;
+			
+			/* copy strings for secure manipulation */
+			strncpy(name_cpy, name, DXF_MAX_CHARS);
+			strncpy(descr_cpy, descr, DXF_MAX_CHARS);
+			/* remove trailing spaces */
+			new_name = trimwhitespace(name_cpy);
+			new_descr = trimwhitespace(descr_cpy);
+			/* change to upper case */
+			str_upp(new_name);
+			str_upp(new_descr);
+			
 			current = obj->obj.content->next;
 			while (current){ /* sweep master content */
 				if (current->type == DXF_ENT){ /* look for dxf entities */
-					if(strcmp(current->obj.name, name) == 0){ /* match obj's name */
+					if(strcmp(current->obj.name, new_name) == 0){ /* match obj's name */
 						descr_attr = dxf_find_attr2(current, 2); /* look for descriptor in group 2 attribute */
 						if (descr_attr){ /* found attribute */
+							/* copy strings for secure manipulation */
+							char test_descr[DXF_MAX_CHARS];
+							strncpy(test_descr, descr_attr->value.s_data, DXF_MAX_CHARS);
+							/* change to upper case */
+							str_upp(test_descr);
+							
 							/* match descriptor */
-							if(strcmp(descr_attr->value.s_data, descr) == 0){
+							if(strcmp(test_descr, new_descr) == 0){
 								/* success */
 								return current;
 							}
@@ -972,7 +992,21 @@ int dxf_lay_idx (dxf_drawing *drawing, char *name){
 	int i;
 	if (drawing){
 		for (i=1; i < drawing->num_layers; i++){
-			if (strcmp(drawing->layers[i].name, name) == 0){
+			
+			char name_cpy[DXF_MAX_CHARS], *new_name;
+			char lay_cpy[DXF_MAX_CHARS], *new_lay;
+			
+			/* copy strings for secure manipulation */
+			strncpy(name_cpy, name, DXF_MAX_CHARS);
+			strncpy(lay_cpy, drawing->layers[i].name, DXF_MAX_CHARS);
+			/* remove trailing spaces */
+			new_name = trimwhitespace(name_cpy);
+			new_lay = trimwhitespace(lay_cpy);
+			/* change to upper case */
+			str_upp(new_name);
+			str_upp(new_lay);
+			
+			if (strcmp(new_lay, new_name) == 0){
 				return i;
 			}
 		}
@@ -1013,7 +1047,21 @@ int dxf_ltype_idx (dxf_drawing *drawing, char *name){
 	int i;
 	if (drawing){
 		for (i=1; i < drawing->num_ltypes; i++){
-			if (strcmp(drawing->ltypes[i].name, name) == 0){
+			
+			char name_cpy[DXF_MAX_CHARS], *new_name;
+			char ltp_cpy[DXF_MAX_CHARS], *new_ltp;
+			
+			/* copy strings for secure manipulation */
+			strncpy(name_cpy, name, DXF_MAX_CHARS);
+			strncpy(ltp_cpy, drawing->ltypes[i].name, DXF_MAX_CHARS);
+			/* remove trailing spaces */
+			new_name = trimwhitespace(name_cpy);
+			new_ltp = trimwhitespace(ltp_cpy);
+			/* change to upper case */
+			str_upp(new_name);
+			str_upp(new_ltp);
+			
+			if (strcmp(new_ltp, new_name) == 0){
 				return i;
 			}
 		}

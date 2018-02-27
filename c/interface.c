@@ -646,7 +646,7 @@ int main(int argc, char** argv){
 	int show_app_about = 0;
 	int show_info = 0;
 	
-	int show_lay_mng = 0, sel_tmp = 0, show_color_pick = 0;
+	int show_lay_mng = 0, sel_tmp = 0, show_color_pick = 0, show_lay_name = 0;
 	
 	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
 	list_node *phanton = NULL;
@@ -1889,6 +1889,9 @@ int main(int argc, char** argv){
 						
 						if (sel_ltype >= 0){
 							strncpy(drawing->layers[i].ltype, drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
+							
+							dxf_attr_change(drawing->layers[i].obj, 6, drawing->layers[i].ltype);
+						
 						}
 						
 						
@@ -1919,12 +1922,8 @@ int main(int argc, char** argv){
 
 				
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				nk_label(gui->ctx, "Layer Name:",  NK_TEXT_LEFT);
-				nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
 				if (nk_button_label(gui->ctx, "Create")){
-					if (!dxf_new_layer (drawing, txt, color_idx, drawing->ltypes[ltypes_idx].name)){
-						snprintf(log_msg, 63, "Error: Layer already exists");
-					}
+					show_lay_name = 1;
 				}
 				if ((show_color_pick) && (sel_lay >= 0)){
 					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Color", NK_WINDOW_CLOSABLE, nk_rect(220, 10, 220, 300))){
@@ -1949,7 +1948,26 @@ int main(int argc, char** argv){
 						nk_popup_end(gui->ctx);
 					} else show_color_pick = 0;
 				}
-					
+				
+				if ((show_lay_name)){
+					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Name", NK_WINDOW_CLOSABLE, nk_rect(10, 20, 220, 100))){
+						
+						nk_layout_row_dynamic(gui->ctx, 20, 1);
+						//nk_label(gui->ctx, "Layer Name:",  NK_TEXT_LEFT);
+						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+						if (nk_button_label(gui->ctx, "OK")){
+							if (!dxf_new_layer (drawing, txt, color_idx, drawing->ltypes[ltypes_idx].name)){
+								snprintf(log_msg, 63, "Error: Layer already exists");
+							}
+							else {
+								nk_popup_close(gui->ctx);
+								show_lay_name = 0;
+							}
+						}
+						nk_popup_end(gui->ctx);
+					} else show_lay_name = 0;
+				}
+				
 			} else show_lay_mng = nk_false;
 			nk_end(gui->ctx);
 		}
@@ -3376,7 +3394,7 @@ int main(int argc, char** argv){
 			win_r.w = win_w; win_r.h = win_h;
 			
 			SDL_UpdateTexture(canvas, &win_r, img->buf, main_w * 4);
-			SDL_RenderClear(renderer);
+			//SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, &win_r, NULL);
 			SDL_RenderPresent(renderer);
 			

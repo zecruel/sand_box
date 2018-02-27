@@ -5,6 +5,35 @@
 #include <string.h>
 
 
+int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent){
+	int color = 7;
+	if(ent){
+		color = 256; /*default color entity color */
+		dxf_node *color_obj, *layer_obj;
+		
+		if (color_obj = dxf_find_attr2(ent, 62)){
+			color = color_obj->value.i_data;
+		}
+		
+		if (abs(color) >= 256){ /* color is by layer */
+			if (layer_obj = dxf_find_attr2(ent, 8)){
+				char layer[DXF_MAX_CHARS];
+				strcpy(layer, layer_obj->value.s_data);
+				str_upp(layer);
+				
+				int /* find the layer index */
+				lay_idx = dxf_lay_idx(drawing, layer);
+				return drawing->layers[lay_idx].color;
+			}
+			else return 7;
+		}
+		else if (color == 0){/* color is by block */
+			return 7; /*TODO*/
+		}
+	}
+	return color;
+}
+
 graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	if(ent){
 		dxf_node *current = NULL;
@@ -43,9 +72,11 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 						break;
 					case 6:
 						strcpy(l_type, current->value.s_data);
+						str_upp(l_type);
 						break;
 					case 8:
 						strcpy(layer, current->value.s_data);
+						str_upp(layer);
 						break;
 					case 10:
 						pt1_x = current->value.d_data;
