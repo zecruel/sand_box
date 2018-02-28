@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent){
+int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 	int color = 7;
 	if(ent){
 		color = 256; /*default color entity color */
@@ -23,13 +23,14 @@ int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent){
 				
 				int /* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
-				return drawing->layers[lay_idx].color;
+				color = drawing->layers[lay_idx].color;
 			}
-			else return 7;
+			else return 7; /* fail to find layer color*/
 		}
 		else if (color == 0){/* color is by block */
-			return 7; /*TODO*/
+			color = ins_color;
 		}
+		if ((color == 0) || (abs(color) >= 256)) return 7; /* invalid  color*/
 	}
 	return color;
 }
@@ -2099,6 +2100,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		dxf_node * ins_ent, *prev;
 		double ofs_x, ofs_y, ofs_z;
 		double rot, scale_x, scale_y, scale_z;
+		int color;
 		int start_idx, end_idx;
 		double normal[3];
 	};
@@ -2110,6 +2112,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		.ins_ent = ent, .prev = NULL,
 		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
 		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0,
+		.color = 7, 
 		.normal = {0.0, 0.0, 1.0}
 	};
 	
@@ -2148,6 +2151,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				ent_type = DXF_LINE;
 				curr_graph = dxf_line_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
+					curr_graph->color = dxf_colors[dxf_ent_get_color(drawing, current, ins_stack[ins_stack_pos].color)];
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
 					mod_idx++;
@@ -2437,6 +2441,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					ins_stack[ins_stack_pos].scale_y = scale_y;
 					ins_stack[ins_stack_pos].scale_z = scale_z;
 					ins_stack[ins_stack_pos].rot = t_rot;
+					ins_stack[ins_stack_pos].color = dxf_ent_get_color(drawing, insert_ent, ins_stack[ins_stack_pos -1].color);
 					ins_stack[ins_stack_pos].normal[0] = extru_x;
 					ins_stack[ins_stack_pos].normal[1] = extru_y;
 					ins_stack[ins_stack_pos].normal[2] = extru_z;
@@ -2449,6 +2454,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					ins_stack[ins_stack_pos].scale_y = 1.0;
 					ins_stack[ins_stack_pos].scale_z = 1.0;
 					ins_stack[ins_stack_pos].rot = 0.0;
+					ins_stack[ins_stack_pos].color = 7;
 					ins_stack[ins_stack_pos].normal[0] = 0.0;
 					ins_stack[ins_stack_pos].normal[1] = 0.0;
 					ins_stack[ins_stack_pos].normal[2] = 1.0;
