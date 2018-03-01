@@ -688,7 +688,7 @@ dxf_node *dxf_ent_copy(dxf_node *source, int pool_dest){
 
 dxf_node * dxf_new_line (double x0, double y0, double z0,
 double x1, double y1, double z1,
-double thick, double elev, int color, char *layer, char *ltype, int paper){
+int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF LINE */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -703,9 +703,10 @@ double thick, double elev, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_line, 8, (void *) layer);
 	ok &= dxf_attr_append(new_line, 6, (void *) ltype);
 	ok &= dxf_attr_append(new_line, 62, (void *) &color);
+	ok &= dxf_attr_append(new_line, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(new_line, 100, (void *) dxf_subclass);
-	ok &= dxf_attr_append(new_line, 39, (void *) &thick);
+	
 	ok &= dxf_attr_append(new_line, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_line, 20, (void *) &y0);
 	ok &= dxf_attr_append(new_line, 30, (void *) &z0);

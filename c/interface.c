@@ -515,7 +515,7 @@ double font_scale(shape *font, float height){
 int main(int argc, char** argv){
 	
 	/* DXF lineweight*/
-	int dxf_lw[] = {0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106, 120, 140, 158, 200, 211};
+	int dxf_lw[] = {0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106, 120, 140, 158, 200, 211, -1, -2};
 	static const char *dxf_lw_descr[] = {
 		"0.00 mm",
 		"0.05 mm",
@@ -545,7 +545,7 @@ int main(int argc, char** argv){
 		"By Block"
 	};
 	#define DXF_LW_LEN 24
-	int curr_lw = 0, lw_idx = 0;
+	int curr_lw = 0;
 	
 	
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
@@ -1219,7 +1219,7 @@ int main(int argc, char** argv){
 			
 			static char text[64];
 			int text_len;
-			nk_layout_row_push(gui->ctx, 1100);
+			nk_layout_row_push(gui->ctx, 1000);
 			if (nk_group_begin(gui->ctx, "Prop", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 				
@@ -1303,7 +1303,7 @@ int main(int argc, char** argv){
 				else{
 					text_len = snprintf(text, 63, "%s", "ByL");
 				}
-				nk_layout_row_push(gui->ctx, 60);
+				nk_layout_row_push(gui->ctx, 70);
 				nk_label(gui->ctx, "Color: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 70);
 				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
@@ -1337,7 +1337,7 @@ int main(int argc, char** argv){
 				}
 				
 				/*line type*/
-				nk_layout_row_push(gui->ctx, 90);
+				nk_layout_row_push(gui->ctx, 100);
 				nk_label(gui->ctx, "Line type: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
 				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
@@ -1374,20 +1374,15 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Line weight: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 120);
 				
-				lw_idx = curr_lw;
-				if (curr_lw == -1) lw_idx = 24;
-				if (curr_lw == -2) lw_idx = 25;
-				if (curr_lw <= -3) lw_idx = 0;
-				
-				if (nk_combo_begin_label(gui->ctx, dxf_lw_descr[lw_idx], nk_vec2(200,300))){
+				if (nk_combo_begin_label(gui->ctx, dxf_lw_descr[curr_lw], nk_vec2(200,300))){
 					nk_layout_row_dynamic(gui->ctx, 25, 2);
 					if (nk_button_label(gui->ctx, "By Layer")){
-						curr_lw = -1;
+						curr_lw = DXF_LW_LEN;
 						//action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					if (nk_button_label(gui->ctx, "By Block")){
-						curr_lw = -2;
+						curr_lw = DXF_LW_LEN + 1;
 						//action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
@@ -2807,9 +2802,9 @@ int main(int argc, char** argv){
 					/* create a new DXF line */
 					new_el = (dxf_node *) dxf_new_line (
 						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
-						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						0); /* paper space */
 					element = new_el;
 					step = 1;
 					en_distance = 1;
@@ -2835,9 +2830,9 @@ int main(int argc, char** argv){
 					
 					new_el = (dxf_node *) dxf_new_line (
 						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
-						(double) thick, 0.0, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						0); /* paper space */
 					
 					element = new_el;
 					goto next_step;

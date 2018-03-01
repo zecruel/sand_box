@@ -79,7 +79,7 @@ dxf_node *dxf_ent_copy(dxf_node *source, int pool_dest);
 
 dxf_node * dxf_new_line (double x0, double y0, double z0,
 double x1, double y1, double z1,
-double thick, double elev, int color, char *layer, char *ltype, int paper);
+int color, char *layer, char *ltype, int lw, int paper);
 
 dxf_node * dxf_new_lwpolyline (double x0, double y0, double z0,
 double bulge, double thick, int color, char *layer, char *ltype, int paper);
