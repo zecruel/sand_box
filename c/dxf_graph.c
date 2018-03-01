@@ -7,7 +7,7 @@
 
 int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 	int color = 7;
-	if(ent){
+	if((ent) && (drawing)){
 		color = 256; /*default color entity color */
 		dxf_node *color_obj, *layer_obj;
 		
@@ -18,11 +18,11 @@ int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 		if (abs(color) >= 256){ /* color is by layer */
 			if (layer_obj = dxf_find_attr2(ent, 8)){
 				char layer[DXF_MAX_CHARS];
-				strcpy(layer, layer_obj->value.s_data);
+				strncpy(layer, layer_obj->value.s_data, DXF_MAX_CHARS);
 				str_upp(layer);
 				
-				int /* find the layer index */
-				lay_idx = dxf_lay_idx(drawing, layer);
+				/* find the layer index */
+				int lay_idx = dxf_lay_idx(drawing, layer);
 				color = drawing->layers[lay_idx].color;
 			}
 			else return 7; /* fail to find layer color*/
@@ -33,6 +33,98 @@ int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 		if ((color == 0) || (abs(color) >= 256)) return 7; /* invalid  color*/
 	}
 	return color;
+}
+
+int dxf_ent_get_ltype(dxf_drawing *drawing, dxf_node * ent, int ins_ltype){
+	int ltype_default = dxf_ltype_idx(drawing, "Continuous");
+	int ltype = ltype_default, by_layer = 0;
+	if((ent) && (drawing)){
+		dxf_node *ltype_obj, *layer_obj;
+		char ltype_name[DXF_MAX_CHARS], *new_name;
+		
+		if (ltype_obj = dxf_find_attr2(ent, 6)){
+			strncpy(ltype_name, ltype_obj->value.s_data, DXF_MAX_CHARS);
+			
+			/* remove trailing spaces */
+			new_name = trimwhitespace(ltype_name);
+			/* change to upper case */
+			str_upp(new_name);
+			
+			if (strcmp(new_name, "BYBLOCK") == 0){
+				ltype = ins_ltype;
+			}
+			else if (strcmp(new_name, "BYLAYER") == 0){
+				by_layer = 1;
+			}
+			else{
+				ltype = dxf_ltype_idx(drawing, new_name);
+			}
+			
+		} else by_layer = 1;
+		
+		if (by_layer){ /* ltype is by layer */
+			if (layer_obj = dxf_find_attr2(ent, 8)){
+				char layer[DXF_MAX_CHARS];
+				strncpy(layer, layer_obj->value.s_data, DXF_MAX_CHARS);
+				str_upp(layer);
+				
+				/* find the layer index */
+				int lay_idx = dxf_lay_idx(drawing, layer);
+				ltype = dxf_ltype_idx(drawing, drawing->layers[lay_idx].ltype);
+			}
+			else ltype = ltype_default; /* fail to find layer ltype*/
+		}
+		if ((ltype == 0) || (ltype >= drawing->num_ltypes)) 
+			ltype = ltype_default;; /* invalid  ltype*/
+	}
+	return ltype;
+}
+
+int change_ltype (dxf_drawing *drawing, graph_obj * graph, int ltype_idx){
+	/* change the graph line pattern */
+	if((graph) && (drawing)){
+		int i;
+		graph->patt_size = drawing->ltypes[ltype_idx].size;
+		for (i = 0; i < drawing->ltypes[ltype_idx].size; i++){
+			graph->pattern[i] = drawing->ltypes[ltype_idx].pat[i];
+		}
+		return 1;
+	}
+	return 0;
+}
+
+int dxf_ent_get_lw(dxf_drawing *drawing, dxf_node * ent, int ins_lw){
+	int lw = 0, by_layer = 0;
+	if((ent) && (drawing)){
+		dxf_node *lw_obj, *layer_obj;
+		
+		if (lw_obj = dxf_find_attr2(ent, 370)){
+			lw = lw_obj->value.i_data;
+		} else by_layer = 1;
+		
+		if ((lw == -1) || (by_layer == 1)){ /* line weight is by layer */
+			if (layer_obj = dxf_find_attr2(ent, 8)){
+				char layer[DXF_MAX_CHARS];
+				strncpy(layer, layer_obj->value.s_data, DXF_MAX_CHARS);
+				str_upp(layer);
+				
+				/* find the layer index */
+				int lay_idx = dxf_lay_idx(drawing, layer);
+				lw = drawing->layers[lay_idx].line_w;
+			}
+			else return 0; /* fail to find layer line weigth*/
+		}
+		else if (lw == -2){/* line weight is by block */
+			lw = ins_lw;
+		}
+		else if (lw == -3){/* line weight is default */
+			lw = 0; /*TODO*/
+		}
+		if ((lw < 0) || (lw > 211)){/* invalid line weight */
+			lw = 0;
+		}
+	}
+	return lw;
 }
 
 graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
@@ -2100,7 +2192,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		dxf_node * ins_ent, *prev;
 		double ofs_x, ofs_y, ofs_z;
 		double rot, scale_x, scale_y, scale_z;
-		int color;
+		int color, ltype, lw;
 		int start_idx, end_idx;
 		double normal[3];
 	};
@@ -2112,7 +2204,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		.ins_ent = ent, .prev = NULL,
 		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
 		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0,
-		.color = 7, 
+		.color = 7, .ltype = 0, .lw =0,
 		.normal = {0.0, 0.0, 1.0}
 	};
 	
@@ -2151,7 +2243,21 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				ent_type = DXF_LINE;
 				curr_graph = dxf_line_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
+					
 					curr_graph->color = dxf_colors[dxf_ent_get_color(drawing, current, ins_stack[ins_stack_pos].color)];
+					
+					int curr_ltype = dxf_ent_get_ltype(drawing, current, ins_stack[ins_stack_pos].ltype);
+					change_ltype (drawing, curr_graph, curr_ltype);
+					
+					
+					/*change tickness */
+					int curr_lw = dxf_ent_get_lw(drawing, current, ins_stack[ins_stack_pos].lw);
+					curr_graph->tick = 0;
+					if (curr_lw > 0){
+						curr_graph->tick = (double)curr_lw * 0.07109;
+						curr_graph->thick_const = 1;
+					}
+					
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
 					mod_idx++;
@@ -2442,6 +2548,8 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					ins_stack[ins_stack_pos].scale_z = scale_z;
 					ins_stack[ins_stack_pos].rot = t_rot;
 					ins_stack[ins_stack_pos].color = dxf_ent_get_color(drawing, insert_ent, ins_stack[ins_stack_pos -1].color);
+					ins_stack[ins_stack_pos].ltype = dxf_ent_get_ltype(drawing, insert_ent, ins_stack[ins_stack_pos - 1].ltype);
+					ins_stack[ins_stack_pos].lw = dxf_ent_get_lw(drawing, insert_ent, ins_stack[ins_stack_pos - 1].lw);
 					ins_stack[ins_stack_pos].normal[0] = extru_x;
 					ins_stack[ins_stack_pos].normal[1] = extru_y;
 					ins_stack[ins_stack_pos].normal[2] = extru_z;

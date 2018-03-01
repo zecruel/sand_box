@@ -540,10 +540,14 @@ int main(int argc, char** argv){
 		"1.40 mm",
 		"1.58 mm",
 		"2.00 mm",
-		"2.11 mm"
+		"2.11 mm",
+		"By Layer",
+		"By Block"
 	};
 	#define DXF_LW_LEN 24
-
+	int curr_lw = 0, lw_idx = 0;
+	
+	
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	int i, ok;
 	
@@ -1215,7 +1219,7 @@ int main(int argc, char** argv){
 			
 			static char text[64];
 			int text_len;
-			nk_layout_row_push(gui->ctx, 900);
+			nk_layout_row_push(gui->ctx, 1100);
 			if (nk_group_begin(gui->ctx, "Prop", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 20);
 				
@@ -1303,6 +1307,17 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Color: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 70);
 				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
+					nk_layout_row_dynamic(gui->ctx, 20, 2);
+					if (nk_button_label(gui->ctx, "By Layer")){
+						color_idx = 256;
+						action = COLOR_CHANGE;
+						nk_combo_close(gui->ctx);
+					}
+					if (nk_button_label(gui->ctx, "By Block")){
+						color_idx = 0;
+						action = COLOR_CHANGE;
+						nk_combo_close(gui->ctx);
+					}
 					nk_layout_row_static(gui->ctx, 15, 15, 10);
 					for (i = 0; i < 256; i++){
 						struct nk_color b_color = {
@@ -1317,12 +1332,7 @@ int main(int argc, char** argv){
 							nk_combo_close(gui->ctx);
 						}
 					}
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-						if (nk_button_label(gui->ctx, "By Layer")){
-							color_idx = 256;
-							action = COLOR_CHANGE;
-							nk_combo_close(gui->ctx);
-						}
+					
 					nk_combo_end(gui->ctx);
 				}
 				
@@ -1347,7 +1357,7 @@ int main(int argc, char** argv){
 					nk_combo_end(gui->ctx);
 				}
 				
-				/* thickness */
+				/* thickness 
 				nk_layout_row_push(gui->ctx, 150);
 				//nk_property_float(struct nk_context*, const char *name, float min, float *val, float max, float step, float inc_per_pixel);
 				//nk_property_float(gui->ctx, "Thick:", 0.0, &thick, 20.0, 0.1, 0.1);
@@ -1358,7 +1368,40 @@ int main(int argc, char** argv){
 					action = THICK_CHANGE;
 					//printf ("thick change\n");
 				}
-				thick_prev = thick;
+				thick_prev = thick;*/
+				
+				nk_layout_row_push(gui->ctx, 120);
+				nk_label(gui->ctx, "Line weight: ", NK_TEXT_RIGHT);
+				nk_layout_row_push(gui->ctx, 120);
+				
+				lw_idx = curr_lw;
+				if (curr_lw == -1) lw_idx = 24;
+				if (curr_lw == -2) lw_idx = 25;
+				if (curr_lw <= -3) lw_idx = 0;
+				
+				if (nk_combo_begin_label(gui->ctx, dxf_lw_descr[lw_idx], nk_vec2(200,300))){
+					nk_layout_row_dynamic(gui->ctx, 25, 2);
+					if (nk_button_label(gui->ctx, "By Layer")){
+						curr_lw = -1;
+						//action = COLOR_CHANGE;
+						nk_combo_close(gui->ctx);
+					}
+					if (nk_button_label(gui->ctx, "By Block")){
+						curr_lw = -2;
+						//action = COLOR_CHANGE;
+						nk_combo_close(gui->ctx);
+					}
+					nk_layout_row_dynamic(gui->ctx, 17, 1);
+					for (i = 0; i < DXF_LW_LEN; i++){
+						if (nk_button_label(gui->ctx, dxf_lw_descr[i])){
+							curr_lw = i;
+							//action = COLOR_CHANGE;
+							nk_combo_close(gui->ctx);
+						}
+					}
+					
+					nk_combo_end(gui->ctx);
+				}
 				
 				nk_layout_row_end(gui->ctx);
 				
