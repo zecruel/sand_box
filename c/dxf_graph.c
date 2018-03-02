@@ -132,23 +132,23 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 		dxf_node *current = NULL;
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
-		double tick = 0, elev = 0;
+		/*double tick = 0, elev = 0;
 		
 		char handle[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char comment[DXF_MAX_CHARS], layer[DXF_MAX_CHARS];
 		
-		int color = 256, paper = 0;
+		int color = 256;
 		int lay_idx, ltype_idx, i;
-		int lw = 0;
+		int lw = 0;*/
 		
 		/*flags*/
-		int pt1 = 0, pt2 = 0;
+		int pt1 = 0, pt2 = 0, paper = 0;
 		
-		/* clear the strings */
+		/* clear the strings 
 		handle[0] = 0;
 		l_type[0] = 0;
 		layer[0] = 0;
-		comment[0] = 0;
+		comment[0] = 0;*/
 		
 		
 		if (ent->type == DXF_ENT){
@@ -160,7 +160,7 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 		while (current){
 			if (current->type == DXF_ATTR){ /* DXF attibute */
 				switch (current->value.group){
-					case 5:
+					/*case 5:
 						strcpy(handle, current->value.s_data);
 						break;
 					case 6:
@@ -170,7 +170,7 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 					case 8:
 						strcpy(layer, current->value.s_data);
 						str_upp(layer);
-						break;
+						break;*/
 					case 10:
 						pt1_x = current->value.d_data;
 						pt1 = 1; /* set flag */
@@ -195,7 +195,7 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 						pt2_z = current->value.d_data;
 						pt2 = 1; /* set flag */
 						break;
-					case 38:
+					/*case 38:
 						elev = current->value.d_data;
 						break;
 					case 39:
@@ -203,22 +203,24 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 						break;
 					case 62:
 						color = current->value.i_data;
-						break;
+						break;*/
 					case 67:
 						paper = current->value.i_data;
 						break;
-					case 370:
+					/*case 370:
 						lw = current->value.i_data;
 						break;
 					case 999:
-						strcpy(comment, current->value.s_data);
+						strcpy(comment, current->value.s_data);*/
 				}
 			}
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
 			graph_obj *curr_graph = graph_new(pool_idx);
+			
 			if (curr_graph){
+				#if 0
 				/* find the layer index */
 				lay_idx = dxf_lay_idx(drawing, layer);
 				
@@ -261,10 +263,11 @@ graph_obj * dxf_line_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 				}
 				//curr_graph->tick = tick;
 				//printf ("%0.2f\n", curr_graph->tick);
-				
+				#endif
 				/* add the line */
 				line_add(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z);
 			}
+			
 			return curr_graph;
 		}
 	}
@@ -2174,6 +2177,26 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 	return NULL;
 }
 
+int proc_obj_graph(dxf_drawing *drawing, dxf_node * ent, graph_obj * graph, struct ins_save ins, int pool_idx){
+	if ((drawing) && (ent) && (graph)){
+		
+		graph->color = dxf_colors[dxf_ent_get_color(drawing, ent, ins.color)];
+		
+		int ltype = dxf_ent_get_ltype(drawing, ent, ins.ltype);
+		change_ltype (drawing, graph, ltype);
+		
+		
+		/*change tickness */
+		int lw = dxf_ent_get_lw(drawing, ent, ins.lw);
+		//graph->tick = 0;
+		if (lw > 0){
+			graph->tick = (double)lw * 0.07109;
+			graph->thick_const = 1;
+		}
+	}
+	
+}
+
 int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
 	/* this function is non recursive */
 	
@@ -2186,16 +2209,6 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 	/* for attrib and attdef objects */
 	/* initialize the attrib list */
 	list_node * att_list = list_new(NULL, ONE_TIME);
-	
-	/* for insert objects */
-	struct ins_save{
-		dxf_node * ins_ent, *prev;
-		double ofs_x, ofs_y, ofs_z;
-		double rot, scale_x, scale_y, scale_z;
-		int color, ltype, lw;
-		int start_idx, end_idx;
-		double normal[3];
-	};
 	
 	struct ins_save ins_stack[10];
 	int ins_stack_pos = 0;
@@ -2244,13 +2257,13 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				curr_graph = dxf_line_parse(drawing, current, p_space, pool_idx);
 				if (curr_graph){
 					
-					curr_graph->color = dxf_colors[dxf_ent_get_color(drawing, current, ins_stack[ins_stack_pos].color)];
+					/*curr_graph->color = dxf_colors[dxf_ent_get_color(drawing, current, ins_stack[ins_stack_pos].color)];
 					
 					int curr_ltype = dxf_ent_get_ltype(drawing, current, ins_stack[ins_stack_pos].ltype);
 					change_ltype (drawing, curr_graph, curr_ltype);
 					
 					
-					/*change tickness */
+					/*change tickness 
 					int curr_lw = dxf_ent_get_lw(drawing, current, ins_stack[ins_stack_pos].lw);
 					curr_graph->tick = 0;
 					if (curr_lw > 0){
@@ -2260,6 +2273,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
@@ -2269,6 +2283,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				ent_type = DXF_TEXT;
@@ -2281,6 +2296,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
@@ -2291,6 +2307,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
@@ -2301,6 +2318,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
@@ -2321,6 +2339,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
@@ -2332,6 +2351,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 			}
@@ -2341,6 +2361,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 			}
@@ -2353,6 +2374,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					list_node * att_el = list_new(curr_graph, ONE_TIME);
 					if (att_el){
 						list_push(att_list, att_el);
+						proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					}
 				}
 			}
@@ -2365,6 +2387,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					list_node * att_el = list_new(curr_graph, ONE_TIME);
 					if (att_el){
 						list_push(att_list, att_el);
+						proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					}
 				}
 			}
@@ -2395,6 +2418,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				if (curr_graph){
 					/* store the graph in the return vector */
 					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos], pool_idx);
 					mod_idx++;
 				}
 				
