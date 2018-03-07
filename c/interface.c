@@ -620,7 +620,7 @@ int main(int argc, char** argv){
 	int layer_idx = 0, ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL, *near_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
-	double thick = 0.0, thick_prev = 0.0;
+	//double thick = 0.0, thick_prev = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
@@ -714,7 +714,7 @@ int main(int argc, char** argv){
 		LAYER_CHANGE,
 		COLOR_CHANGE,
 		LTYPE_CHANGE,
-		THICK_CHANGE,
+		LW_CHANGE,
 		EXIT
 	} action = NONE;
 	
@@ -1378,19 +1378,19 @@ int main(int argc, char** argv){
 					nk_layout_row_dynamic(gui->ctx, 25, 2);
 					if (nk_button_label(gui->ctx, "By Layer")){
 						curr_lw = DXF_LW_LEN;
-						//action = COLOR_CHANGE;
+						action = LW_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					if (nk_button_label(gui->ctx, "By Block")){
 						curr_lw = DXF_LW_LEN + 1;
-						//action = COLOR_CHANGE;
+						action = LW_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					nk_layout_row_dynamic(gui->ctx, 17, 1);
 					for (i = 0; i < DXF_LW_LEN; i++){
 						if (nk_button_label(gui->ctx, dxf_lw_descr[i])){
 							curr_lw = i;
-							//action = COLOR_CHANGE;
+							action = LW_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
 					}
@@ -2546,21 +2546,21 @@ int main(int argc, char** argv){
 			}
 			draw = 1;
 		}
-		else if(action == THICK_CHANGE){
+		else if(action == LW_CHANGE){
 			action = NONE;
 			if (sel_list != NULL){
 				/* sweep the selection list */
 				list_node *current = sel_list->next;
 				dxf_node *new_ent = NULL;
 				if (current != NULL){
-					do_add_entry(&list_do, "CHANGE THICKNESS");
+					do_add_entry(&list_do, "CHANGE LINE WEIGHT");
 				}
 				while (current != NULL){
 					if (current->data){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 							
-							dxf_attr_change(new_ent, 39, &thick);
+							dxf_attr_change(new_ent, 370, &dxf_lw[curr_lw]);
 							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
 							
 							dxf_obj_subst((dxf_node *)current->data, new_ent);
@@ -2845,7 +2845,7 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
 					dxf_attr_change(new_el, 11, &step_x[step]);
 					dxf_attr_change(new_el, 21, &step_y[step]);
-					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -2858,9 +2858,10 @@ int main(int argc, char** argv){
 					/* create a new DXF lwpolyline */
 					new_el = (dxf_node *) dxf_new_lwpolyline (
 						step_x[step], step_y[step], 0.0, /* pt1, */
-						bulge, (double) thick, /* bulge, thickness, */
+						bulge, /* bulge */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						0); /* paper space */
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
 					element = new_el;
 					step = 1;
@@ -2908,7 +2909,7 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					dxf_attr_change_i(new_el, 42, &bulge, -1);
-					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -2922,9 +2923,9 @@ int main(int argc, char** argv){
 					/* create a new DXF circle */
 					new_el = (dxf_node *) dxf_new_circle (
 						step_x[step], step_y[step], 0.0, 0.0, /* pt1, radius */
-						(double) thick, /* thickness, elevation */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						0); /* paper space */
 					element = new_el;
 					step = 1;
 					en_distance = 1;
@@ -2957,7 +2958,7 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 40, &radius);
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -2973,9 +2974,10 @@ int main(int argc, char** argv){
 					/* create a new DXF lwpolyline */
 					new_el = (dxf_node *) dxf_new_lwpolyline (
 						step_x[step], step_y[step], 0.0, /* pt1, */
-						0.0, (double) thick, /* bulge, thickness, */
+						0.0,  /* bulge, */
 						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						0); /* paper space */
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, 0.0);
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, 0.0);
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, 0.0);
@@ -3014,7 +3016,7 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 20, (void *) &step_y[step], 3);
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
 					dxf_attr_change(new_el, 62, &color_idx);
 					
 					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
@@ -3027,9 +3029,10 @@ int main(int argc, char** argv){
 				/* create a new DXF text */
 				new_el = (dxf_node *) dxf_new_text (
 					step_x[step], step_y[step], 0.0, txt_h, /* pt1, height */
-					txt, (double) thick, /* text, thickness */
+					txt, /* text, */
 					color_idx, drawing->layers[layer_idx].name, /* color, layer */
-					drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+					drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+					0); /* paper space */
 				element = new_el;
 				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
@@ -3068,7 +3071,7 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 1, txt);
 					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
 					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 39, &thick);
+					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
 					dxf_attr_change(new_el, 62, &color_idx);
 					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
@@ -3087,7 +3090,8 @@ int main(int argc, char** argv){
 						new_el = dxf_new_insert (blk_name,
 							step_x[step], step_y[step], 0.0, /* pt1 */
 							color_idx, drawing->layers[layer_idx].name, /* color, layer */
-							drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space */
+							drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+							0); /* paper space */
 						element = new_el;
 						step = 1;
 						en_distance = 1;

@@ -734,7 +734,7 @@ int color, char *layer, char *ltype, int lw, int paper){
 }
 
 dxf_node * dxf_new_lwpolyline (double x0, double y0, double z0,
-double bulge, double thick, int color, char *layer, char *ltype, int paper){
+double bulge, int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF LWPOLYLINE */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -750,11 +750,11 @@ double bulge, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_poly, 8, (void *) layer);
 	ok &= dxf_attr_append(new_poly, 6, (void *) ltype);
 	ok &= dxf_attr_append(new_poly, 62, (void *) &color);
+	ok &= dxf_attr_append(new_poly, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(new_poly, 100, (void *) dxf_subclass);
 	ok &= dxf_attr_append(new_poly, 90, (void *) &verts);
 	ok &= dxf_attr_append(new_poly, 70, (void *) &flags);
-	ok &= dxf_attr_append(new_poly, 39, (void *) &thick);
 	/* place the first vertice */
 	ok &= dxf_attr_append(new_poly, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_poly, 20, (void *) &y0);
@@ -816,7 +816,7 @@ int dxf_lwpoly_remove (dxf_node * poly, int idx){
 }
 
 dxf_node * dxf_new_circle (double x0, double y0, double z0,
-double r, double thick, int color, char *layer, char *ltype, int paper){
+double r, int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF CIRCLE */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -830,9 +830,9 @@ double r, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_circle, 8, (void *) layer);
 	ok &= dxf_attr_append(new_circle, 6, (void *) ltype);
 	ok &= dxf_attr_append(new_circle, 62, (void *) &color);
+	ok &= dxf_attr_append(new_circle, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(new_circle, 100, (void *) dxf_subclass);
-	ok &= dxf_attr_append(new_circle, 39, (void *) &thick);
 	/* place the first vertice */
 	ok &= dxf_attr_append(new_circle, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_circle, 20, (void *) &y0);
@@ -847,7 +847,7 @@ double r, double thick, int color, char *layer, char *ltype, int paper){
 }
 
 dxf_node * dxf_new_text (double x0, double y0, double z0, double h,
-char *txt, double thick, int color, char *layer, char *ltype, int paper){
+char *txt, int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF TEXT */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -863,9 +863,9 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(new_text, 8, (void *) layer);
 	ok &= dxf_attr_append(new_text, 6, (void *) ltype);
 	ok &= dxf_attr_append(new_text, 62, (void *) &color);
+	ok &= dxf_attr_append(new_text, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(new_text, 100, (void *) dxf_subclass);
-	ok &= dxf_attr_append(new_text, 39, (void *) &thick);
 	/* place the first vertice */
 	ok &= dxf_attr_append(new_text, 10, (void *) &x0);
 	ok &= dxf_attr_append(new_text, 20, (void *) &y0);
@@ -890,7 +890,7 @@ char *txt, double thick, int color, char *layer, char *ltype, int paper){
 }
 
 dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
-char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
+char *txt, char *tag, int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF TEXT */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -908,9 +908,9 @@ char *txt, char *tag, double thick, int color, char *layer, char *ltype, int pap
 	ok &= dxf_attr_append(attdef, 8, (void *) layer);
 	ok &= dxf_attr_append(attdef, 6, (void *) ltype);
 	ok &= dxf_attr_append(attdef, 62, (void *) &color);
+	ok &= dxf_attr_append(attdef, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(attdef, 100, (void *) dxf_subclass1);
-	ok &= dxf_attr_append(attdef, 39, (void *) &thick);
 	/* place the first vertice */
 	ok &= dxf_attr_append(attdef, 10, (void *) &x0);
 	ok &= dxf_attr_append(attdef, 20, (void *) &y0);
@@ -938,7 +938,7 @@ char *txt, char *tag, double thick, int color, char *layer, char *ltype, int pap
 }
 
 dxf_node * dxf_new_attrib (double x0, double y0, double z0, double h,
-char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
+char *txt, char *tag, int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new DXF TEXT */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -956,9 +956,9 @@ char *txt, char *tag, double thick, int color, char *layer, char *ltype, int pap
 	ok &= dxf_attr_append(attrib, 8, (void *) layer);
 	ok &= dxf_attr_append(attrib, 6, (void *) ltype);
 	ok &= dxf_attr_append(attrib, 62, (void *) &color);
+	ok &= dxf_attr_append(attrib, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(attrib, 100, (void *) dxf_subclass1);
-	ok &= dxf_attr_append(attrib, 39, (void *) &thick);
 	/* place the first vertice */
 	ok &= dxf_attr_append(attrib, 10, (void *) &x0);
 	ok &= dxf_attr_append(attrib, 20, (void *) &y0);
@@ -1003,12 +1003,12 @@ dxf_node * dxf_attdef_cpy (dxf_node *text, char *tag, double x0, double y0, doub
 		
 		double x1= 0.0, y1 = 0.0, z1 = 0.0;
 		double x2= 0.0, y2 = 0.0, z2 = 0.0;
-		double h = 1.0, rot = 0.0, thick = 0.0, t_scale_x = 1.0;
+		double h = 1.0, rot = 0.0, t_scale_x = 1.0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0;
 		char txt[DXF_MAX_CHARS];
 		char layer[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char t_style[DXF_MAX_CHARS];
-		int color = 256, paper = 0;
+		int color = 0, paper = 0, lw = -2;
 		int t_alin_v = 0, t_alin_h = 0;
 		
 		
@@ -1064,9 +1064,6 @@ dxf_node * dxf_attdef_cpy (dxf_node *text, char *tag, double x0, double y0, doub
 					case 50:
 						rot = current->value.d_data;
 						break;
-					case 39:
-						thick = current->value.d_data;
-						break;
 					case 62:
 						color = current->value.i_data;
 						break;
@@ -1088,13 +1085,15 @@ dxf_node * dxf_attdef_cpy (dxf_node *text, char *tag, double x0, double y0, doub
 					case 230:
 						extru_z = current->value.d_data;
 						break;
+					case 370:
+						lw = current->value.i_data;
 				}
 			}
 			current = current->next; /* go to the next in the list */
 		}
 		
 		dxf_node * attdef = dxf_new_attdef (x1 - x0, y1 - y0, z1 - z0, h,
-			txt, tag, thick, color, layer, l_type, paper);
+			txt, tag, color, layer, l_type, lw, paper);
 		
 		dxf_attr_change(attdef, 11, (void *)(double[]){x2 - x0});
 		dxf_attr_change(attdef, 21, (void *)(double[]){y2 - y0});
@@ -1127,12 +1126,12 @@ dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0){
 		
 		double x1= 0.0, y1 = 0.0, z1 = 0.0;
 		double x2= 0.0, y2 = 0.0, z2 = 0.0;
-		double h = 1.0, rot = 0.0, thick = 0.0, t_scale_x = 1.0;
+		double h = 1.0, rot = 0.0, t_scale_x = 1.0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0;
 		char txt[DXF_MAX_CHARS], tag[DXF_MAX_CHARS];
 		char layer[DXF_MAX_CHARS], l_type[DXF_MAX_CHARS];
 		char t_style[DXF_MAX_CHARS];
-		int color = 256, paper = 0;
+		int color = 0, paper = 0, lw = -2;
 		int t_alin_v = 0, t_alin_h = 0;
 		
 		
@@ -1192,9 +1191,6 @@ dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0){
 					case 50:
 						rot = current->value.d_data;
 						break;
-					case 39:
-						thick = current->value.d_data;
-						break;
 					case 62:
 						color = current->value.i_data;
 						break;
@@ -1216,13 +1212,15 @@ dxf_node * dxf_attrib_cpy (dxf_node *attdef, double x0, double y0, double z0){
 					case 230:
 						extru_z = current->value.d_data;
 						break;
+					case 370:
+						lw = current->value.i_data;
 				}
 			}
 			current = current->next; /* go to the next in the list */
 		}
 		
 		dxf_node * attrib = dxf_new_attrib (x1 + x0, y1 + y0, z1 + z0, h,
-			txt, tag, thick, color, layer, l_type, paper);
+			txt, tag, color, layer, l_type, lw, paper);
 		
 		dxf_attr_change(attrib, 11, (void *)(double[]){x2 + x0});
 		dxf_attr_change(attrib, 21, (void *)(double[]){y2 + y0});
@@ -1545,7 +1543,7 @@ int dxf_new_block2(dxf_drawing *drawing, char *name, char *mark, char *layer, li
 }
 
 dxf_node * dxf_new_insert (char *name, double x0, double y0, double z0,
-int color, char *layer, char *ltype, int paper){
+int color, char *layer, char *ltype, int lw, int paper){
 	/* create a new INSERT */
 	const char *handle = "0";
 	const char *dxf_class = "AcDbEntity";
@@ -1560,6 +1558,7 @@ int color, char *layer, char *ltype, int paper){
 	ok &= dxf_attr_append(ins, 8, (void *) layer);
 	ok &= dxf_attr_append(ins, 6, (void *) ltype);
 	ok &= dxf_attr_append(ins, 62, (void *) &color);
+	ok &= dxf_attr_append(ins, 370, (void *) &lw);
 	
 	ok &= dxf_attr_append(ins, 100, (void *) dxf_subclass);
 	ok &= dxf_attr_append(ins, 66, (void *) &int_zero);

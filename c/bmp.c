@@ -1,6 +1,7 @@
 #include "bmp.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define TOL 1e-12
 
 // Quick sort function
 void quick_sort(int *a, int left, int right) {
@@ -82,6 +83,7 @@ int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
 			/* failed both tests, so calculate the line segment to clip
 			from an outside point to an intersection with clip edge*/
 			double x, y;
+			double den;
 
 			/* At least one endpoint is outside the clip rectangle; pick it. */
 			rect_pos pos_out = pos_p0 ? pos_p0 : pos_p1;
@@ -89,15 +91,27 @@ int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
 			/* Now find the intersection point;
 			use formulas y = *y0 + slope * (x - *x0), x = *x0 + (1 / slope) * (y - *y0) */
 			if (pos_out & TOP) {           /* point is above the clip rectangle */
-				x = *x0 + (*x1 - *x0) * (img->height - *y0) / (*y1 - *y0);
+				den = (*y1 - *y0);
+				x = *x0;
+				if (fabs(den) > TOL)
+				x = *x0 + (*x1 - *x0) * (img->height - *y0) / den;
 				y = img->height;
 			} else if (pos_out & BOTTOM) { /* point is below the clip rectangle*/
-				x = *x0 + (*x1 - *x0) * (0 - *y0) / (*y1 - *y0);
+				den = (*y1 - *y0);
+				x = *x0;
+				if (fabs(den) > TOL)
+				x = *x0 + (*x1 - *x0) * (0 - *y0) / den;
 				y = 0;
 			} else if (pos_out & RIGHT) {  /* point is to the right of clip rectangle */
-				y = *y0 + (*y1 - *y0) * (img->width - *x0) / (*x1 - *x0);
+				den = (*x1 - *x0);
+				y = *y0;
+				if (fabs(den) > TOL)
+				y = *y0 + (*y1 - *y0) * (img->width - *x0) / den;
 				x = img->width;
 			} else if (pos_out & LEFT) {   /* point is to the left of clip rectangle */
+				den = (*x1 - *x0);
+				y = *y0;
+				if (fabs(den) > TOL)
 				y = *y0 + (*y1 - *y0) * (0 - *x0) / (*x1 - *x0);
 				x = 0;
 			}
