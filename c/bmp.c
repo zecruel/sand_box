@@ -112,7 +112,7 @@ int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1) {
 				den = (*x1 - *x0);
 				y = *y0;
 				if (fabs(den) > TOL)
-				y = *y0 + (*y1 - *y0) * (0 - *x0) / (*x1 - *x0);
+				y = *y0 + (*y1 - *y0) * (0 - *x0) / den;
 				x = 0;
 			}
 
