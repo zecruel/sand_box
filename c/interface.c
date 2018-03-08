@@ -202,6 +202,25 @@ set_style(struct nk_context *ctx, enum theme theme)
     }
 }
 
+struct sort_by_idx{
+	int idx;
+	void *data;
+};
+
+int cmp_layer_name (const void * a, const void * b) {
+	char *name1 = ((dxf_layer *)a)->name;
+	char *name2 = ((dxf_layer *)b)->name;
+	return ( strncmp(name1, name2, DXF_MAX_CHARS));
+}
+
+int cmp_layer_name_i (const void * a, const void * b) {
+	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
+	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
+	return ( strncmp(lay1->name, lay2->name, DXF_MAX_CHARS));
+}
+
+
+
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
 	/* use Nuklear widgets to show a DXF entity structure */
 	/* this function is non recursive */
@@ -1800,9 +1819,27 @@ int main(int argc, char** argv){
 			if (nk_begin(gui->ctx, "Layer Manager", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
+				int num_layers = drawing->num_layers;
+				
+				static int sorted = 0;
+				enum sort {
+					UNSORTED,
+					BY_NAME,
+					BY_LTYPE
+				};
+				
+				struct sort_by_idx layers[DXF_MAX_LAYERS];
+				for (i = 0; i < num_layers; i++){
+					layers[i].idx = i;
+					layers[i].data = &(drawing->layers[i]);
+				}
+				if (sorted == BY_NAME){
+					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_name_i);
+				}
+				
 				
 				static int sel_lay = -1;
-				int lw_idx, j, sel_ltype;
+				int lw_idx, j, sel_ltype, lay_idx;
 				
 				char str_tmp[DXF_MAX_CHARS];
 				
@@ -1810,9 +1847,15 @@ int main(int argc, char** argv){
 				if (nk_group_begin(gui->ctx, "Lay_head", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 				
 					nk_layout_row(gui->ctx, NK_STATIC, 22, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
-				
-					if (nk_button_label(gui->ctx,  "Name")){
-						
+					if (sorted == BY_NAME){
+						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Name", NK_TEXT_CENTERED)){
+							sorted = UNSORTED;
+						}
+					}
+					else {
+						if (nk_button_label(gui->ctx,  "Name")){
+							sorted = BY_NAME;
+						}
 					}
 					if (nk_button_label(gui->ctx,  "C")){
 						
@@ -1841,70 +1884,71 @@ int main(int argc, char** argv){
 				
 				nk_layout_row_dynamic(gui->ctx, 200, 1);
 				if (nk_group_begin(gui->ctx, "Lay_view", NK_WINDOW_BORDER)) {
+					
 				
 					nk_layout_row(gui->ctx, NK_STATIC, 20, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
-					int num_layers = drawing->num_layers;
+					
 					
 					for (i = 0; i < num_layers; i++){
 						//strcpy(layer_nam[i], drawing->layers[i].name);
 						//nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
-						
+						lay_idx = layers[i].idx;
 						if (sel_lay == i){
-							if (nk_button_label_styled(gui->ctx, &b_icon_sel_style, drawing->layers[i].name)){
+							if (nk_button_label_styled(gui->ctx, &b_icon_sel_style, drawing->layers[lay_idx].name)){
 								sel_lay = -1;
 							}
 						}
 						else {
-							if (nk_button_label_styled(gui->ctx,&b_icon_unsel_style, drawing->layers[i].name)){
-								sel_lay = i;
+							if (nk_button_label_styled(gui->ctx,&b_icon_unsel_style, drawing->layers[lay_idx].name)){
+								sel_lay = lay_idx;
 							}
 						}
 						
 						struct nk_color b_color = {
-							.r = dxf_colors[drawing->layers[i].color].r,
-							.g = dxf_colors[drawing->layers[i].color].g,
-							.b = dxf_colors[drawing->layers[i].color].b,
-							.a = dxf_colors[drawing->layers[i].color].a
+							.r = dxf_colors[drawing->layers[lay_idx].color].r,
+							.g = dxf_colors[drawing->layers[lay_idx].color].g,
+							.b = dxf_colors[drawing->layers[lay_idx].color].b,
+							.a = dxf_colors[drawing->layers[lay_idx].color].a
 						};
 						if(nk_button_color(gui->ctx, b_color)){
 							show_color_pick = 1;
-							sel_lay = i;
+							sel_lay = lay_idx;
 						}
 						
-						if (drawing->layers[i].off){
+						if (drawing->layers[lay_idx].off){
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
-								drawing->layers[i].off = 0;
+								drawing->layers[lay_idx].off = 0;
 							}
 						}
 						else{
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
-								drawing->layers[i].off = 1;
+								drawing->layers[lay_idx].off = 1;
 							}
 						}
-						if (drawing->layers[i].frozen){
+						if (drawing->layers[lay_idx].frozen){
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FREEZE]))){
-								drawing->layers[i].frozen = 0;
+								drawing->layers[lay_idx].frozen = 0;
 							}
 						}
 						else{
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
-								drawing->layers[i].frozen= 1;
+								drawing->layers[lay_idx].frozen= 1;
 							}
 						}
-						if (drawing->layers[i].lock){
+						if (drawing->layers[lay_idx].lock){
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
-								drawing->layers[i].lock = 0;
+								drawing->layers[lay_idx].lock = 0;
 							}
 						}
 						else{
 							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNLOCK]))){
-								drawing->layers[i].lock = 1;
+								drawing->layers[lay_idx].lock = 1;
 							}
 						}
 						
 						
 						sel_ltype = -1;
-						if (nk_combo_begin_label(gui->ctx, drawing->layers[i].ltype, nk_vec2(300,200))){
+						if (nk_combo_begin_label(gui->ctx, drawing->layers[lay_idx].ltype, nk_vec2(300,200))){
 							nk_layout_row_dynamic(gui->ctx, 20, 2);
 							int num_ltypes = drawing->num_ltypes;
 							
@@ -1926,9 +1970,9 @@ int main(int argc, char** argv){
 						}
 						
 						if (sel_ltype >= 0){
-							strncpy(drawing->layers[i].ltype, drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
+							strncpy(drawing->layers[lay_idx].ltype, drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
 							
-							dxf_attr_change(drawing->layers[i].obj, 6, drawing->layers[i].ltype);
+							dxf_attr_change(drawing->layers[lay_idx].obj, 6, drawing->layers[lay_idx].ltype);
 						
 						}
 						
@@ -1941,15 +1985,15 @@ int main(int argc, char** argv){
 						lw_idx = 0;
 						
 						for (j = 0; j < DXF_LW_LEN; j++){
-							if (dxf_lw[j] == drawing->layers[i].line_w){
+							if (dxf_lw[j] == drawing->layers[lay_idx].line_w){
 								lw_idx = j;
 								break;
 							}
 						}
 						lw_idx = nk_combo(gui->ctx, dxf_lw_descr, DXF_LW_LEN, lw_idx, 15, nk_vec2(100,205));
-						if (drawing->layers[i].line_w != dxf_lw[lw_idx]){
-							dxf_attr_change(drawing->layers[i].obj, 370, &(dxf_lw[lw_idx]));
-							drawing->layers[i].line_w = dxf_lw[lw_idx];
+						if (drawing->layers[lay_idx].line_w != dxf_lw[lw_idx]){
+							dxf_attr_change(drawing->layers[lay_idx].obj, 370, &(dxf_lw[lw_idx]));
+							drawing->layers[lay_idx].line_w = dxf_lw[lw_idx];
 						}
 						
 						
