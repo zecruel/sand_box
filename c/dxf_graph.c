@@ -1559,6 +1559,15 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 
 int proc_obj_graph(dxf_drawing *drawing, dxf_node * ent, graph_obj * graph, struct ins_save ins){
 	if ((drawing) && (ent) && (graph)){
+		dxf_node *layer_obj;
+		if (layer_obj = dxf_find_attr2(ent, 8)){
+			char layer[DXF_MAX_CHARS];
+			strncpy(layer, layer_obj->value.s_data, DXF_MAX_CHARS);
+			str_upp(layer);
+			
+			/* find the layer index */
+			ent->obj.layer = dxf_lay_idx(drawing, layer);
+		}
 		
 		graph->color = dxf_colors[dxf_ent_get_color(drawing, ent, ins.color)];
 		
@@ -1572,6 +1581,7 @@ int proc_obj_graph(dxf_drawing *drawing, dxf_node * ent, graph_obj * graph, stru
 			graph->tick = (double)lw * 0.07109;
 			graph->thick_const = 1;
 		}
+		
 	}
 	
 }
@@ -1935,7 +1945,16 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 			if ((blk) && /* block found */
 			/* Also check the paper space parameter */
 			(((p_space == 0) && (paper == 0)) || 
-			((p_space != 0) && (paper != 0)))){ 
+			((p_space != 0) && (paper != 0)))){
+				
+				
+				
+				
+					
+				/* find the layer index */
+				insert_ent->obj.layer = dxf_lay_idx(drawing, layer);
+				
+				
 				
 				//printf ("bloco %s\n", name1);
 				
@@ -2152,7 +2171,7 @@ list_node * dxf_list_parse(dxf_drawing *drawing, list_node *list, int p_space, i
 
 int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	dxf_node *current = NULL;
-	int lay_idx = 0;
+	//int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2161,8 +2180,9 @@ int dxf_ents_draw(dxf_drawing *drawing, bmp_img * img, double ofs_x, double ofs_
 		while (current != NULL){
 			if (current->type == DXF_ENT){ // DXF entity
 				/*verify if entity layer is on and thaw */
-				lay_idx = dxf_layer_get(drawing, current);
-				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
+				//lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[current->obj.layer].off) && 
+					(!drawing->layers[current->obj.layer].frozen)){
 				
 					// -------------------------------------------
 					graph_list_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
@@ -2199,7 +2219,7 @@ int dxf_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, do
 int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * max_x, double * max_y){
 	dxf_node *current = NULL;
 	int ext_ini = 0;
-	int lay_idx = 0;
+	//int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2208,8 +2228,8 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 		while (current != NULL){
 			if (current->type == DXF_ENT){
 				/*verify if entity layer is thaw */
-				lay_idx = dxf_layer_get(drawing, current);
-				if (!drawing->layers[lay_idx].frozen){
+				//lay_idx = dxf_layer_get(drawing, current);
+				if (!drawing->layers[current->obj.layer].frozen){
 					graph_list_ext(current->obj.graphics, &ext_ini, min_x, min_y, max_x, max_y);
 				}
 				
@@ -2237,7 +2257,7 @@ int dxf_ents_ext(dxf_drawing *drawing, double * min_x, double * min_y, double * 
 
 dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_pt2[2]){
 	dxf_node *current = NULL;
-	int lay_idx = 0;
+	//int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && (drawing->main_struct != NULL)){
 		current = drawing->ents->obj.content->next;
@@ -2246,8 +2266,9 @@ dxf_node * dxf_ents_isect(dxf_drawing *drawing, double rect_pt1[2], double rect_
 		while (current != NULL){
 			if (current->type == DXF_ENT){ // DXF entity 
 				/*verify if entity layer is on and thaw */
-				lay_idx = dxf_layer_get(drawing, current);
-				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
+				//lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[current->obj.layer].off) && 
+					(!drawing->layers[current->obj.layer].frozen)){
 					// -------------------------------------------
 					//graph_list_draw(current->obj.graphics, img, ofs_x, ofs_y, scale);
 					
@@ -2272,7 +2293,7 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 	
 	dxf_node *current = NULL;
 	int num = 0;
-	int lay_idx = 0;
+	//int lay_idx = 0;
 		
 	if ((drawing->ents != NULL) && /*verify the integrity of drawing */
 	(drawing->main_struct != NULL)
@@ -2285,8 +2306,9 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 		while (current != NULL){
 			if (current->type == DXF_ENT){ /* found a DXF entity  */
 				/*verify if entity layer is on and thaw */
-				lay_idx = dxf_layer_get(drawing, current);
-				if ((!drawing->layers[lay_idx].off) && (!drawing->layers[lay_idx].frozen)){
+				//lay_idx = dxf_layer_get(drawing, current);
+				if ((!drawing->layers[current->obj.layer].off) &&
+					(!drawing->layers[current->obj.layer].frozen)){
 					/* look for a instersect in entity's visible graphics */
 					if(graph_list_isect(current->obj.graphics, rect_pt1, rect_pt2)){
 						/* append entity,  if it does not already exist in the list */

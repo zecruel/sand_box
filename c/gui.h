@@ -528,13 +528,15 @@ NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
 	}
 	else return NULL;
 	
-	nk_style_set_font(gui->ctx, font);
+	
 	
 	//nk_init_default(gui->ctx, font);
 	nk_init_fixed(gui->ctx, gui->buf, FIXED_MEM, font);
 	gui->ctx->clip.copy = nk_sdl_clipbard_copy;
 	gui->ctx->clip.paste = nk_sdl_clipbard_paste;
 	gui->ctx->clip.userdata = nk_handle_ptr(0);
+	
+	nk_style_set_font(gui->ctx, font);
 	return gui;
 }
 

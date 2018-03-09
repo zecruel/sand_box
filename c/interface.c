@@ -207,23 +207,81 @@ struct sort_by_idx{
 	void *data;
 };
 
-int cmp_layer_name (const void * a, const void * b) {
-	char *name1 = ((dxf_layer *)a)->name;
-	char *name2 = ((dxf_layer *)b)->name;
-	return ( strncmp(name1, name2, DXF_MAX_CHARS));
-}
-
-int cmp_layer_name_i (const void * a, const void * b) {
+int cmp_layer_name(const void * a, const void * b) {
+	char *name1, *name2;
+	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
 	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
 	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	return ( strncmp(lay1->name, lay2->name, DXF_MAX_CHARS));
+	/* copy strings for secure manipulation */
+	strncpy(copy1, lay1->name, DXF_MAX_CHARS);
+	strncpy(copy2, lay2->name, DXF_MAX_CHARS);
+	/* remove trailing spaces */
+	name1 = trimwhitespace(copy1);
+	name2 = trimwhitespace(copy2);
+	/* change to upper case */
+	str_upp(name1);
+	str_upp(name2);
+	return (strncmp(name1, name2, DXF_MAX_CHARS));
 }
 
+int cmp_layer_ltype(const void * a, const void * b) {
+	char *ltype1, *ltype2;
+	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
+	int ret;
+	
+	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
+	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
+	/* copy strings for secure manipulation */
+	strncpy(copy1, lay1->ltype, DXF_MAX_CHARS);
+	strncpy(copy2, lay2->ltype, DXF_MAX_CHARS);
+	/* remove trailing spaces */
+	ltype1 = trimwhitespace(copy1);
+	ltype2 = trimwhitespace(copy2);
+	/* change to upper case */
+	str_upp(ltype1);
+	str_upp(ltype2);
+	ret = strncmp(ltype1, ltype2, DXF_MAX_CHARS);
+	if (ret == 0) { /* in case the line type is the same, sort by layer name */
+		return cmp_layer_name(a, b);
+	}
+	return ret;
+}
+
+int cmp_layer_color(const void * a, const void * b) {
+	char *ltype1, *ltype2;
+	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
+	int ret;
+	
+	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
+	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
+	
+	ret = lay1->color - lay2->color;
+	if (ret == 0) { /* in case the color is the same, sort by layer name */
+		return cmp_layer_name(a, b);
+	}
+	return ret;
+}
+
+int cmp_layer_lw(const void * a, const void * b) {
+	char *ltype1, *ltype2;
+	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
+	int ret;
+	
+	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
+	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
+	
+	ret = lay1->line_w - lay2->line_w;
+	if (ret == 0) { /* in case the color is the same, sort by layer name */
+		return cmp_layer_name(a, b);
+	}
+	return ret;
+}
 
 
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
 	/* use Nuklear widgets to show a DXF entity structure */
 	/* this function is non recursive */
+	
 	int i = 0;
 	int level = 0;
 	dxf_node *current, *prev;
@@ -1825,7 +1883,9 @@ int main(int argc, char** argv){
 				enum sort {
 					UNSORTED,
 					BY_NAME,
-					BY_LTYPE
+					BY_LTYPE,
+					BY_COLOR,
+					BY_LW
 				};
 				
 				struct sort_by_idx layers[DXF_MAX_LAYERS];
@@ -1834,9 +1894,17 @@ int main(int argc, char** argv){
 					layers[i].data = &(drawing->layers[i]);
 				}
 				if (sorted == BY_NAME){
-					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_name_i);
+					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_name);
 				}
-				
+				else if (sorted == BY_LTYPE){
+					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_ltype);
+				}
+				else if (sorted == BY_COLOR){
+					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_color);
+				}
+				else if (sorted == BY_LW){
+					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lw);
+				}
 				
 				static int sel_lay = -1;
 				int lw_idx, j, sel_ltype, lay_idx;
@@ -1857,8 +1925,15 @@ int main(int argc, char** argv){
 							sorted = BY_NAME;
 						}
 					}
-					if (nk_button_label(gui->ctx,  "C")){
-						
+					if (sorted == BY_COLOR){
+						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "C", NK_TEXT_CENTERED)){
+							sorted = UNSORTED;
+						}
+					}
+					else {
+						if (nk_button_label(gui->ctx,  "C")){
+							sorted = BY_COLOR;
+						}
 					}
 					if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
 						
@@ -1869,11 +1944,25 @@ int main(int argc, char** argv){
 					if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
 						
 					}
-					if (nk_button_label(gui->ctx,  "Line type")){
-						
+					if (sorted == BY_LTYPE){
+						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Line type", NK_TEXT_CENTERED)){
+							sorted = UNSORTED;
+						}
 					}
-					if (nk_button_label(gui->ctx,  "Line weight")){
-						
+					else {
+						if (nk_button_label(gui->ctx,  "Line type")){
+							sorted = BY_LTYPE;
+						}
+					}
+					if (sorted == BY_LW){
+						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Line weight", NK_TEXT_CENTERED)){
+							sorted = UNSORTED;
+						}
+					}
+					else {
+						if (nk_button_label(gui->ctx,  "Line weight")){
+							sorted = BY_LW;
+						}
 					}
 					if (nk_button_label(gui->ctx,  "Used")){
 						

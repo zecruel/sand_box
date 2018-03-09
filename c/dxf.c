@@ -312,7 +312,8 @@ dxf_node * dxf_obj_new (char *name){
 		new_obj->prev = NULL;
 		new_obj->next = NULL;
 		new_obj->type = DXF_ENT;
-		//new_obj->obj.name = new_name;
+		new_obj->obj.layer = 0;
+		new_obj->obj.paper = 0;
 		new_obj->obj.graphics = NULL;
 		
 		/* create head of content's list */
