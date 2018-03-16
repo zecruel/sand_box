@@ -21,6 +21,10 @@
 
 #include "tinyfiledialogs.h"
 
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
 #define NK_INCLUDE_STANDARD_VARARGS
@@ -589,7 +593,28 @@ double font_scale(shape *font, float height){
 	return fnt_scale;
 }
 
+int getglobint (lua_State *L, const char *var) {
+	int isnum, result;
+	lua_getglobal(L, var);
+	result = (int)lua_tointegerx(L, -1, &isnum);
+	if (!isnum)
+		printf("'%s' should be a number\n", var);
+	lua_pop(L, 1); /* remove result from the stack */
+	return result;
+}
+void load (lua_State *L, const char *fname, int *w, int *h) {
+	if (luaL_loadfile(L, fname) || lua_pcall(L, 0, 0, 0))
+		printf("cannot run config. file: %s", lua_tostring(L, -1));
+	*w = getglobint(L, "width");
+	*h = getglobint(L, "height");
+}
+
 int main(int argc, char** argv){
+	
+	lua_State *Lua1 = luaL_newstate(); /* opens Lua */
+	luaL_openlibs(Lua1); /* opens the standard libraries */
+	
+	
 	
 	/* DXF lineweight*/
 	int dxf_lw[] = {0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106, 120, 140, 158, 200, 211, -1, -2};
@@ -636,6 +661,10 @@ int main(int argc, char** argv){
 	/* Window dimension */
 	unsigned int win_w = 1200;
 	unsigned int win_h = 715;
+	
+	
+	load (Lua1, "config.lua", &win_w, &win_h);
+	
 	SDL_Rect win_r, display_r;
 	
 	/* init the SDL2 */
@@ -1009,8 +1038,10 @@ int main(int argc, char** argv){
 	
 	
 	/*===================== teste ===============*/
-	list_node * tt_test = list_new(NULL, PRG_LIFE);
-	tt_parse4(tt_test, PRG_LIFE, "Ezequiel Rabelo de Aguiar  AV çβμπ");
+	//list_node * tt_test = list_new(NULL, PRG_LIFE);
+	//tt_parse4(tt_test, PRG_LIFE, "Ezequiel Rabelo de Aguiar  AV çβμπ");
+	
+	//graph_obj * hers = hershey_test (PRG_LIFE);
 	/*===================== teste ===============*/
 	
 	/* main loop */
@@ -1126,6 +1157,13 @@ int main(int argc, char** argv){
 							user_number = 1; /* sinalize a user flag */
 						}
 						break;
+					case SDL_WINDOWEVENT:
+						if (event.window.event == SDL_WINDOWEVENT_RESIZED){
+							
+						}
+						if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+							
+						}
 				}
 			}
 		}
@@ -3531,7 +3569,9 @@ int main(int argc, char** argv){
 			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
 			
 			/*===================== teste ===============*/
-			graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
+			//graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
+			
+			//graph_draw(hers, img, ofs_x, ofs_y, zoom);
 			/*===================== teste ===============*/
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
@@ -3630,6 +3670,6 @@ int main(int argc, char** argv){
 	shx_font_free(font.shx_font);
 	free(drawing);
 	
-		
+	lua_close(Lua1);
 	return 0;
 };
