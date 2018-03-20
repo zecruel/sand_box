@@ -281,7 +281,61 @@ int cmp_layer_lw(const void * a, const void * b) {
 	return ret;
 }
 
+int layer_rename(dxf_drawing *drawing, int idx){
+	int ok = 0;
+	dxf_node *current, *prev, *obj = NULL;
+	
+	if (drawing)
+		obj = drawing->ents->obj.content->next;
+	
+	current = obj;
+	
+	while (current){ /* ########### OBJ LOOP ########*/
+		ok = 1;
+		prev = current;
+		if (current->type == DXF_ENT){
+			if (current->obj.layer == idx){
+				dxf_attr_change(current, 8, drawing->layers[idx].name);
+			}
+			
+			
+			if (current->obj.content){
+				/* starts the content sweep */
+				current = current->obj.content->next;
+				continue;
+			}
+		}
+			
+		current = current->next; /* go to the next in the list*/
+		
+		//if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+		//	current = NULL;
+		//	break;
+		//}
 
+		/* ============================================================= */
+		while (current == NULL){
+			/* end of list sweeping */
+			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+				//printf("para\n");
+				current = NULL;
+				break;
+			}
+			/* try to back in structure hierarchy */
+			prev = prev->master;
+			if (prev){ /* up in structure */
+				/* try to continue on previous point in structure */
+				current = prev->next;
+				
+			}
+			else{ /* stop the search if structure ends */
+				current = NULL;
+				break;
+			}
+		}
+	}
+	return ok;
+}
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
 	/* use Nuklear widgets to show a DXF entity structure */
 	/* this function is non recursive */
@@ -1915,7 +1969,17 @@ int main(int argc, char** argv){
 			if (nk_begin(gui->ctx, "Layer Manager", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
+				static char lay_name[DXF_MAX_CHARS] = "";
+				int lay_exist = 0;
+				
 				int num_layers = drawing->num_layers;
+				
+				enum lay_op {
+					LAY_OP_NONE,
+					LAY_OP_CREATE,
+					LAY_OP_RENAME
+				};
+				static int lay_change = LAY_OP_NONE;
 				
 				static int sorted = 0;
 				enum sort {
@@ -2130,10 +2194,19 @@ int main(int argc, char** argv){
 				}
 
 				
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				if (nk_button_label(gui->ctx, "Create")){
 					show_lay_name = 1;
+					lay_name[0] = 0;
+					lay_change = LAY_OP_CREATE;
 				}
+				if ((nk_button_label(gui->ctx, "Rename")) && (sel_lay >= 0)){
+					show_lay_name = 1;
+					strncpy(lay_name, drawing->layers[sel_lay].name, DXF_MAX_CHARS);
+					lay_change = LAY_OP_RENAME;
+					
+				}
+				
 				if ((show_color_pick) && (sel_lay >= 0)){
 					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Color", NK_WINDOW_CLOSABLE, nk_rect(220, 10, 220, 300))){
 						
@@ -2163,18 +2236,51 @@ int main(int argc, char** argv){
 						
 						nk_layout_row_dynamic(gui->ctx, 20, 1);
 						//nk_label(gui->ctx, "Layer Name:",  NK_TEXT_LEFT);
-						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
+						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, lay_name, DXF_MAX_CHARS, nk_filter_default);
 						if (nk_button_label(gui->ctx, "OK")){
-							if (!dxf_new_layer (drawing, txt, color_idx, drawing->ltypes[ltypes_idx].name)){
-								snprintf(log_msg, 63, "Error: Layer already exists");
+							if (lay_change == LAY_OP_CREATE){
+								if (!dxf_new_layer (drawing, lay_name, color_idx, drawing->ltypes[ltypes_idx].name)){
+									snprintf(log_msg, 63, "Error: Layer already exists");
+								}
+								else {
+									nk_popup_close(gui->ctx);
+									show_lay_name = 0;
+									lay_change = LAY_OP_NONE;
+								}
+							}
+							else if ((lay_change == LAY_OP_RENAME) && (sel_lay >= 0)){
+								/* verify if is not name of existing layer*/
+								lay_exist = 0;
+								for (i = 0; i < num_layers; i++){
+									if (i != sel_lay){ /*except current layer*/
+										if(strcmp(drawing->layers[i].name, lay_name) == 0){
+											lay_exist = 1;
+											break;
+										}
+									}
+								}
+								if (!lay_exist){
+									dxf_attr_change(drawing->layers[sel_lay].obj, 2, lay_name);
+									strncpy (drawing->layers[sel_lay].name, lay_name, DXF_MAX_CHARS);
+									layer_rename(drawing, sel_lay);
+									
+									nk_popup_close(gui->ctx);
+									show_lay_name = 0;
+									lay_change = LAY_OP_NONE;
+								}
+								else snprintf(log_msg, 63, "Error: exists Layer with same name");
 							}
 							else {
 								nk_popup_close(gui->ctx);
 								show_lay_name = 0;
+								lay_change = LAY_OP_NONE;
 							}
 						}
 						nk_popup_end(gui->ctx);
-					} else show_lay_name = 0;
+					} else {
+						show_lay_name = 0;
+						lay_change = LAY_OP_NONE;
+					}
 				}
 				
 			} else show_lay_mng = nk_false;
