@@ -281,59 +281,84 @@ int cmp_layer_lw(const void * a, const void * b) {
 	return ret;
 }
 
-int layer_rename(dxf_drawing *drawing, int idx){
-	int ok = 0;
-	dxf_node *current, *prev, *obj = NULL;
+int layer_rename(dxf_drawing *drawing, int idx, char *name){
+	int ok = 0, i;
+	dxf_node *current, *prev, *obj = NULL, *list[2], *lay_obj;
+	char *new_name = trimwhitespace(name);
 	
-	if (drawing)
-		obj = drawing->ents->obj.content->next;
+	list[0] = NULL; list[1] = NULL;
+	if (drawing){
+		list[0] = drawing->ents;
+		list[1] = drawing->blks;
+	}
+	else return 0;
 	
-	current = obj;
-	
-	while (current){ /* ########### OBJ LOOP ########*/
-		ok = 1;
-		prev = current;
-		if (current->type == DXF_ENT){
-			if (current->obj.layer == idx){
-				dxf_attr_change(current, 8, drawing->layers[idx].name);
-			}
-			
-			
-			if (current->obj.content){
-				/* starts the content sweep */
-				current = current->obj.content->next;
-				continue;
-			}
-		}
-			
-		current = current->next; /* go to the next in the list*/
-		
-		//if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-		//	current = NULL;
-		//	break;
-		//}
-
-		/* ============================================================= */
-		while (current == NULL){
-			/* end of list sweeping */
-			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-				//printf("para\n");
-				current = NULL;
-				break;
-			}
-			/* try to back in structure hierarchy */
-			prev = prev->master;
-			if (prev){ /* up in structure */
-				/* try to continue on previous point in structure */
-				current = prev->next;
+	for (i = 0; i< 2; i++){
+		obj = list[i];
+		current = obj;
+		while (current){ /* ########### OBJ LOOP ########*/
+			ok = 1;
+			prev = current;
+			if (current->type == DXF_ENT){
+				if (i == 0) {/* entities section */
+					if (current->obj.layer == idx){
+						dxf_attr_change(current, 8, new_name);
+					}
+				}
+				else {/* blocks section */
+					lay_obj = dxf_find_attr2(current, 8);
+					if (lay_obj){
+						char layer[DXF_MAX_CHARS], old_name[DXF_MAX_CHARS];
+						strncpy(layer, lay_obj->value.s_data, DXF_MAX_CHARS);
+						str_upp(layer);
+						strncpy(old_name, drawing->layers[idx].name, DXF_MAX_CHARS);
+						str_upp(old_name);
+						
+						if(strcmp(layer, old_name) == 0){
+							dxf_attr_change(current, 8, new_name);
+						}
+					}
+				}
 				
+				if (current->obj.content){
+					/* starts the content sweep */
+					current = current->obj.content;
+					continue;
+				}
 			}
-			else{ /* stop the search if structure ends */
-				current = NULL;
-				break;
+				
+			current = current->next; /* go to the next in the list*/
+			
+			//if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+			//	current = NULL;
+			//	break;
+			//}
+
+			/* ============================================================= */
+			while (current == NULL){
+				/* end of list sweeping */
+				if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+					//printf("para\n");
+					current = NULL;
+					break;
+				}
+				/* try to back in structure hierarchy */
+				prev = prev->master;
+				if (prev){ /* up in structure */
+					/* try to continue on previous point in structure */
+					current = prev->next;
+					
+				}
+				else{ /* stop the search if structure ends */
+					current = NULL;
+					break;
+				}
 			}
 		}
 	}
+	
+	dxf_attr_change(drawing->layers[idx].obj, 2, new_name);
+	strncpy (drawing->layers[idx].name, new_name, DXF_MAX_CHARS);
 	return ok;
 }
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
@@ -2084,7 +2109,7 @@ int main(int argc, char** argv){
 						//strcpy(layer_nam[i], drawing->layers[i].name);
 						//nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
 						lay_idx = layers[i].idx;
-						if (sel_lay == i){
+						if (sel_lay == lay_idx){
 							if (nk_button_label_styled(gui->ctx, &b_icon_sel_style, drawing->layers[lay_idx].name)){
 								sel_lay = -1;
 							}
@@ -2239,7 +2264,7 @@ int main(int argc, char** argv){
 						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, lay_name, DXF_MAX_CHARS, nk_filter_default);
 						if (nk_button_label(gui->ctx, "OK")){
 							if (lay_change == LAY_OP_CREATE){
-								if (!dxf_new_layer (drawing, lay_name, color_idx, drawing->ltypes[ltypes_idx].name)){
+								if (!dxf_new_layer (drawing, lay_name, 7, drawing->ltypes[dxf_ltype_idx (drawing, "Continuous")].name)){
 									snprintf(log_msg, 63, "Error: Layer already exists");
 								}
 								else {
@@ -2260,9 +2285,9 @@ int main(int argc, char** argv){
 									}
 								}
 								if (!lay_exist){
-									dxf_attr_change(drawing->layers[sel_lay].obj, 2, lay_name);
-									strncpy (drawing->layers[sel_lay].name, lay_name, DXF_MAX_CHARS);
-									layer_rename(drawing, sel_lay);
+									layer_rename(drawing, sel_lay, lay_name);
+									
+									
 									
 									nk_popup_close(gui->ctx);
 									show_lay_name = 0;
