@@ -300,25 +300,19 @@ int layer_rename(dxf_drawing *drawing, int idx, char *name){
 			ok = 1;
 			prev = current;
 			if (current->type == DXF_ENT){
-				if (i == 0) {/* entities section */
-					if (current->obj.layer == idx){
+				lay_obj = dxf_find_attr2(current, 8);
+				if (lay_obj){
+					char layer[DXF_MAX_CHARS], old_name[DXF_MAX_CHARS];
+					strncpy(layer, lay_obj->value.s_data, DXF_MAX_CHARS);
+					str_upp(layer);
+					strncpy(old_name, drawing->layers[idx].name, DXF_MAX_CHARS);
+					str_upp(old_name);
+					
+					if(strcmp(layer, old_name) == 0){
 						dxf_attr_change(current, 8, new_name);
 					}
 				}
-				else {/* blocks section */
-					lay_obj = dxf_find_attr2(current, 8);
-					if (lay_obj){
-						char layer[DXF_MAX_CHARS], old_name[DXF_MAX_CHARS];
-						strncpy(layer, lay_obj->value.s_data, DXF_MAX_CHARS);
-						str_upp(layer);
-						strncpy(old_name, drawing->layers[idx].name, DXF_MAX_CHARS);
-						str_upp(old_name);
-						
-						if(strcmp(layer, old_name) == 0){
-							dxf_attr_change(current, 8, new_name);
-						}
-					}
-				}
+				
 				
 				if (current->obj.content){
 					/* starts the content sweep */
@@ -329,10 +323,10 @@ int layer_rename(dxf_drawing *drawing, int idx, char *name){
 				
 			current = current->next; /* go to the next in the list*/
 			
-			//if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-			//	current = NULL;
-			//	break;
-			//}
+			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+				current = NULL;
+				break;
+			}
 
 			/* ============================================================= */
 			while (current == NULL){
@@ -361,6 +355,78 @@ int layer_rename(dxf_drawing *drawing, int idx, char *name){
 	strncpy (drawing->layers[idx].name, new_name, DXF_MAX_CHARS);
 	return ok;
 }
+
+int layer_use(dxf_drawing *drawing){
+	int ok = 0, i, idx;
+	dxf_node *current, *prev, *obj = NULL, *list[2], *lay_obj;
+	//char *new_name = trimwhitespace(name);
+	
+	list[0] = NULL; list[1] = NULL;
+	if (drawing){
+		list[0] = drawing->ents;
+		list[1] = drawing->blks;
+	}
+	else return 0;
+	
+	for (i = 0; i < drawing->num_layers; i++){ /* clear all layers */
+		drawing->layers[i].num_el = 0;
+	}
+	
+	for (i = 0; i< 2; i++){
+		obj = list[i];
+		current = obj;
+		while (current){ /* ########### OBJ LOOP ########*/
+			ok = 1;
+			prev = current;
+			if (current->type == DXF_ENT){
+				lay_obj = dxf_find_attr2(current, 8);
+				if (lay_obj){
+					idx = dxf_lay_idx(drawing, lay_obj->value.s_data);
+					drawing->layers[idx].num_el++;
+					
+				}
+				
+				if (current->obj.content){
+					/* starts the content sweep */
+					current = current->obj.content;
+					continue;
+				}
+			}
+				
+			current = current->next; /* go to the next in the list*/
+			
+			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+				current = NULL;
+				break;
+			}
+
+			/* ============================================================= */
+			while (current == NULL){
+				/* end of list sweeping */
+				if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
+					//printf("para\n");
+					current = NULL;
+					break;
+				}
+				/* try to back in structure hierarchy */
+				prev = prev->master;
+				if (prev){ /* up in structure */
+					/* try to continue on previous point in structure */
+					current = prev->next;
+					
+				}
+				else{ /* stop the search if structure ends */
+					current = NULL;
+					break;
+				}
+			}
+		}
+	}
+	
+	return ok;
+}
+
+
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
 	/* use Nuklear widgets to show a DXF entity structure */
 	/* this function is non recursive */
@@ -2033,6 +2099,8 @@ int main(int argc, char** argv){
 					qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lw);
 				}
 				
+				layer_use(drawing);
+				
 				static int sel_lay = -1;
 				int lw_idx, j, sel_ltype, lay_idx;
 				
@@ -2212,14 +2280,15 @@ int main(int argc, char** argv){
 							drawing->layers[lay_idx].line_w = dxf_lw[lw_idx];
 						}
 						
-						
-						nk_label(gui->ctx, "x",  NK_TEXT_CENTERED);
+						if (drawing->layers[lay_idx].num_el)
+							nk_label(gui->ctx, "x",  NK_TEXT_CENTERED);
+						else nk_label(gui->ctx, " ",  NK_TEXT_CENTERED);
 					}
 					nk_group_end(gui->ctx);
 				}
 
 				
-				nk_layout_row_dynamic(gui->ctx, 20, 2);
+				nk_layout_row_dynamic(gui->ctx, 20, 3);
 				if (nk_button_label(gui->ctx, "Create")){
 					show_lay_name = 1;
 					lay_name[0] = 0;
@@ -2230,6 +2299,16 @@ int main(int argc, char** argv){
 					strncpy(lay_name, drawing->layers[sel_lay].name, DXF_MAX_CHARS);
 					lay_change = LAY_OP_RENAME;
 					
+				}
+				if ((nk_button_label(gui->ctx, "Remove")) && (sel_lay >= 0)){
+					if (drawing->layers[sel_lay].num_el){
+						snprintf(log_msg, 63, "Error: Don't remove Layer in use");
+					}
+					else{
+						dxf_obj_subst(drawing->layers[sel_lay].obj, NULL);
+						sel_lay = -1;
+						dxf_layer_assemb (drawing);
+					}
 				}
 				
 				if ((show_color_pick) && (sel_lay >= 0)){
