@@ -404,6 +404,7 @@ bmp_img ** i_svg_all_bmp(NSVGimage **curves, int w, int h){
 			img[i]->g_i = 1;
 			img[i]->b_i = 2;
 			img[i]->a_i = 3;
+			img[i]->zero_tl = 1;
 			bmp_fit(img[i], 0, 0, curves[i]->width, curves[i]->height, &zoom, &ofs_x, &ofs_y);
 			nsvgRasterize(rast, curves[i], -ofs_x, -ofs_y, zoom, img[i]->buf, w, h, w*4);
 		}
@@ -431,6 +432,7 @@ bmp_img * i_svg_bmp(NSVGimage *curve, int w, int h){
 		img->g_i = 1;
 		img->b_i = 2;
 		img->a_i = 3;
+		img->zero_tl = 1;
 		bmp_fit(img, 0, 0, curve->width, curve->height, &zoom, &ofs_x, &ofs_y);
 		nsvgRasterize(rast, curve, -ofs_x, -ofs_y, zoom, img->buf, w, h, w*4);
 	}

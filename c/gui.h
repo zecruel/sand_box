@@ -474,9 +474,9 @@ NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
 					if (i->h > 0 && i->w > 0){
 						bmp_img *w_img = (bmp_img *)i->img.handle.ptr;
 						if (w_img){
-							w_img->zero_tl = 1;
+							//w_img->zero_tl = 1;
 							bmp_copy(w_img, img, i->x, i->y);
-							w_img->zero_tl = 0;
+							//w_img->zero_tl = 0;
 						}
 					}
 				} break;
