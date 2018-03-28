@@ -1,46 +1,62 @@
-/*
- * Nuklear - 1.32.0 - public domain
- * no warrenty implied; use at your own risk.
- * authored from 2015-2017 by Micha Mettke
- */
- 
- 
 
- 
-/*
- * ==============================================================
- *
- *                              API
- *
- * ===============================================================
- */
-#ifndef NK_SDL_H_
-#define NK_SDL_H_
+#ifndef _CZ_GUI_LIB
+#define _CZ_GUI_LIB
+
+#include "dxf.h"
+#include "bmp.h"
+#include "graph.h"
+#include "shape2.h"
+#include "i_svg_media.h"
 
 #include <SDL.h>
 
+#define NK_INCLUDE_FIXED_TYPES
+#include "nuklear.h"
 
-#endif
-/*
- * ==============================================================
- *
- *                          IMPLEMENTATION
- *
- * ===============================================================
- */
-//#ifdef NK_SDL_IMPLEMENTATION
+#include "nanosvg.h"
+#include "nanosvgrast.h"
 
 #define FONT_SCALE 1.4
 #define FIXED_MEM 128*1024
 
 struct Gui_obj {
 	struct nk_context *ctx;
-	double pad;
 	struct nk_user_font *font;
 	void *buf; /*for fixed memory */
 	void *last; /* to verify if needs to draw */
-	int draw;
-	int focus;
+	
+	dxf_drawing *drawing;
+	
+	/* background image dimension */
+	unsigned int main_w;
+	unsigned int main_h;
+	
+	/* Window dimension */
+	unsigned int win_w;
+	unsigned int win_h;
+	
+	/*gui pos variables */
+	int next_win_x, next_win_y, next_win_w, next_win_h;
+	
+	double zoom, ofs_x, ofs_y;
+	double prev_zoom;
+	
+	
+	int color_idx, lw_idx;
+	int layer_idx, ltypes_idx;
+	
+	bmp_color background;
+	
+	NSVGimage **svg_curves;
+	bmp_img **svg_bmp;
+	
+	struct nk_style_button b_icon_style;
+	
+	/* style for toggle buttons (or select buttons) with image */
+	struct nk_style_button b_icon_sel_style, b_icon_unsel_style;
+	
+	char log_msg[64];
+	
 };
 typedef struct Gui_obj gui_obj;
 
@@ -49,637 +65,64 @@ struct font_obj{
 	double scale;
 };
 
-static float nk_user_font_get_text_width(nk_handle handle, float height, const char *text, int len){
-	struct font_obj *font = (struct font_obj *)handle.ptr;
-	if ((text!= NULL) && (font!=NULL)) {
-		
-	
-		/* We must copy into a new buffer with exact length null-terminated
-		as nuklear uses variable size buffers and shx_fonts routines doesn't
-		accept a length, it infers length from null-termination */
-		char txt_cpy[len+2];
-		strncpy((char*)&txt_cpy, text, len);
-		//txt_cpy[len - 1] = ' ';
-		txt_cpy[len] = '\0';
-		
-		
-		nk_rune str_uni[255];
-		char str[255];
-		int glyph_size, char_size, pos = 0;
-		
-		char *curr = 0, *curr_pos =0;
-		
-		curr = (char *)txt_cpy;
-		curr_pos = str;
-		pos = 0;
-		
-		while ((*curr != 0) && (pos < 254)){
-		
-			glyph_size = nk_utf_decode(curr, str_uni, 2);
-			if (glyph_size){
-				char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
-				curr += glyph_size;
-				pos += char_size;
-				curr_pos += char_size;
-			}
-			else {
-				curr = 0;
-			}
-		}
-		
-		if(pos<255){
-			str[pos] = 0;
-		}
-		else{
-			str[254] = 0;
-		}
-		
-		double txt_w;
-		graph_obj *curr_graph = shx_font_parse(font->shx_font, 1, str, &txt_w);
-		if (curr_graph){
-			return (float) font->scale * txt_w;
-		}
-	}
-	return 0;
-}
+enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
-bmp_color nk_to_bmp_color(struct nk_color color){
-	bmp_color ret_color = {.r = color.r, .g = color.g, .b = color.b, .a = color.a };
-	return ret_color;
-}
+enum Action {
+	NONE,
+	FILE_OPEN,
+	FILE_SAVE,
+	EXPORT,
+	VIEW_ZOOM_EXT,
+	VIEW_ZOOM_P,
+	VIEW_ZOOM_M,
+	VIEW_ZOOM_W,
+	VIEW_PAN_U,
+	VIEW_PAN_D,
+	VIEW_PAN_L,
+	VIEW_PAN_R,
+	DELETE,
+	UNDO,
+	REDO,
+	LAYER_CHANGE,
+	COLOR_CHANGE,
+	LTYPE_CHANGE,
+	LW_CHANGE,
+	EXIT
+};
 
-int gui_check_draw(gui_obj *gui){
-	int draw = 0;
-	
-	draw = 0;
-	if (gui){
-		gui->draw = 0;
-		if (gui->ctx){
-			void *cmds = nk_buffer_memory(&(gui->ctx->memory));
-			if (cmds){
-				if (memcmp(cmds, gui->last, gui->ctx->memory.allocated)) {
-					memcpy(gui->last, cmds, gui->ctx->memory.allocated);
-					gui->draw = 1;
-					draw = 1;
-				}
-			}
-		}
-	}
-	return draw;
-}
+enum Modal {
+	SELECT,
+	LINE,
+	POLYLINE,
+	CIRCLE,
+	RECT,
+	TEXT,
+	ARC,
+	DUPLI,
+	MOVE,
+	SCALE,
+	NEW_BLK,
+	INSERT
+};
 
-NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img){
-	const struct nk_command *cmd = NULL;
-	bmp_color color = {.r = 255, .g = 255, .b =255, .a = 255};
-	int iter = 0;
-	
-	static int one_time = 0;
-	if (!one_time){
-		//one_time =1;
-	}
-	
-	if ((img != NULL) && (gui != NULL)){
-		
-		/* initialize the image with a solid line pattern */
-		img->patt_i = 0;
-		img->pix_count = 0;
-		img->patt_size = 1;
-		img->pattern[0] = 1;
-		img->zero_tl =1;
+void set_style(struct nk_context *ctx, enum theme theme);
 
-		nk_foreach(cmd, gui->ctx){
-			
-			/* break the loop, if more then 10000 iterations */
-			iter += 1;
-			if (iter > 10000){
-				printf("error render\n");
-				break;
-			}
-			
-			switch (cmd->type) {
-				case NK_COMMAND_NOP: break;
-				
-				case NK_COMMAND_SCISSOR: {
-					const struct nk_command_scissor *s =(const struct nk_command_scissor*)cmd;
-					img->clip_x = (unsigned int)s->x;
-					img->clip_y = (unsigned int)s->y;
-					img->clip_w = (unsigned int)s->w;
-					img->clip_h = (unsigned int)s->h;
-				} break;
-				
-				case NK_COMMAND_LINE: {
-					const struct nk_command_line *l = (const struct nk_command_line *)cmd;
-					color = nk_to_bmp_color(l->color);
-					/*change the color */
-					img->frg = color;
-					/*change tickness */
-					img->tick = (unsigned int) l->line_thickness;
-					
-					bmp_line(img, l->begin.x, l->begin.y, l->end.x,l->end.y);
-				} break;
-				
-				case NK_COMMAND_RECT: {
-					const struct nk_command_rect *r = (const struct nk_command_rect *)cmd;
-					color = nk_to_bmp_color(r->color);
-					/*change the color */
-					img->frg = color;
-					/*change tickness */
-					img->tick = (unsigned int) r->line_thickness;
-					
-					int x0, y0, x1, y1, i, cx, cy;
-					
-					bmp_line(img, r->x + r->rounding, r->y, r->x + r->w -r->rounding, r->y);
-					x0 =  r->x + r->w - r->rounding;
-					cx = x0;
-					y0 = r->y;
-					cy = r->y + r->rounding;
-					for (i=13; i <= 16; i++){
-						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-						bmp_line(img, x0, y0, x1, y1);
-						x0 = x1;
-						y0 = y1;
-					}
-					bmp_line(img, r->x + r->w, r->y + r->rounding, r->x + r->w, r->y + r->h - r->rounding);
-					cx = r->x + r->w - r->rounding;
-					x0 = r->x + r->w;
-					y0 = r->y + r->h - r->rounding;
-					cy = y0;
-					for (i=1; i <= 4; i++){
-						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-						bmp_line(img, x0, y0, x1, y1);
-						x0 = x1;
-						y0 = y1;
-					}
-					bmp_line(img, r->x + r->w - r->rounding, r->y + r->h, r->x + r->rounding, r->y + r->h);
-					x0 = r->x + r->rounding;
-					cx = x0;
-					y0 = r->y + r->h;
-					cy = r->y + r->h - r->rounding;
-					for (i=5; i <= 8; i++){
-						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-						bmp_line(img, x0, y0, x1, y1);
-						x0 = x1;
-						y0 = y1;
-					}
-					bmp_line(img, r->x, r->y + r->h - r->rounding, r->x, r->y + r->rounding);
-					cx = r->x + r->rounding;
-					x0 = r->x;
-					y0 = r->y + r->rounding;
-					cy = y0;
-					for (i=9; i <= 12; i++){
-						x1 = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						y1 = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-						bmp_line(img, x0, y0, x1, y1);
-						x0 = x1;
-						y0 = y1;
-					}
-				} break;
-				
-				case NK_COMMAND_RECT_FILLED: {
-					const struct nk_command_rect_filled *r = (const struct nk_command_rect_filled *)cmd;
-					
-					int vert_x[20], vert_y[20];
-					int i, cx, cy;
-					
-					vert_x[0] = r->x + r->rounding;
-					vert_x[1] = r->x + r->w - r->rounding;
-					
-					cx =  r->x + r->w - r->rounding;
-					cy = r->y + r->rounding;
-					for (i=13; i < 16; i++){
-						vert_x[i-11] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						vert_y[i-11] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-					}
-					
-					vert_x[5] = r->x + r->w;
-					vert_x[6] = r->x + r->w;
-					
-					cx = r->x + r->w - r->rounding;
-					cy = r->y + r->h - r->rounding;
-					for (i=1; i < 4; i++){
-						vert_x[i+6] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						vert_y[i+6] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-					}
-					
-					vert_x[10] = r->x + r->w - r->rounding;
-					vert_x[11] = r->x + r->rounding;
-					
-					cx = r->x + r->rounding;
-					cy = r->y + r->h - r->rounding;
-					for (i=5; i < 8; i++){
-						vert_x[i+7] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						vert_y[i+7] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-					}
-					
-					vert_x[15] = r->x;
-					vert_x[16] = r->x;
-					
-					cx = r->x + r->rounding;
-					cy = r->y + r->rounding;
-					for (i=9; i < 12; i++){
-						vert_x[i+8] = cx +  round((double)r->rounding * cos(2 * M_PI * i  / 16.0));
-						vert_y[i+8] = cy +  round((double)r->rounding * sin(2 * M_PI * i  / 16.0));
-					}
-					
-					vert_y[0] = r->y;
-					vert_y[1] = r->y;
-					
-					vert_y[5] = r->y + r->rounding;
-					vert_y[6] = r->y + r->h - r->rounding;
-					
-					vert_y[10] = r->y + r->h;
-					vert_y[11] = r->y + r->h;
-					
-					vert_y[15] = r->y + r->h - r->rounding;
-					vert_y[16] = r->y + r->rounding;
-					
-					color = nk_to_bmp_color(r->color);
-					/*change the color */
-					img->frg = color;
-					
-					bmp_poly_fill(img, 20, vert_x, vert_y, NULL);
-				} break;
-				
-				case NK_COMMAND_CIRCLE: {
-					const struct nk_command_circle *c = (const struct nk_command_circle *)cmd;
-					color = nk_to_bmp_color(c->color);
-					/*change the color */
-					img->frg = color;
-					/*change tickness */
-					img->tick = c->line_thickness;
-					int xr = c->w/2;
-					
-					bmp_circle(img, c->x + xr, c->y + xr, xr);
-				} break;
-				
-				case NK_COMMAND_CIRCLE_FILLED: {
-					const struct nk_command_circle_filled *c = (const struct nk_command_circle_filled *)cmd;
-					color = nk_to_bmp_color(c->color);
-					/*change the color */
-					img->frg = color;
-					int xr = c->w/2;
-					
-					bmp_circle_fill(img, c->x + xr, c->y + xr, xr);
-				} break;
-				
-				case NK_COMMAND_TRIANGLE: {
-					const struct nk_command_triangle*t = (const struct nk_command_triangle*)cmd;
-					color = nk_to_bmp_color(t->color);
-					/*change the color */
-					img->frg = color;
-					/*change tickness */
-					img->tick = t->line_thickness;
-					bmp_line(img, t->a.x, t->a.y, t->b.x, t->b.y);
-					bmp_line(img, t->b.x, t->b.y, t->c.x, t->c.y);
-					bmp_line(img, t->c.x, t->c.y, t->a.x, t->a.y);
-				} break;
-				
-				case NK_COMMAND_TRIANGLE_FILLED: {
-					const struct nk_command_triangle_filled *t = (const struct nk_command_triangle_filled *)cmd;
-					int vert_x[3] = {t->a.x, t->b.x, t->c.x};
-					int vert_y[3] = {t->a.y, t->b.y, t->c.y};
-					
-					color = nk_to_bmp_color(t->color);
-					/*change the color */
-					img->frg = color;
-					
-					bmp_poly_fill(img, 3, vert_x, vert_y, NULL);
-				} break;
-				
-				case NK_COMMAND_POLYGON: {
-					const struct nk_command_polygon *p = (const struct nk_command_polygon*)cmd;
-					color = nk_to_bmp_color(p->color);
-					//int i;
-					//float vertices[p->point_count * 2];
-					//for (i = 0; i < p->point_count; i++) {
-					// vertices[i*2] = p->points[i].x;
-					// vertices[(i*2) + 1] = p->points[i].y;
-					//}
-					//al_draw_polyline((const float*)&vertices, (2 * sizeof(float)),
-					//    (int)p->point_count, ALLEGRO_LINE_JOIN_ROUND, ALLEGRO_LINE_CAP_CLOSED,
-					//  color, (float)p->line_thickness, 0.0);
-					//printf("polygon ");//------------------------------------teste
-				} break;
-				
-				case NK_COMMAND_POLYGON_FILLED: {
-					const struct nk_command_polygon_filled *p = (const struct nk_command_polygon_filled *)cmd;
-					color = nk_to_bmp_color(p->color);
-					//int i;
-					//float vertices[p->point_count * 2];
-					// for (i = 0; i < p->point_count; i++) {
-					//    vertices[i*2] = p->points[i].x;
-					//     vertices[(i*2) + 1] = p->points[i].y;
-					// }
-					//  al_draw_filled_polygon((const float*)&vertices, (int)p->point_count, color);
-					//printf("fill_polygon ");//------------------------------------teste
-				} break;
-				
-				case NK_COMMAND_POLYLINE: {
-					const struct nk_command_polyline *p = (const struct nk_command_polyline *)cmd;
-					color = nk_to_bmp_color(p->color);
-					//int i;
-					//float vertices[p->point_count * 2];
-					//  for (i = 0; i < p->point_count; i++) {
-					//      vertices[i*2] = p->points[i].x;
-					//      vertices[(i*2) + 1] = p->points[i].y;
-					//  }
-					//  al_draw_polyline((const float*)&vertices, (2 * sizeof(float)),
-					//      (int)p->point_count, ALLEGRO_LINE_JOIN_ROUND, ALLEGRO_LINE_CAP_ROUND,
-					//      color, (float)p->line_thickness, 0.0);
-					//printf("polyline ");//------------------------------------teste
-				} break;
-				
-				case NK_COMMAND_TEXT: {
-					const struct nk_command_text *t = (const struct nk_command_text*)cmd;
-					color = nk_to_bmp_color(t->foreground);
-					nk_rune str_uni[255];
-					char str[255];
-					int glyph_size, char_size, pos = 0;
-					
-					char *curr = 0, *curr_pos =0;
-					
-					curr = (char *)t->string;
-					curr_pos = str;
-					pos = 0;
-					
-					while ((*curr != 0) && (pos < 254)){
-					
-						glyph_size = nk_utf_decode(curr, str_uni, 10);
-						if (glyph_size){
-							char_size = wctomb(curr_pos, (wchar_t)str_uni[0]);
-							curr += glyph_size;
-							pos += char_size;
-							curr_pos += char_size;
-						}
-						else {
-							curr = 0;
-						}
-					}
-					
-					if(pos<255){
-						str[pos] = 0;
-					}
-					else{
-						str[254] = 0;
-					}
-					
-					struct font_obj *font = (struct font_obj *)t->font->userdata.ptr;
-					graph_obj *curr_graph = shx_font_parse(font->shx_font, 1, (const char*)str, NULL);
-					/*change the color */
-					if(curr_graph){
-						curr_graph->color = color;
-					}
+float nk_user_font_get_text_width(nk_handle handle, float height, const char *text, int len);
 
-					/* apply the scales, offsets and rotation to graphs */
-					graph_modify(curr_graph, t->x, t->y + t->font->height, font->scale, -font->scale, 0);
-					graph_draw(curr_graph, img, 0, 0, 1);
-				} break;
-				
-				case NK_COMMAND_CURVE: {
-					const struct nk_command_curve *q = (const struct nk_command_curve *)cmd;
-					color = nk_to_bmp_color(q->color);
-					// float points[8];
-					// points[0] = (float)q->begin.x;
-					// points[1] = (float)q->begin.y;
-					// points[2] = (float)q->ctrl[0].x;
-					// points[3] = (float)q->ctrl[0].y;
-					//points[4] = (float)q->ctrl[1].x;
-					// points[5] = (float)q->ctrl[1].y;
-					// points[6] = (float)q->end.x;
-					// points[7] = (float)q->end.y;
-					// al_draw_spline(points, color, (float)q->line_thickness);
-					//printf("curve ");//------------------------------------teste
-				} break;
-				
-				case NK_COMMAND_ARC: {
-					const struct nk_command_arc *a = (const struct nk_command_arc *)cmd;
-					color = nk_to_bmp_color(a->color);
-					//    al_draw_arc((float)a->cx, (float)a->cy, (float)a->r, a->a[0],
-					//       a->a[1], color, (float)a->line_thickness);
-					//printf("arc ");//------------------------------------teste
-				} break;
-				
-				case NK_COMMAND_RECT_MULTI_COLOR: {
-					if (!one_time){
-						one_time =1;
-						//printf("multi_c ");//------------------------------------teste
-					}
-				} break;
-				
-				case NK_COMMAND_IMAGE: {
-					const struct nk_command_image *i = (struct nk_command_image *)cmd;
-					if (i->h > 0 && i->w > 0){
-						bmp_img *w_img = (bmp_img *)i->img.handle.ptr;
-						if (w_img){
-							//w_img->zero_tl = 1;
-							bmp_copy(w_img, img, i->x, i->y);
-							//w_img->zero_tl = 0;
-						}
-					}
-				} break;
-				
-				case NK_COMMAND_ARC_FILLED: {
-					
-				} break;
-				
-				default: break;
-			}
-		}
-		/* reset image parameters */
-		img->zero_tl = 0;
-		img->clip_x = 0;
-		img->clip_y = 0;
-		img->clip_w = img->width;
-		img->clip_h = img->height;
-	}
-}
+bmp_color nk_to_bmp_color(struct nk_color color);
 
-static void nk_sdl_clipbard_paste(nk_handle usr, struct nk_text_edit *edit){
-	const char *text = SDL_GetClipboardText();
-	if (text) nk_textedit_paste(edit, text, nk_strlen(text));
-	(void)usr;
-}
+int gui_check_draw(gui_obj *gui);
 
-static void nk_sdl_clipbard_copy(nk_handle usr, const char *text, int len){
-	char *str = 0;
-	(void)usr;
-	if (!len) return;
-	str = (char*)malloc((size_t)len+1);
-	if (!str) return;
-	memcpy(str, text, (size_t)len);
-	str[len] = '\0';
-	SDL_SetClipboardText(str);
-	free(str);
-}
+NK_API void nk_sdl_render(gui_obj *gui, bmp_img *img);
 
-NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
-	
-	gui_obj *gui = malloc(sizeof(gui_obj));
-	
-	if (gui){
-		gui->ctx = malloc(sizeof(struct nk_context));
-		gui->font = font;
-		gui->buf = calloc(1,FIXED_MEM);
-		gui->last = calloc(1,FIXED_MEM);
-		if((gui->ctx == NULL) || (gui->font == NULL) || (gui->buf == NULL) || (gui->last == NULL)){
-			return NULL;
-		}
-	}
-	else return NULL;
-	
-	
-	
-	//nk_init_default(gui->ctx, font);
-	nk_init_fixed(gui->ctx, gui->buf, FIXED_MEM, font);
-	gui->ctx->clip.copy = nk_sdl_clipbard_copy;
-	gui->ctx->clip.paste = nk_sdl_clipbard_paste;
-	gui->ctx->clip.userdata = nk_handle_ptr(0);
-	
-	nk_style_set_font(gui->ctx, font);
-	return gui;
-}
+static void nk_sdl_clipbard_paste(nk_handle usr, struct nk_text_edit *edit);
 
-NK_API int
-nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt)
-{
-	struct nk_context *ctx = gui->ctx;
+static void nk_sdl_clipbard_copy(nk_handle usr, const char *text, int len);
 
-	/* optional grabbing behavior 
-	if (ctx->input.mouse.grab) {
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		ctx->input.mouse.grab = 0;
-	}
-	else if (ctx->input.mouse.ungrab) {
-		int x = (int)ctx->input.mouse.prev.x, y = (int)ctx->input.mouse.prev.y;
-		SDL_SetRelativeMouseMode(SDL_FALSE);
-		SDL_WarpMouseInWindow(win, x, y);
-		ctx->input.mouse.ungrab = 0;
-	}*/
-	if (evt->type == SDL_KEYUP || evt->type == SDL_KEYDOWN) {
-	/* key events */
-		int down = evt->type == SDL_KEYDOWN;
-		const Uint8* state = SDL_GetKeyboardState(0);
-		SDL_Keycode sym = evt->key.keysym.sym;
-		
-		if (sym == SDLK_RSHIFT || sym == SDLK_LSHIFT)
-			nk_input_key(ctx, NK_KEY_SHIFT, down);
-		else if (sym == SDLK_DELETE)
-			nk_input_key(ctx, NK_KEY_DEL, down);
-		else if (sym == SDLK_RETURN)
-			nk_input_key(ctx, NK_KEY_ENTER, down);
-		else if (sym == SDLK_TAB)
-			nk_input_key(ctx, NK_KEY_TAB, down);
-		else if (sym == SDLK_BACKSPACE)
-			nk_input_key(ctx, NK_KEY_BACKSPACE, down);
-		else if (sym == SDLK_HOME) {
-			nk_input_key(ctx, NK_KEY_TEXT_START, down);
-			nk_input_key(ctx, NK_KEY_SCROLL_START, down);
-		}
-		else if (sym == SDLK_END) {
-			nk_input_key(ctx, NK_KEY_TEXT_END, down);
-			nk_input_key(ctx, NK_KEY_SCROLL_END, down);
-		}
-		else if (sym == SDLK_PAGEDOWN) {
-			nk_input_key(ctx, NK_KEY_SCROLL_DOWN, down);
-		}
-		else if (sym == SDLK_PAGEUP) {
-			nk_input_key(ctx, NK_KEY_SCROLL_UP, down);
-		}
-		else if (sym == SDLK_z)
-			nk_input_key(ctx, NK_KEY_TEXT_UNDO, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_r)
-			nk_input_key(ctx, NK_KEY_TEXT_REDO, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_c)
-			nk_input_key(ctx, NK_KEY_COPY, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_v)
-			nk_input_key(ctx, NK_KEY_PASTE, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_x)
-			nk_input_key(ctx, NK_KEY_CUT, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_b)
-			nk_input_key(ctx, NK_KEY_TEXT_LINE_START, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_e)
-			nk_input_key(ctx, NK_KEY_TEXT_LINE_END, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_UP)
-			nk_input_key(ctx, NK_KEY_UP, down);
-		else if (sym == SDLK_DOWN)
-			nk_input_key(ctx, NK_KEY_DOWN, down);
-		else if (sym == SDLK_LEFT) {
-			if (state[SDL_SCANCODE_LCTRL])
-				nk_input_key(ctx, NK_KEY_TEXT_WORD_LEFT, down);
-			else nk_input_key(ctx, NK_KEY_LEFT, down);
-		} 
-		else if (sym == SDLK_RIGHT) {
-			if (state[SDL_SCANCODE_LCTRL])
-				nk_input_key(ctx, NK_KEY_TEXT_WORD_RIGHT, down);
-			else nk_input_key(ctx, NK_KEY_RIGHT, down);
-		} else return 0;
-		return 1;
-	} 
-	else if (evt->type == SDL_MOUSEBUTTONDOWN || evt->type == SDL_MOUSEBUTTONUP) {
-		/* mouse button */
-		int down = evt->type == SDL_MOUSEBUTTONDOWN;
-		const int x = evt->button.x, y = evt->button.y;
-		
-		if (evt->button.button == SDL_BUTTON_LEFT) {
-			if (evt->button.clicks > 1)
-				nk_input_button(ctx, NK_BUTTON_DOUBLE, x, y, down);
-			nk_input_button(ctx, NK_BUTTON_LEFT, x, y, down);
-		}
-		else if (evt->button.button == SDL_BUTTON_MIDDLE)
-			nk_input_button(ctx, NK_BUTTON_MIDDLE, x, y, down);
-		else if (evt->button.button == SDL_BUTTON_RIGHT)
-			nk_input_button(ctx, NK_BUTTON_RIGHT, x, y, down);
-		else return 0;
-		return 1;
-	}
-	else if (evt->type == SDL_MOUSEMOTION) {
-		/* mouse motion */
-		if (ctx->input.mouse.grabbed) {
-			int x = (int)ctx->input.mouse.prev.x, y = (int)ctx->input.mouse.prev.y;
-			nk_input_motion(ctx, x + evt->motion.xrel, y + evt->motion.yrel);
-		}
-		else nk_input_motion(ctx, evt->motion.x, evt->motion.y);
-		return 1;
-	}
-	else if (evt->type == SDL_TEXTINPUT) {
-		/* text input */
-		nk_glyph glyph;
-		memcpy(glyph, evt->text.text, NK_UTF_SIZE);
-		nk_input_glyph(ctx, glyph);
-		return 1;
-	}
-	else if (evt->type == SDL_MOUSEWHEEL) {
-		/* mouse wheel */
-		if (nk_window_is_any_hovered(ctx)){
-			nk_input_scroll(ctx,nk_vec2((float)evt->wheel.x,(float)evt->wheel.y));
-			return 1;
-		}
-		else return 0;
-	}
-	return 0;
-}
+NK_API gui_obj* nk_sdl_init(struct nk_user_font *font);
 
-NK_API
-void nk_sdl_shutdown(gui_obj *gui)
-{
-	if(gui){
-		//nk_free(gui->ctx);
-		free(gui->ctx);
-		gui->ctx = NULL;
-		//free(gui->font);
-		gui->font = NULL;
-		
-		free(gui->buf);
-		gui->buf = NULL;
-		free(gui->last);
-		gui->last = NULL;
-		free(gui);
-	}
-		
-    //memset(&sdl, 0, sizeof(sdl));
-}
+NK_API int nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt);
 
-//#endif
+NK_API void nk_sdl_shutdown(gui_obj *gui);
+
+#endif

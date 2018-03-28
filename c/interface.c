@@ -13,6 +13,8 @@
 #include "dxf_seed.h"
 #include "i_svg_media.h"
 
+#include "gui.h"
+
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h>
@@ -32,7 +34,7 @@
 #define NK_IMPLEMENTATION
 #define NK_ZERO_COMMAND_MEMORY
 #include "nuklear.h"
-#include "gui.h"
+
 
 #define NANOSVG_IMPLEMENTATION
 #include "nanosvg.h"
@@ -45,166 +47,7 @@
 #define OS_WIN
 #endif
 
-enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
-void
-set_style(struct nk_context *ctx, enum theme theme)
-{
-    struct nk_color table[NK_COLOR_COUNT];
-    if (theme == THEME_WHITE) {
-        table[NK_COLOR_TEXT] = nk_rgba(70, 70, 70, 255);
-        table[NK_COLOR_WINDOW] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_HEADER] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_BORDER] = nk_rgba(0, 0, 0, 255);
-        table[NK_COLOR_BUTTON] = nk_rgba(185, 185, 185, 255);
-        table[NK_COLOR_BUTTON_HOVER] = nk_rgba(170, 170, 170, 255);
-        table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(160, 160, 160, 255);
-        table[NK_COLOR_TOGGLE] = nk_rgba(150, 150, 150, 255);
-        table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(120, 120, 120, 255);
-        table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_SELECT] = nk_rgba(190, 190, 190, 255);
-        table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_SLIDER] = nk_rgba(190, 190, 190, 255);
-        table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(80, 80, 80, 255);
-        table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(70, 70, 70, 255);
-        table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(60, 60, 60, 255);
-        table[NK_COLOR_PROPERTY] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_EDIT] = nk_rgba(150, 150, 150, 255);
-        table[NK_COLOR_EDIT_CURSOR] = nk_rgba(0, 0, 0, 255);
-        table[NK_COLOR_COMBO] = nk_rgba(175, 175, 175, 255);
-        table[NK_COLOR_CHART] = nk_rgba(160, 160, 160, 255);
-        table[NK_COLOR_CHART_COLOR] = nk_rgba(45, 45, 45, 255);
-        table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba( 255, 0, 0, 255);
-        table[NK_COLOR_SCROLLBAR] = nk_rgba(180, 180, 180, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(140, 140, 140, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(150, 150, 150, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(160, 160, 160, 255);
-        table[NK_COLOR_TAB_HEADER] = nk_rgba(180, 180, 180, 255);
-        nk_style_from_table(ctx, table);
-    } else if (theme == THEME_RED) {
-        table[NK_COLOR_TEXT] = nk_rgba(190, 190, 190, 255);
-        table[NK_COLOR_WINDOW] = nk_rgba(30, 33, 40, 215);
-        table[NK_COLOR_HEADER] = nk_rgba(181, 45, 69, 220);
-        table[NK_COLOR_BORDER] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_BUTTON] = nk_rgba(181, 45, 69, 255);
-        table[NK_COLOR_BUTTON_HOVER] = nk_rgba(190, 50, 70, 255);
-        table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(195, 55, 75, 255);
-        table[NK_COLOR_TOGGLE] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(45, 60, 60, 255);
-        table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(181, 45, 69, 255);
-        table[NK_COLOR_SELECT] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(181, 45, 69, 255);
-        table[NK_COLOR_SLIDER] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(181, 45, 69, 255);
-        table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(186, 50, 74, 255);
-        table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(191, 55, 79, 255);
-        table[NK_COLOR_PROPERTY] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_EDIT] = nk_rgba(51, 55, 67, 225);
-        table[NK_COLOR_EDIT_CURSOR] = nk_rgba(190, 190, 190, 255);
-        table[NK_COLOR_COMBO] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_CHART] = nk_rgba(51, 55, 67, 255);
-        table[NK_COLOR_CHART_COLOR] = nk_rgba(170, 40, 60, 255);
-        table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba( 255, 0, 0, 255);
-        table[NK_COLOR_SCROLLBAR] = nk_rgba(30, 33, 40, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(64, 84, 95, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(70, 90, 100, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(75, 95, 105, 255);
-        table[NK_COLOR_TAB_HEADER] = nk_rgba(181, 45, 69, 220);
-        nk_style_from_table(ctx, table);
-    } else if (theme == THEME_BLUE) {
-        table[NK_COLOR_TEXT] = nk_rgba(20, 20, 20, 255);
-        table[NK_COLOR_WINDOW] = nk_rgba(202, 212, 214, 215);
-        table[NK_COLOR_HEADER] = nk_rgba(137, 182, 224, 220);
-        table[NK_COLOR_BORDER] = nk_rgba(140, 159, 173, 255);
-        table[NK_COLOR_BUTTON] = nk_rgba(137, 182, 224, 255);
-        table[NK_COLOR_BUTTON_HOVER] = nk_rgba(142, 187, 229, 255);
-        table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(147, 192, 234, 255);
-        table[NK_COLOR_TOGGLE] = nk_rgba(177, 210, 210, 255);
-        table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(182, 215, 215, 255);
-        table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(137, 182, 224, 255);
-        table[NK_COLOR_SELECT] = nk_rgba(177, 210, 210, 255);
-        table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(137, 182, 224, 255);
-        table[NK_COLOR_SLIDER] = nk_rgba(177, 210, 210, 255);
-        table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(137, 182, 224, 245);
-        table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(142, 188, 229, 255);
-        table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(147, 193, 234, 255);
-        table[NK_COLOR_PROPERTY] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_EDIT] = nk_rgba(210, 210, 210, 225);
-        table[NK_COLOR_EDIT_CURSOR] = nk_rgba(20, 20, 20, 255);
-        table[NK_COLOR_COMBO] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_CHART] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_CHART_COLOR] = nk_rgba(137, 182, 224, 255);
-        table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba( 255, 0, 0, 255);
-        table[NK_COLOR_SCROLLBAR] = nk_rgba(190, 200, 200, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(64, 84, 95, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(70, 90, 100, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(75, 95, 105, 255);
-        table[NK_COLOR_TAB_HEADER] = nk_rgba(156, 193, 220, 255);
-        nk_style_from_table(ctx, table);
-    } else if (theme == THEME_DARK) {
-        table[NK_COLOR_TEXT] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_WINDOW] = nk_rgba(57, 67, 71, 215);
-        table[NK_COLOR_HEADER] = nk_rgba(51, 51, 56, 220);
-        table[NK_COLOR_BORDER] = nk_rgba(46, 46, 46, 255);
-        table[NK_COLOR_BUTTON] = nk_rgba(48, 83, 111, 255);
-        table[NK_COLOR_BUTTON_HOVER] = nk_rgba(58, 93, 121, 255);
-        table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(63, 98, 126, 255);
-        table[NK_COLOR_TOGGLE] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(45, 53, 56, 255);
-        table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(48, 83, 111, 255);
-        table[NK_COLOR_SELECT] = nk_rgba(57, 67, 61, 255);
-        table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(48, 83, 111, 255);
-        table[NK_COLOR_SLIDER] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(48, 83, 111, 245);
-        table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(53, 88, 116, 255);
-        table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(58, 93, 121, 255);
-        table[NK_COLOR_PROPERTY] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_EDIT] = nk_rgba(50, 58, 61, 225);
-        table[NK_COLOR_EDIT_CURSOR] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_COMBO] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_CHART] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_CHART_COLOR] = nk_rgba(48, 83, 111, 255);
-        table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba(255, 0, 0, 255);
-        table[NK_COLOR_SCROLLBAR] = nk_rgba(50, 58, 61, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(48, 83, 111, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(53, 88, 116, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(58, 93, 121, 255);
-        table[NK_COLOR_TAB_HEADER] = nk_rgba(48, 83, 111, 255);
-        nk_style_from_table(ctx, table);
-    } else if (theme == THEME_ZE) {
-        table[NK_COLOR_TEXT] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_WINDOW] = nk_rgba(57, 71, 58, 215);
-        table[NK_COLOR_HEADER] = nk_rgba(52, 57, 52, 220);
-        table[NK_COLOR_BORDER] = nk_rgba(46, 46, 46, 255);
-        table[NK_COLOR_BUTTON] = nk_rgba(48, 112, 54, 255);
-        table[NK_COLOR_BUTTON_HOVER] = nk_rgba(71, 161, 80, 255);
-        table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(89, 201, 100, 255);
-        table[NK_COLOR_TOGGLE] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(46, 57, 46, 255);
-        table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(48, 112, 54, 255);
-        table[NK_COLOR_SELECT] = nk_rgba(58, 67, 57, 255);
-        table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(48, 112, 54, 255);
-        table[NK_COLOR_SLIDER] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(48, 112, 54, 245);
-        table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(59, 115, 53, 255);
-        table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(71, 161, 80, 255);
-        table[NK_COLOR_PROPERTY] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_EDIT] = nk_rgba(50, 61, 50, 225);
-        table[NK_COLOR_EDIT_CURSOR] = nk_rgba(210, 210, 210, 255);
-        table[NK_COLOR_COMBO] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_CHART] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_CHART_COLOR] = nk_rgba(48, 112, 54, 255);
-        table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba(255, 0, 0, 255);
-        table[NK_COLOR_SCROLLBAR] = nk_rgba(50, 61, 50, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(48, 112, 54, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(59, 115, 53, 255);
-        table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(71, 161, 80, 255);
-        table[NK_COLOR_TAB_HEADER] = nk_rgba(48, 112, 54, 255);
-        nk_style_from_table(ctx, table);
-    } else {
-        nk_style_default(ctx);
-    }
-}
 
 struct sort_by_idx{
 	int idx;
@@ -214,6 +57,7 @@ struct sort_by_idx{
 int cmp_layer_name(const void * a, const void * b) {
 	char *name1, *name2;
 	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
+	
 	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
 	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
 	/* copy strings for secure manipulation */
@@ -1008,43 +852,9 @@ int main(int argc, char** argv){
 	double rect_pt1[2], rect_pt2[2];
 	int low_proc = 1;
 	
-	enum Action {
-		NONE,
-		FILE_OPEN,
-		FILE_SAVE,
-		EXPORT,
-		VIEW_ZOOM_EXT,
-		VIEW_ZOOM_P,
-		VIEW_ZOOM_M,
-		VIEW_ZOOM_W,
-		VIEW_PAN_U,
-		VIEW_PAN_D,
-		VIEW_PAN_L,
-		VIEW_PAN_R,
-		DELETE,
-		UNDO,
-		REDO,
-		LAYER_CHANGE,
-		COLOR_CHANGE,
-		LTYPE_CHANGE,
-		LW_CHANGE,
-		EXIT
-	} action = NONE;
+	enum Action action = NONE;
 	
-	enum Modal {
-		SELECT,
-		LINE,
-		POLYLINE,
-		CIRCLE,
-		RECT,
-		TEXT,
-		ARC,
-		DUPLI,
-		MOVE,
-		SCALE,
-		NEW_BLK,
-		INSERT
-	}modal = SELECT, prev_modal = SELECT;
+	enum Modal modal = SELECT, prev_modal = SELECT;
 	
 	char recv_comm[64];
 	int recv_comm_flag = 0;
