@@ -1,3 +1,4 @@
+
 #include <SDL.h>
 
 #include "dxf.h"
@@ -9,11 +10,13 @@
 #include "dxf_create.h"
 #include "dxf_attract.h"
 
+
 #include "dxf_colors.h"
 #include "dxf_seed.h"
 #include "i_svg_media.h"
 
 #include "gui.h"
+#include "gui_lay.h"
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -48,287 +51,6 @@
 #endif
 
 
-
-struct sort_by_idx{
-	int idx;
-	void *data;
-};
-
-int cmp_layer_name(const void * a, const void * b) {
-	char *name1, *name2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	/* copy strings for secure manipulation */
-	strncpy(copy1, lay1->name, DXF_MAX_CHARS);
-	strncpy(copy2, lay2->name, DXF_MAX_CHARS);
-	/* remove trailing spaces */
-	name1 = trimwhitespace(copy1);
-	name2 = trimwhitespace(copy2);
-	/* change to upper case */
-	str_upp(name1);
-	str_upp(name2);
-	return (strncmp(name1, name2, DXF_MAX_CHARS));
-}
-
-int cmp_layer_ltype(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	/* copy strings for secure manipulation */
-	strncpy(copy1, lay1->ltype, DXF_MAX_CHARS);
-	strncpy(copy2, lay2->ltype, DXF_MAX_CHARS);
-	/* remove trailing spaces */
-	ltype1 = trimwhitespace(copy1);
-	ltype2 = trimwhitespace(copy2);
-	/* change to upper case */
-	str_upp(ltype1);
-	str_upp(ltype2);
-	ret = strncmp(ltype1, ltype2, DXF_MAX_CHARS);
-	if (ret == 0) { /* in case the line type is the same, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_color(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = lay1->color - lay2->color;
-	if (ret == 0) { /* in case the color is the same, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_lw(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = lay1->line_w - lay2->line_w;
-	if (ret == 0) { /* in case the Line weight is the same, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_use(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = (lay1->num_el > 0) - (lay2->num_el > 0);
-	if (ret == 0) { /* in case both layers in use, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_off(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = (lay2->off > 0) - (lay1->off > 0);
-	if (ret == 0) { /* in case both layers are off, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_freeze(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = (lay2->frozen > 0) - (lay1->frozen > 0);
-	if (ret == 0) { /* in case both layers are frozen, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int cmp_layer_lock(const void * a, const void * b) {
-	char *ltype1, *ltype2;
-	char copy1[DXF_MAX_CHARS], copy2[DXF_MAX_CHARS];
-	int ret;
-	
-	dxf_layer *lay1 = ((struct sort_by_idx *)a)->data;
-	dxf_layer *lay2 = ((struct sort_by_idx *)b)->data;
-	
-	ret = (lay2->lock > 0) - (lay1->lock > 0);
-	if (ret == 0) { /* in case both layers are locked, sort by layer name */
-		return cmp_layer_name(a, b);
-	}
-	return ret;
-}
-
-int layer_rename(dxf_drawing *drawing, int idx, char *name){
-	int ok = 0, i;
-	dxf_node *current, *prev, *obj = NULL, *list[2], *lay_obj;
-	char *new_name = trimwhitespace(name);
-	
-	list[0] = NULL; list[1] = NULL;
-	if (drawing){
-		list[0] = drawing->ents;
-		list[1] = drawing->blks;
-	}
-	else return 0;
-	
-	for (i = 0; i< 2; i++){
-		obj = list[i];
-		current = obj;
-		while (current){ /* ########### OBJ LOOP ########*/
-			ok = 1;
-			prev = current;
-			if (current->type == DXF_ENT){
-				lay_obj = dxf_find_attr2(current, 8);
-				if (lay_obj){
-					char layer[DXF_MAX_CHARS], old_name[DXF_MAX_CHARS];
-					strncpy(layer, lay_obj->value.s_data, DXF_MAX_CHARS);
-					str_upp(layer);
-					strncpy(old_name, drawing->layers[idx].name, DXF_MAX_CHARS);
-					str_upp(old_name);
-					
-					if(strcmp(layer, old_name) == 0){
-						dxf_attr_change(current, 8, new_name);
-					}
-				}
-				
-				
-				if (current->obj.content){
-					/* starts the content sweep */
-					current = current->obj.content;
-					continue;
-				}
-			}
-				
-			current = current->next; /* go to the next in the list*/
-			
-			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-				current = NULL;
-				break;
-			}
-
-			/* ============================================================= */
-			while (current == NULL){
-				/* end of list sweeping */
-				if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-					//printf("para\n");
-					current = NULL;
-					break;
-				}
-				/* try to back in structure hierarchy */
-				prev = prev->master;
-				if (prev){ /* up in structure */
-					/* try to continue on previous point in structure */
-					current = prev->next;
-					
-				}
-				else{ /* stop the search if structure ends */
-					current = NULL;
-					break;
-				}
-			}
-		}
-	}
-	
-	dxf_attr_change(drawing->layers[idx].obj, 2, new_name);
-	strncpy (drawing->layers[idx].name, new_name, DXF_MAX_CHARS);
-	return ok;
-}
-
-int layer_use(dxf_drawing *drawing){
-	int ok = 0, i, idx;
-	dxf_node *current, *prev, *obj = NULL, *list[2], *lay_obj;
-	//char *new_name = trimwhitespace(name);
-	
-	list[0] = NULL; list[1] = NULL;
-	if (drawing){
-		list[0] = drawing->ents;
-		list[1] = drawing->blks;
-	}
-	else return 0;
-	
-	for (i = 0; i < drawing->num_layers; i++){ /* clear all layers */
-		drawing->layers[i].num_el = 0;
-	}
-	
-	for (i = 0; i< 2; i++){
-		obj = list[i];
-		current = obj;
-		while (current){ /* ########### OBJ LOOP ########*/
-			ok = 1;
-			prev = current;
-			if (current->type == DXF_ENT){
-				lay_obj = dxf_find_attr2(current, 8);
-				if (lay_obj){
-					idx = dxf_lay_idx(drawing, lay_obj->value.s_data);
-					drawing->layers[idx].num_el++;
-					
-				}
-				
-				if (current->obj.content){
-					/* starts the content sweep */
-					current = current->obj.content;
-					continue;
-				}
-			}
-				
-			current = current->next; /* go to the next in the list*/
-			
-			if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-				current = NULL;
-				break;
-			}
-
-			/* ============================================================= */
-			while (current == NULL){
-				/* end of list sweeping */
-				if ((prev == NULL) || (prev == obj)){ /* stop the search if back on initial entity */
-					//printf("para\n");
-					current = NULL;
-					break;
-				}
-				/* try to back in structure hierarchy */
-				prev = prev->master;
-				if (prev){ /* up in structure */
-					/* try to continue on previous point in structure */
-					current = prev->next;
-					
-				}
-				else{ /* stop the search if structure ends */
-					current = NULL;
-					break;
-				}
-			}
-		}
-	}
-	
-	return ok;
-}
 
 
 void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
@@ -661,44 +383,15 @@ void load (lua_State *L, const char *fname, int *w, int *h) {
 }
 
 int main(int argc, char** argv){
+	gui_obj *gui = malloc(sizeof(gui_obj));
 	
 	lua_State *Lua1 = luaL_newstate(); /* opens Lua */
 	luaL_openlibs(Lua1); /* opens the standard libraries */
 	
 
 	
-	/* DXF lineweight*/
-	int dxf_lw[] = {0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106, 120, 140, 158, 200, 211, -1, -2};
-	static const char *dxf_lw_descr[] = {
-		"0.00 mm",
-		"0.05 mm",
-		"0.09 mm",
-		"0.13 mm",
-		"0.15 mm",
-		"0.18 mm",
-		"0.20 mm",
-		"0.25 mm",
-		"0.30 mm",
-		"0.35 mm",
-		"0.40 mm",
-		"0.50 mm",
-		"0.53 mm",
-		"0.60 mm",
-		"0.70 mm",
-		"0.80 mm",
-		"0.90 mm",
-		"1.00 mm",
-		"1.06 mm",
-		"1.20 mm",
-		"1.40 mm",
-		"1.58 mm",
-		"2.00 mm",
-		"2.11 mm",
-		"By Layer",
-		"By Block"
-	};
-	#define DXF_LW_LEN 24
-	int curr_lw = 0;
+	
+	gui->lw_idx = 0;
 	
 	
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
@@ -706,15 +399,15 @@ int main(int argc, char** argv){
 	
 	
 	/* background image dimension */
-	unsigned int main_w = 0;
-	unsigned int main_h = 0;
+	gui->main_w = 0;
+	gui->main_h = 0;
 	
 	/* Window dimension */
-	unsigned int win_w = 1200;
-	unsigned int win_h = 715;
+	gui->win_w = 1200;
+	gui->win_h = 715;
 	
 	
-	load (Lua1, "config.lua", &win_w, &win_h);
+	load (Lua1, "config.lua", &gui->win_w, &gui->win_h);
 	
 	SDL_Rect win_r, display_r;
 	
@@ -725,8 +418,8 @@ int main(int argc, char** argv){
 		"CadZinho", /* title */
 		SDL_WINDOWPOS_UNDEFINED, /* x position */
 		SDL_WINDOWPOS_UNDEFINED, /* y position */
-		win_w, /* width */
-		win_h, /* height */
+		gui->win_w, /* width */
+		gui->win_h, /* height */
 		SDL_WINDOW_RESIZABLE); /* flags */
 		
 	SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
@@ -735,20 +428,20 @@ int main(int argc, char** argv){
 	
 	SDL_GetRendererInfo(renderer, &rend_info);
 	
-	main_w = rend_info.max_texture_width;
-	main_h = rend_info.max_texture_height;
+	gui->main_w = rend_info.max_texture_width;
+	gui->main_h = rend_info.max_texture_height;
 	
-	if ((main_w <= 0) || (main_h <= 0)){
-		main_w = 2048;
-		main_h = 2048;
+	if ((gui->main_w <= 0) || (gui->main_h <= 0)){
+		gui->main_w = 2048;
+		gui->main_h = 2048;
 	}
 	
 	SDL_Texture * canvas = SDL_CreateTexture(
 		renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STATIC, 
-		main_w, /* width */
-		main_h); /* height */
+		gui->main_w, /* width */
+		gui->main_h); /* height */
 		
 	//SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 	
@@ -771,10 +464,11 @@ int main(int argc, char** argv){
 	printf(fonts_path);
 	printf(sys_fonts_path);
 	
-	double zoom = 20.0 , ofs_x = -11.0, ofs_y = -71.0;
-	double prev_zoom;
-	int color_idx = 256;
-	int layer_idx = 0, ltypes_idx = 0;
+	gui->zoom = 20.0; gui->ofs_x = -11.0; gui->ofs_y = -71.0;
+	//double prev_zoom;
+	gui->color_idx = 256;
+	gui->layer_idx = 0;
+	gui->ltypes_idx = 0;
 	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL, *near_el = NULL;
 	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
 	//double thick = 0.0, thick_prev = 0.0;
@@ -795,7 +489,7 @@ int main(int argc, char** argv){
 	
 	
 	/*gui pos variables */
-	int next_win_x = 0, next_win_y = 0, next_win_w = 0, next_win_h = 0;
+	gui->next_win_x = 0; gui->next_win_y = 0; gui->next_win_w = 0; gui->next_win_h = 0;
 	
 	
 	int open_prg = 0;
@@ -840,8 +534,8 @@ int main(int argc, char** argv){
 	int near_attr; /* flag */
 	int en_attr = 1;
 	
-	char log_msg[64];
-	log_msg[0] = 0;
+	//char gui->log_msg[64];
+	gui->log_msg[0] = 0;
 	
 	
 	//graph_obj *tmp_graph = NULL;
@@ -894,7 +588,7 @@ int main(int argc, char** argv){
 	
 	
 	/* init the main image */
-	bmp_img * img = bmp_new(main_w, main_h, grey, red);
+	bmp_img * img = bmp_new(gui->main_w, gui->main_h, grey, red);
 	
 	/* init Nuklear GUI */
 	struct font_obj font;
@@ -907,7 +601,7 @@ int main(int argc, char** argv){
 	font.scale = font_scale(font.shx_font, default_font.height);
 	default_font.width = nk_user_font_get_text_width;
 	
-	gui_obj *gui = nk_sdl_init(&default_font);
+	nk_sdl_init(gui, &default_font);
 	
 	set_style(gui->ctx, THEME_ZE);
 	
@@ -916,49 +610,49 @@ int main(int argc, char** argv){
 	/* init the toolbox image */
 	#define ICON_SIZE 24
 	
-	NSVGimage **svg_curves = i_svg_all_curves();
-	bmp_img **svg_bmp = i_svg_all_bmp(svg_curves, ICON_SIZE, ICON_SIZE);
+	gui->svg_curves = i_svg_all_curves();
+	gui->svg_bmp = i_svg_all_bmp(gui->svg_curves, ICON_SIZE, ICON_SIZE);
 	
-	bmp_free(svg_bmp[SVG_LOCK]);
-	svg_bmp[SVG_LOCK] = i_svg_bmp(svg_curves[SVG_LOCK], 16, 16);
-	bmp_free(svg_bmp[SVG_UNLOCK]);
-	svg_bmp[SVG_UNLOCK] = i_svg_bmp(svg_curves[SVG_UNLOCK], 16, 16);
-	bmp_free(svg_bmp[SVG_EYE]);
-	svg_bmp[SVG_EYE] = i_svg_bmp(svg_curves[SVG_EYE], 16, 16);
-	bmp_free(svg_bmp[SVG_NO_EYE]);
-	svg_bmp[SVG_NO_EYE] = i_svg_bmp(svg_curves[SVG_NO_EYE], 16, 16);
-	bmp_free(svg_bmp[SVG_SUN]);
-	svg_bmp[SVG_SUN] = i_svg_bmp(svg_curves[SVG_SUN], 16, 16);
-	bmp_free(svg_bmp[SVG_FREEZE]);
-	svg_bmp[SVG_FREEZE] = i_svg_bmp(svg_curves[SVG_FREEZE], 16, 16);
-	bmp_free(svg_bmp[SVG_CZ]);
-	svg_bmp[SVG_CZ] = i_svg_bmp(svg_curves[SVG_CZ], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_LOCK]);
+	gui->svg_bmp[SVG_LOCK] = i_svg_bmp(gui->svg_curves[SVG_LOCK], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_UNLOCK]);
+	gui->svg_bmp[SVG_UNLOCK] = i_svg_bmp(gui->svg_curves[SVG_UNLOCK], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_EYE]);
+	gui->svg_bmp[SVG_EYE] = i_svg_bmp(gui->svg_curves[SVG_EYE], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_NO_EYE]);
+	gui->svg_bmp[SVG_NO_EYE] = i_svg_bmp(gui->svg_curves[SVG_NO_EYE], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_SUN]);
+	gui->svg_bmp[SVG_SUN] = i_svg_bmp(gui->svg_curves[SVG_SUN], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_FREEZE]);
+	gui->svg_bmp[SVG_FREEZE] = i_svg_bmp(gui->svg_curves[SVG_FREEZE], 16, 16);
+	bmp_free(gui->svg_bmp[SVG_CZ]);
+	gui->svg_bmp[SVG_CZ] = i_svg_bmp(gui->svg_curves[SVG_CZ], 16, 16);
 	
-	bmp_img *i_cz48 = i_svg_bmp(svg_curves[SVG_CZ], 48, 48);
+	bmp_img *i_cz48 = i_svg_bmp(gui->svg_curves[SVG_CZ], 48, 48);
 	
 	bmp_img * attr_vec[15];
 	attrc_get_imgs(attr_vec, 15, 16, 16);
 	
-	struct nk_style_button b_icon_style;
+	//struct nk_style_button b_icon_style;
 	if (gui){
-		b_icon_style = gui->ctx->style.button;
+		gui->b_icon = gui->ctx->style.button;
 	}
-	b_icon_style.image_padding.x = -4;
-	b_icon_style.image_padding.y = -4;
+	gui->b_icon.image_padding.x = -4;
+	gui->b_icon.image_padding.y = -4;
 	
 	/* style for toggle buttons (or select buttons) with image */
-	struct nk_style_button b_icon_sel_style, b_icon_unsel_style;
+	//struct nk_style_button gui->b_icon_sel, gui->b_icon_unsel;
 	if (gui){
-		b_icon_sel_style = gui->ctx->style.button;
-		b_icon_unsel_style = gui->ctx->style.button;
+		gui->b_icon_sel = gui->ctx->style.button;
+		gui->b_icon_unsel = gui->ctx->style.button;
 	}
-	b_icon_unsel_style.normal = nk_style_item_color(nk_rgba(58, 67, 57, 255));
-	b_icon_unsel_style.hover = nk_style_item_color(nk_rgba(73, 84, 72, 255));
-	//b_icon_unsel_style.active = nk_style_item_color(nk_rgba(81, 92, 80, 255));
-	b_icon_sel_style.image_padding.x = -4;
-	b_icon_sel_style.image_padding.y = -4;
-	b_icon_unsel_style.image_padding.x = -4;
-	b_icon_unsel_style.image_padding.y = -4;
+	gui->b_icon_unsel.normal = nk_style_item_color(nk_rgba(58, 67, 57, 255));
+	gui->b_icon_unsel.hover = nk_style_item_color(nk_rgba(73, 84, 72, 255));
+	//gui->b_icon_unsel.active = nk_style_item_color(nk_rgba(81, 92, 80, 255));
+	gui->b_icon_sel.image_padding.x = -4;
+	gui->b_icon_sel.image_padding.y = -4;
+	gui->b_icon_unsel.image_padding.x = -4;
+	gui->b_icon_unsel.image_padding.y = -4;
 	
 	bmp_img * color_img = bmp_new(15, 13, black, red);
 	struct nk_image i_color = nk_image_ptr(color_img);
@@ -986,22 +680,22 @@ int main(int argc, char** argv){
 	txt[0] = 0;
 	
 	/* init the drawing */
-	dxf_drawing *drawing = malloc(sizeof(dxf_drawing));
+	gui->drawing = malloc(sizeof(dxf_drawing));
 	url = NULL; /* pass a null file only for initialize the drawing structure */
-	//dxf_open(drawing, url);
-	while (dxf_read (drawing, (char *)dxf_seed_2007, strlen(dxf_seed_2007), &progress) > 0){
+	//dxf_open(gui->drawing, url);
+	while (dxf_read (gui->drawing, (char *)dxf_seed_2007, strlen(dxf_seed_2007), &progress) > 0){
 		
 	}
 	
 	
 	//printf(dxf_seed_r12);
 	
-	//dxf_new_block(drawing, "teste", "0");
-	//dxf_ent_print2(drawing->blks);
-	//dxf_ent_print2(drawing->blks_rec);
+	//dxf_new_block(gui->drawing, "teste", "0");
+	//dxf_ent_print2(gui->drawing->blks);
+	//dxf_ent_print2(gui->drawing->blks_rec);
 	
 	
-	dxf_ents_parse(drawing);
+	dxf_ents_parse(gui->drawing);
 	
 
 	
@@ -1010,10 +704,10 @@ int main(int argc, char** argv){
 	
 	
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
-		(void *)svg_bmp[SVG_CZ]->buf,
-		svg_bmp[SVG_CZ]->width,
-		svg_bmp[SVG_CZ]->height,
-		32, svg_bmp[SVG_CZ]->width * 4,
+		(void *)gui->svg_bmp[SVG_CZ]->buf,
+		gui->svg_bmp[SVG_CZ]->width,
+		gui->svg_bmp[SVG_CZ]->height,
+		32, gui->svg_bmp[SVG_CZ]->width * 4,
 		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 
 	// The icon is attached to the window pointer
@@ -1090,7 +784,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONUP:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = main_h - mouse_y;
+						mouse_y = gui->main_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 0;
 						}
@@ -1101,7 +795,7 @@ int main(int argc, char** argv){
 					case SDL_MOUSEBUTTONDOWN:
 						mouse_x = event.button.x;
 						mouse_y = event.button.y;
-						mouse_y = main_h - mouse_y;
+						mouse_y = gui->main_h - mouse_y;
 						if (event.button.button == SDL_BUTTON_LEFT){
 							leftMouseButtonDown = 1;
 							leftMouseButtonClick = 1;
@@ -1115,19 +809,19 @@ int main(int argc, char** argv){
 						MouseMotion = 1;
 						mouse_x = event.motion.x;
 						mouse_y = event.motion.y;
-						mouse_y = main_h - mouse_y;
-						pos_x = (double) mouse_x/zoom + ofs_x;
-						pos_y = (double) mouse_y/zoom + ofs_y;
+						mouse_y = gui->main_h - mouse_y;
+						pos_x = (double) mouse_x/gui->zoom + gui->ofs_x;
+						pos_y = (double) mouse_y/gui->zoom + gui->ofs_y;
 						draw = 1;
 						break;
 					case SDL_MOUSEWHEEL:
-						prev_zoom = zoom;
-						zoom = zoom + event.wheel.y * 0.2 * zoom;
+						gui->prev_zoom = gui->zoom;
+						gui->zoom = gui->zoom + event.wheel.y * 0.2 * gui->zoom;
 						
 						SDL_GetMouseState(&mouse_x, &mouse_y);
-						mouse_y = main_h - mouse_y;
-						ofs_x += ((double) mouse_x)*(1/prev_zoom - 1/zoom);
-						ofs_y += ((double) mouse_y)*(1/prev_zoom - 1/zoom);
+						mouse_y = gui->main_h - mouse_y;
+						gui->ofs_x += ((double) mouse_x)*(1/gui->prev_zoom - 1/gui->zoom);
+						gui->ofs_y += ((double) mouse_y)*(1/gui->prev_zoom - 1/gui->zoom);
 						draw = 1;
 						break;
 					
@@ -1185,11 +879,11 @@ int main(int argc, char** argv){
 			}
 		}
 		
-		next_win_h = 6 + 4 + ICON_SIZE + 4 + 6 + 4 + ICON_SIZE + 4 + 6 + 8;
-		next_win_x = 2;
-		next_win_y = 2;
+		gui->next_win_h = 6 + 4 + ICON_SIZE + 4 + 6 + 4 + ICON_SIZE + 4 + 6 + 8;
+		gui->next_win_x = 2;
+		gui->next_win_y = 2;
 		
-		if (nk_begin(gui->ctx, "Main", nk_rect(next_win_x, next_win_y, win_w - 4, next_win_h),
+		if (nk_begin(gui->ctx, "Main", nk_rect(gui->next_win_x, gui->next_win_y, gui->win_w - 4, gui->next_win_h),
 		NK_WINDOW_BORDER)){
 			/* first line */
 			nk_layout_row_begin(gui->ctx, NK_STATIC, ICON_SIZE + 12, 8);
@@ -1199,22 +893,22 @@ int main(int argc, char** argv){
 			if (nk_group_begin(gui->ctx, "file", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
 				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NEW]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_NEW]))){
 					printf("NEW\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_OPEN]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_OPEN]))){
 					action = FILE_OPEN;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SAVE]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SAVE]))){
 					action = FILE_SAVE;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EXPORT]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EXPORT]))){
 					action = EXPORT;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CLOSE]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_CLOSE]))){
 					printf("CLOSE\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PRINT]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_PRINT]))){
 					printf("PRINT\n");
 				}
 				
@@ -1227,13 +921,13 @@ int main(int argc, char** argv){
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
 				
 				
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_COPY]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_COPY]))){
 					printf("Copy\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CUT]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_CUT]))){
 					printf("Cut\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PASTE]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_PASTE]))){
 					printf("Paste\n");
 				}
 				
@@ -1244,10 +938,10 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 2*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "undo-redo", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNDO]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_UNDO]))){
 					action = UNDO;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_REDO]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_REDO]))){
 					action = REDO;
 				}
 				nk_group_end(gui->ctx);
@@ -1257,21 +951,21 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 5*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "managers", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LAYERS]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LAYERS]))){
 					//printf("Layers\n");
 					show_lay_mng = 1;
 					//sel_tmp = -1;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FONT]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_FONT]))){
 					printf("FONT\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LTYPE]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LTYPE]))){
 					printf("Line types\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PUZZLE]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_PUZZLE]))){
 					printf("Blocks\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAGS]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TAGS]))){
 					printf("APPID\n");
 				}
 				nk_group_end(gui->ctx);
@@ -1281,16 +975,16 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "zoom", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_P]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ZOOM_P]))){
 					action = VIEW_ZOOM_P;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_M]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ZOOM_M]))){
 					action = VIEW_ZOOM_M;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_W]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ZOOM_W]))){
 					action = VIEW_ZOOM_W;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ZOOM_A]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ZOOM_A]))){
 					action = VIEW_ZOOM_EXT;
 				}
 				nk_group_end(gui->ctx);
@@ -1300,16 +994,16 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 4*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "pan", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UP]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_UP]))){
 					action = VIEW_PAN_U;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DOWN]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_DOWN]))){
 					action = VIEW_PAN_D;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LEFT]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LEFT]))){
 					action = VIEW_PAN_L;
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RIGTH]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_RIGTH]))){
 					action = VIEW_PAN_R;
 				}
 				nk_group_end(gui->ctx);
@@ -1319,14 +1013,14 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 3*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "config", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_INFO]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_INFO]))){
 					show_info = 1;
 					//printf("Info\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TOOL]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TOOL]))){
 					printf("Tools\n");
 				}
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_GEAR]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_GEAR]))){
 					printf("Config\n");
 				}
 				nk_group_end(gui->ctx);
@@ -1336,7 +1030,7 @@ int main(int argc, char** argv){
 			nk_layout_row_push(gui->ctx, 1*(ICON_SIZE + 4 + 4) + 13);
 			if (nk_group_begin(gui->ctx, "help", NK_WINDOW_NO_SCROLLBAR)) {
 				nk_layout_row_static(gui->ctx, ICON_SIZE + 4, ICON_SIZE + 4, 10);
-				if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_HELP]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_HELP]))){
 					show_app_about = 1;
 					//printf("HELP\n");
 				}
@@ -1359,73 +1053,73 @@ int main(int argc, char** argv){
 				nk_layout_row_push(gui->ctx, 60);
 				nk_label(gui->ctx, "Layer: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
-				if (nk_combo_begin_label(gui->ctx, drawing->layers[layer_idx].name, nk_vec2(300,300))){
+				if (nk_combo_begin_label(gui->ctx, gui->drawing->layers[gui->layer_idx].name, nk_vec2(300,300))){
 					float wid[] = {175, 20, 20, 20, 20};
 					nk_layout_row(gui->ctx, NK_STATIC, 20, 5, wid);
-					int num_layers = drawing->num_layers;
+					int num_layers = gui->drawing->num_layers;
 					dxf_node *lay_flags = NULL;
 					
 					for (i = 0; i < num_layers; i++){
-						//strcpy(layer_nam[i], drawing->layers[i].name);
-						if (nk_button_label(gui->ctx, drawing->layers[i].name)){
-							layer_idx = i;
+						//strcpy(layer_nam[i], gui->drawing->layers[i].name);
+						if (nk_button_label(gui->ctx, gui->drawing->layers[i].name)){
+							gui->layer_idx = i;
 							action = LAYER_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
 						
 						struct nk_color b_color = {
-							.r = dxf_colors[drawing->layers[i].color].r,
-							.g = dxf_colors[drawing->layers[i].color].g,
-							.b = dxf_colors[drawing->layers[i].color].b,
-							.a = dxf_colors[drawing->layers[i].color].a
+							.r = dxf_colors[gui->drawing->layers[i].color].r,
+							.g = dxf_colors[gui->drawing->layers[i].color].g,
+							.b = dxf_colors[gui->drawing->layers[i].color].b,
+							.a = dxf_colors[gui->drawing->layers[i].color].a
 						};
 						if(nk_button_color(gui->ctx, b_color)){
 							
 						}
 						
-						if (drawing->layers[i].off){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
-								drawing->layers[i].off = 0;
-								dxf_attr_change(drawing->layers[i].obj, 62, (int []){ abs(drawing->layers[i].color) });
+						if (gui->drawing->layers[i].off){
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_NO_EYE]))){
+								gui->drawing->layers[i].off = 0;
+								dxf_attr_change(gui->drawing->layers[i].obj, 62, (int []){ abs(gui->drawing->layers[i].color) });
 							}
 						}
 						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
-								drawing->layers[i].off = 1;
-								dxf_attr_change(drawing->layers[i].obj, 62, (int []){ -1 * abs(drawing->layers[i].color) });
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EYE]))){
+								gui->drawing->layers[i].off = 1;
+								dxf_attr_change(gui->drawing->layers[i].obj, 62, (int []){ -1 * abs(gui->drawing->layers[i].color) });
 							}
 						}
-						if (drawing->layers[i].frozen){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FREEZE]))){
-								drawing->layers[i].frozen = 0;
-								lay_flags =  dxf_find_attr2(drawing->layers[i].obj, 70);
+						if (gui->drawing->layers[i].frozen){
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_FREEZE]))){
+								gui->drawing->layers[i].frozen = 0;
+								lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
 								if (lay_flags){
 									lay_flags->value.i_data &= ~(1 << 0);
 								}
 							}
 						}
 						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
-								drawing->layers[i].frozen= 1;
-								lay_flags =  dxf_find_attr2(drawing->layers[i].obj, 70);
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SUN]))){
+								gui->drawing->layers[i].frozen= 1;
+								lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
 								if (lay_flags){
 									lay_flags->value.i_data |= (1 << 0);
 								}
 							}
 						}
-						if (drawing->layers[i].lock){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
-								drawing->layers[i].lock = 0;
-								lay_flags =  dxf_find_attr2(drawing->layers[i].obj, 70);
+						if (gui->drawing->layers[i].lock){
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LOCK]))){
+								gui->drawing->layers[i].lock = 0;
+								lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
 								if (lay_flags){
 									lay_flags->value.i_data &= ~(1 << 2);
 								}
 							}
 						}
 						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNLOCK]))){
-								drawing->layers[i].lock = 1;
-								lay_flags =  dxf_find_attr2(drawing->layers[i].obj, 70);
+							if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_UNLOCK]))){
+								gui->drawing->layers[i].lock = 1;
+								lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
 								if (lay_flags){
 									lay_flags->value.i_data |= (1 << 2);
 								}
@@ -1438,9 +1132,9 @@ int main(int argc, char** argv){
 				}
 				
 				/*color picker */
-				int c_idx = color_idx;
+				int c_idx = gui->color_idx;
 				if (c_idx >255){
-					c_idx = drawing->layers[layer_idx].color;
+					c_idx = gui->drawing->layers[gui->layer_idx].color;
 					if (c_idx >255){
 						c_idx = 0;
 					}
@@ -1449,11 +1143,11 @@ int main(int argc, char** argv){
 				bmp_fill(color_img, dxf_colors[c_idx]);
 				
 				/* print the name (number) of color */
-				if (color_idx == 0){
+				if (gui->color_idx == 0){
 					text_len = snprintf(text, 63, "%s", "ByB");
 				}
-				else if (color_idx < 256){
-					text_len = snprintf(text, 63, "%d", color_idx);
+				else if (gui->color_idx < 256){
+					text_len = snprintf(text, 63, "%d", gui->color_idx);
 				}
 				else{
 					text_len = snprintf(text, 63, "%s", "ByL");
@@ -1464,12 +1158,12 @@ int main(int argc, char** argv){
 				if (nk_combo_begin_image_label(gui->ctx, text, i_color, nk_vec2(215,320))){
 					nk_layout_row_dynamic(gui->ctx, 20, 2);
 					if (nk_button_label(gui->ctx, "By Layer")){
-						color_idx = 256;
+						gui->color_idx = 256;
 						action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					if (nk_button_label(gui->ctx, "By Block")){
-						color_idx = 0;
+						gui->color_idx = 0;
 						action = COLOR_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
@@ -1484,7 +1178,7 @@ int main(int argc, char** argv){
 							.a = dxf_colors[i].a
 						};
 						if(nk_button_color(gui->ctx, b_color)){
-							color_idx = i;
+							gui->color_idx = i;
 							action = COLOR_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
@@ -1497,18 +1191,18 @@ int main(int argc, char** argv){
 				nk_layout_row_push(gui->ctx, 100);
 				nk_label(gui->ctx, "Line type: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 200);
-				if (nk_combo_begin_label(gui->ctx, drawing->ltypes[ltypes_idx].name, nk_vec2(300,200))){
+				if (nk_combo_begin_label(gui->ctx, gui->drawing->ltypes[gui->ltypes_idx].name, nk_vec2(300,200))){
 					nk_layout_row_dynamic(gui->ctx, 20, 2);
-					int num_ltypes = drawing->num_ltypes;
+					int num_ltypes = gui->drawing->num_ltypes;
 					
 					for (i = 0; i < num_ltypes; i++){
 						
-						if (nk_button_label(gui->ctx, drawing->ltypes[i].name)){
-							ltypes_idx = i;
+						if (nk_button_label(gui->ctx, gui->drawing->ltypes[i].name)){
+							gui->ltypes_idx = i;
 							action = LTYPE_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
-						nk_label(gui->ctx, drawing->ltypes[i].descr, NK_TEXT_LEFT);
+						nk_label(gui->ctx, gui->drawing->ltypes[i].descr, NK_TEXT_LEFT);
 					}
 					
 					nk_combo_end(gui->ctx);
@@ -1531,22 +1225,22 @@ int main(int argc, char** argv){
 				nk_label(gui->ctx, "Line weight: ", NK_TEXT_RIGHT);
 				nk_layout_row_push(gui->ctx, 120);
 				
-				if (nk_combo_begin_label(gui->ctx, dxf_lw_descr[curr_lw], nk_vec2(200,300))){
+				if (nk_combo_begin_label(gui->ctx, dxf_lw_descr[gui->lw_idx], nk_vec2(200,300))){
 					nk_layout_row_dynamic(gui->ctx, 25, 2);
 					if (nk_button_label(gui->ctx, "By Layer")){
-						curr_lw = DXF_LW_LEN;
+						gui->lw_idx = DXF_LW_LEN;
 						action = LW_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					if (nk_button_label(gui->ctx, "By Block")){
-						curr_lw = DXF_LW_LEN + 1;
+						gui->lw_idx = DXF_LW_LEN + 1;
 						action = LW_CHANGE;
 						nk_combo_close(gui->ctx);
 					}
 					nk_layout_row_dynamic(gui->ctx, 17, 1);
 					for (i = 0; i < DXF_LW_LEN; i++){
 						if (nk_button_label(gui->ctx, dxf_lw_descr[i])){
-							curr_lw = i;
+							gui->lw_idx = i;
 							action = LW_CHANGE;
 							nk_combo_close(gui->ctx);
 						}
@@ -1576,7 +1270,7 @@ int main(int argc, char** argv){
 					nk_layout_row_push(gui->ctx, 0.7f);
 					nk_label(gui->ctx, "By Ezequiel Rabelo de Aguiar", NK_TEXT_RIGHT);
 					nk_layout_row_push(gui->ctx, 0.3f);
-					nk_image(gui->ctx, nk_image_ptr(svg_bmp[SVG_BRAZIL]));
+					nk_image(gui->ctx, nk_image_ptr(gui->svg_bmp[SVG_BRAZIL]));
 					nk_layout_row_end(gui->ctx);
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
@@ -1599,17 +1293,17 @@ int main(int argc, char** argv){
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)){
 			nk_layout_row_static(gui->ctx, 28, 28, 6);
 			for (i = 0; i <  SVG_MEDIA_SIZE; i++){
-				nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[i]));
+				nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[i]));
 			}
 			
 		}
 		nk_end(gui->ctx);*/
 		
-		next_win_y += next_win_h + 3;
-		next_win_w = 210;
-		next_win_h = 500;
+		gui->next_win_y += gui->next_win_h + 3;
+		gui->next_win_w = 210;
+		gui->next_win_h = 500;
 		
-		if (nk_begin(gui->ctx, "Toolbox", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
+		if (nk_begin(gui->ctx, "Toolbox", nk_rect(gui->next_win_x, gui->next_win_y, gui->next_win_w, gui->next_win_h),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 		NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_NO_SCROLLBAR)){
 			
@@ -1619,60 +1313,60 @@ int main(int argc, char** argv){
 			
 			nk_layout_row_static(gui->ctx, 28, 28, 6);
 			
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CURSOR]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_CURSOR]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","SELECT");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT_E]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TEXT_E]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MOVE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_MOVE]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","MOVE");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_DUPLI]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_DUPLI]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","DUPLI");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SCALE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SCALE]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","SCALE");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ROT]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ROT]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_MIRROR]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_MIRROR]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BLOCK]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_BLOCK]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","NEW_BLK");
-				/*dxf_new_block(drawing, "teste", "0", sel_list, &list_do);
-				dxf_ent_print2(drawing->blks);
-				dxf_ent_print2(drawing->blks_rec);*/
+				/*dxf_new_block(gui->drawing, "teste", "0", sel_list, &list_do);
+				dxf_ent_print2(gui->drawing->blks);
+				dxf_ent_print2(gui->drawing->blks_rec);*/
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EXPLODE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EXPLODE]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EDIT]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EDIT]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TAG]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TAG_E]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TAG_E]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FIND]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_FIND]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RULER]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_RULER]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_STYLE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_STYLE]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TRASH]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TRASH]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","DELETE");
 			}
@@ -1683,40 +1377,40 @@ int main(int argc, char** argv){
 				
 			nk_layout_row_static(gui->ctx, 28, 28, 6);
 			
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LINE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LINE]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","LINE");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PLINE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_PLINE]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","POLYLINE");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_RECT]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_RECT]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","RECT");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_TEXT]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TEXT]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","TEXT");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_CIRCLE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_CIRCLE]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","CIRCLE");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ELIPSE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ELIPSE]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_ARC]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_ARC]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SPLINE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SPLINE]))){
 				
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_BOOK]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_BOOK]))){
 				recv_comm_flag = 1;
 				snprintf(recv_comm, 64, "%s","INSERT");
 			}
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_IMAGE]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_IMAGE]))){
 				
 			}
 			
@@ -1847,7 +1541,7 @@ int main(int argc, char** argv){
 							int blk_idx = -1;
 							if (nk_group_begin(gui->ctx, "Block_names", NK_WINDOW_BORDER)) {
 								nk_layout_row_dynamic(gui->ctx, 20, 1);
-								while (blk = dxf_find_obj_i(drawing->blks, "BLOCK", i)){
+								while (blk = dxf_find_obj_i(gui->drawing->blks, "BLOCK", i)){
 									
 									/* get name of current block */
 									blk_nm = dxf_find_attr2(blk, 2);
@@ -1865,12 +1559,12 @@ int main(int argc, char** argv){
 								nk_group_end(gui->ctx);
 							}
 							if (blk_idx >= 0){
-								blk = dxf_find_obj_i(drawing->blks, "BLOCK", blk_idx);
+								blk = dxf_find_obj_i(gui->drawing->blks, "BLOCK", blk_idx);
 								blk_idx = -1;
 								
 								blk_ei = 0;
 								/* get graphics of current block*/
-								blk_g = dxf_graph_parse(drawing, blk, 0, FRAME_LIFE);
+								blk_g = dxf_graph_parse(gui->drawing, blk, 0, FRAME_LIFE);
 								/* get extents parameters of current block*/
 								graph_list_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
 								
@@ -1919,7 +1613,7 @@ int main(int argc, char** argv){
 							/*
 							if (nk_button_label(gui->ctx, "test")){
 								//snprintf(txt, DXF_MAX_CHARS, "text");
-								blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name);
+								blk = dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name);
 								if(blk){
 									/* create a new attdef text 
 									//dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
@@ -1928,9 +1622,9 @@ int main(int argc, char** argv){
 									dxf_node * new_el = dxf_new_attdef (
 										0.0, 0.0, 0.0, 1.0, /* pt1, height 
 										"test", "tag1",(double) thick, /* text, thickness 
-										color_idx, drawing->layers[layer_idx].name, /* color, layer 
-										drawing->ltypes[ltypes_idx].name, 0); /* line type, paper space 
-									ent_handle(drawing, new_el);
+										gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer 
+										gui->drawing->ltypes[gui->ltypes_idx].name, 0); /* line type, paper space 
+									ent_handle(gui->drawing, new_el);
 									dxf_block_append(blk, new_el);
 									snprintf(txt, DXF_MAX_CHARS, "attdef");
 								}
@@ -1952,458 +1646,7 @@ int main(int argc, char** argv){
 ================================================================*/
 		
 		if (show_lay_mng){
-			next_win_x += next_win_w + 3;
-			//next_win_y += next_win_h + 3;
-			next_win_w = 670;
-			next_win_h = 310;
-			
-			enum lay_op {
-				LAY_OP_NONE,
-				LAY_OP_CREATE,
-				LAY_OP_RENAME,
-				LAY_OP_UPDATE
-			};
-			static int lay_change = LAY_OP_UPDATE;
-			
-			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
-			if (nk_begin(gui->ctx, "Layer Manager", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
-				static char lay_name[DXF_MAX_CHARS] = "";
-				int lay_exist = 0;
-				
-				int num_layers = drawing->num_layers;
-				
-				static int sorted = 0;
-				enum sort {
-					UNSORTED,
-					BY_NAME,
-					BY_LTYPE,
-					BY_COLOR,
-					BY_LW,
-					BY_USE,
-					BY_OFF,
-					BY_FREEZE,
-					BY_LOCK
-				};
-				
-				static struct sort_by_idx layers[DXF_MAX_LAYERS];
-				if (lay_change == LAY_OP_UPDATE){
-					lay_change = LAY_OP_NONE;
-					layer_use(drawing); /* update layers in use*/
-					
-					for (i = 0; i < num_layers; i++){
-						layers[i].idx = i;
-						layers[i].data = &(drawing->layers[i]);
-					}
-					if (sorted == BY_NAME){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_name);
-					}
-					else if (sorted == BY_LTYPE){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_ltype);
-					}
-					else if (sorted == BY_COLOR){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_color);
-					}
-					else if (sorted == BY_LW){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lw);
-					}
-					else if (sorted == BY_USE){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_use);
-					}
-					else if (sorted == BY_OFF){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_off);
-					}
-					else if (sorted == BY_FREEZE){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_freeze);
-					}
-					else if (sorted == BY_LOCK){
-						qsort(layers, drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lock);
-					}
-				}
-				
-				static int sel_lay = -1;
-				int lw_idx, j, sel_ltype, lay_idx;
-				
-				char str_tmp[DXF_MAX_CHARS];
-				
-				dxf_node *lay_flags = NULL;
-				
-				nk_layout_row_dynamic(gui->ctx, 32, 1);
-				if (nk_group_begin(gui->ctx, "Lay_head", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
-				
-					nk_layout_row(gui->ctx, NK_STATIC, 22, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
-					/* sort by Layer name */
-					if (sorted == BY_NAME){
-						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Name", NK_TEXT_CENTERED)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_label(gui->ctx,  "Name")){
-							sorted = BY_NAME;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by color */
-					if (sorted == BY_COLOR){
-						if (nk_button_symbol(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_label(gui->ctx,  "C")){
-							sorted = BY_COLOR;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by layer on/off */
-					if (sorted == BY_OFF){
-						if (nk_button_symbol(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
-							sorted = BY_OFF;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by layer freeze*/
-					if (sorted == BY_FREEZE){
-						if (nk_button_symbol(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
-							sorted = BY_FREEZE;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by layer lock*/
-					if (sorted == BY_LOCK){
-						if (nk_button_symbol(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
-							sorted = BY_LOCK;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by Line pattern */
-					if (sorted == BY_LTYPE){
-						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Line type", NK_TEXT_CENTERED)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_label(gui->ctx,  "Line type")){
-							sorted = BY_LTYPE;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by Line weight */
-					if (sorted == BY_LW){
-						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Line weight", NK_TEXT_CENTERED)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_label(gui->ctx,  "Line weight")){
-							sorted = BY_LW;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					/* sort by use */
-					if (sorted == BY_USE){
-						if (nk_button_symbol_label(gui->ctx, NK_SYMBOL_TRIANGLE_DOWN, "Used", NK_TEXT_CENTERED)){
-							sorted = UNSORTED;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					else {
-						if (nk_button_label(gui->ctx,  "Used")){
-							sorted = BY_USE;
-							lay_change = LAY_OP_UPDATE;
-						}
-					}
-					
-					nk_group_end(gui->ctx);
-				}
-				
-				nk_layout_row_dynamic(gui->ctx, 200, 1);
-				if (nk_group_begin(gui->ctx, "Lay_view", NK_WINDOW_BORDER)) {
-					
-				
-					nk_layout_row(gui->ctx, NK_STATIC, 20, 8, (float[]){175, 20, 20, 20, 20, 175, 100, 50});
-					
-					
-					for (i = 0; i < num_layers; i++){
-						//strcpy(layer_nam[i], drawing->layers[i].name);
-						//nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
-						lay_idx = layers[i].idx;
-						if (sel_lay == lay_idx){
-							if (nk_button_label_styled(gui->ctx, &b_icon_sel_style, drawing->layers[lay_idx].name)){
-								sel_lay = -1;
-							}
-						}
-						else {
-							if (nk_button_label_styled(gui->ctx,&b_icon_unsel_style, drawing->layers[lay_idx].name)){
-								sel_lay = lay_idx;
-							}
-						}
-						
-						struct nk_color b_color = {
-							.r = dxf_colors[drawing->layers[lay_idx].color].r,
-							.g = dxf_colors[drawing->layers[lay_idx].color].g,
-							.b = dxf_colors[drawing->layers[lay_idx].color].b,
-							.a = dxf_colors[drawing->layers[lay_idx].color].a
-						};
-						if(nk_button_color(gui->ctx, b_color)){
-							show_color_pick = 1;
-							sel_lay = lay_idx;
-						}
-						
-						if (drawing->layers[lay_idx].off){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NO_EYE]))){
-								drawing->layers[lay_idx].off = 0;
-								dxf_attr_change(drawing->layers[lay_idx].obj, 62, (int []){ abs(drawing->layers[lay_idx].color) });
-							}
-						}
-						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_EYE]))){
-								drawing->layers[lay_idx].off = 1;
-								dxf_attr_change(drawing->layers[lay_idx].obj, 62, (int []){ -1 * abs(drawing->layers[lay_idx].color) });
-							}
-						}
-						if (drawing->layers[lay_idx].frozen){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_FREEZE]))){
-								drawing->layers[lay_idx].frozen = 0;
-								
-								lay_flags =  dxf_find_attr2(drawing->layers[lay_idx].obj, 70);
-								if (lay_flags){
-									lay_flags->value.i_data &= ~(1 << 0);
-								}
-								
-							}
-						}
-						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_SUN]))){
-								drawing->layers[lay_idx].frozen= 1;
-								
-								lay_flags =  dxf_find_attr2(drawing->layers[lay_idx].obj, 70);
-								if (lay_flags){
-									lay_flags->value.i_data |= (1 << 0);
-								}
-							}
-						}
-						if (drawing->layers[lay_idx].lock){
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_LOCK]))){
-								drawing->layers[lay_idx].lock = 0;
-								
-								lay_flags =  dxf_find_attr2(drawing->layers[lay_idx].obj, 70);
-								if (lay_flags){
-									lay_flags->value.i_data &= ~(1 << 2);
-								}
-							}
-						}
-						else{
-							if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_UNLOCK]))){
-								drawing->layers[lay_idx].lock = 1;
-								
-								lay_flags =  dxf_find_attr2(drawing->layers[lay_idx].obj, 70);
-								if (lay_flags){
-									lay_flags->value.i_data |= (1 << 2);
-								}
-							}
-						}
-						
-						
-						sel_ltype = -1;
-						if (nk_combo_begin_label(gui->ctx, drawing->layers[lay_idx].ltype, nk_vec2(300,200))){
-							nk_layout_row_dynamic(gui->ctx, 20, 2);
-							int num_ltypes = drawing->num_ltypes;
-							
-							for (j = 0; j < num_ltypes; j++){
-								strncpy(str_tmp, drawing->ltypes[j].name, DXF_MAX_CHARS);
-								str_upp(str_tmp);
-								
-								if (strlen(str_tmp) == 0) continue;
-								if (strcmp(str_tmp, "BYBLOCK") == 0) continue;
-								if (strcmp(str_tmp, "BYLAYER") == 0) continue;
-								
-								if (nk_button_label(gui->ctx, drawing->ltypes[j].name)){
-									sel_ltype = j;
-									nk_combo_close(gui->ctx);
-								}
-								nk_label(gui->ctx, drawing->ltypes[j].descr, NK_TEXT_LEFT);
-							}
-							nk_combo_end(gui->ctx);
-						}
-						
-						if (sel_ltype >= 0){
-							strncpy(drawing->layers[lay_idx].ltype, drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
-							
-							dxf_attr_change(drawing->layers[lay_idx].obj, 6, drawing->layers[lay_idx].ltype);
-						
-						}
-						
-						
-						//if (nk_button_label(gui->ctx, drawing->layers[i].ltype)){
-							
-						//}
-						
-						/* look for lw index */
-						lw_idx = 0;
-						
-						for (j = 0; j < DXF_LW_LEN; j++){
-							if (dxf_lw[j] == drawing->layers[lay_idx].line_w){
-								lw_idx = j;
-								break;
-							}
-						}
-						lw_idx = nk_combo(gui->ctx, dxf_lw_descr, DXF_LW_LEN, lw_idx, 15, nk_vec2(100,205));
-						if (drawing->layers[lay_idx].line_w != dxf_lw[lw_idx]){
-							dxf_attr_change(drawing->layers[lay_idx].obj, 370, &(dxf_lw[lw_idx]));
-							drawing->layers[lay_idx].line_w = dxf_lw[lw_idx];
-						}
-						
-						if (drawing->layers[lay_idx].num_el)
-							nk_label(gui->ctx, "x",  NK_TEXT_CENTERED);
-						else nk_label(gui->ctx, " ",  NK_TEXT_CENTERED);
-					}
-					nk_group_end(gui->ctx);
-				}
-
-				
-				nk_layout_row_dynamic(gui->ctx, 20, 3);
-				if (nk_button_label(gui->ctx, "Create")){
-					show_lay_name = 1;
-					lay_name[0] = 0;
-					lay_change = LAY_OP_CREATE;
-				}
-				if ((nk_button_label(gui->ctx, "Rename")) && (sel_lay >= 0)){
-					show_lay_name = 1;
-					strncpy(lay_name, drawing->layers[sel_lay].name, DXF_MAX_CHARS);
-					lay_change = LAY_OP_RENAME;
-					
-				}
-				if ((nk_button_label(gui->ctx, "Remove")) && (sel_lay >= 0)){
-					if (drawing->layers[sel_lay].num_el){
-						snprintf(log_msg, 63, "Error: Don't remove Layer in use");
-					}
-					else{
-						
-						/* check if layer is in use*/
-						layer_use(drawing); /* update all layers for sure */
-						dxf_obj_subst(drawing->layers[sel_lay].obj, NULL);
-						sel_lay = -1;
-						dxf_layer_assemb (drawing);
-						lay_change = LAY_OP_UPDATE;
-					}
-				}
-				
-				if ((show_color_pick) && (sel_lay >= 0)){
-					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Color", NK_WINDOW_CLOSABLE, nk_rect(220, 10, 220, 300))){
-						
-						int j;
-						nk_layout_row_static(gui->ctx, 15, 15, 10);
-						struct nk_color b_color;
-						nk_label(gui->ctx, " ", NK_TEXT_RIGHT); /* for padding color alingment */
-						for (j = 1; j < 256; j++){
-							
-							b_color.r = dxf_colors[j].r;
-							b_color.g = dxf_colors[j].g;
-							b_color.b = dxf_colors[j].b;
-							b_color.a = dxf_colors[j].a;
-							
-							if(nk_button_color(gui->ctx, b_color)){
-								drawing->layers[sel_lay].color = j;
-								dxf_attr_change(drawing->layers[sel_lay].obj, 62, &j);
-								nk_popup_close(gui->ctx);
-								show_color_pick = 0;
-							}
-						}
-						nk_popup_end(gui->ctx);
-					} else show_color_pick = 0;
-				}
-				
-				if ((show_lay_name)){
-					if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Layer Name", NK_WINDOW_CLOSABLE, nk_rect(10, 20, 220, 100))){
-						
-						nk_layout_row_dynamic(gui->ctx, 20, 1);
-						//nk_label(gui->ctx, "Layer Name:",  NK_TEXT_LEFT);
-						/* set focus to edit */
-						nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
-						nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, lay_name, DXF_MAX_CHARS, nk_filter_default);
-						
-						nk_layout_row_dynamic(gui->ctx, 20, 2);
-						if (nk_button_label(gui->ctx, "OK")){
-							if (lay_change == LAY_OP_CREATE){
-								if (!dxf_new_layer (drawing, lay_name, 7, drawing->ltypes[dxf_ltype_idx (drawing, "Continuous")].name)){
-									snprintf(log_msg, 63, "Error: Layer already exists");
-								}
-								else {
-									nk_popup_close(gui->ctx);
-									show_lay_name = 0;
-									lay_change = LAY_OP_UPDATE;
-								}
-							}
-							else if ((lay_change == LAY_OP_RENAME) && (sel_lay >= 0)){
-								/* verify if is not name of existing layer*/
-								lay_exist = 0;
-								for (i = 0; i < num_layers; i++){
-									if (i != sel_lay){ /*except current layer*/
-										if(strcmp(drawing->layers[i].name, lay_name) == 0){
-											lay_exist = 1;
-											break;
-										}
-									}
-								}
-								if (!lay_exist){
-									layer_rename(drawing, sel_lay, lay_name);
-									
-									
-									
-									nk_popup_close(gui->ctx);
-									show_lay_name = 0;
-									lay_change = LAY_OP_UPDATE;
-								}
-								else snprintf(log_msg, 63, "Error: exists Layer with same name");
-							}
-							else {
-								nk_popup_close(gui->ctx);
-								show_lay_name = 0;
-								lay_change = LAY_OP_NONE;
-							}
-						}
-						if (nk_button_label(gui->ctx, "Cancel")){
-							nk_popup_close(gui->ctx);
-							show_lay_name = 0;
-							lay_change = LAY_OP_NONE;
-						}
-						nk_popup_end(gui->ctx);
-					} else {
-						show_lay_name = 0;
-						lay_change = LAY_OP_NONE;
-					}
-				}
-				
-			} else {
-				show_lay_mng = nk_false;
-				lay_change = LAY_OP_UPDATE;
-			}
-			nk_end(gui->ctx);
+			show_lay_mng = lay_mng (gui);
 		}
 		
 /* ==============================================================
@@ -2412,19 +1655,19 @@ int main(int argc, char** argv){
 
 		
 		if (show_info){
-			next_win_x += next_win_w + 3;
-			//next_win_y += next_win_h + 3;
-			next_win_w = 200;
-			next_win_h = 300;
+			gui->next_win_x += gui->next_win_w + 3;
+			//gui->next_win_y += gui->next_win_h + 3;
+			gui->next_win_w = 200;
+			gui->next_win_h = 300;
 			
 			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
-			if (nk_begin(gui->ctx, "Info", nk_rect(next_win_x, next_win_y, next_win_w, next_win_h),
+			if (nk_begin(gui->ctx, "Info", nk_rect(gui->next_win_x, gui->next_win_y, gui->next_win_w, gui->next_win_h),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
 				nk_label(gui->ctx, "BLK:", NK_TEXT_LEFT);
 				i = 1;
-				nk_dxf_ent_info (gui->ctx, drawing->blks, i);
+				nk_dxf_ent_info (gui->ctx, gui->drawing->blks, i);
 				
 				nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
 				if (sel_list != NULL){				
@@ -2474,7 +1717,7 @@ int main(int argc, char** argv){
 		}
 		
 		/* interface to the user visualize and enter coordinates distances*/
-		if (nk_begin(gui->ctx, "POS", nk_rect(2, win_h - 80, win_w - 4, 78),
+		if (nk_begin(gui->ctx, "POS", nk_rect(2, gui->win_h - 80, gui->win_w - 4, 78),
 		NK_WINDOW_BORDER))
 		{
 			nk_flags res;
@@ -2607,11 +1850,11 @@ int main(int argc, char** argv){
 			}
 			else nk_selectable_label(gui->ctx, "Off", NK_TEXT_CENTERED, &en_attr);*/
 			if (en_attr){
-				if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(svg_bmp[SVG_MAGNET]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon_sel, nk_image_ptr(gui->svg_bmp[SVG_MAGNET]))){
 					en_attr = 0;
 				}
 			}else {
-				if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(svg_bmp[SVG_MAGNET]))){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon_unsel, nk_image_ptr(gui->svg_bmp[SVG_MAGNET]))){
 					en_attr = 1;
 				}
 			}
@@ -2625,11 +1868,11 @@ int main(int argc, char** argv){
 					/* uses styles "sel" or "unsel", deppending each status*/
 					//nk_layout_row_push(gui->ctx, 22);
 					if (selected){
-						if (nk_button_image_styled(gui->ctx, &b_icon_sel_style, nk_image_ptr(attr_vec[i]))){
+						if (nk_button_image_styled(gui->ctx, &gui->b_icon_sel, nk_image_ptr(attr_vec[i]))){
 							curr_attr_t &= ~attr; /* clear bit of current type*/
 						}
 					}else {
-						if (nk_button_image_styled(gui->ctx, &b_icon_unsel_style, nk_image_ptr(attr_vec[i]))){
+						if (nk_button_image_styled(gui->ctx, &gui->b_icon_unsel, nk_image_ptr(attr_vec[i]))){
 							curr_attr_t |= attr; /* set bit of current type*/
 						}
 					}
@@ -2640,11 +1883,11 @@ int main(int argc, char** argv){
 			}
 			
 			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_PREV]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_PREV]))){
 				
 			}
 			nk_layout_row_push(gui->ctx, ICON_SIZE + 4);
-			if (nk_button_image_styled(gui->ctx, &b_icon_style, nk_image_ptr(svg_bmp[SVG_NEXT]))){
+			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_NEXT]))){
 				
 			}
 			nk_layout_row_end(gui->ctx);
@@ -2662,7 +1905,7 @@ int main(int argc, char** argv){
 			nk_label(gui->ctx, text, NK_TEXT_CENTERED);
 			
 			nk_layout_row_push(gui->ctx, 280);
-			nk_label(gui->ctx, log_msg, NK_TEXT_LEFT);
+			nk_label(gui->ctx, gui->log_msg, NK_TEXT_LEFT);
 			
 			nk_style_pop_font(gui->ctx); /* return to the default font*/
 			
@@ -2682,20 +1925,20 @@ int main(int argc, char** argv){
 			low_proc = 0;
 			draw = 1;
 			
-			open_prg = dxf_read(drawing, file_buf, file_size, &progress);
+			open_prg = dxf_read(gui->drawing, file_buf, file_size, &progress);
 			
 			if(open_prg <= 0){
 				free(file_buf);
 				file_buf = NULL;
 				file_size = 0;
 				
-				//dxf_ent_print2(drawing->blks);
+				//dxf_ent_print2(gui->drawing->blks);
 				
-				dxf_ents_parse(drawing);				
+				dxf_ents_parse(gui->drawing);				
 				action = VIEW_ZOOM_EXT;
-				layer_idx = 0;
-				ltypes_idx = 0;
-				color_idx = 256;
+				gui->layer_idx = 0;
+				gui->ltypes_idx = 0;
+				gui->color_idx = 256;
 				wait_open = 0;
 				progr_end = 1;
 				list_clear(sel_list);
@@ -2724,7 +1967,7 @@ int main(int argc, char** argv){
 				progress = 0;
 				
 				file_buf = dxf_load_file(url, &file_size);
-				open_prg = dxf_read(drawing, file_buf, file_size, &progress);
+				open_prg = dxf_read(gui->drawing, file_buf, file_size, &progress);
 				
 				low_proc = 0;
 				progr_win = 1;
@@ -2739,9 +1982,9 @@ int main(int argc, char** argv){
 			2,
 			lFilterPatterns,
 			NULL);
-			if ((url != NULL) && (drawing->main_struct != NULL)){
-				//dxf_ent_print_f (drawing->main_struct, url);
-				dxf_save (url, drawing);
+			if ((url != NULL) && (gui->drawing->main_struct != NULL)){
+				//dxf_ent_print_f (gui->drawing->main_struct, url);
+				dxf_save (url, gui->drawing);
 			}
 		}
 		else if(action == EXPORT) {
@@ -2752,51 +1995,51 @@ int main(int argc, char** argv){
 			2,
 			lFilterPatterns,
 			NULL);
-			if ((url != NULL) && (drawing->main_struct != NULL)){
-				dxf_ent_print_f (drawing->main_struct, url);
-				//dxf_save (url, drawing);
+			if ((url != NULL) && (gui->drawing->main_struct != NULL)){
+				dxf_ent_print_f (gui->drawing->main_struct, url);
+				//dxf_save (url, gui->drawing);
 			}
 		}
 		else if(action == VIEW_ZOOM_EXT){
 			action = NONE;
-			zoom_ext2(drawing, 0, main_h - win_h, win_w, win_h, &zoom, &ofs_x, &ofs_y);
+			zoom_ext2(gui->drawing, 0, gui->main_h - gui->win_h, gui->win_w, gui->win_h, &gui->zoom, &gui->ofs_x, &gui->ofs_y);
 			draw = 1;
 		}
 		else if(action == VIEW_ZOOM_P){
 			action = NONE;
 			
-			prev_zoom = zoom;
-			zoom = zoom + 0.2 * zoom;
-			ofs_x += (win_w/2)*(1/prev_zoom - 1/zoom);
-			ofs_y += (win_h/2)*(1/prev_zoom - 1/zoom);
+			gui->prev_zoom = gui->zoom;
+			gui->zoom = gui->zoom + 0.2 * gui->zoom;
+			gui->ofs_x += (gui->win_w/2)*(1/gui->prev_zoom - 1/gui->zoom);
+			gui->ofs_y += (gui->win_h/2)*(1/gui->prev_zoom - 1/gui->zoom);
 			draw = 1;
 		}
 		else if(action == VIEW_ZOOM_M){
 			action = NONE;
-			prev_zoom = zoom;
-			zoom = zoom - 0.2 * zoom;
-			ofs_x += (win_w/2)*(1/prev_zoom - 1/zoom);
-			ofs_y += (win_h/2)*(1/prev_zoom - 1/zoom);
+			gui->prev_zoom = gui->zoom;
+			gui->zoom = gui->zoom - 0.2 * gui->zoom;
+			gui->ofs_x += (gui->win_w/2)*(1/gui->prev_zoom - 1/gui->zoom);
+			gui->ofs_y += (gui->win_h/2)*(1/gui->prev_zoom - 1/gui->zoom);
 			draw = 1;
 		}
 		else if(action == VIEW_PAN_U){
 			action = NONE;
-			ofs_y += (win_h*0.1)/zoom;
+			gui->ofs_y += (gui->win_h*0.1)/gui->zoom;
 			draw = 1;
 		}
 		else if(action == VIEW_PAN_D){
 			action = NONE;
-			ofs_y -= (win_h*0.1)/zoom;
+			gui->ofs_y -= (gui->win_h*0.1)/gui->zoom;
 			draw = 1;
 		}
 		else if(action == VIEW_PAN_L){
 			action = NONE;
-			ofs_x -= (win_w*0.1)/zoom;
+			gui->ofs_x -= (gui->win_w*0.1)/gui->zoom;
 			draw = 1;
 		}
 		else if(action == VIEW_PAN_R){
 			action = NONE;
-			ofs_x += (win_w*0.1)/zoom;
+			gui->ofs_x += (gui->win_w*0.1)/gui->zoom;
 			draw = 1;
 		}
 		else if(action == DELETE){
@@ -2836,11 +2079,11 @@ int main(int argc, char** argv){
 			char *text = list_do.current->text;
 			
 			if (do_undo(&list_do)){
-				snprintf(log_msg, 63, "UNDO: %s", text);
+				snprintf(gui->log_msg, 63, "UNDO: %s", text);
 				goto first_step;
 			}
 			else{
-				snprintf(log_msg, 63, "No actions to undo");
+				snprintf(gui->log_msg, 63, "No actions to undo");
 			}
 			draw = 1;
 		}
@@ -2849,11 +2092,11 @@ int main(int argc, char** argv){
 			action = NONE;
 			list_clear(sel_list);
 			if (do_redo(&list_do)){
-				snprintf(log_msg, 63, "REDO: %s", list_do.current->text);
+				snprintf(gui->log_msg, 63, "REDO: %s", list_do.current->text);
 				goto first_step;
 			}
 			else{
-				snprintf(log_msg, 63, "No actions to redo");
+				snprintf(gui->log_msg, 63, "No actions to redo");
 			}
 			draw = 1;
 		}
@@ -2872,9 +2115,9 @@ int main(int argc, char** argv){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 							
-							dxf_attr_change(new_ent, 8, drawing->layers[layer_idx].name);
+							dxf_attr_change(new_ent, 8, gui->drawing->layers[gui->layer_idx].name);
 							
-							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
 							
 							dxf_obj_subst((dxf_node *)current->data, new_ent);
 							
@@ -2903,8 +2146,8 @@ int main(int argc, char** argv){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 							
-							dxf_attr_change(new_ent, 62, &color_idx);
-							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							dxf_attr_change(new_ent, 62, &gui->color_idx);
+							new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
 							
 							dxf_obj_subst((dxf_node *)current->data, new_ent);
 							
@@ -2932,8 +2175,8 @@ int main(int argc, char** argv){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 							
-							dxf_attr_change(new_ent, 6, drawing->ltypes[ltypes_idx].name);
-							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							dxf_attr_change(new_ent, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+							new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
 							
 							dxf_obj_subst((dxf_node *)current->data, new_ent);
 							
@@ -2961,8 +2204,8 @@ int main(int argc, char** argv){
 						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 							new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 							
-							dxf_attr_change(new_ent, 370, &dxf_lw[curr_lw]);
-							new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
+							dxf_attr_change(new_ent, 370, &dxf_lw[gui->lw_idx]);
+							new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
 							
 							dxf_obj_subst((dxf_node *)current->data, new_ent);
 							
@@ -3050,33 +2293,33 @@ int main(int argc, char** argv){
 		axis locks, user entry, or DXf element attractor */
 		if ((leftMouseButtonClick) || (rightMouseButtonClick) || (MouseMotion)){
 			/* aproximation rectangle in mouse position (10 pixels wide) */
-			rect_pt1[0] = (double) (mouse_x - 5)/zoom + ofs_x;
-			rect_pt1[1] = (double) (mouse_y - 5)/zoom + ofs_y;
-			rect_pt2[0] = (double) (mouse_x + 5)/zoom + ofs_x;
-			rect_pt2[1] = (double) (mouse_y + 5)/zoom + ofs_y;
+			rect_pt1[0] = (double) (mouse_x - 5)/gui->zoom + gui->ofs_x;
+			rect_pt1[1] = (double) (mouse_y - 5)/gui->zoom + gui->ofs_y;
+			rect_pt2[0] = (double) (mouse_x + 5)/gui->zoom + gui->ofs_x;
+			rect_pt2[1] = (double) (mouse_y + 5)/gui->zoom + gui->ofs_y;
 			/* get the drawing element near the mouse */
-			near_el = (dxf_node *)dxf_ents_isect(drawing, rect_pt1, rect_pt2);
+			near_el = (dxf_node *)dxf_ents_isect(gui->drawing, rect_pt1, rect_pt2);
 			
 			if ((step >= 0) && (step < 10)){
 				/* update current position by the mouse */
-				step_x[step] = (double) mouse_x/zoom + ofs_x;
-				step_y[step] = (double) mouse_y/zoom + ofs_y;
+				step_x[step] = (double) mouse_x/gui->zoom + gui->ofs_x;
+				step_y[step] = (double) mouse_y/gui->zoom + gui->ofs_y;
 				near_attr = ATRC_NONE;
 				
 				if ((modal != SELECT)&& (step >= 1)){
 					/* update current position by the attractor of near element */
-					if (near_attr = dxf_ent_attract(drawing, near_el, curr_attr_t,
+					if (near_attr = dxf_ent_attract(gui->drawing, near_el, curr_attr_t,
 					step_x[step], step_y[step], step_x[step-1], step_y[step-1],
-					(double) 20/zoom, &near_x , &near_y)){
+					(double) 20/gui->zoom, &near_x , &near_y)){
 						step_x[step] = near_x;
 						step_y[step] = near_y;
 					}
 				}
 				else if (modal != SELECT){
 					/* update current position by the attractor of near element */
-					if (near_attr = dxf_ent_attract(drawing, near_el, curr_attr_t,
+					if (near_attr = dxf_ent_attract(gui->drawing, near_el, curr_attr_t,
 					step_x[step], step_y[step], step_x[step], step_y[step],
-					(double) 20/zoom, &near_x , &near_y)){
+					(double) 20/gui->zoom, &near_x , &near_y)){
 						step_x[step] = near_x;
 						step_y[step] = near_y;
 					}
@@ -3203,8 +2446,8 @@ int main(int argc, char** argv){
 					/* create a new DXF line */
 					new_el = (dxf_node *) dxf_new_line (
 						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
-						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 						0); /* paper space */
 					element = new_el;
 					step = 1;
@@ -3220,8 +2463,8 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 11, &step_x[step]);
 					dxf_attr_change(new_el, 21, &step_y[step]);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-					drawing_ent_append(drawing, new_el);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+					drawing_ent_append(gui->drawing, new_el);
 					
 					do_add_entry(&list_do, "LINE");
 					do_add_item(list_do.current, NULL, new_el);
@@ -3231,8 +2474,8 @@ int main(int argc, char** argv){
 					
 					new_el = (dxf_node *) dxf_new_line (
 						step_x[step], step_y[step], 0.0, step_x[step], step_y[step], 0.0, /* pt1, pt2 */
-						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 						0); /* paper space */
 					
 					element = new_el;
@@ -3242,14 +2485,14 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (MouseMotion){
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
 					dxf_attr_change(new_el, 11, &step_x[step]);
 					dxf_attr_change(new_el, 21, &step_y[step]);
-					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
-					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
+					dxf_attr_change(new_el, 62, &gui->color_idx);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3260,8 +2503,8 @@ int main(int argc, char** argv){
 					new_el = (dxf_node *) dxf_new_lwpolyline (
 						step_x[step], step_y[step], 0.0, /* pt1, */
 						bulge, /* bulge */
-						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 						0); /* paper space */
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
 					element = new_el;
@@ -3283,7 +2526,7 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					dxf_attr_change_i(new_el, 42, &bulge, -1);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 					
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, bulge);
 					step = 2;
@@ -3293,8 +2536,8 @@ int main(int argc, char** argv){
 					draw_tmp = 0;
 					if (step == 2){
 						dxf_lwpoly_remove (new_el, -1);
-						new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-						drawing_ent_append(drawing, new_el);
+						new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+						drawing_ent_append(gui->drawing, new_el);
 						
 						do_add_entry(&list_do, "POLYLINE");
 						do_add_item(list_do.current, NULL, new_el);
@@ -3305,15 +2548,15 @@ int main(int argc, char** argv){
 					goto next_step;
 				}
 				if (MouseMotion){
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
 					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					dxf_attr_change_i(new_el, 42, &bulge, -1);
-					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
-					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
+					dxf_attr_change(new_el, 62, &gui->color_idx);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3324,8 +2567,8 @@ int main(int argc, char** argv){
 					/* create a new DXF circle */
 					new_el = (dxf_node *) dxf_new_circle (
 						step_x[step], step_y[step], 0.0, 0.0, /* pt1, radius */
-						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 						0); /* paper space */
 					element = new_el;
 					step = 1;
@@ -3340,8 +2583,8 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					double radius = sqrt(pow((step_x[step] - step_x[step - 1]), 2) + pow((step_y[step] - step_y[step - 1]), 2));
 					dxf_attr_change(new_el, 40, &radius);
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-					drawing_ent_append(drawing, new_el);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+					drawing_ent_append(gui->drawing, new_el);
 					
 					do_add_entry(&list_do, "CIRCLE");
 					do_add_item(list_do.current, NULL, new_el);
@@ -3352,17 +2595,17 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (MouseMotion){
-					x1 = (double) mouse_x/zoom + ofs_x;
-					y1 = (double) mouse_y/zoom + ofs_y;
+					x1 = (double) mouse_x/gui->zoom + gui->ofs_x;
+					y1 = (double) mouse_y/gui->zoom + gui->ofs_y;
 					double radius = sqrt(pow((step_x[step] - step_x[step - 1]), 2) + pow((step_y[step] - step_y[step - 1]), 2));
 					
 					dxf_attr_change(new_el, 40, &radius);
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
-					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
+					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
+					dxf_attr_change(new_el, 62, &gui->color_idx);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3376,8 +2619,8 @@ int main(int argc, char** argv){
 					new_el = (dxf_node *) dxf_new_lwpolyline (
 						step_x[step], step_y[step], 0.0, /* pt1, */
 						0.0,  /* bulge, */
-						color_idx, drawing->layers[layer_idx].name, /* color, layer */
-						drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 						0); /* paper space */
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, 0.0);
 					dxf_lwpoly_append (new_el, step_x[step], step_y[step], 0.0, 0.0);
@@ -3399,8 +2642,8 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 10, (void *) &step_x[step], 2);
 					dxf_attr_change_i(new_el, 20, (void *) &step_y[step], 2);
 					dxf_attr_change_i(new_el, 20, (void *) &step_y[step], 3);
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-					drawing_ent_append(drawing, new_el);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+					drawing_ent_append(gui->drawing, new_el);
 					
 					do_add_entry(&list_do, "RECT");
 					do_add_item(list_do.current, NULL, new_el);
@@ -3415,12 +2658,12 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 10, (void *) &step_x[step], 2);
 					dxf_attr_change_i(new_el, 20, (void *) &step_y[step], 2);
 					dxf_attr_change_i(new_el, 20, (void *) &step_y[step], 3);
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
-					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
+					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
+					dxf_attr_change(new_el, 62, &gui->color_idx);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3431,8 +2674,8 @@ int main(int argc, char** argv){
 				new_el = (dxf_node *) dxf_new_text (
 					step_x[step], step_y[step], 0.0, txt_h, /* pt1, height */
 					txt, /* text, */
-					color_idx, drawing->layers[layer_idx].name, /* color, layer */
-					drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 					0); /* paper space */
 				element = new_el;
 				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
@@ -3450,8 +2693,8 @@ int main(int argc, char** argv){
 					dxf_attr_change(new_el, 1, txt);
 					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
-					drawing_ent_append(drawing, new_el);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+					drawing_ent_append(gui->drawing, new_el);
 					
 					do_add_entry(&list_do, "TEXT");
 					do_add_item(list_do.current, NULL, new_el);
@@ -3470,14 +2713,14 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 21, &step_y[step], -1);
 					dxf_attr_change(new_el, 40, &txt_h);
 					dxf_attr_change(new_el, 1, txt);
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[curr_lw]);
-					dxf_attr_change(new_el, 62, &color_idx);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
+					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
+					dxf_attr_change(new_el, 62, &gui->color_idx);
 					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3485,13 +2728,13 @@ int main(int argc, char** argv){
 			if (step == 0){
 				if (leftMouseButtonClick){
 					/* verify if block exist */					
-					if (dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name)){
+					if (dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name)){
 						draw_tmp = 1;
 						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
 						new_el = dxf_new_insert (blk_name,
 							step_x[step], step_y[step], 0.0, /* pt1 */
-							color_idx, drawing->layers[layer_idx].name, /* color, layer */
-							drawing->ltypes[ltypes_idx].name, dxf_lw[curr_lw], /* line type, line weight */
+							gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+							gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 							0); /* paper space */
 						element = new_el;
 						step = 1;
@@ -3508,23 +2751,23 @@ int main(int argc, char** argv){
 					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
 					
-					drawing_ent_append(drawing, new_el);
+					drawing_ent_append(gui->drawing, new_el);
 					
 					
 					/*=========================*/
-					dxf_node *blk = dxf_find_obj_descr2(drawing->blks, "BLOCK", blk_name);
+					dxf_node *blk = dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name);
 					dxf_node *attdef, *attrib;
 					i = 0;
 					while (attdef = dxf_find_obj_i(blk, "ATTDEF", i)){
 						attrib = dxf_attrib_cpy(attdef, step_x[step], step_y[step], 0.0);
-						ent_handle(drawing, attrib);
-						dxf_insert_append(drawing, new_el, attrib);
+						ent_handle(gui->drawing, attrib);
+						dxf_insert_append(gui->drawing, new_el, attrib);
 						
 						i++;
 					}
 					
 					/*===================*/
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 0);
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
 					do_add_entry(&list_do, "INSERT");
 					do_add_item(list_do.current, NULL, new_el);
 					
@@ -3538,10 +2781,10 @@ int main(int argc, char** argv){
 				if (MouseMotion){
 					dxf_attr_change_i(new_el, 10, &step_x[step], -1);
 					dxf_attr_change_i(new_el, 20, &step_y[step], -1);
-					dxf_attr_change(new_el, 6, drawing->ltypes[ltypes_idx].name);
-					dxf_attr_change(new_el, 8, drawing->layers[layer_idx].name);
-					dxf_attr_change(new_el, 62, &color_idx);					
-					new_el->obj.graphics = dxf_graph_parse(drawing, new_el, 0 , 1);
+					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
+					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
+					dxf_attr_change(new_el, 62, &gui->color_idx);					
+					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
 				}
 			}
 		}
@@ -3550,9 +2793,9 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					/* verify if text is valid */
 					if (strlen(txt) > 0){
-						if(!text2tag) dxf_new_block(drawing, txt, "0", sel_list, &list_do);
+						if(!text2tag) dxf_new_block(gui->drawing, txt, "0", sel_list, &list_do);
 						
-						else dxf_new_block2(drawing, txt, tag_mark, "0", sel_list, &list_do);
+						else dxf_new_block2(gui->drawing, txt, tag_mark, "0", sel_list, &list_do);
 					}
 				}
 				else if (rightMouseButtonClick){
@@ -3565,7 +2808,7 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					phanton = dxf_list_parse(gui->drawing, sel_list, 0, 0);
 					element = NULL;
 					draw_phanton = 1;
 					en_distance = 1;
@@ -3594,8 +2837,8 @@ int main(int argc, char** argv){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
-									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
-									//drawing_ent_append(drawing, new_ent);
+									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
+									//drawing_ent_append(gui->drawing, new_ent);
 									
 									dxf_obj_subst((dxf_node *)current->data, new_ent);
 									
@@ -3625,7 +2868,7 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					phanton = dxf_list_parse(gui->drawing, sel_list, 0, 0);
 					element = NULL;
 					draw_phanton = 1;
 					en_distance = 1;
@@ -3655,8 +2898,8 @@ int main(int argc, char** argv){
 								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
 									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
 									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
-									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
-									drawing_ent_append(drawing, new_ent);
+									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
+									drawing_ent_append(gui->drawing, new_ent);
 									
 									do_add_item(list_do.current, NULL, new_ent);
 									
@@ -3684,7 +2927,7 @@ int main(int argc, char** argv){
 				if (leftMouseButtonClick){
 					draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(drawing, sel_list, 0, 0);
+					phanton = dxf_list_parse(gui->drawing, sel_list, 0, 0);
 					graph_list_modify(phanton, step_x[step]*(1 - scale), step_y[step]*(1 - scale), scale, scale, 0.0);
 					element = NULL;
 					draw_phanton = 1;
@@ -3717,8 +2960,8 @@ int main(int argc, char** argv){
 									dxf_edit_move(new_ent, step_x[step - 1]*(1 - scale), step_y[step - 1]*(1 - scale), 0.0);
 									dxf_edit_move(new_ent, step_x[step] - step_x[step - 1], step_y[step] - step_y[step - 1], 0.0);
 									
-									new_ent->obj.graphics = dxf_graph_parse(drawing, new_ent, 0 , 0);
-									//drawing_ent_append(drawing, new_ent);
+									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
+									//drawing_ent_append(gui->drawing, new_ent);
 									
 									dxf_obj_subst((dxf_node *)current->data, new_ent);
 									
@@ -3778,52 +3021,52 @@ int main(int argc, char** argv){
 		
 		if (draw != 0){
 			/*get current window size */
-			SDL_GetWindowSize(window, &win_w, &win_h);
-			if (win_w > main_w){ /* if window exceedes main image */
+			SDL_GetWindowSize(window, &gui->win_w, &gui->win_h);
+			if (gui->win_w > gui->main_w){ /* if window exceedes main image */
 				/* fit windo to main image size*/
-				win_w = main_w;
-				SDL_SetWindowSize(window, win_w, win_h);
+				gui->win_w = gui->main_w;
+				SDL_SetWindowSize(window, gui->win_w, gui->win_h);
 			}
-			if (win_h > main_h){/* if window exceedes main image */
+			if (gui->win_h > gui->main_h){/* if window exceedes main image */
 				/* fit windo to main image size*/
-				win_h = main_h;
-				SDL_SetWindowSize(window, win_w, win_h);
+				gui->win_h = gui->main_h;
+				SDL_SetWindowSize(window, gui->win_w, gui->win_h);
 			}
 			
 			/* set image visible window*/
-			img->clip_x = 0; img->clip_y = main_h - win_h;
-			img->clip_w = win_w;
-			img->clip_h = win_h;
+			img->clip_x = 0; img->clip_y = gui->main_h - gui->win_h;
+			img->clip_w = gui->win_w;
+			img->clip_h = gui->win_h;
 		
 			bmp_fill_clip(img, img->bkg); /* clear bitmap */
-			dxf_ents_draw(drawing, img, ofs_x, ofs_y, zoom); /* redraw */
+			dxf_ents_draw(gui->drawing, img, gui->ofs_x, gui->ofs_y, gui->zoom); /* redraw */
 			
 			/*===================== teste ===============*/
-			//graph_list_draw(tt_test, img, ofs_x, ofs_y, zoom);
+			//graph_list_draw(tt_test, img, gui->ofs_x, gui->ofs_y, gui->zoom);
 			
-			//graph_draw(hers, img, ofs_x, ofs_y, zoom);
+			//graph_draw(hers, img, gui->ofs_x, gui->ofs_y, gui->zoom);
 			/*===================== teste ===============*/
 			
 			draw_cursor(img, mouse_x, mouse_y, cursor);
 			
 			if (near_attr){ /* check if needs to draw an attractor mark */
 				/* convert entities coordinates to screen coordinates */
-				int attr_x = (int) round((near_x - ofs_x) * zoom);
-				int attr_y = (int) round((near_y - ofs_y) * zoom);
+				int attr_x = (int) round((near_x - gui->ofs_x) * gui->zoom);
+				int attr_y = (int) round((near_y - gui->ofs_y) * gui->zoom);
 				draw_attractor(img, near_attr, attr_x, attr_y, yellow);
 			}
 			/*hilite test */
 			if((draw_tmp)&&(element != NULL)){
-				element->obj.graphics = dxf_graph_parse(drawing, element, 0 , 1);
+				element->obj.graphics = dxf_graph_parse(gui->drawing, element, 0 , 1);
 			}
 			if(element != NULL){
-				graph_list_draw_fix(element->obj.graphics, img, ofs_x, ofs_y, zoom, hilite);
+				graph_list_draw_fix(element->obj.graphics, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			}
 			if((draw_phanton)&&(phanton)){
-				//dxf_list_draw(sel_list, img, ofs_x - (x1 - x0), ofs_y - (y1 - y0), zoom, hilite);
-				graph_list_draw_fix(phanton, img, ofs_x, ofs_y, zoom, hilite);
+				//dxf_list_draw(sel_list, img, gui->ofs_x - (x1 - x0), gui->ofs_y - (y1 - y0), gui->zoom, hilite);
+				graph_list_draw_fix(phanton, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			}
-			dxf_list_draw(sel_list, img, ofs_x, ofs_y, zoom, hilite);
+			dxf_list_draw(sel_list, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			
 			
 			/* set image visible window*/
@@ -3836,15 +3079,15 @@ int main(int argc, char** argv){
 			
 			
 			win_r.x = 0; win_r.y = 0;
-			win_r.w = win_w; win_r.h = win_h;
+			win_r.w = gui->win_w; win_r.h = gui->win_h;
 			
-			SDL_UpdateTexture(canvas, &win_r, img->buf, main_w * 4);
+			SDL_UpdateTexture(canvas, &win_r, img->buf, gui->main_w * 4);
 			//SDL_RenderClear(renderer);
 			SDL_RenderCopy(renderer, canvas, &win_r, NULL);
 			SDL_RenderPresent(renderer);
 			
 			//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-			SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEMOTION);
+			
 			draw = 0;
 			
 		}
@@ -3861,7 +3104,8 @@ int main(int argc, char** argv){
 		graph_mem_pool(ZERO_LINE, 1);
 		nk_clear(gui->ctx); /*IMPORTANT */
 		if (low_proc){
-			SDL_Delay(20);
+			SDL_Delay(30);
+			SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEMOTION);
 		}
 	}
 	
@@ -3889,16 +3133,17 @@ int main(int argc, char** argv){
 	bmp_free(blk_prvw_big);
 	bmp_free(i_cz48);
 	
-	i_svg_free_bmp(svg_bmp);
-	i_svg_free_curves(svg_curves);
+	i_svg_free_bmp(gui->svg_bmp);
+	i_svg_free_curves(gui->svg_curves);
 	
 	
-	for (i = 0; i<drawing->num_fonts; i++){
-		shx_font_free(drawing->text_fonts[i].shx_font);
+	for (i = 0; i<gui->drawing->num_fonts; i++){
+		shx_font_free(gui->drawing->text_fonts[i].shx_font);
 	}
+	free(gui->drawing);
 	nk_sdl_shutdown(gui);
 	shx_font_free(font.shx_font);
-	free(drawing);
+	
 	
 	lua_close(Lua1);
 	return 0;

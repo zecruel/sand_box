@@ -19,6 +19,11 @@
 #define FONT_SCALE 1.4
 #define FIXED_MEM 128*1024
 
+struct sort_by_idx{
+	int idx;
+	void *data;
+};
+
 struct Gui_obj {
 	struct nk_context *ctx;
 	struct nk_user_font *font;
@@ -50,10 +55,10 @@ struct Gui_obj {
 	NSVGimage **svg_curves;
 	bmp_img **svg_bmp;
 	
-	struct nk_style_button b_icon_style;
+	struct nk_style_button b_icon;
 	
 	/* style for toggle buttons (or select buttons) with image */
-	struct nk_style_button b_icon_sel_style, b_icon_unsel_style;
+	struct nk_style_button b_icon_sel, b_icon_unsel;
 	
 	char log_msg[64];
 	
@@ -119,7 +124,7 @@ static void nk_sdl_clipbard_paste(nk_handle usr, struct nk_text_edit *edit);
 
 static void nk_sdl_clipbard_copy(nk_handle usr, const char *text, int len);
 
-NK_API gui_obj* nk_sdl_init(struct nk_user_font *font);
+NK_API int nk_sdl_init(gui_obj* gui, struct nk_user_font *font);
 
 NK_API int nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt);
 

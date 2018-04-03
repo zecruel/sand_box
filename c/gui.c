@@ -626,9 +626,9 @@ static void nk_sdl_clipbard_copy(nk_handle usr, const char *text, int len){
 	free(str);
 }
 
-NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
+NK_API int nk_sdl_init(gui_obj* gui, struct nk_user_font *font){
 	
-	gui_obj *gui = malloc(sizeof(gui_obj));
+	//gui_obj *gui = malloc(sizeof(gui_obj));
 	
 	if (gui){
 		gui->ctx = malloc(sizeof(struct nk_context));
@@ -636,10 +636,10 @@ NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
 		gui->buf = calloc(1,FIXED_MEM);
 		gui->last = calloc(1,FIXED_MEM);
 		if((gui->ctx == NULL) || (gui->font == NULL) || (gui->buf == NULL) || (gui->last == NULL)){
-			return NULL;
+			return 0;
 		}
 	}
-	else return NULL;
+	else return 0;
 	
 	
 	
@@ -650,7 +650,7 @@ NK_API gui_obj* nk_sdl_init(struct nk_user_font *font){
 	gui->ctx->clip.userdata = nk_handle_ptr(0);
 	
 	nk_style_set_font(gui->ctx, font);
-	return gui;
+	return 1;
 }
 
 NK_API int
