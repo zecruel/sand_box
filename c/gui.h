@@ -7,6 +7,9 @@
 #include "graph.h"
 #include "shape2.h"
 #include "i_svg_media.h"
+#include "list.h"
+#include "dxf_create.h"
+#include "dxf_attract.h"
 
 #include <SDL.h>
 
@@ -18,59 +21,6 @@
 
 #define FONT_SCALE 1.4
 #define FIXED_MEM 128*1024
-
-struct sort_by_idx{
-	int idx;
-	void *data;
-};
-
-struct Gui_obj {
-	struct nk_context *ctx;
-	struct nk_user_font *font;
-	void *buf; /*for fixed memory */
-	void *last; /* to verify if needs to draw */
-	
-	dxf_drawing *drawing;
-	
-	/* background image dimension */
-	unsigned int main_w;
-	unsigned int main_h;
-	
-	/* Window dimension */
-	unsigned int win_w;
-	unsigned int win_h;
-	
-	/*gui pos variables */
-	int next_win_x, next_win_y, next_win_w, next_win_h;
-	
-	double zoom, ofs_x, ofs_y;
-	double prev_zoom;
-	
-	
-	int color_idx, lw_idx;
-	int layer_idx, ltypes_idx;
-	
-	bmp_color background;
-	
-	NSVGimage **svg_curves;
-	bmp_img **svg_bmp;
-	
-	struct nk_style_button b_icon;
-	
-	/* style for toggle buttons (or select buttons) with image */
-	struct nk_style_button b_icon_sel, b_icon_unsel;
-	
-	char log_msg[64];
-	
-};
-typedef struct Gui_obj gui_obj;
-
-struct font_obj{
-	shape *shx_font;
-	double scale;
-};
-
-enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
 enum Action {
 	NONE,
@@ -109,6 +59,83 @@ enum Modal {
 	NEW_BLK,
 	INSERT
 };
+
+enum Gui_ev {
+	EV_NONE = 0,
+	EV_ENTER = 1,
+	EV_CANCEL = 2,
+	EV_MOTION = 4,
+	EV_LOCK_AX = 8
+};
+	
+	
+
+struct sort_by_idx{
+	int idx;
+	void *data;
+};
+
+struct Gui_obj {
+	struct nk_context *ctx;
+	struct nk_user_font *font;
+	void *buf; /*for fixed memory */
+	void *last; /* to verify if needs to draw */
+	
+	dxf_drawing *drawing;
+	
+	/* background image dimension */
+	unsigned int main_w;
+	unsigned int main_h;
+	
+	/* Window dimension */
+	unsigned int win_w;
+	unsigned int win_h;
+	
+	/*gui pos variables */
+	int next_win_x, next_win_y, next_win_w, next_win_h;
+	int mouse_x, mouse_y;
+	double zoom, ofs_x, ofs_y;
+	double prev_zoom;
+	
+	double user_x, user_y;
+	double step_x[10], step_y[10];
+	
+	int color_idx, lw_idx;
+	int layer_idx, ltypes_idx;
+	
+	int step, user_flag_x, user_flag_y, lock_ax_x, lock_ax_y, user_number;
+	
+	int en_distance; /* enable distance entry */
+	int entry_relative;
+	
+	enum Action action;
+	enum Modal modal, prev_modal;
+	enum Gui_ev ev;
+	
+	bmp_color background;
+	
+	NSVGimage **svg_curves;
+	bmp_img **svg_bmp;
+	
+	struct nk_style_button b_icon;
+	
+	/* style for toggle buttons (or select buttons) with image */
+	struct nk_style_button b_icon_sel, b_icon_unsel;
+	
+	char log_msg[64];
+	
+	list_node * sel_list;
+	struct do_list list_do;
+	
+};
+typedef struct Gui_obj gui_obj;
+
+struct font_obj{
+	shape *shx_font;
+	double scale;
+};
+
+enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
 void set_style(struct nk_context *ctx, enum theme theme);
 

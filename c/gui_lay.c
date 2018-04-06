@@ -30,6 +30,8 @@ int lay_mng (gui_obj *gui){
 		static char lay_name[DXF_MAX_CHARS] = "";
 		int lay_exist = 0;
 		
+		dxf_layer *layers = gui->drawing->layers;
+		dxf_ltype *ltypes = gui->drawing->ltypes;
 		int num_layers = gui->drawing->num_layers;
 		
 		static int sorted = 0;
@@ -45,38 +47,38 @@ int lay_mng (gui_obj *gui){
 			BY_LOCK
 		};
 		
-		static struct sort_by_idx layers[DXF_MAX_LAYERS];
+		static struct sort_by_idx sort_lay[DXF_MAX_LAYERS];
 		if (lay_change == LAY_OP_UPDATE){
 			lay_change = LAY_OP_NONE;
 			layer_use(gui->drawing); /* update layers in use*/
 			
 			for (i = 0; i < num_layers; i++){
-				layers[i].idx = i;
-				layers[i].data = &(gui->drawing->layers[i]);
+				sort_lay[i].idx = i;
+				sort_lay[i].data = &(layers[i]);
 			}
 			if (sorted == BY_NAME){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_name);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_name);
 			}
 			else if (sorted == BY_LTYPE){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_ltype);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_ltype);
 			}
 			else if (sorted == BY_COLOR){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_color);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_color);
 			}
 			else if (sorted == BY_LW){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lw);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_lw);
 			}
 			else if (sorted == BY_USE){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_use);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_use);
 			}
 			else if (sorted == BY_OFF){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_off);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_off);
 			}
 			else if (sorted == BY_FREEZE){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_freeze);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_freeze);
 			}
 			else if (sorted == BY_LOCK){
-				qsort(layers, gui->drawing->num_layers, sizeof(struct sort_by_idx), cmp_layer_lock);
+				qsort(sort_lay, num_layers, sizeof(struct sort_by_idx), cmp_layer_lock);
 			}
 		}
 		
@@ -207,48 +209,48 @@ int lay_mng (gui_obj *gui){
 			
 			
 			for (i = 0; i < num_layers; i++){
-				//strcpy(layer_nam[i], gui->drawing->layers[i].name);
+				//strcpy(layer_nam[i], layers[i].name);
 				//nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &entry_relative);
-				lay_idx = layers[i].idx;
+				lay_idx = sort_lay[i].idx;
 				if (sel_lay == lay_idx){
-					if (nk_button_label_styled(gui->ctx, &gui->b_icon_sel, gui->drawing->layers[lay_idx].name)){
+					if (nk_button_label_styled(gui->ctx, &gui->b_icon_sel, layers[lay_idx].name)){
 						sel_lay = -1;
 					}
 				}
 				else {
-					if (nk_button_label_styled(gui->ctx,&gui->b_icon_unsel, gui->drawing->layers[lay_idx].name)){
+					if (nk_button_label_styled(gui->ctx,&gui->b_icon_unsel, layers[lay_idx].name)){
 						sel_lay = lay_idx;
 					}
 				}
 				
 				struct nk_color b_color = {
-					.r = dxf_colors[gui->drawing->layers[lay_idx].color].r,
-					.g = dxf_colors[gui->drawing->layers[lay_idx].color].g,
-					.b = dxf_colors[gui->drawing->layers[lay_idx].color].b,
-					.a = dxf_colors[gui->drawing->layers[lay_idx].color].a
+					.r = dxf_colors[layers[lay_idx].color].r,
+					.g = dxf_colors[layers[lay_idx].color].g,
+					.b = dxf_colors[layers[lay_idx].color].b,
+					.a = dxf_colors[layers[lay_idx].color].a
 				};
 				if(nk_button_color(gui->ctx, b_color)){
 					show_color_pick = 1;
 					sel_lay = lay_idx;
 				}
 				
-				if (gui->drawing->layers[lay_idx].off){
+				if (layers[lay_idx].off){
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_NO_EYE]))){
-						gui->drawing->layers[lay_idx].off = 0;
-						dxf_attr_change(gui->drawing->layers[lay_idx].obj, 62, (int []){ abs(gui->drawing->layers[lay_idx].color) });
+						layers[lay_idx].off = 0;
+						dxf_attr_change(layers[lay_idx].obj, 62, (int []){ abs(layers[lay_idx].color) });
 					}
 				}
 				else{
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EYE]))){
-						gui->drawing->layers[lay_idx].off = 1;
-						dxf_attr_change(gui->drawing->layers[lay_idx].obj, 62, (int []){ -1 * abs(gui->drawing->layers[lay_idx].color) });
+						layers[lay_idx].off = 1;
+						dxf_attr_change(layers[lay_idx].obj, 62, (int []){ -1 * abs(layers[lay_idx].color) });
 					}
 				}
-				if (gui->drawing->layers[lay_idx].frozen){
+				if (layers[lay_idx].frozen){
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_FREEZE]))){
-						gui->drawing->layers[lay_idx].frozen = 0;
+						layers[lay_idx].frozen = 0;
 						
-						lay_flags =  dxf_find_attr2(gui->drawing->layers[lay_idx].obj, 70);
+						lay_flags =  dxf_find_attr2(layers[lay_idx].obj, 70);
 						if (lay_flags){
 							lay_flags->value.i_data &= ~(1 << 0);
 						}
@@ -257,19 +259,19 @@ int lay_mng (gui_obj *gui){
 				}
 				else{
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SUN]))){
-						gui->drawing->layers[lay_idx].frozen= 1;
+						layers[lay_idx].frozen= 1;
 						
-						lay_flags =  dxf_find_attr2(gui->drawing->layers[lay_idx].obj, 70);
+						lay_flags =  dxf_find_attr2(layers[lay_idx].obj, 70);
 						if (lay_flags){
 							lay_flags->value.i_data |= (1 << 0);
 						}
 					}
 				}
-				if (gui->drawing->layers[lay_idx].lock){
+				if (layers[lay_idx].lock){
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LOCK]))){
-						gui->drawing->layers[lay_idx].lock = 0;
+						layers[lay_idx].lock = 0;
 						
-						lay_flags =  dxf_find_attr2(gui->drawing->layers[lay_idx].obj, 70);
+						lay_flags =  dxf_find_attr2(layers[lay_idx].obj, 70);
 						if (lay_flags){
 							lay_flags->value.i_data &= ~(1 << 2);
 						}
@@ -277,9 +279,9 @@ int lay_mng (gui_obj *gui){
 				}
 				else{
 					if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_UNLOCK]))){
-						gui->drawing->layers[lay_idx].lock = 1;
+						layers[lay_idx].lock = 1;
 						
-						lay_flags =  dxf_find_attr2(gui->drawing->layers[lay_idx].obj, 70);
+						lay_flags =  dxf_find_attr2(layers[lay_idx].obj, 70);
 						if (lay_flags){
 							lay_flags->value.i_data |= (1 << 2);
 						}
@@ -288,36 +290,36 @@ int lay_mng (gui_obj *gui){
 				
 				
 				sel_ltype = -1;
-				if (nk_combo_begin_label(gui->ctx, gui->drawing->layers[lay_idx].ltype, nk_vec2(300,200))){
+				if (nk_combo_begin_label(gui->ctx, layers[lay_idx].ltype, nk_vec2(300,200))){
 					nk_layout_row_dynamic(gui->ctx, 20, 2);
 					int num_ltypes = gui->drawing->num_ltypes;
 					
 					for (j = 0; j < num_ltypes; j++){
-						strncpy(str_tmp, gui->drawing->ltypes[j].name, DXF_MAX_CHARS);
+						strncpy(str_tmp, ltypes[j].name, DXF_MAX_CHARS);
 						str_upp(str_tmp);
 						
 						if (strlen(str_tmp) == 0) continue;
 						if (strcmp(str_tmp, "BYBLOCK") == 0) continue;
 						if (strcmp(str_tmp, "BYLAYER") == 0) continue;
 						
-						if (nk_button_label(gui->ctx, gui->drawing->ltypes[j].name)){
+						if (nk_button_label(gui->ctx, ltypes[j].name)){
 							sel_ltype = j;
 							nk_combo_close(gui->ctx);
 						}
-						nk_label(gui->ctx, gui->drawing->ltypes[j].descr, NK_TEXT_LEFT);
+						nk_label(gui->ctx, ltypes[j].descr, NK_TEXT_LEFT);
 					}
 					nk_combo_end(gui->ctx);
 				}
 				
 				if (sel_ltype >= 0){
-					strncpy(gui->drawing->layers[lay_idx].ltype, gui->drawing->ltypes[sel_ltype].name, DXF_MAX_CHARS);
+					strncpy(layers[lay_idx].ltype, ltypes[sel_ltype].name, DXF_MAX_CHARS);
 					
-					dxf_attr_change(gui->drawing->layers[lay_idx].obj, 6, gui->drawing->layers[lay_idx].ltype);
+					dxf_attr_change(layers[lay_idx].obj, 6, layers[lay_idx].ltype);
 				
 				}
 				
 				
-				//if (nk_button_label(gui->ctx, gui->drawing->layers[i].ltype)){
+				//if (nk_button_label(gui->ctx, layers[i].ltype)){
 					
 				//}
 				
@@ -325,18 +327,18 @@ int lay_mng (gui_obj *gui){
 				lw_i = 0;
 				
 				for (j = 0; j < DXF_LW_LEN; j++){
-					if (dxf_lw[j] == gui->drawing->layers[lay_idx].line_w){
+					if (dxf_lw[j] == layers[lay_idx].line_w){
 						lw_i = j;
 						break;
 					}
 				}
 				lw_i = nk_combo(gui->ctx, dxf_lw_descr, DXF_LW_LEN, lw_i, 15, nk_vec2(100,205));
-				if (gui->drawing->layers[lay_idx].line_w != dxf_lw[lw_i]){
-					dxf_attr_change(gui->drawing->layers[lay_idx].obj, 370, &(dxf_lw[lw_i]));
-					gui->drawing->layers[lay_idx].line_w = dxf_lw[lw_i];
+				if (layers[lay_idx].line_w != dxf_lw[lw_i]){
+					dxf_attr_change(layers[lay_idx].obj, 370, &(dxf_lw[lw_i]));
+					layers[lay_idx].line_w = dxf_lw[lw_i];
 				}
 				
-				if (gui->drawing->layers[lay_idx].num_el)
+				if (layers[lay_idx].num_el)
 					nk_label(gui->ctx, "x",  NK_TEXT_CENTERED);
 				else nk_label(gui->ctx, " ",  NK_TEXT_CENTERED);
 			}
@@ -352,19 +354,19 @@ int lay_mng (gui_obj *gui){
 		}
 		if ((nk_button_label(gui->ctx, "Rename")) && (sel_lay >= 0)){
 			show_lay_name = 1;
-			strncpy(lay_name, gui->drawing->layers[sel_lay].name, DXF_MAX_CHARS);
+			strncpy(lay_name, layers[sel_lay].name, DXF_MAX_CHARS);
 			lay_change = LAY_OP_RENAME;
 			
 		}
 		if ((nk_button_label(gui->ctx, "Remove")) && (sel_lay >= 0)){
-			if (gui->drawing->layers[sel_lay].num_el){
+			if (layers[sel_lay].num_el){
 				snprintf(gui->log_msg, 63, "Error: Don't remove Layer in use");
 			}
 			else{
 				
 				/* check if layer is in use*/
 				layer_use(gui->drawing); /* update all layers for sure */
-				dxf_obj_subst(gui->drawing->layers[sel_lay].obj, NULL);
+				dxf_obj_subst(layers[sel_lay].obj, NULL);
 				sel_lay = -1;
 				dxf_layer_assemb (gui->drawing);
 				lay_change = LAY_OP_UPDATE;
@@ -386,8 +388,8 @@ int lay_mng (gui_obj *gui){
 					b_color.a = dxf_colors[j].a;
 					
 					if(nk_button_color(gui->ctx, b_color)){
-						gui->drawing->layers[sel_lay].color = j;
-						dxf_attr_change(gui->drawing->layers[sel_lay].obj, 62, &j);
+						layers[sel_lay].color = j;
+						dxf_attr_change(layers[sel_lay].obj, 62, &j);
 						nk_popup_close(gui->ctx);
 						show_color_pick = 0;
 					}
@@ -408,7 +410,7 @@ int lay_mng (gui_obj *gui){
 				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				if (nk_button_label(gui->ctx, "OK")){
 					if (lay_change == LAY_OP_CREATE){
-						if (!dxf_new_layer (gui->drawing, lay_name, 7, gui->drawing->ltypes[dxf_ltype_idx (gui->drawing, "Continuous")].name)){
+						if (!dxf_new_layer (gui->drawing, lay_name, 7, ltypes[dxf_ltype_idx (gui->drawing, "Continuous")].name)){
 							snprintf(gui->log_msg, 63, "Error: Layer already exists");
 						}
 						else {
@@ -422,7 +424,7 @@ int lay_mng (gui_obj *gui){
 						lay_exist = 0;
 						for (i = 0; i < num_layers; i++){
 							if (i != sel_lay){ /*except current layer*/
-								if(strcmp(gui->drawing->layers[i].name, lay_name) == 0){
+								if(strcmp(layers[i].name, lay_name) == 0){
 									lay_exist = 1;
 									break;
 								}
@@ -740,4 +742,93 @@ int layer_use(dxf_drawing *drawing){
 	}
 	
 	return ok;
+}
+
+
+int layer_prop(gui_obj *gui){
+	
+	if (nk_combo_begin_label(gui->ctx, gui->drawing->layers[gui->layer_idx].name, nk_vec2(300,300))){
+		int i;
+		float wid[] = {175, 20, 20, 20, 20};
+		nk_layout_row(gui->ctx, NK_STATIC, 20, 5, wid);
+		
+		dxf_layer *layers = gui->drawing->layers;
+		dxf_ltype *ltypes = gui->drawing->ltypes;
+		int num_layers = gui->drawing->num_layers;
+		
+		dxf_node *lay_flags = NULL;
+		
+		for (i = 0; i < num_layers; i++){
+			//strcpy(layer_nam[i], gui->drawing->layers[i].name);
+			if (nk_button_label(gui->ctx, gui->drawing->layers[i].name)){
+				gui->layer_idx = i;
+				gui->action = LAYER_CHANGE;
+				nk_combo_close(gui->ctx);
+			}
+			
+			struct nk_color b_color = {
+				.r = dxf_colors[gui->drawing->layers[i].color].r,
+				.g = dxf_colors[gui->drawing->layers[i].color].g,
+				.b = dxf_colors[gui->drawing->layers[i].color].b,
+				.a = dxf_colors[gui->drawing->layers[i].color].a
+			};
+			if(nk_button_color(gui->ctx, b_color)){
+				
+			}
+			
+			if (gui->drawing->layers[i].off){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_NO_EYE]))){
+					gui->drawing->layers[i].off = 0;
+					dxf_attr_change(gui->drawing->layers[i].obj, 62, (int []){ abs(gui->drawing->layers[i].color) });
+				}
+			}
+			else{
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_EYE]))){
+					gui->drawing->layers[i].off = 1;
+					dxf_attr_change(gui->drawing->layers[i].obj, 62, (int []){ -1 * abs(gui->drawing->layers[i].color) });
+				}
+			}
+			if (gui->drawing->layers[i].frozen){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_FREEZE]))){
+					gui->drawing->layers[i].frozen = 0;
+					lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
+					if (lay_flags){
+						lay_flags->value.i_data &= ~(1 << 0);
+					}
+				}
+			}
+			else{
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SUN]))){
+					gui->drawing->layers[i].frozen= 1;
+					lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
+					if (lay_flags){
+						lay_flags->value.i_data |= (1 << 0);
+					}
+				}
+			}
+			if (gui->drawing->layers[i].lock){
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_LOCK]))){
+					gui->drawing->layers[i].lock = 0;
+					lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
+					if (lay_flags){
+						lay_flags->value.i_data &= ~(1 << 2);
+					}
+				}
+			}
+			else{
+				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_UNLOCK]))){
+					gui->drawing->layers[i].lock = 1;
+					lay_flags =  dxf_find_attr2(gui->drawing->layers[i].obj, 70);
+					if (lay_flags){
+						lay_flags->value.i_data |= (1 << 2);
+					}
+				}
+			}
+			
+		}
+		
+		nk_combo_end(gui->ctx);
+	}
+	
+	return 1;
 }

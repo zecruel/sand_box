@@ -15,5 +15,6 @@ int cmp_layer_freeze(const void * a, const void * b);
 int cmp_layer_lock(const void * a, const void * b);
 int layer_rename(dxf_drawing *drawing, int idx, char *name);
 int layer_use(dxf_drawing *drawing);
+int layer_prop(gui_obj *gui);
 
 #endif
