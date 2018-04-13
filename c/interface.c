@@ -476,19 +476,14 @@ int main(int argc, char** argv){
 	dxf_node *prev_el = NULL, *new_el = NULL;
 	gui->near_el = NULL;
 	gui->bulge = 0.0;
-	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, txt_h = 1.0, scale = 1.0;
+	gui->txt_h = 1.0;
+	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, scale = 1.0, txt_h = 1.0;
 	//double thick = 0.0, thick_prev = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
 	
-	/* DXF text vertical alignment definitions */
-	static const char *text_al_v[] = {"Base Line", "Bottom", "Middle", "Top"};
-	#define T_AL_V_LEN 4
-	int t_al_v = 0;
-	/* DXF text horizontal alignment definitions */
-	static const char *text_al_h[] = {"Left", "Center", "Right", "Aligned", "Middle", "Fit"};
-	#define T_AL_H_LEN 6
-	int t_al_h = 0;
+	gui->t_al_v = 0;
+	gui->t_al_h = 0;
 	
 	
 	
@@ -684,6 +679,7 @@ int main(int argc, char** argv){
 	/* init comands */
 	recv_comm[0] = 0;
 	txt[0] = 0;
+	gui->txt[0] = 0;
 	
 	/* init the drawing */
 	gui->drawing = malloc(sizeof(dxf_drawing));
@@ -1356,29 +1352,13 @@ int main(int argc, char** argv){
 				gui_line_info (gui);
 				gui_pline_info (gui);
 				gui_circle_info (gui);
+				gui_rect_info (gui);
+				gui_text_info (gui);
 				
 			switch (gui->modal) {
 				case SELECT:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Select an object", NK_TEXT_LEFT);
-					break;
-				case RECT:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place a rectangle", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
-					}
-					break;
-				case TEXT:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place an text", NK_TEXT_LEFT);
-					//nk_edit_string(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER, comm, &comm_len, 64, nk_filter_default);
-					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
-					txt_h = nk_propertyd(gui->ctx, "Text Height", 0.0d, txt_h, 100.0d, 0.1d, 0.1d);
-					t_al_v = nk_combo(gui->ctx, text_al_v, T_AL_V_LEN, t_al_v, 20, nk_vec2(100,105));
-					t_al_h = nk_combo(gui->ctx, text_al_h, T_AL_H_LEN, t_al_h, 20, nk_vec2(100,105));
 					break;
 				case ARC:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -2166,123 +2146,10 @@ int main(int argc, char** argv){
 		gui_line_interactive(gui);
 		gui_pline_interactive(gui);
 		gui_circle_interactive(gui);
+		gui_rect_interactive(gui);
+		gui_text_interactive(gui);
 		
 		
-		if (gui->modal == RECT){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					
-					gui->draw_tmp = 1;
-					int closed = 1;
-					/* create a new DXF lwpolyline */
-					new_el = (dxf_node *) dxf_new_lwpolyline (
-						gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1, */
-						0.0,  /* bulge, */
-						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-						0); /* paper space */
-					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0);
-					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0);
-					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0);
-					dxf_attr_change_i(new_el, 70, (void *) &closed, 0);
-					gui->element = new_el;
-					gui->step = 1;
-					gui->en_distance = 1;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					
-					dxf_attr_change_i(new_el, 10, (void *) &gui->step_x[gui->step], 1);
-					dxf_attr_change_i(new_el, 10, (void *) &gui->step_x[gui->step], 2);
-					dxf_attr_change_i(new_el, 20, (void *) &gui->step_y[gui->step], 2);
-					dxf_attr_change_i(new_el, 20, (void *) &gui->step_y[gui->step], 3);
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					drawing_ent_append(gui->drawing, new_el);
-					
-					do_add_entry(&gui->list_do, "RECT");
-					do_add_item(gui->list_do.current, NULL, new_el);
-					
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					dxf_attr_change_i(new_el, 10, (void *) &gui->step_x[gui->step], 1);
-					dxf_attr_change_i(new_el, 10, (void *) &gui->step_x[gui->step], 2);
-					dxf_attr_change_i(new_el, 20, (void *) &gui->step_y[gui->step], 2);
-					dxf_attr_change_i(new_el, 20, (void *) &gui->step_y[gui->step], 3);
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
-					dxf_attr_change(new_el, 62, &gui->color_idx);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
-		if (gui->modal == TEXT){
-			if (gui->step == 0){
-				gui->draw_tmp = 1;
-				/* create a new DXF text */
-				new_el = (dxf_node *) dxf_new_text (
-					gui->step_x[gui->step], gui->step_y[gui->step], 0.0, txt_h, /* pt1, height */
-					txt, /* text, */
-					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-					0); /* paper space */
-				gui->element = new_el;
-				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
-				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
-				gui->step = 1;
-				goto next_step;
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					dxf_attr_change_i(new_el, 11, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 21, &gui->step_y[gui->step], -1);
-					dxf_attr_change(new_el, 40, &txt_h);
-					dxf_attr_change(new_el, 1, txt);
-					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
-					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					drawing_ent_append(gui->drawing, new_el);
-					
-					do_add_entry(&gui->list_do, "TEXT");
-					do_add_item(gui->list_do.current, NULL, new_el);
-					
-					gui->step_x[gui->step - 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step - 1] = gui->step_y[gui->step];
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-				if (gui->ev & EV_MOTION){
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					dxf_attr_change_i(new_el, 11, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 21, &gui->step_y[gui->step], -1);
-					dxf_attr_change(new_el, 40, &txt_h);
-					dxf_attr_change(new_el, 1, txt);
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
-					dxf_attr_change(new_el, 62, &gui->color_idx);
-					dxf_attr_change_i(new_el, 72, &t_al_h, -1);
-					dxf_attr_change_i(new_el, 73, &t_al_v, -1);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
 		if (gui->modal == INSERT){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){

@@ -287,6 +287,20 @@ const char *dxf_lw_descr[] = {
 	"By Layer",
 	"By Block"
 };
+
 #ifndef DXF_LW_LEN
 	#define DXF_LW_LEN 24
 #endif
+
+/* DXF text vertical alignment definitions */
+const char *text_al_v[] = {"Base Line", "Bottom", "Middle", "Top"};
+#ifndef T_AL_V_LEN
+	#define T_AL_V_LEN 4
+#endif
+
+/* DXF text horizontal alignment definitions */
+const char *text_al_h[] = {"Left", "Center", "Right", "Aligned", "Middle", "Fit"};
+#ifndef T_AL_H_LEN	
+	#define T_AL_H_LEN 6
+#endif
+	

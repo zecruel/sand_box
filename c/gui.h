@@ -102,8 +102,9 @@ struct Gui_obj {
 	double step_x[10], step_y[10];
 	double near_x, near_y;
 	double bulge;
+	double txt_h;
 	
-	int color_idx, lw_idx;
+	int color_idx, lw_idx, t_al_v, t_al_h;
 	int layer_idx, ltypes_idx;
 	
 	int step, user_flag_x, user_flag_y, lock_ax_x, lock_ax_y, user_number;
@@ -131,6 +132,7 @@ struct Gui_obj {
 	struct nk_style_button b_icon_sel, b_icon_unsel;
 	
 	char log_msg[64];
+	char txt[DXF_MAX_CHARS];
 	
 	list_node * sel_list;
 	list_node *phanton;
@@ -171,9 +173,19 @@ NK_API void nk_sdl_shutdown(gui_obj *gui);
 extern int dxf_lw[];
 extern const char *dxf_lw_descr[];
 extern bmp_color dxf_colors[];
+extern const char *text_al_h[];
+extern const char *text_al_v[];
 
 #ifndef DXF_LW_LEN
 	#define DXF_LW_LEN 24
+#endif
+
+#ifndef T_AL_H_LEN	
+	#define T_AL_H_LEN 6
+#endif
+
+#ifndef T_AL_V_LEN
+	#define T_AL_V_LEN 4
 #endif
 
 #endif

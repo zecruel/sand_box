@@ -15,4 +15,12 @@ int gui_circle_interactive(gui_obj *gui);
 
 int gui_circle_info (gui_obj *gui);
 
+int gui_rect_interactive(gui_obj *gui);
+
+int gui_rect_info (gui_obj *gui);
+
+int gui_text_interactive(gui_obj *gui);
+
+int gui_text_info (gui_obj *gui);
+
 #endif
