@@ -1,11 +1,5 @@
 #include "gui_lay.h"
 
-extern int dxf_lw[];
-extern const char *dxf_lw_descr[];
-extern bmp_color dxf_colors[];
-
-#define DXF_LW_LEN 24
-
 int lay_mng (gui_obj *gui){
 	int i, show_lay_mng = 1;
 	static int show_color_pick = 0, show_lay_name = 0;

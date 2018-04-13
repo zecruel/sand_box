@@ -17,6 +17,9 @@
 
 #include "gui.h"
 #include "gui_lay.h"
+#include "gui_xy.h"
+#include "gui_use.h"
+
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -469,8 +472,11 @@ int main(int argc, char** argv){
 	gui->color_idx = 256;
 	gui->layer_idx = 0;
 	gui->ltypes_idx = 0;
-	dxf_node *element = NULL, *prev_el = NULL, *new_el = NULL, *near_el = NULL;
-	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, bulge = 0.0, txt_h = 1.0, scale = 1.0;
+	gui->element = NULL;
+	dxf_node *prev_el = NULL, *new_el = NULL;
+	gui->near_el = NULL;
+	gui->bulge = 0.0;
+	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, txt_h = 1.0, scale = 1.0;
 	//double thick = 0.0, thick_prev = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
@@ -503,8 +509,8 @@ int main(int argc, char** argv){
 	
 	int show_lay_mng = 0, sel_tmp = 0, show_color_pick = 0, show_lay_name = 0;
 	
-	int ev_type, draw = 0, draw_tmp = 0, draw_phanton = 0;
-	list_node *phanton = NULL;
+	int ev_type;
+	gui->phanton = NULL;
 	struct nk_color background;
 	
 	char info_buffer[512];
@@ -515,24 +521,23 @@ int main(int argc, char** argv){
 	int leftMouseButtonClick = 0;
 	int rightMouseButtonClick = 0;
 	int MouseMotion = 0;
-	int keyEnter = 0;
+	gui->keyEnter = 0;
 	
 	
 	gui->step = 0;
 	gui->lock_ax_x = 0;
 	gui->lock_ax_y = 0;
 	//double step_x[10], step_y[10];
-	char user_str_x[64], user_str_y[64];
-	user_str_x[0] = 0; user_str_y[0] = 0;
+	
 	gui->user_x = 0.0; gui->user_y = 0.0;
 	gui->user_flag_x = 0; gui->user_flag_y = 0;
 	gui->user_number = 0;
 	gui->en_distance = 0; /* enable distance entry */
 	gui->entry_relative = 1;
 	
-	enum attract_type curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
-	double near_x, near_y;
-	int near_attr; /* flag */
+	gui->curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
+	//double gui->near_x, gui->near_y;
+	//int gui->near_attr; /* flag */
 	int en_attr = 1;
 	
 	//char gui->log_msg[64];
@@ -544,7 +549,7 @@ int main(int argc, char** argv){
 	SDL_Event event;
 	//int gui->mouse_x, gui->mouse_y;
 	
-	double rect_pt1[2], rect_pt2[2];
+	//double rect_pt1[2], rect_pt2[2];
 	int low_proc = 1;
 	
 	gui->action = NONE;
@@ -813,7 +818,7 @@ int main(int argc, char** argv){
 						gui->mouse_y = gui->main_h - gui->mouse_y;
 						pos_x = (double) gui->mouse_x/gui->zoom + gui->ofs_x;
 						pos_y = (double) gui->mouse_y/gui->zoom + gui->ofs_y;
-						draw = 1;
+						gui->draw = 1;
 						break;
 					case SDL_MOUSEWHEEL:
 						gui->prev_zoom = gui->zoom;
@@ -823,7 +828,7 @@ int main(int argc, char** argv){
 						gui->mouse_y = gui->main_h - gui->mouse_y;
 						gui->ofs_x += ((double) gui->mouse_x)*(1/gui->prev_zoom - 1/gui->zoom);
 						gui->ofs_y += ((double) gui->mouse_y)*(1/gui->prev_zoom - 1/gui->zoom);
-						draw = 1;
+						gui->draw = 1;
 						break;
 					
 					case (SDL_DROPFILE): {      // In case if dropped file
@@ -841,7 +846,7 @@ int main(int argc, char** argv){
 						break;
 					case SDL_KEYDOWN:
 						if ((event.key.keysym.sym == SDLK_RETURN) || (event.key.keysym.sym == SDLK_RETURN2)){
-							keyEnter = 1;
+							gui->keyEnter = 1;
 						}
 						else if (event.key.keysym.sym == SDLK_UP){
 							gui->action = VIEW_PAN_U;
@@ -1348,38 +1353,14 @@ int main(int argc, char** argv){
 		
 			nk_layout_row_dynamic(gui->ctx, win_cont.h - (wid_pos.y - win_pos.y), 1);
 			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+				gui_line_info (gui);
+				gui_pline_info (gui);
+				gui_circle_info (gui);
+				
 			switch (gui->modal) {
 				case SELECT:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Select an object", NK_TEXT_LEFT);
-					break;
-				case LINE:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place a single line", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
-					}
-					break;
-				case POLYLINE:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place a poly line", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter next point", NK_TEXT_LEFT);
-					}
-					bulge = nk_propertyd(gui->ctx, "Bulge", -1.0d, bulge, 1.0d, 0.1d, 0.1d);
-					break;
-				case CIRCLE:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place a circle", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter center point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter end point", NK_TEXT_LEFT);
-					}
 					break;
 				case RECT:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -1646,123 +1627,8 @@ int main(int argc, char** argv){
 		if (nk_begin(gui->ctx, "POS", nk_rect(2, gui->win_h - 80, gui->win_w - 4, 78),
 		NK_WINDOW_BORDER))
 		{
-			nk_flags res;
-			/* flags to verify which coordinate is predominant */
-			int flag_x = fabs(gui->step_x[gui->step] - gui->step_x[gui->step - 1]) >= fabs(gui->step_y[gui->step] - gui->step_y[gui->step - 1]);
-			int flag_y = fabs(gui->step_x[gui->step] - gui->step_x[gui->step - 1]) < fabs(gui->step_y[gui->step] - gui->step_y[gui->step - 1]);
-			
-			nk_layout_row_begin(gui->ctx, NK_STATIC, 32, 5);
-			nk_layout_row_push(gui->ctx, 380);
-			if (nk_group_begin(gui->ctx, "coord", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
-				nk_layout_row_begin(gui->ctx, NK_STATIC, 20, 10);
-				nk_layout_row_push(gui->ctx, 20);
-				/* X distance */
-				/* hilite coordinate, if coord is predominant during a drawing operation*/
-				if ((gui->en_distance) && (gui->step > 0) && (gui->step < 10) && (flag_x)){
-					nk_label_colored(gui->ctx, "X=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
-				}
-				else {
-					nk_label(gui->ctx, "X=", NK_TEXT_RIGHT);
-				}
-				/* verify if the user initiate a number entry during a drawing operation */
-				if (((gui->en_distance)||(!gui->entry_relative)) && (gui->user_number) && (gui->step >= 0) && (gui->step < 10) &&
-				(!gui->user_flag_x) && (flag_x)){
-					gui->user_number = 0; /* clear user flag */
-					user_str_x[0] = 0; /* clear edit string */
-					/* set focus to edit */
-					nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
-				}
-				
-				nk_layout_row_push(gui->ctx, 120);
-				/* edit to visualize or enter distance */
-				res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_x, 63, nk_filter_float);
-				if (res & NK_EDIT_ACTIVE){ /* enter mode */
-					if (strlen(user_str_x)){
-						/* sinalize the distance of user entry */
-						gui->user_x = atof(user_str_x);
-						gui->user_flag_x = 1;
-					}
-					else{ /* if the user clear the string */
-						/* cancel the enter mode*/
-						gui->user_flag_x = 0;
-						nk_edit_unfocus(gui->ctx);
-					}
-				}
-				else { /* visualize mode */
-					if ((!gui->entry_relative) && (gui->step >= 0) && (gui->step < 10)){
-						snprintf(user_str_x, 63, "%f", gui->step_x[gui->step]);
-					}
-					else if ((gui->en_distance) && (gui->step > 0) && (gui->step < 10)){
-						snprintf(user_str_x, 63, "%f", gui->step_x[gui->step] - gui->step_x[gui->step - 1]);
-					}
-					else {
-						snprintf(user_str_x, 63, "%f", 0.0);
-					}
-				}
-				if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
-					nk_edit_unfocus(gui->ctx);
-					keyEnter = 0;
-				}
-				
-				nk_layout_row_push(gui->ctx, 20);
-				/* Y distance */
-				/* hilite coordinate, if coord is predominant during a drawing operation*/
-				if ((gui->en_distance) && (gui->step > 0) && (gui->step < 10) && (flag_y)){
-					nk_label_colored(gui->ctx, "Y=", NK_TEXT_RIGHT, nk_rgb(255,255,0));
-				}
-				else {
-					nk_label(gui->ctx, "Y=", NK_TEXT_RIGHT);
-				}
-				/* verify if the user initiate a number entry during a drawing operation */
-				if (((gui->en_distance)||(!gui->entry_relative)) && (gui->user_number) && (gui->step >= 0) && (gui->step < 10) &&
-				(!gui->user_flag_y) && (flag_y)){
-					gui->user_number = 0; /* clear user flag */
-					user_str_y[0] = 0; /* clear edit string */
-					/* set focus to edit */
-					nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
-				}
-				
-				nk_layout_row_push(gui->ctx, 120);
-				/* edit to visualize or enter distance */
-				res = nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT, user_str_y, 63, nk_filter_float);
-				if (res & NK_EDIT_ACTIVE){ /* enter mode */
-					if (strlen(user_str_y)){
-						/* sinalize the distance of user entry */
-						gui->user_y = atof(user_str_y);
-						gui->user_flag_y = 1;
-					}
-					else{ /* if the user clear the string */
-						/* cancel the enter mode*/
-						gui->user_flag_y = 0;
-						nk_edit_unfocus(gui->ctx);
-					}
-				}
-				else { /* visualize mode */
-					if ((!gui->entry_relative) && (gui->step >= 0) && (gui->step < 10)){
-						snprintf(user_str_y, 63, "%f", gui->step_y[gui->step]);
-					}
-					else if ((gui->en_distance) && (gui->step > 0) && (gui->step < 10)){
-						snprintf(user_str_y, 63, "%f", gui->step_y[gui->step] - gui->step_y[gui->step - 1]);
-					}
-					else {
-						snprintf(user_str_y, 63, "%f", 0.0);
-					}
-				}
-				if (res & NK_EDIT_COMMITED){ /* finish the enter mode */
-					nk_edit_unfocus(gui->ctx);
-					keyEnter = 0;
-				}
-				
-				/* select if entry mode is in absolute coordinates or relative distance*/
-				nk_layout_row_push(gui->ctx, 70);
-				if (gui->entry_relative){
-					nk_selectable_label(gui->ctx, "Relative", NK_TEXT_CENTERED, &gui->entry_relative);
-					flag_x = 1;
-				}
-				else nk_selectable_label(gui->ctx, "Absolute", NK_TEXT_CENTERED, &gui->entry_relative);
-				nk_group_end(gui->ctx);
-			}
-			
+			/* interface to the user visualize and enter coordinates and distances*/
+			gui_xy(gui);
 			
 			
 			/*----------- attractors --------------*/
@@ -1790,16 +1656,16 @@ int main(int argc, char** argv){
 				int selected, i, attr = 1;
 				nk_layout_row_static(gui->ctx, 22, 22, 15);
 				for (i = 0; i < 15; i++){
-					selected = (curr_attr_t & attr);
+					selected = (gui->curr_attr_t & attr);
 					/* uses styles "sel" or "unsel", deppending each status*/
 					//nk_layout_row_push(gui->ctx, 22);
 					if (selected){
 						if (nk_button_image_styled(gui->ctx, &gui->b_icon_sel, nk_image_ptr(attr_vec[i]))){
-							curr_attr_t &= ~attr; /* clear bit of current type*/
+							gui->curr_attr_t &= ~attr; /* clear bit of current type*/
 						}
 					}else {
 						if (nk_button_image_styled(gui->ctx, &gui->b_icon_unsel, nk_image_ptr(attr_vec[i]))){
-							curr_attr_t |= attr; /* set bit of current type*/
+							gui->curr_attr_t |= attr; /* set bit of current type*/
 						}
 					}
 					attr <<= 1; /* next attractor type (bit coded)*/
@@ -1854,11 +1720,11 @@ int main(int argc, char** argv){
 		if (leftMouseButtonClick) gui->ev |= EV_ENTER;
 		if (rightMouseButtonClick) gui->ev |= EV_CANCEL;
 		if (MouseMotion) gui->ev |= EV_MOTION;
-		if (keyEnter) gui->ev |= EV_LOCK_AX;
+		if (gui->keyEnter) gui->ev |= EV_LOCK_AX;
 		
 		if (wait_open != 0){
 			low_proc = 0;
-			draw = 1;
+			gui->draw = 1;
 			
 			open_prg = dxf_read(gui->drawing, file_buf, file_size, &progress);
 			
@@ -1938,7 +1804,7 @@ int main(int argc, char** argv){
 		else if(gui->action == VIEW_ZOOM_EXT){
 			gui->action = NONE;
 			zoom_ext2(gui->drawing, 0, gui->main_h - gui->win_h, gui->win_w, gui->win_h, &gui->zoom, &gui->ofs_x, &gui->ofs_y);
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_ZOOM_P){
 			gui->action = NONE;
@@ -1947,7 +1813,7 @@ int main(int argc, char** argv){
 			gui->zoom = gui->zoom + 0.2 * gui->zoom;
 			gui->ofs_x += (gui->win_w/2)*(1/gui->prev_zoom - 1/gui->zoom);
 			gui->ofs_y += (gui->win_h/2)*(1/gui->prev_zoom - 1/gui->zoom);
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_ZOOM_M){
 			gui->action = NONE;
@@ -1955,27 +1821,27 @@ int main(int argc, char** argv){
 			gui->zoom = gui->zoom - 0.2 * gui->zoom;
 			gui->ofs_x += (gui->win_w/2)*(1/gui->prev_zoom - 1/gui->zoom);
 			gui->ofs_y += (gui->win_h/2)*(1/gui->prev_zoom - 1/gui->zoom);
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_PAN_U){
 			gui->action = NONE;
 			gui->ofs_y += (gui->win_h*0.1)/gui->zoom;
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_PAN_D){
 			gui->action = NONE;
 			gui->ofs_y -= (gui->win_h*0.1)/gui->zoom;
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_PAN_L){
 			gui->action = NONE;
 			gui->ofs_x -= (gui->win_w*0.1)/gui->zoom;
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == VIEW_PAN_R){
 			gui->action = NONE;
 			gui->ofs_x += (gui->win_w*0.1)/gui->zoom;
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == DELETE){
 			gui->action = NONE;
@@ -2006,7 +1872,7 @@ int main(int argc, char** argv){
 				}
 				list_clear(gui->sel_list);
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == UNDO){
 			gui->action = NONE;
@@ -2020,7 +1886,7 @@ int main(int argc, char** argv){
 			else{
 				snprintf(gui->log_msg, 63, "No gui->actions to undo");
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		
 		else if(gui->action == REDO){
@@ -2033,7 +1899,7 @@ int main(int argc, char** argv){
 			else{
 				snprintf(gui->log_msg, 63, "No gui->actions to redo");
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		
 		else if(gui->action == LAYER_CHANGE){
@@ -2064,7 +1930,7 @@ int main(int argc, char** argv){
 					current = current->next;
 				}
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		
 		else if(gui->action == COLOR_CHANGE){
@@ -2094,7 +1960,7 @@ int main(int argc, char** argv){
 					current = current->next;
 				}
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == LTYPE_CHANGE){
 			gui->action = NONE;
@@ -2123,7 +1989,7 @@ int main(int argc, char** argv){
 					current = current->next;
 				}
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		else if(gui->action == LW_CHANGE){
 			gui->action = NONE;
@@ -2152,7 +2018,7 @@ int main(int argc, char** argv){
 					current = current->next;
 				}
 			}
-			draw = 1;
+			gui->draw = 1;
 		}
 		
 		if(recv_comm_flag){
@@ -2207,101 +2073,24 @@ int main(int argc, char** argv){
 				gui->step = 0;
 			}
 		}
+		/**********************************/
 		
-		/* if user hit the enter key during a drawing operation, toggle axis lock */
-		if ((gui->modal != SELECT) && (gui->step > 0) && (gui->ev & EV_LOCK_AX)
-		//&& (!gui->user_flag_x) && (!gui->user_flag_y)
-		){
-			if ((gui->lock_ax_x != 0) || (gui->lock_ax_y != 0)){
-				/* release the lock, if previously active */
-				gui->lock_ax_x = 0;
-				gui->lock_ax_y = 0;
-			}
-			else{
-				/* activate the lock according coordinate is predominant */
-				gui->lock_ax_x = fabs(gui->step_x[gui->step] - gui->step_x[gui->step - 1]) >= fabs(gui->step_y[gui->step] - gui->step_y[gui->step - 1]);
-				gui->lock_ax_y = fabs(gui->step_x[gui->step] - gui->step_x[gui->step - 1]) < fabs(gui->step_y[gui->step] - gui->step_y[gui->step - 1]);
-			}
-		}
+		gui_update_pos(gui);
 		
-		/* events to update current coordinates according the mouse position,
-		axis locks, user entry, or DXf element attractor */
-		if ((gui->ev & EV_ENTER) || (gui->ev & EV_CANCEL) || (gui->ev & EV_MOTION)){
-			/* aproximation rectangle in mouse position (10 pixels wide) */
-			rect_pt1[0] = (double) (gui->mouse_x - 5)/gui->zoom + gui->ofs_x;
-			rect_pt1[1] = (double) (gui->mouse_y - 5)/gui->zoom + gui->ofs_y;
-			rect_pt2[0] = (double) (gui->mouse_x + 5)/gui->zoom + gui->ofs_x;
-			rect_pt2[1] = (double) (gui->mouse_y + 5)/gui->zoom + gui->ofs_y;
-			/* get the drawing element near the mouse */
-			near_el = (dxf_node *)dxf_ents_isect(gui->drawing, rect_pt1, rect_pt2);
-			
-			if ((gui->step >= 0) && (gui->step < 10)){
-				/* update current position by the mouse */
-				gui->step_x[gui->step] = (double) gui->mouse_x/gui->zoom + gui->ofs_x;
-				gui->step_y[gui->step] = (double) gui->mouse_y/gui->zoom + gui->ofs_y;
-				near_attr = ATRC_NONE;
-				
-				if ((gui->modal != SELECT)&& (gui->step >= 1)){
-					/* update current position by the attractor of near element */
-					if (near_attr = dxf_ent_attract(gui->drawing, near_el, curr_attr_t,
-					gui->step_x[gui->step], gui->step_y[gui->step], gui->step_x[gui->step-1], gui->step_y[gui->step-1],
-					(double) 20/gui->zoom, &near_x , &near_y)){
-						gui->step_x[gui->step] = near_x;
-						gui->step_y[gui->step] = near_y;
-					}
-				}
-				else if (gui->modal != SELECT){
-					/* update current position by the attractor of near element */
-					if (near_attr = dxf_ent_attract(gui->drawing, near_el, curr_attr_t,
-					gui->step_x[gui->step], gui->step_y[gui->step], gui->step_x[gui->step], gui->step_y[gui->step],
-					(double) 20/gui->zoom, &near_x , &near_y)){
-						gui->step_x[gui->step] = near_x;
-						gui->step_y[gui->step] = near_y;
-					}
-				}
-			}
-			
-			/* compute the next point coordinates by axis distances entry */
-			if ((gui->en_distance) && (gui->step > 0) && (gui->step < 10)){
-				/* verify if an axis is locked during a drawing operation */
-				if (gui->lock_ax_y != 0){
-					gui->step_x[gui->step] = gui->step_x[gui->step - 1];
-				}
-				if (gui->lock_ax_x != 0){
-					gui->step_y[gui->step] = gui->step_y[gui->step - 1];
-				}
-				/* check the user entry */
-				if (gui->user_flag_x){
-					gui->step_x[gui->step] = gui->step_x[gui->step - 1] + gui->user_x;
-				}
-				if (gui->user_flag_y){
-					gui->step_y[gui->step] = gui->step_y[gui->step - 1] + gui->user_y;
-				}
-			}
-			if ((!gui->entry_relative) && (gui->step >= 0) && (gui->step < 10)){
-				/* check the user entry */
-				if (gui->user_flag_x){
-					gui->step_x[gui->step] = gui->user_x;
-				}
-				if (gui->user_flag_y){
-					gui->step_y[gui->step] = gui->user_y;
-				}
-			}
-			
-		}
+		/**********************************/
 		
 		if (gui->prev_modal != gui->modal){
 			gui->prev_modal = gui->modal;
 			gui->en_distance = 0;
-			draw_tmp = 0;
-			element = NULL;
-			draw = 1;
+			gui->draw_tmp = 0;
+			gui->element = NULL;
+			gui->draw = 1;
 			gui->step = 0;
-			draw_phanton = 0;
-			if (phanton){
-				//free(phanton->data);
-				//free(phanton);
-				phanton = NULL;
+			gui->draw_phanton = 0;
+			if (gui->phanton){
+				//free(gui->phanton->data);
+				//free(gui->phanton);
+				gui->phanton = NULL;
 			}
 			gui->lock_ax_x = 0;
 			gui->lock_ax_y = 0;
@@ -2312,14 +2101,14 @@ int main(int argc, char** argv){
 		
 		if (gui->modal == SELECT){
 			if (gui->ev & EV_ENTER){
-				sel_list_append(gui->sel_list, element);
+				sel_list_append(gui->sel_list, gui->element);
 				/* -------------------------------test-------------- */
 				
-				/*dxf_edit_move (element, 0.0 , 0.0, 0.0);
+				/*dxf_edit_move (gui->element, 0.0 , 0.0, 0.0);
 				
 				/*--------------------------------------------- 
 				dxf_node *current, *start, *end;
-				if(dxf_find_ext_appid(element, "ZECRUEL", &start, &end)){
+				if(dxf_find_ext_appid(gui->element, "ZECRUEL", &start, &end)){
 					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
 					current = start;
 					while (current != NULL){
@@ -2346,13 +2135,13 @@ int main(int argc, char** argv){
 				/* -------------------------------test-------------- */
 				
 				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
-				if (element){
-					if(element->type == DXF_ENT){
-						//dxf_ent_print2(element);
+				if (gui->element){
+					if(gui->element->type == DXF_ENT){
+						//dxf_ent_print2(gui->element);
 						/*
-						printf("%s\n",element->obj.name);
-						if (dxf_ident_ent_type (element)  ==  DXF_INSERT){
-							dxf_node *volta = dxf_find_attr2(element, 2);
+						printf("%s\n",gui->element->obj.name);
+						if (dxf_ident_ent_type (gui->element)  ==  DXF_INSERT){
+							dxf_node *volta = dxf_find_attr2(gui->element, 2);
 							if (volta){
 								printf("%s\n",volta->value.s_data);
 							}
@@ -2365,190 +2154,25 @@ int main(int argc, char** argv){
 			}
 			if (gui->ev & EV_CANCEL){
 				list_clear(gui->sel_list);
-				draw = 1;
+				gui->draw = 1;
 			}
 			if (gui->ev & EV_MOTION){				
 				/* for hilite test */
-				element = near_el;
-				draw = 1;
+				gui->element = gui->near_el;
+				gui->draw = 1;
 			}
 		}
 		{
-		if (gui->modal == LINE){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					draw_tmp = 1;
-					/* create a new DXF line */
-					new_el = (dxf_node *) dxf_new_line (
-						gui->step_x[gui->step], gui->step_y[gui->step], 0.0, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1, pt2 */
-						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-						0); /* paper space */
-					element = new_el;
-					gui->step = 1;
-					gui->en_distance = 1;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					dxf_attr_change(new_el, 11, &gui->step_x[gui->step]);
-					dxf_attr_change(new_el, 21, &gui->step_y[gui->step]);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					drawing_ent_append(gui->drawing, new_el);
-					
-					do_add_entry(&gui->list_do, "LINE");
-					do_add_item(gui->list_do.current, NULL, new_el);
-					
-					gui->step_x[gui->step - 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step - 1] = gui->step_y[gui->step];
-					
-					new_el = (dxf_node *) dxf_new_line (
-						gui->step_x[gui->step], gui->step_y[gui->step], 0.0, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1, pt2 */
-						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-						0); /* paper space */
-					
-					element = new_el;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change(new_el, 11, &gui->step_x[gui->step]);
-					dxf_attr_change(new_el, 21, &gui->step_y[gui->step]);
-					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
-					dxf_attr_change(new_el, 62, &gui->color_idx);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
-		if (gui->modal == POLYLINE){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					/* create a new DXF lwpolyline */
-					new_el = (dxf_node *) dxf_new_lwpolyline (
-						gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1, */
-						bulge, /* bulge */
-						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-						0); /* paper space */
-					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, bulge);
-					element = new_el;
-					gui->step = 1;
-					gui->en_distance = 1;
-					draw_tmp = 1;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					gui->step_x[gui->step - 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step - 1] = gui->step_y[gui->step];
-					
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					dxf_attr_change_i(new_el, 42, &bulge, -1);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-					
-					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, bulge);
-					gui->step = 2;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					draw_tmp = 0;
-					if (gui->step == 2){
-						dxf_lwpoly_remove (new_el, -1);
-						new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-						drawing_ent_append(gui->drawing, new_el);
-						
-						do_add_entry(&gui->list_do, "POLYLINE");
-						do_add_item(gui->list_do.current, NULL, new_el);
-						
-						gui->step = 0;
-					}
-					element = NULL;
-					goto next_step;
-				}
-				if (gui->ev & EV_MOTION){
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					dxf_attr_change_i(new_el, 42, &bulge, -1);
-					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
-					dxf_attr_change(new_el, 62, &gui->color_idx);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
-		if (gui->modal == CIRCLE){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					draw_tmp = 1;
-					/* create a new DXF circle */
-					new_el = (dxf_node *) dxf_new_circle (
-						gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0, /* pt1, radius */
-						gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-						gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-						0); /* paper space */
-					element = new_el;
-					gui->step = 1;
-					gui->en_distance = 1;
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					double radius = sqrt(pow((gui->step_x[gui->step] - gui->step_x[gui->step - 1]), 2) + pow((gui->step_y[gui->step] - gui->step_y[gui->step - 1]), 2));
-					dxf_attr_change(new_el, 40, &radius);
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					drawing_ent_append(gui->drawing, new_el);
-					
-					do_add_entry(&gui->list_do, "CIRCLE");
-					do_add_item(gui->list_do.current, NULL, new_el);
-					
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					x1 = (double) gui->mouse_x/gui->zoom + gui->ofs_x;
-					y1 = (double) gui->mouse_y/gui->zoom + gui->ofs_y;
-					double radius = sqrt(pow((gui->step_x[gui->step] - gui->step_x[gui->step - 1]), 2) + pow((gui->step_y[gui->step] - gui->step_y[gui->step - 1]), 2));
-					
-					dxf_attr_change(new_el, 40, &radius);
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change(new_el, 370, &dxf_lw[gui->lw_idx]);
-					dxf_attr_change(new_el, 62, &gui->color_idx);
-					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
+		gui_line_interactive(gui);
+		gui_pline_interactive(gui);
+		gui_circle_interactive(gui);
+		
+		
 		if (gui->modal == RECT){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){
 					
-					draw_tmp = 1;
+					gui->draw_tmp = 1;
 					int closed = 1;
 					/* create a new DXF lwpolyline */
 					new_el = (dxf_node *) dxf_new_lwpolyline (
@@ -2561,7 +2185,7 @@ int main(int argc, char** argv){
 					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0);
 					dxf_lwpoly_append (new_el, gui->step_x[gui->step], gui->step_y[gui->step], 0.0, 0.0);
 					dxf_attr_change_i(new_el, 70, (void *) &closed, 0);
-					element = new_el;
+					gui->element = new_el;
 					gui->step = 1;
 					gui->en_distance = 1;
 					goto next_step;
@@ -2604,7 +2228,7 @@ int main(int argc, char** argv){
 		}
 		if (gui->modal == TEXT){
 			if (gui->step == 0){
-				draw_tmp = 1;
+				gui->draw_tmp = 1;
 				/* create a new DXF text */
 				new_el = (dxf_node *) dxf_new_text (
 					gui->step_x[gui->step], gui->step_y[gui->step], 0.0, txt_h, /* pt1, height */
@@ -2612,7 +2236,7 @@ int main(int argc, char** argv){
 					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
 					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 					0); /* paper space */
-				element = new_el;
+				gui->element = new_el;
 				dxf_attr_change_i(new_el, 72, &t_al_h, -1);
 				dxf_attr_change_i(new_el, 73, &t_al_v, -1);
 				gui->step = 1;
@@ -2664,14 +2288,14 @@ int main(int argc, char** argv){
 				if (gui->ev & EV_ENTER){
 					/* verify if block exist */					
 					if (dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name)){
-						draw_tmp = 1;
+						gui->draw_tmp = 1;
 						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
 						new_el = dxf_new_insert (blk_name,
 							gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1 */
 							gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
 							gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 							0); /* paper space */
-						element = new_el;
+						gui->element = new_el;
 						gui->step = 1;
 						gui->en_distance = 1;
 						goto next_step;
@@ -2741,11 +2365,11 @@ int main(int argc, char** argv){
 		if (gui->modal == MOVE){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){
-					draw_tmp = 1;
+					gui->draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					element = NULL;
-					draw_phanton = 1;
+					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
+					gui->element = NULL;
+					gui->draw_phanton = 1;
 					gui->en_distance = 1;
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
@@ -2792,7 +2416,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (gui->ev & EV_MOTION){
-					graph_list_modify(phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
+					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
 				}
@@ -2801,11 +2425,11 @@ int main(int argc, char** argv){
 		if (gui->modal == DUPLI){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){
-					draw_tmp = 1;
+					gui->draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					element = NULL;
-					draw_phanton = 1;
+					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
+					gui->element = NULL;
+					gui->draw_phanton = 1;
 					gui->en_distance = 1;
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
@@ -2851,7 +2475,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (gui->ev & EV_MOTION){
-					graph_list_modify(phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
+					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
 				}
@@ -2860,12 +2484,12 @@ int main(int argc, char** argv){
 		if (gui->modal == SCALE){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){
-					draw_tmp = 1;
+					gui->draw_tmp = 1;
 					/* phantom object */
-					phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					graph_list_modify(phanton, gui->step_x[gui->step]*(1 - scale), gui->step_y[gui->step]*(1 - scale), scale, scale, 0.0);
-					element = NULL;
-					draw_phanton = 1;
+					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
+					graph_list_modify(gui->phanton, gui->step_x[gui->step]*(1 - scale), gui->step_y[gui->step]*(1 - scale), scale, scale, 0.0);
+					gui->element = NULL;
+					gui->draw_phanton = 1;
 					gui->en_distance = 1;
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
@@ -2915,7 +2539,7 @@ int main(int argc, char** argv){
 					goto first_step;
 				}
 				if (gui->ev & EV_MOTION){
-					graph_list_modify(phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
+					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
 					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
 					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
 				}
@@ -2926,35 +2550,35 @@ int main(int argc, char** argv){
 			gui->modal = SELECT;
 		first_step:
 			gui->en_distance = 0;
-			draw_tmp = 0;
-			element = NULL;
-			draw = 1;
+			gui->draw_tmp = 0;
+			gui->element = NULL;
+			gui->draw = 1;
 			gui->step = 0;
-			draw_phanton = 0;
-			if (phanton){
+			gui->draw_phanton = 0;
+			if (gui->phanton){
 				//free(phanton->data);
 				//free(phanton);
-				phanton = NULL;
+				gui->phanton = NULL;
 			}
 		next_step:
 			
-			//draw_tmp = 0;
-			//element = NULL;
+			//gui->draw_tmp = 0;
+			//gui->element = NULL;
 			gui->lock_ax_x = 0;
 			gui->lock_ax_y = 0;
 			gui->user_flag_x = 0;
 			gui->user_flag_y = 0;
 
-			draw = 1;
+			gui->draw = 1;
 		end_step: ;
 		
 		}
 		
 		if (gui_check_draw(gui) != 0){
-			draw = 1;
+			gui->draw = 1;
 		}
 		
-		if (draw != 0){
+		if (gui->draw != 0){
 			/*get current window size */
 			SDL_GetWindowSize(window, &gui->win_w, &gui->win_h);
 			if (gui->win_w > gui->main_w){ /* if window exceedes main image */
@@ -2984,22 +2608,22 @@ int main(int argc, char** argv){
 			
 			draw_cursor(img, gui->mouse_x, gui->mouse_y, cursor);
 			
-			if (near_attr){ /* check if needs to draw an attractor mark */
+			if (gui->near_attr){ /* check if needs to draw an attractor mark */
 				/* convert entities coordinates to screen coordinates */
-				int attr_x = (int) round((near_x - gui->ofs_x) * gui->zoom);
-				int attr_y = (int) round((near_y - gui->ofs_y) * gui->zoom);
-				draw_attractor(img, near_attr, attr_x, attr_y, yellow);
+				int attr_x = (int) round((gui->near_x - gui->ofs_x) * gui->zoom);
+				int attr_y = (int) round((gui->near_y - gui->ofs_y) * gui->zoom);
+				draw_attractor(img, gui->near_attr, attr_x, attr_y, yellow);
 			}
 			/*hilite test */
-			if((draw_tmp)&&(element != NULL)){
-				element->obj.graphics = dxf_graph_parse(gui->drawing, element, 0 , 1);
+			if((gui->draw_tmp)&&(gui->element != NULL)){
+				gui->element->obj.graphics = dxf_graph_parse(gui->drawing, gui->element, 0 , 1);
 			}
-			if(element != NULL){
-				graph_list_draw_fix(element->obj.graphics, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
+			if(gui->element != NULL){
+				graph_list_draw_fix(gui->element->obj.graphics, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			}
-			if((draw_phanton)&&(phanton)){
+			if((gui->draw_phanton)&&(gui->phanton)){
 				//dxf_list_draw(gui->sel_list, img, gui->ofs_x - (x1 - x0), gui->ofs_y - (y1 - y0), gui->zoom, hilite);
-				graph_list_draw_fix(phanton, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
+				graph_list_draw_fix(gui->phanton, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			}
 			dxf_list_draw(gui->sel_list, img, gui->ofs_x, gui->ofs_y, gui->zoom, hilite);
 			
@@ -3023,14 +2647,14 @@ int main(int argc, char** argv){
 			
 			//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 			
-			draw = 0;
+			gui->draw = 0;
 			
 		}
 		
 		leftMouseButtonClick = 0;
 		rightMouseButtonClick = 0;
 		MouseMotion = 0;
-		keyEnter = 0;
+		gui->keyEnter = 0;
 		gui->ev = EV_NONE;
 		
 		//graph_mem_pool(ZERO_GRAPH, 2);

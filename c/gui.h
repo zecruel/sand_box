@@ -82,6 +82,7 @@ struct Gui_obj {
 	void *last; /* to verify if needs to draw */
 	
 	dxf_drawing *drawing;
+	dxf_node *element, *near_el;
 	
 	/* background image dimension */
 	unsigned int main_w;
@@ -99,11 +100,17 @@ struct Gui_obj {
 	
 	double user_x, user_y;
 	double step_x[10], step_y[10];
+	double near_x, near_y;
+	double bulge;
 	
 	int color_idx, lw_idx;
 	int layer_idx, ltypes_idx;
 	
 	int step, user_flag_x, user_flag_y, lock_ax_x, lock_ax_y, user_number;
+	int keyEnter;
+	int draw, draw_tmp, draw_phanton;
+	int near_attr;
+	
 	
 	int en_distance; /* enable distance entry */
 	int entry_relative;
@@ -111,6 +118,7 @@ struct Gui_obj {
 	enum Action action;
 	enum Modal modal, prev_modal;
 	enum Gui_ev ev;
+	enum attract_type curr_attr_t;
 	
 	bmp_color background;
 	
@@ -125,7 +133,10 @@ struct Gui_obj {
 	char log_msg[64];
 	
 	list_node * sel_list;
+	list_node *phanton;
 	struct do_list list_do;
+	
+	
 	
 };
 typedef struct Gui_obj gui_obj;
@@ -156,5 +167,13 @@ NK_API int nk_sdl_init(gui_obj* gui, struct nk_user_font *font);
 NK_API int nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt);
 
 NK_API void nk_sdl_shutdown(gui_obj *gui);
+
+extern int dxf_lw[];
+extern const char *dxf_lw_descr[];
+extern bmp_color dxf_colors[];
+
+#ifndef DXF_LW_LEN
+	#define DXF_LW_LEN 24
+#endif
 
 #endif

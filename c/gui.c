@@ -1,7 +1,5 @@
 #include "gui.h"
 
-extern bmp_color dxf_colors[];
-
 
 void set_style(struct nk_context *ctx, enum theme theme){
     struct nk_color table[NK_COLOR_COUNT];

@@ -287,4 +287,6 @@ const char *dxf_lw_descr[] = {
 	"By Layer",
 	"By Block"
 };
-#define DXF_LW_LEN 24
+#ifndef DXF_LW_LEN
+	#define DXF_LW_LEN 24
+#endif
