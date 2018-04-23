@@ -101,7 +101,7 @@ struct Gui_obj {
 	double user_x, user_y;
 	double step_x[10], step_y[10];
 	double near_x, near_y;
-	double bulge;
+	double bulge, scale;
 	double txt_h;
 	
 	int color_idx, lw_idx, t_al_v, t_al_h;
@@ -125,6 +125,7 @@ struct Gui_obj {
 	
 	NSVGimage **svg_curves;
 	bmp_img **svg_bmp;
+	bmp_img *preview_img;
 	
 	struct nk_style_button b_icon;
 	
@@ -133,6 +134,7 @@ struct Gui_obj {
 	
 	char log_msg[64];
 	char txt[DXF_MAX_CHARS];
+	char blk_name[DXF_MAX_CHARS];
 	
 	list_node * sel_list;
 	list_node *phanton;

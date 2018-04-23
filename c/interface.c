@@ -336,20 +336,6 @@ void zoom_ext2(dxf_drawing *drawing, int x, int y, int width, int height, double
 	*ofs_y = min_y - ((fabs((max_y - min_y)*(*zoom) - height)/2)+y)/(*zoom);
 }
 
-void sel_list_append(list_node *list, dxf_node *ent){
-	if (list && ent){
-		if (list_find_data(list, ent)){
-			//printf ("ja existe!\n");
-		}
-		else{
-			list_node * new_el = list_new(ent, 0);
-			if (new_el){
-				list_push(list, new_el);
-			}
-		}
-	}
-}
-
 double font_scale(shape *font, float height){
 	double fnt_scale = 0;
 	/* find the dimentions of SHX font */
@@ -477,7 +463,8 @@ int main(int argc, char** argv){
 	gui->near_el = NULL;
 	gui->bulge = 0.0;
 	gui->txt_h = 1.0;
-	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, scale = 1.0, txt_h = 1.0;
+	gui->scale = 1.0;
+	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, txt_h = 1.0;
 	//double thick = 0.0, thick_prev = 0.0;
 	char txt[DXF_MAX_CHARS];
 	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
@@ -522,6 +509,7 @@ int main(int argc, char** argv){
 	gui->step = 0;
 	gui->lock_ax_x = 0;
 	gui->lock_ax_y = 0;
+	gui->draw_tmp = 0;
 	//double step_x[10], step_y[10];
 	
 	gui->user_x = 0.0; gui->user_y = 0.0;
@@ -669,12 +657,12 @@ int main(int argc, char** argv){
 	font_tiny.scale = font_scale(font_tiny.shx_font, font_tiny_nk.height);
 	font_tiny_nk.width = nk_user_font_get_text_width;
 	
-	int show_blk_pp = 0;
-	bmp_img * blk_prvw_big;
-	blk_prvw_big = bmp_new(160, 160, grey, red);
-	char blk_name[DXF_MAX_CHARS], tag_mark[DXF_MAX_CHARS];
-	blk_name[0] = 0;
-	int show_hidden_blks = 0, text2tag = 0;
+	//int show_blk_pp = 0;
+	//bmp_img * gui->preview_img;
+	gui->preview_img = bmp_new(160, 160, grey, red);
+	char tag_mark[DXF_MAX_CHARS];
+	gui->blk_name[0] = 0;
+	int text2tag = 0;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -1349,48 +1337,21 @@ int main(int argc, char** argv){
 		
 			nk_layout_row_dynamic(gui->ctx, win_cont.h - (wid_pos.y - win_pos.y), 1);
 			if (nk_group_begin(gui->ctx, "especific", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+				gui_select_info (gui);
 				gui_line_info (gui);
 				gui_pline_info (gui);
 				gui_circle_info (gui);
 				gui_rect_info (gui);
 				gui_text_info (gui);
+				gui_move_info (gui);
+				gui_dupli_info (gui);
+				gui_scale_info (gui);
+				gui_insert_info (gui);
 				
 			switch (gui->modal) {
-				case SELECT:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Select an object", NK_TEXT_LEFT);
-					break;
 				case ARC:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Place an arc", NK_TEXT_LEFT);
-					break;
-				case MOVE:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Move a selection", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
-					}
-					break;
-				case DUPLI:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Duplicate a selection", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
-					}
-					break;
-				case SCALE:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Scale a selection", NK_TEXT_LEFT);
-					if (gui->step == 0){
-						nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
-					} else {
-						nk_label(gui->ctx, "Enter destination point", NK_TEXT_LEFT);
-					}
-					scale = nk_propertyd(gui->ctx, "Scale", 0.0d, scale, 100.0d, 0.1d, 0.1d);
 					break;
 				case NEW_BLK:
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
@@ -1401,126 +1362,6 @@ int main(int argc, char** argv){
 					nk_checkbox_label(gui->ctx, "Text to Tags", &text2tag);
 					nk_label(gui->ctx, "Tag mark:", NK_TEXT_LEFT);
 					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, tag_mark, DXF_MAX_CHARS, nk_filter_default);
-					break;
-				case INSERT:
-					
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place a block", NK_TEXT_LEFT);
-					
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
-					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, blk_name, DXF_MAX_CHARS, nk_filter_default);
-					
-					if (nk_button_label(gui->ctx, "Explore")) show_blk_pp = 1;
-					if (show_blk_pp){
-						/* select block popup */
-						static struct nk_rect s = {20, 10, 420, 330};
-						if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Block", NK_WINDOW_CLOSABLE, s)){
-							
-							list_node *blk_g; /*graphic object of current block */
-							dxf_node *blk, *blk_nm; /* current block and its name attribute */
-							int blk_ei; /*extents flag of current block */
-							/* extents and zoom parameters */
-							double blk_x0, blk_y0, blk_x1, blk_y1, z, z_x, z_y, o_x, o_y;
-							
-							nk_layout_row_dynamic(gui->ctx, 225, 2);
-							i = 0;
-							int blk_idx = -1;
-							if (nk_group_begin(gui->ctx, "Block_names", NK_WINDOW_BORDER)) {
-								nk_layout_row_dynamic(gui->ctx, 20, 1);
-								while (blk = dxf_find_obj_i(gui->drawing->blks, "BLOCK", i)){
-									
-									/* get name of current block */
-									blk_nm = dxf_find_attr2(blk, 2);
-									if (blk_nm){
-										if((blk_nm->value.s_data[0] != '*') || (show_hidden_blks)){
-											if (nk_button_label(gui->ctx, blk_nm->value.s_data)){
-												blk_idx = i;
-												strncpy(blk_name, blk_nm->value.s_data, DXF_MAX_CHARS-1);
-											}
-										}
-									}
-									
-									i++;
-								}
-								nk_group_end(gui->ctx);
-							}
-							if (blk_idx >= 0){
-								blk = dxf_find_obj_i(gui->drawing->blks, "BLOCK", blk_idx);
-								blk_idx = -1;
-								
-								blk_ei = 0;
-								/* get graphics of current block*/
-								blk_g = dxf_graph_parse(gui->drawing, blk, 0, FRAME_LIFE);
-								/* get extents parameters of current block*/
-								graph_list_ext(blk_g, &blk_ei, &blk_x0, &blk_y0, &blk_x1, &blk_y1);
-								
-								/* calcule the zoom and offset for preview */
-								z_x = fabs(blk_x1 - blk_x0)/blk_prvw_big->width;
-								z_y = fabs(blk_y1 - blk_y0)/blk_prvw_big->height;
-								z = (z_x > z_y) ? z_x : z_y;
-								if (z <= 0) z =1;
-								else z = 1/(1.1 * z);
-								o_x = blk_x0 - (fabs((blk_x1 - blk_x0)*z - blk_prvw_big->width)/2)/z;
-								o_y = blk_y0 - (fabs((blk_y1 - blk_y0)*z - blk_prvw_big->height)/2)/z;
-								
-								snprintf(txt, DXF_MAX_CHARS, "(%0.2f,%0.2f)-(%0.2f,%0.2f)", blk_x0, blk_y0, blk_x1, blk_y1);
-								
-								/* draw graphics in current preview bitmap */
-								bmp_fill(blk_prvw_big, blk_prvw_big->bkg); /* clear bitmap */
-								graph_list_draw(blk_g, blk_prvw_big, o_x, o_y, z);
-								
-							}
-							if (nk_group_begin(gui->ctx, "Block_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
-								/* preview img */
-								nk_layout_row_dynamic(gui->ctx, 175, 1);
-								nk_button_image(gui->ctx,  nk_image_ptr(blk_prvw_big));
-								
-								/* current block name */
-								nk_layout_row_dynamic(gui->ctx, 20, 1);
-								nk_label(gui->ctx, blk_name, NK_TEXT_CENTERED);
-								
-								/* current block corners */
-								nk_layout_row_dynamic(gui->ctx, 15, 1);
-								nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
-								nk_label(gui->ctx, txt, NK_TEXT_CENTERED);
-								nk_style_pop_font(gui->ctx); /* back to default font*/
-								
-								nk_group_end(gui->ctx);
-							}
-							
-							nk_layout_row_dynamic(gui->ctx, 20, 1);
-							
-							nk_checkbox_label(gui->ctx, "Hidden", &show_hidden_blks);
-							
-							if (nk_button_label(gui->ctx, "Select")){
-								show_blk_pp = 0;
-								nk_popup_close(gui->ctx);
-							}
-							/*
-							if (nk_button_label(gui->ctx, "test")){
-								//snprintf(txt, DXF_MAX_CHARS, "text");
-								blk = dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name);
-								if(blk){
-									/* create a new attdef text 
-									//dxf_node * dxf_new_attdef (double x0, double y0, double z0, double h,
-									//char *txt, char *tag, double thick, int color, char *layer, char *ltype, int paper){
-
-									dxf_node * new_el = dxf_new_attdef (
-										0.0, 0.0, 0.0, 1.0, /* pt1, height 
-										"test", "tag1",(double) thick, /* text, thickness 
-										gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer 
-										gui->drawing->ltypes[gui->ltypes_idx].name, 0); /* line type, paper space 
-									ent_handle(gui->drawing, new_el);
-									dxf_block_append(blk, new_el);
-									snprintf(txt, DXF_MAX_CHARS, "attdef");
-								}
-							}*/
-							
-							nk_popup_end(gui->ctx);
-						}
-						else show_blk_pp = 0;
-					}
 					break;
 			}
 			nk_group_end(gui->ctx);
@@ -2079,141 +1920,22 @@ int main(int argc, char** argv){
 			//printf("change tool\n");
 		}
 		
-		if (gui->modal == SELECT){
-			if (gui->ev & EV_ENTER){
-				sel_list_append(gui->sel_list, gui->element);
-				/* -------------------------------test-------------- */
-				
-				/*dxf_edit_move (gui->element, 0.0 , 0.0, 0.0);
-				
-				/*--------------------------------------------- 
-				dxf_node *current, *start, *end;
-				if(dxf_find_ext_appid(gui->element, "ZECRUEL", &start, &end)){
-					printf("ext data Zecruel, start = %d, end = %d\n", start, end);
-					current = start;
-					while (current != NULL){
-						printf ("%d = ", current->value.group); 
-						
-						switch (current->value.t_data) {
-							case DXF_STR:
-								if(current->value.s_data){
-									printf(current->value.s_data);
-								}
-								break;
-							case DXF_FLOAT:
-								printf("%f", current->value.d_data);
-								break;
-							case DXF_INT:
-								printf("%d", current->value.i_data);
-						}
-						printf("\n");
-						//printf ("%x\n", current);
-						if (current == end) break;
-						current = current->next;
-					}
-				}*/
-				/* -------------------------------test-------------- */
-				
-				//dxf_ent_attract (dxf_node * obj, enum attract_type type, double pos_x, double pos_y, double sensi, double *ret_x, double *ret_y)
-				if (gui->element){
-					if(gui->element->type == DXF_ENT){
-						//dxf_ent_print2(gui->element);
-						/*
-						printf("%s\n",gui->element->obj.name);
-						if (dxf_ident_ent_type (gui->element)  ==  DXF_INSERT){
-							dxf_node *volta = dxf_find_attr2(gui->element, 2);
-							if (volta){
-								printf("%s\n",volta->value.s_data);
-							}
-						}*/
-					}
-				}
-				//double ret_x, ret_y;
-				
-				/*---------------------------------------------  */
-			}
-			if (gui->ev & EV_CANCEL){
-				list_clear(gui->sel_list);
-				gui->draw = 1;
-			}
-			if (gui->ev & EV_MOTION){				
-				/* for hilite test */
-				gui->element = gui->near_el;
-				gui->draw = 1;
-			}
-		}
+		
 		{
+		gui_select_interactive(gui);
 		gui_line_interactive(gui);
 		gui_pline_interactive(gui);
 		gui_circle_interactive(gui);
 		gui_rect_interactive(gui);
 		gui_text_interactive(gui);
+		gui_move_interactive(gui);
+		gui_dupli_interactive(gui);
+		gui_scale_interactive(gui);
+			
+		gui_insert_interactive(gui);
 		
 		
-		if (gui->modal == INSERT){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					/* verify if block exist */					
-					if (dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name)){
-						gui->draw_tmp = 1;
-						//dxf_new_insert (char *name, double x0, double y0, double z0,int color, char *layer, char *ltype, int paper);
-						new_el = dxf_new_insert (blk_name,
-							gui->step_x[gui->step], gui->step_y[gui->step], 0.0, /* pt1 */
-							gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
-							gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
-							0); /* paper space */
-						gui->element = new_el;
-						gui->step = 1;
-						gui->en_distance = 1;
-						goto next_step;
-					}
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					
-					drawing_ent_append(gui->drawing, new_el);
-					
-					
-					/*=========================*/
-					dxf_node *blk = dxf_find_obj_descr2(gui->drawing->blks, "BLOCK", blk_name);
-					dxf_node *attdef, *attrib;
-					i = 0;
-					while (attdef = dxf_find_obj_i(blk, "ATTDEF", i)){
-						attrib = dxf_attrib_cpy(attdef, gui->step_x[gui->step], gui->step_y[gui->step], 0.0);
-						ent_handle(gui->drawing, attrib);
-						dxf_insert_append(gui->drawing, new_el, attrib);
-						
-						i++;
-					}
-					
-					/*===================*/
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					do_add_entry(&gui->list_do, "INSERT");
-					do_add_item(gui->list_do.current, NULL, new_el);
-					
-					gui->step_x[gui->step - 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step - 1] = gui->step_y[gui->step];
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-				if (gui->ev & EV_MOTION){
-					dxf_attr_change_i(new_el, 10, &gui->step_x[gui->step], -1);
-					dxf_attr_change_i(new_el, 20, &gui->step_y[gui->step], -1);
-					dxf_attr_change(new_el, 6, gui->drawing->ltypes[gui->ltypes_idx].name);
-					dxf_attr_change(new_el, 8, gui->drawing->layers[gui->layer_idx].name);
-					dxf_attr_change(new_el, 62, &gui->color_idx);					
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 1);
-				}
-			}
-		}
+		
 		if (gui->modal == NEW_BLK){
 			if (gui->step == 0){
 				if (gui->ev & EV_ENTER){
@@ -2229,189 +1951,8 @@ int main(int argc, char** argv){
 				}
 			}
 		}
-		if (gui->modal == MOVE){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					gui->draw_tmp = 1;
-					/* phantom object */
-					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					gui->element = NULL;
-					gui->draw_phanton = 1;
-					gui->en_distance = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					gui->step = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					if (gui->sel_list != NULL){
-						/* sweep the selection list */
-						list_node *current = gui->sel_list->next;
-						dxf_node *new_ent = NULL;
-						if (current != NULL){
-							do_add_entry(&gui->list_do, "MOVE");
-						}
-						while (current != NULL){
-							if (current->data){
-								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
-									dxf_edit_move(new_ent, gui->step_x[gui->step] - gui->step_x[gui->step - 1], gui->step_y[gui->step] - gui->step_y[gui->step - 1], 0.0);
-									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
-									//drawing_ent_append(gui->drawing, new_ent);
-									
-									dxf_obj_subst((dxf_node *)current->data, new_ent);
-									
-									do_add_item(gui->list_do.current, (dxf_node *)current->data, new_ent);
-									
-									current->data = new_ent;
-								}
-							}
-							current = current->next;
-						}
-						//list_clear(gui->sel_list);
-					}
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-				}
-			}
-		}
-		if (gui->modal == DUPLI){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					gui->draw_tmp = 1;
-					/* phantom object */
-					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					gui->element = NULL;
-					gui->draw_phanton = 1;
-					gui->en_distance = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					gui->step = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					if (gui->sel_list != NULL){
-						/* sweep the selection list */
-						list_node *current = gui->sel_list->next;
-						dxf_node *new_ent = NULL;
-						if (current != NULL){
-							do_add_entry(&gui->list_do, "DUPLI");
-						}
-						
-						while (current != NULL){
-							if (current->data){
-								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
-									dxf_edit_move(new_ent, gui->step_x[gui->step] - gui->step_x[gui->step - 1], gui->step_y[gui->step] - gui->step_y[gui->step - 1], 0.0);
-									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
-									drawing_ent_append(gui->drawing, new_ent);
-									
-									do_add_item(gui->list_do.current, NULL, new_ent);
-									
-									current->data = new_ent;
-								}
-							}
-							current = current->next;
-						}
-						//list_clear(gui->sel_list);
-					}
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-				}
-			}
-		}
-		if (gui->modal == SCALE){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					gui->draw_tmp = 1;
-					/* phantom object */
-					gui->phanton = dxf_list_parse(gui->drawing, gui->sel_list, 0, 0);
-					graph_list_modify(gui->phanton, gui->step_x[gui->step]*(1 - scale), gui->step_y[gui->step]*(1 - scale), scale, scale, 0.0);
-					gui->element = NULL;
-					gui->draw_phanton = 1;
-					gui->en_distance = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					gui->step = 1;
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-					goto next_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-			else{
-				if (gui->ev & EV_ENTER){
-					if (gui->sel_list != NULL){
-						list_node *current = gui->sel_list->next;
-						dxf_node *new_ent = NULL;
-						if (current != NULL){
-							do_add_entry(&gui->list_do, "SCALE");
-						}
-						while (current != NULL){
-							if (current->data){
-								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									new_ent = dxf_ent_copy((dxf_node *)current->data, 0);
-									
-									dxf_edit_scale(new_ent, scale, scale, scale);
-									dxf_edit_move(new_ent, gui->step_x[gui->step - 1]*(1 - scale), gui->step_y[gui->step - 1]*(1 - scale), 0.0);
-									dxf_edit_move(new_ent, gui->step_x[gui->step] - gui->step_x[gui->step - 1], gui->step_y[gui->step] - gui->step_y[gui->step - 1], 0.0);
-									
-									new_ent->obj.graphics = dxf_graph_parse(gui->drawing, new_ent, 0 , 0);
-									//drawing_ent_append(gui->drawing, new_ent);
-									
-									dxf_obj_subst((dxf_node *)current->data, new_ent);
-									
-									do_add_item(gui->list_do.current, (dxf_node *)current->data, new_ent);
-									
-									current->data = new_ent;
-								}
-							}
-							current = current->next;
-						}
-						current = gui->sel_list->next;
-					}
-					goto first_step;
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto first_step;
-				}
-				if (gui->ev & EV_MOTION){
-					graph_list_modify(gui->phanton, gui->step_x[gui->step] - gui->step_x[gui->step + 1], gui->step_y[gui->step] - gui->step_y[gui->step + 1], 1.0, 1.0, 0.0);
-					gui->step_x[gui->step + 1] = gui->step_x[gui->step];
-					gui->step_y[gui->step + 1] = gui->step_y[gui->step];
-				}
-			}
-		}
+		
+		
 		goto end_step;
 		default_modal:
 			gui->modal = SELECT;
@@ -2557,7 +2098,7 @@ int main(int argc, char** argv){
 	
 	bmp_free(img);
 	bmp_free(color_img);
-	bmp_free(blk_prvw_big);
+	bmp_free(gui->preview_img);
 	bmp_free(i_cz48);
 	
 	i_svg_free_bmp(gui->svg_bmp);
@@ -2575,3 +2116,27 @@ int main(int argc, char** argv){
 	lua_close(Lua1);
 	return 0;
 };
+
+/*
+https://stackoverflow.com/questions/8972925/dxf-parser-ellipses-angle-direction
+
+
+The ellipse might not lie in the 2D XY plane so just using the sign of the Z component of the extrusion direction isn't safe. Here's a more general approach for a 3D ellipse:
+
+1) Create the ellipse in the XY plane with the major axis in the +X direction and going counter-clockwise from start parameter (group code 41) to end parameter (group code 42). First make sure the end parameter is greater than the start parameter and add 2pi if it's not. You can then calculate each point with:
+
+X = [length of major radius] * cos(angle)
+Y = [length of minor radius] * sin(angle)
+2) Rotate it to this new coordinate system:
+
+Direction of new X axis = endpoint of major axis
+Direction of new Z axis = extrusion direction
+Direction of new Y axis = [new Z axis] cross product [new X axis]
+
+You can do this by normalizing these vectors and making a 3x3 transformation matrix where each column contains one of the vectors, then multiply this matrix by every point in the ellipse created in step 1.
+
+
+answered Sep 11 '13 at 3:08
+
+user1318499
+*/

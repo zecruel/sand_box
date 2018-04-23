@@ -28,6 +28,7 @@ int gui_update_pos(gui_obj *gui){
 		rect_pt2[0] = (double) (gui->mouse_x + 5)/gui->zoom + gui->ofs_x;
 		rect_pt2[1] = (double) (gui->mouse_y + 5)/gui->zoom + gui->ofs_y;
 		/* get the drawing element near the mouse */
+		gui->near_el = NULL;
 		gui->near_el = (dxf_node *)dxf_ents_isect(gui->drawing, rect_pt1, rect_pt2);
 		
 		if ((gui->step >= 0) && (gui->step < 10)){
