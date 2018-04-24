@@ -17,6 +17,7 @@
 
 #include "gui.h"
 #include "gui_lay.h"
+#include "gui_info.h"
 #include "gui_xy.h"
 #include "gui_use.h"
 
@@ -52,116 +53,6 @@
 #elif defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
 #define OS_WIN
 #endif
-
-
-
-
-void nk_dxf_ent_info (struct nk_context *ctx, dxf_node *ent, int id){ /* print the entity structure */
-	/* use Nuklear widgets to show a DXF entity structure */
-	/* this function is non recursive */
-	
-	int i = 0;
-	int level = 0;
-	dxf_node *current, *prev;
-	int tree_st[10]; /* max of ten levels of entities inside entities*/
-	char text[401];
-	
-	text[0] = 0;
-	id *= 1000; /* each Tree widget has a unique id, up to 1000 inside main entity*/
-	
-	current = ent;
-	while (current){
-		prev = current;
-		if (current->type == DXF_ENT){
-			/* DXF entities are show as Tree widget */
-			if (current->obj.name){
-				id++; /* increment id for child Trees */
-				if (level == 0){ /* verify if is the first Tree */
-					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
-						/* if Tree is not minimized, start the placement of child widgets */
-						nk_layout_row_dynamic(ctx, 13, 1);
-						nk_label(ctx, "-----", NK_TEXT_LEFT);
-					}
-				}
-				else if (tree_st[level - 1]){ /* verify if the up level Tree is not minimized */
-					if (tree_st[level] = nk_tree_push_id(ctx, NK_TREE_TAB, current->obj.name, NK_MINIMIZED, id)) {
-						/* if Tree is not minimized, start the placement of child widgets */
-						nk_layout_row_dynamic(ctx, 13, 1);
-						nk_label(ctx, "-----", NK_TEXT_LEFT);
-					}
-				}
-				else{
-					tree_st[level] = 0;
-				}
-			}
-			if (current->obj.content){
-				/* starts entity content sweep */
-				prev = current->obj.content;
-				current = current->obj.content->next;
-				level++;
-			}
-		}
-		else if (current->type == DXF_ATTR){
-			/* DXF attributes are show as Label widget */
-			/* combine Group and Value, acording its type, in a string */
-			i = snprintf (text, 400, "%d = ", current->value.group);
-			switch (current->value.t_data) {
-				case DXF_STR:
-					if(current->value.s_data){
-						i += snprintf (text + i, 400 - i, current->value.s_data);
-					}
-					break;
-				case DXF_FLOAT:
-					i += snprintf (text + i, 400 - i, "%f", current->value.d_data);
-					break;
-				case DXF_INT:
-					i += snprintf (text + i, 400 - i, "%d", current->value.i_data);
-			}
-			if (tree_st[level - 1]){ /* verify if the up level Tree is not minimized */
-				nk_label(ctx, text, NK_TEXT_LEFT);
-			}
-			/* clear string */
-			i = 0; text[0] = 0;
-			
-			current = current->next; /* go to the next in the list */
-		}
-		/* if the contents sweep reachs to end, try to up in structure */
-		while (current == NULL){ 
-			if (prev == ent){ /* back to original entity */
-				/* ends the top level Tree, if not minimized */
-				if (tree_st[level - 1]){
-					nk_tree_pop(ctx);
-				}
-				current = NULL; /* ends loop */
-				break;
-			}
-			
-			prev = prev->master;
-			if (prev){
-				current = prev->next; /* continue loop */
-				level --; /* up in structure*/
-				/* ends the current Tree, if not minimized */
-				if (tree_st[level]){
-					nk_tree_pop(ctx);
-				}
-				/* back to original entity */
-				if (prev == ent){
-					current = NULL; /* ends loop */
-					break;
-				}
-			}
-			else{ /* if structure ends */
-				current = NULL; /* ends loop */
-				break;
-			}
-		}
-		
-		if ((level < 0) || (level > 9)){/* verify if level is out of admissible range */
-			current = NULL; /* ends loop */
-			break;
-		}
-	}
-}
 
 void draw_cursor(bmp_img *img, int x, int y, bmp_color color){
 	/* draw cursor */
@@ -660,9 +551,9 @@ int main(int argc, char** argv){
 	//int show_blk_pp = 0;
 	//bmp_img * gui->preview_img;
 	gui->preview_img = bmp_new(160, 160, grey, red);
-	char tag_mark[DXF_MAX_CHARS];
+	//char tag_mark[DXF_MAX_CHARS];
 	gui->blk_name[0] = 0;
-	int text2tag = 0;
+	gui->text2tag = 0;
 	
 	/* init comands */
 	recv_comm[0] = 0;
@@ -1347,24 +1238,9 @@ int main(int argc, char** argv){
 				gui_dupli_info (gui);
 				gui_scale_info (gui);
 				gui_insert_info (gui);
+				gui_block_info (gui);
 				
-			switch (gui->modal) {
-				case ARC:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Place an arc", NK_TEXT_LEFT);
-					break;
-				case NEW_BLK:
-					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "Create a new block from selection", NK_TEXT_LEFT);
-					//nk_label(gui->ctx, "Enter base point", NK_TEXT_LEFT);
-					nk_label(gui->ctx, "Block Name:", NK_TEXT_LEFT);
-					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, txt, DXF_MAX_CHARS, nk_filter_default);
-					nk_checkbox_label(gui->ctx, "Text to Tags", &text2tag);
-					nk_label(gui->ctx, "Tag mark:", NK_TEXT_LEFT);
-					nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, tag_mark, DXF_MAX_CHARS, nk_filter_default);
-					break;
-			}
-			nk_group_end(gui->ctx);
+				nk_group_end(gui->ctx);
 			}
 		}
 		nk_end(gui->ctx);
@@ -1383,42 +1259,7 @@ int main(int argc, char** argv){
 
 		
 		if (show_info){
-			gui->next_win_x += gui->next_win_w + 3;
-			//gui->next_win_y += gui->next_win_h + 3;
-			gui->next_win_w = 200;
-			gui->next_win_h = 300;
-			
-			//if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Info", NK_WINDOW_CLOSABLE, nk_rect(310, 50, 200, 300))){
-			if (nk_begin(gui->ctx, "Info", nk_rect(gui->next_win_x, gui->next_win_y, gui->next_win_w, gui->next_win_h),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-			NK_WINDOW_CLOSABLE|NK_WINDOW_TITLE)){
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				nk_label(gui->ctx, "BLK:", NK_TEXT_LEFT);
-				i = 1;
-				nk_dxf_ent_info (gui->ctx, gui->drawing->blks, i);
-				
-				nk_label(gui->ctx, "ENTS:", NK_TEXT_LEFT);
-				if (gui->sel_list != NULL){				
-					list_node *current = gui->sel_list->next;
-					// starts the content sweep 
-					i = 2;
-					while (current != NULL){
-						if (current->data){
-							if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-									
-								// -------------------------------------------
-								nk_dxf_ent_info (gui->ctx, (dxf_node *)current->data, i);
-								i++;
-								
-								//---------------------------------------
-							}
-						}
-						current = current->next;
-					}
-				}
-				//nk_popup_end(gui->ctx);
-			} else show_info = nk_false;
-			nk_end(gui->ctx);
+			show_info = info_win(gui);
 		}
 		
 		if (progr_win){
@@ -1921,7 +1762,7 @@ int main(int argc, char** argv){
 		}
 		
 		
-		{
+		
 		gui_select_interactive(gui);
 		gui_line_interactive(gui);
 		gui_pline_interactive(gui);
@@ -1933,24 +1774,11 @@ int main(int argc, char** argv){
 		gui_scale_interactive(gui);
 			
 		gui_insert_interactive(gui);
+		gui_block_interactive(gui);
 		
 		
 		
-		if (gui->modal == NEW_BLK){
-			if (gui->step == 0){
-				if (gui->ev & EV_ENTER){
-					/* verify if text is valid */
-					if (strlen(txt) > 0){
-						if(!text2tag) dxf_new_block(gui->drawing, txt, "0", gui->sel_list, &gui->list_do);
-						
-						else dxf_new_block2(gui->drawing, txt, tag_mark, "0", gui->sel_list, &gui->list_do);
-					}
-				}
-				else if (gui->ev & EV_CANCEL){
-					goto default_modal;
-				}
-			}
-		}
+		
 		
 		
 		goto end_step;
@@ -1980,7 +1808,7 @@ int main(int argc, char** argv){
 			gui->draw = 1;
 		end_step: ;
 		
-		}
+		
 		
 		if (gui_check_draw(gui) != 0){
 			gui->draw = 1;

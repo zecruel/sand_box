@@ -44,4 +44,8 @@ int gui_insert_interactive(gui_obj *gui);
 
 int gui_insert_info (gui_obj *gui);
 
+int gui_block_interactive(gui_obj *gui);
+
+int gui_block_info (gui_obj *gui);
+
 #endif

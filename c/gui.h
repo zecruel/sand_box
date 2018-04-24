@@ -112,6 +112,8 @@ struct Gui_obj {
 	int draw, draw_tmp, draw_phanton;
 	int near_attr;
 	
+	int text2tag;
+	
 	
 	int en_distance; /* enable distance entry */
 	int entry_relative;
@@ -135,6 +137,7 @@ struct Gui_obj {
 	char log_msg[64];
 	char txt[DXF_MAX_CHARS];
 	char blk_name[DXF_MAX_CHARS];
+	char tag_mark[DXF_MAX_CHARS];
 	
 	list_node * sel_list;
 	list_node *phanton;
