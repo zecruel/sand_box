@@ -791,4 +791,101 @@ void nk_sdl_shutdown(gui_obj *gui)
     //memset(&sdl, 0, sizeof(sdl));
 }
 
+int gui_start(gui_obj *gui){
+	if(!gui) return 0;
+	
+	int i = 0;
+	bmp_color gray = {.r = 100, .g = 100, .b = 100, .a = 255};
+	
+	gui->ctx = NULL;
+	gui->font = NULL;
+	gui->buf = NULL;
+	gui->last = NULL;
+	
+	gui->drawing = NULL;
+	gui->element = NULL;
+	gui->near_el = NULL;
+	
+	gui->main_w = 2048;
+	gui->main_h = 2048;
+	
+	gui->win_w = 1200;
+	gui->win_h = 710;
+	
+	gui->next_win_x = 0;
+	gui->next_win_y = 0;
+	gui->next_win_w = 0;
+	gui->next_win_h = 0;
+	
+	gui->mouse_x = 0;
+	gui->mouse_y = 0;
+	
+	gui->zoom = 20.0;
+	gui->ofs_x = -11.0;
+	gui->ofs_y = -71.0;
+	gui->prev_zoom = 20.0;
+	
+	gui->user_x = 0.0;
+	gui->user_y = 0.0;
+	for (i = 0; i <10; i++){
+		gui->step_x[i] =0.0;
+		gui->step_y[i] =0.0;
+	}
+	gui->near_x = 0.0;
+	gui->near_y = 0.0;
+	gui->bulge = 0.0;
+	gui->scale = 1.0;
+	gui->txt_h = 1.0;
+	
+	gui->color_idx = 256;
+	gui->lw_idx = 0;
+	gui->t_al_v = 0;
+	gui->t_al_h = 0;
+	gui->layer_idx = 0;
+	gui->ltypes_idx = 0;
+	
+	gui->step = 0;
+	gui->user_flag_x = 0;
+	gui->user_flag_y = 0;
+	gui->lock_ax_x = 0;
+	gui->lock_ax_y = 0;
+	gui->user_number = 0;
+	gui->keyEnter = 0;
+	gui->draw = 0;
+	gui->draw_tmp = 0;
+	gui->draw_phanton = 0;
+	gui->near_attr = 0;
+	gui->text2tag = 0;
+	gui->en_distance = 0;
+	gui->entry_relative = 1;
+	
+	gui->action = NONE;
+	gui->modal = SELECT;
+	gui->prev_modal = SELECT;
+	gui->ev = EV_NONE;
+	gui->curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
+	
+	gui->background = gray;
+	
+	gui->svg_curves = NULL;
+	gui->svg_bmp = NULL;
+	gui->preview_img = NULL;
+	
+	//gui->b_icon;
+	
+	/* style for toggle buttons (or select buttons) with image */
+	//gui->b_icon_sel, gui->b_icon_unsel;
+	
+	gui->log_msg[0] = 0;
+	gui->txt[0] = 0;
+	gui->blk_name[0] = 0;
+	gui->tag_mark[0] = 0;
+	
+	gui->sel_list = NULL;
+	gui->phanton = NULL;
+	//gui->list_do;
+	
+	return 1;
+}
+
 //#endif

@@ -264,28 +264,13 @@ void load (lua_State *L, const char *fname, int *w, int *h) {
 
 int main(int argc, char** argv){
 	gui_obj *gui = malloc(sizeof(gui_obj));
+	gui_start(gui);
 	
 	lua_State *Lua1 = luaL_newstate(); /* opens Lua */
 	luaL_openlibs(Lua1); /* opens the standard libraries */
 	
-
-	
-	
-	gui->lw_idx = 0;
-	
-	
 	//setlocale(LC_ALL,""); //seta a localidade como a current do computador para aceitar acentuacao
 	int i, ok;
-	
-	
-	/* background image dimension */
-	gui->main_w = 0;
-	gui->main_h = 0;
-	
-	/* Window dimension */
-	gui->win_w = 1200;
-	gui->win_h = 715;
-	
 	
 	load (Lua1, "config.lua", &gui->win_w, &gui->win_h);
 	
@@ -344,29 +329,8 @@ int main(int argc, char** argv){
 	printf(fonts_path);
 	printf(sys_fonts_path);
 	
-	gui->zoom = 20.0; gui->ofs_x = -11.0; gui->ofs_y = -71.0;
-	//double prev_zoom;
-	gui->color_idx = 256;
-	gui->layer_idx = 0;
-	gui->ltypes_idx = 0;
-	gui->element = NULL;
-	dxf_node *prev_el = NULL, *new_el = NULL;
-	gui->near_el = NULL;
-	gui->bulge = 0.0;
-	gui->txt_h = 1.0;
-	gui->scale = 1.0;
-	double pos_x, pos_y, x0, y0, x1, y1, x2, y2, txt_h = 1.0;
-	//double thick = 0.0, thick_prev = 0.0;
-	char txt[DXF_MAX_CHARS];
-	dxf_node *x0_attr = NULL, *y0_attr = NULL, *x1_attr = NULL, *y1_attr = NULL;
-	
-	gui->t_al_v = 0;
-	gui->t_al_h = 0;
-	
-	
-	
-	
-	
+	double pos_x, pos_y;
+
 	/*gui pos variables */
 	gui->next_win_x = 0; gui->next_win_y = 0; gui->next_win_w = 0; gui->next_win_h = 0;
 	
@@ -383,53 +347,20 @@ int main(int argc, char** argv){
 	int show_lay_mng = 0, sel_tmp = 0, show_color_pick = 0, show_lay_name = 0;
 	
 	int ev_type;
-	gui->phanton = NULL;
 	struct nk_color background;
 	
-	char info_buffer[512];
-	info_buffer[0] = 0;
 	
 	int leftMouseButtonDown = 0;
 	int rightMouseButtonDown = 0;
 	int leftMouseButtonClick = 0;
 	int rightMouseButtonClick = 0;
 	int MouseMotion = 0;
-	gui->keyEnter = 0;
 	
-	
-	gui->step = 0;
-	gui->lock_ax_x = 0;
-	gui->lock_ax_y = 0;
-	gui->draw_tmp = 0;
-	//double step_x[10], step_y[10];
-	
-	gui->user_x = 0.0; gui->user_y = 0.0;
-	gui->user_flag_x = 0; gui->user_flag_y = 0;
-	gui->user_number = 0;
-	gui->en_distance = 0; /* enable distance entry */
-	gui->entry_relative = 1;
-	
-	gui->curr_attr_t = ATRC_END|ATRC_MID|ATRC_QUAD;
-	//double gui->near_x, gui->near_y;
-	//int gui->near_attr; /* flag */
 	int en_attr = 1;
 	
-	//char gui->log_msg[64];
-	gui->log_msg[0] = 0;
-	
-	
-	//graph_obj *tmp_graph = NULL;
-	
 	SDL_Event event;
-	//int gui->mouse_x, gui->mouse_y;
-	
-	//double rect_pt1[2], rect_pt2[2];
 	int low_proc = 1;
-	
-	gui->action = NONE;
-	gui->modal = SELECT;
-	gui->prev_modal = SELECT;
-	
+		
 	char recv_comm[64];
 	int recv_comm_flag = 0;
 	
@@ -552,13 +483,11 @@ int main(int argc, char** argv){
 	//bmp_img * gui->preview_img;
 	gui->preview_img = bmp_new(160, 160, grey, red);
 	//char tag_mark[DXF_MAX_CHARS];
-	gui->blk_name[0] = 0;
-	gui->text2tag = 0;
+	
 	
 	/* init comands */
 	recv_comm[0] = 0;
-	txt[0] = 0;
-	gui->txt[0] = 0;
+	
 	
 	/* init the drawing */
 	gui->drawing = malloc(sizeof(dxf_drawing));

@@ -175,11 +175,14 @@ NK_API int nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt);
 
 NK_API void nk_sdl_shutdown(gui_obj *gui);
 
+int gui_start(gui_obj *gui);
+
 extern int dxf_lw[];
 extern const char *dxf_lw_descr[];
 extern bmp_color dxf_colors[];
 extern const char *text_al_h[];
 extern const char *text_al_v[];
+
 
 #ifndef DXF_LW_LEN
 	#define DXF_LW_LEN 24
