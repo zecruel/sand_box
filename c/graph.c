@@ -2,6 +2,7 @@
 #define GRAPH_PAGE 10000
 #define LINE_PAGE 10000
 #define GRAPH_NUM_POOL 5
+#define TOLERANCE 1e-9
 
 void * graph_mem_pool2(enum graph_pool_action action){
 	
@@ -602,6 +603,54 @@ void graph_ellipse(graph_obj * master,
 	}
 }
 
+void graph_ellipse2(graph_obj * master,
+		double major_ax, double minor_ax, 
+		double ang_start, double ang_end){
+	if (master){
+		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		double ang;
+		int steps, i;
+		double x0, y0, x1, y1;
+		
+		//ang_start *= M_PI/180;
+		//ang_end *= M_PI/180;
+		
+		//major_ax = sqrt(pow(p2_x, 2) + pow(p2_y, 2)) ;
+		minor_ax *= major_ax;
+		
+		//printf("major = %0.2f, minor = %0.2f\n", major_ax, minor_ax);
+		//printf("ang_start = %0.2f, ang_end = %0.2f\n", ang_start, ang_end);
+		
+		ang = (ang_end - ang_start); //angulo do arco
+		if (ang <= 0){ ang = ang + 2*M_PI;}
+		
+		//descobre quantos passos para o laço a seguir
+		steps = (int) floor(fabs(ang*n/(2*M_PI))); //numero de vertices do arco
+		
+		x0 = major_ax * cos(ang_start);
+		y0 = minor_ax * sin(ang_start);
+		
+		//printf("Arco, stp = %d, r = %0.2f, ang = %0.2f\n pts = )", steps, radius, ang);
+		
+		//já começa do segundo vértice
+		for (i = 1; i < steps; i++){
+			x1 = major_ax * cos(2 * M_PI * i / n + ang_start);
+			y1 = minor_ax * sin(2 * M_PI * i / n + ang_start);
+			
+			line_add(master, x0, y0, 0.0, x1, y1, 0.0);
+			//printf("(%0.2f,%0.2f),", x1, y1);
+			x0=x1;
+			y0=y1;
+		}
+		// o ultimo vertice do arco eh o ponto final, nao calculado no laço
+		x1 = major_ax * cos(ang_end);
+		y1 = minor_ax * sin(ang_end);
+		line_add(master, x0, y0, 0.0, x1, y1, 0.0);
+		
+		//printf("(%0.2f,%0.2f)\n", x1, y1);
+	}
+}
+
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */
@@ -996,10 +1045,10 @@ void unit_vector(double a[3]){
 	}
 }
 
-void graph_mod_axis(graph_obj * master, double normal[3]){
+void graph_mod_axis(graph_obj * master, double normal[3] , double elev){
 	if ((master != NULL)){
 		if(master->list->next){ /* check if list is not empty */
-			double x_axis[3], y_axis[3], point[3];
+			double x_axis[3], y_axis[3], point[3], x_col[3], y_col[3];
 			double wy_axis[3] = {0.0, 1.0, 0.0};
 			double wz_axis[3] = {0.0, 0.0, 1.0};
 			
@@ -1010,16 +1059,26 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 			
 			master->ext_ini = 0;
 			
-			//unit_vector(normal);
+			
 			if ((fabs(normal[0] < 0.015625)) && (fabs(normal[1] < 0.015625))){
 				cross_product(wy_axis, normal, x_axis);
 			}
 			else{
 				cross_product(wz_axis, normal, x_axis);
 			}
-			unit_vector(x_axis);
 			cross_product(normal, x_axis, y_axis);
+			
+			unit_vector(x_axis);
 			unit_vector(y_axis);
+			unit_vector(normal);
+			
+			x_col[0] = x_axis[0];
+			x_col[1] = y_axis[0];
+			x_col[2] = normal[0];
+			
+			y_col[0] = x_axis[1];
+			y_col[1] = y_axis[1];
+			y_col[2] = normal[1];
 			
 			/* apply changes to each point */
 			while(current){ /*sweep the list content */
@@ -1027,14 +1086,16 @@ void graph_mod_axis(graph_obj * master, double normal[3]){
 				point[0] = current->x0;
 				point[1] = current->y0;
 				point[2] = current->z0;
-				x0 = dot_product(point, x_axis);
-				y0 = dot_product(point, y_axis);
+				if (fabs(point[2]) < TOLERANCE) point[2] = elev;
+				x0 = dot_product(point, x_col);
+				y0 = dot_product(point, y_col);
 				
 				point[0] = current->x1;
 				point[1] = current->y1;
 				point[2] = current->z1;
-				x1 = dot_product(point, x_axis);
-				y1 = dot_product(point, y_axis);
+				if (fabs(point[2]) < TOLERANCE) point[2] = elev;
+				x1 = dot_product(point, x_col);
+				y1 = dot_product(point, y_col);
 				
 				
 				/* update the graph */
@@ -1294,7 +1355,7 @@ int graph_list_rot_idx(list_node *list, double base_x, double base_y , double ro
 	return ok;
 }
 
-int graph_list_mod_ax(list_node *list, double normal[3], int start_idx, int end_idx){
+int graph_list_mod_ax(list_node *list, double normal[3], double elev, int start_idx, int end_idx){
 	list_node *current = NULL;
 	graph_obj *curr_graph = NULL;
 	int ok = 0, i = 0;
@@ -1307,7 +1368,7 @@ int graph_list_mod_ax(list_node *list, double normal[3], int start_idx, int end_
 			if (current->data){
 				curr_graph = (graph_obj *)current->data;
 				if(i >= start_idx){
-					graph_mod_axis(curr_graph, normal);
+					graph_mod_axis(curr_graph, normal, elev);
 				}
 			}
 			if(i >= end_idx) break;

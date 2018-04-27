@@ -15,6 +15,7 @@ struct ins_save{
 	int color, ltype, lw;
 	int start_idx, end_idx;
 	double normal[3];
+	double elev;
 };
 
 list_node * dxf_graph_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx);

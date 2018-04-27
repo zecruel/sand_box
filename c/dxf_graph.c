@@ -1,7 +1,8 @@
 #include "dxf_graph.h"
 #include "list.h"
 
-#include "dxf_colors.h"
+//#include "dxf_colors.h"
+extern bmp_color dxf_colors[];
 #include <string.h>
 
 
@@ -194,6 +195,7 @@ graph_obj * dxf_circle_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double radius;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		/*flags*/
 		int pt1 = 0, paper = 0;
@@ -219,6 +221,9 @@ graph_obj * dxf_circle_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 					case 30:
 						pt1_z = current->value.d_data;
 						pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 40:
 						radius = current->value.d_data;
@@ -249,7 +254,7 @@ graph_obj * dxf_circle_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 				normal[0] = extru_x;
 				normal[1] = extru_y;
 				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
+				graph_mod_axis(curr_graph, normal, elev);
 			}
 			return curr_graph;
 		}
@@ -264,6 +269,7 @@ graph_obj * dxf_arc_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int
 		double radius;
 		double start_ang = 0.0, end_ang = 0.0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		/*flags*/
 		int pt1 = 0, paper = 0;
@@ -289,6 +295,9 @@ graph_obj * dxf_arc_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int
 					case 30:
 						pt1_z = current->value.d_data;
 						pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 40:
 						radius = current->value.d_data;
@@ -325,12 +334,89 @@ graph_obj * dxf_arc_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int
 				normal[0] = extru_x;
 				normal[1] = extru_y;
 				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
+				graph_mod_axis(curr_graph, normal, elev);
 			}
 			return curr_graph;
 		}
 	}
 	return NULL;
+}
+
+void dxf_ellipse_mod_axis(graph_obj * master, double x_axis[3], double z_axis[3]){
+	if ((master != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			double y_axis[3], point[3], x_col[3], y_col[3];
+			
+			
+			double x0, y0, x1, y1;
+			double min_x, min_y, max_x, max_y;
+			line_node *current = master->list->next;
+			
+			master->ext_ini = 0;
+			
+			unit_vector(z_axis);
+			
+			cross_product(z_axis, x_axis, y_axis);
+			unit_vector(y_axis);
+			
+			unit_vector(x_axis);
+			
+			x_col[0] = x_axis[0];
+			x_col[1] = y_axis[0];
+			x_col[2] = z_axis[0];
+			
+			y_col[0] = x_axis[1];
+			y_col[1] = y_axis[1];
+			y_col[2] = z_axis[1];
+			
+			
+			/* apply changes to each point */
+			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				point[0] = current->x0;
+				point[1] = current->y0;
+				point[2] = current->z0;
+				x0 = dot_product(point, x_col);
+				y0 = dot_product(point, y_col);
+				
+				point[0] = current->x1;
+				point[1] = current->y1;
+				point[2] = current->z1;
+				x1 = dot_product(point, x_col);
+				y1 = dot_product(point, y_col);
+				
+				
+				/* update the graph */
+				current->x0 = x0;
+				current->y0 = y0;
+				current->x1 = x1;
+				current->y1 = y1;
+				
+				/*update the extent of graph */
+				/* sort the coordinates of entire line*/
+				min_x = (x0 < x1) ? x0 : x1;
+				min_y = (y0 < y1) ? y0 : y1;
+				max_x = (x0 > x1) ? x0 : x1;
+				max_y = (y0 > y1) ? y0 : y1;
+				if (master->ext_ini == 0){
+					master->ext_ini = 1;
+					master->ext_min_x = min_x;
+					master->ext_min_y = min_y;
+					master->ext_max_x = max_x;
+					master->ext_max_y = max_y;
+				}
+				else{
+					master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
+					master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+					master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
+					master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
+				}
+				
+				current = current->next; /* go to next */
+			}
+		}
+	}
+	
 }
 
 graph_obj * dxf_ellipse_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
@@ -408,13 +494,21 @@ graph_obj * dxf_ellipse_parse(dxf_drawing *drawing, dxf_node * ent, int p_space,
 			if (curr_graph){
 				
 				/* add the graph */
-				graph_ellipse(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z, minor_ax, start_ang, end_ang);
+				//graph_ellipse(curr_graph, pt1_x, pt1_y, pt1_z, pt2_x, pt2_y, pt2_z, minor_ax, start_ang, end_ang);
 				
 				/* convert OCS to WCS */
 				//normal[0] = extru_x;
 				//normal[1] = extru_y;
 				//normal[2] = extru_z;
 				//graph_mod_axis(curr_graph, normal);
+				double major_ax = sqrt(pow(pt2_x, 2) + pow(pt2_y, 2)) ;
+				
+				graph_ellipse2(curr_graph, major_ax, minor_ax, start_ang, end_ang);
+				double x_axis[3] = {pt2_x, pt2_y, pt2_z};
+				double z_axis[3] = {extru_x, extru_y, extru_z};
+				dxf_ellipse_mod_axis(curr_graph, x_axis, z_axis);
+				
+				graph_modify(curr_graph, pt1_x, pt1_y, 1.0, 1.0, 0.0);
 			}
 			return curr_graph;
 		}
@@ -430,6 +524,7 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 		double start_w = 0, end_w = 0;
 		double bulge = 0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		int pline_flag = 0;
 		int first = 0, closed =0;
@@ -461,6 +556,9 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 					case 30:
 						pt1_z = current->value.d_data;
 						pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 40:
 						start_w = current->value.d_data;
@@ -571,7 +669,7 @@ graph_obj * dxf_pline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 						//printf("fim\n");
 						
 						/* convert OCS to WCS */
-						graph_mod_axis(curr_graph, normal);
+						graph_mod_axis(curr_graph, normal, elev);
 						
 						break;
 					}
@@ -599,6 +697,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space,
 		int first = 0, closed =0;
 		double prev_x, prev_y, prev_z, last_x, last_y, last_z, curr_x;
 		double prev_bulge = 0;
+		double elev = 0.0;
 		
 		/*flags*/
 		int pt1 = 0, init = 0, paper = 0;
@@ -625,6 +724,9 @@ graph_obj * dxf_lwpline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space,
 					case 30:
 						pt1_z = current->value.d_data;
 						//pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 40:
 						start_w = current->value.d_data;
@@ -735,7 +837,7 @@ graph_obj * dxf_lwpline_parse(dxf_drawing *drawing, dxf_node * ent, int p_space,
 		normal[0] = extru_x;
 		normal[1] = extru_y;
 		normal[2] = extru_z;
-		graph_mod_axis(curr_graph, normal);
+		graph_mod_axis(curr_graph, normal, elev);
 		
 		return curr_graph;
 	}
@@ -891,6 +993,7 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		shape *shx_font = NULL;
 		
@@ -952,6 +1055,9 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 					case 30:
 						pt1_z = current->value.d_data;
 						pt1 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 31:
 						pt2_z = current->value.d_data;
@@ -1151,7 +1257,7 @@ graph_obj * dxf_text_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, in
 				normal[0] = extru_x;
 				normal[1] = extru_y;
 				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
+				graph_mod_axis(curr_graph, normal, elev);
 				
 			}
 			return curr_graph;
@@ -1167,6 +1273,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 		double pt1_x = 0, pt1_y = 0, pt1_z = 0;
 		double pt2_x = 0, pt2_y = 0, pt2_z = 0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		shape *shx_font = NULL;
 		
@@ -1232,6 +1339,9 @@ graph_obj * dxf_attrib_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 					case 31:
 						pt2_z = current->value.d_data;
 						pt2 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 40:
 						t_size = current->value.d_data;
@@ -1427,7 +1537,7 @@ graph_obj * dxf_attrib_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, 
 				normal[0] = extru_x;
 				normal[1] = extru_y;
 				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
+				graph_mod_axis(curr_graph, normal, elev);
 				
 			}
 			return curr_graph;
@@ -1444,6 +1554,7 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 		double pt3_x = 0, pt3_y = 0, pt3_z = 0;
 		double pt4_x = 0, pt4_y = 0, pt4_z = 0;
 		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
 		
 		int i, paper = 0;
 		
@@ -1483,6 +1594,9 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 					case 31:
 						pt2_z = current->value.d_data;
 						pt2 = 1; /* set flag */
+						break;
+					case 38:
+						elev = current->value.d_data;
 						break;
 					case 12:
 						pt3_x = current->value.d_data;
@@ -1549,7 +1663,7 @@ graph_obj * dxf_solid_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 				normal[0] = extru_x;
 				normal[1] = extru_y;
 				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal);
+				graph_mod_axis(curr_graph, normal, elev);
 			}
 			return curr_graph;
 		}
@@ -1607,7 +1721,8 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		.ofs_x = 0.0, .ofs_y =0.0, .ofs_z =0.0,
 		.rot = 0.0, .scale_x = 1.0 , .scale_y = 1.0, .scale_z = 1.0,
 		.color = 7, .ltype = 0, .lw =0,
-		.normal = {0.0, 0.0, 1.0}
+		.normal = {0.0, 0.0, 1.0},
+		.elev = 0.0
 	};
 	
 	ins_stack[0] = ins_zero;
@@ -1977,6 +2092,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					ins_stack[ins_stack_pos].normal[0] = extru_x;
 					ins_stack[ins_stack_pos].normal[1] = extru_y;
 					ins_stack[ins_stack_pos].normal[2] = extru_z;
+					ins_stack[ins_stack_pos].elev = elev;
 				}
 				else{ /* to draw dimmensions */
 					ins_stack[ins_stack_pos].ofs_x = 0.0;
@@ -1990,6 +2106,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					ins_stack[ins_stack_pos].normal[0] = 0.0;
 					ins_stack[ins_stack_pos].normal[1] = 0.0;
 					ins_stack[ins_stack_pos].normal[2] = 1.0;
+					ins_stack[ins_stack_pos].elev = 0.0;
 				}
 				ins_stack[ins_stack_pos].start_idx = mod_idx;
 				
@@ -2065,6 +2182,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 							);
 						graph_list_mod_ax(list_ret,
 							ins_stack[ins_stack_pos].normal,
+							ins_stack[ins_stack_pos].elev,
 							ins_stack[ins_stack_pos].start_idx,
 							mod_idx - 1
 							);

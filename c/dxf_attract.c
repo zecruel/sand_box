@@ -9,26 +9,6 @@
 
 #define SIG(x) (x >= 0) ? 1 : -1
 
-static double dot_product(double a[3], double b[3]){
-	return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-}
- 
-static void cross_product(double a[3], double b[3], double c[3]){
-	c[0] = a[1]*b[2] - a[2]*b[1];
-	c[1] = a[2]*b[0] - a[0]*b[2];
-	c[2] = a[0]*b[1] - a[1]*b[0];
-}
-
-static void unit_vector(double a[3]){
-	double mod;
-	
-	mod = sqrt(pow(a[0], 2) + pow(a[1], 2) + pow(a[2], 2));
-	if (mod > 0.0) {
-		a[0] /= mod;
-		a[1] /= mod;
-		a[2] /= mod;
-	}
-}
 
 int point_lies_seg(double p1x, double p1y, double p2x, double p2y,
 double x, double y){

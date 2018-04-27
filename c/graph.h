@@ -76,12 +76,16 @@ void graph_ellipse(graph_obj * master,
 		double p1_x, double p1_y, double p1_z,
 		double p2_x, double p2_y, double p2_z,
 		double minor_ax, double ang_start, double ang_end);
+		
+void graph_ellipse2(graph_obj * master,
+		double major_ax, double minor_ax, 
+		double ang_start, double ang_end);
 
 void graph_modify(graph_obj * master, double ofs_x, double ofs_y, double scale_x, double scale_y, double rot);
 
 void graph_rot(graph_obj * master, double base_x, double base_y, double rot);
 
-void graph_mod_axis(graph_obj * master, double normal[3]);
+void graph_mod_axis(graph_obj * master, double normal[3] , double elev);
 
 void knot(int n, int c, int x[]);
 
@@ -103,9 +107,14 @@ int graph_list_rot(list_node *list, double base_x, double base_y , double rot);
 
 int graph_list_rot_idx(list_node *list, double base_x, double base_y , double rot, int start_idx, int end_idx);
 
-int graph_list_mod_ax(list_node *list, double normal[3], int start_idx, int end_idx);
+int graph_list_mod_ax(list_node *list, double normal[3], double elev, int start_idx, int end_idx);
 
 graph_obj * graph_list_isect(list_node *list, double rect_pt1[2], double rect_pt2[2]);
 
+double dot_product(double a[3], double b[3]);
+
+void cross_product(double a[3], double b[3], double c[3]);
+
+void unit_vector(double a[3]);
 
 #endif

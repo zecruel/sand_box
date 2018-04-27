@@ -331,10 +331,6 @@ int main(int argc, char** argv){
 	
 	double pos_x, pos_y;
 
-	/*gui pos variables */
-	gui->next_win_x = 0; gui->next_win_y = 0; gui->next_win_w = 0; gui->next_win_h = 0;
-	
-	
 	int open_prg = 0;
 	int progress = 0;
 	int progr_win = 0;
