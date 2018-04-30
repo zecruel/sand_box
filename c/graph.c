@@ -396,6 +396,159 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 	}
 }
 
+
+void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
+	if ((master != NULL) && (img != NULL)){
+		if(master->list->next){ /* check if list is not empty */
+			int x0, y0, x1, y1, ok = 1;
+			double xd0, yd0, xd1, yd1;
+			line_node *current = master->list->next;
+			int corners = 0, prev_x, prev_y; /* for fill */
+			int corner_x[1000], corner_y[1000], stroke[1000];
+			int i;
+			int patt_i = 0;
+			
+			
+			
+			/* set the pattern */
+			patt_change(img, (double[]){1.0,}, 1);
+			/* set the color */
+			img->frg = master->color;
+			
+			/* set the tickness */
+			if (master->thick_const) img->tick = (int) round(master->tick);
+			else img->tick = (int) round(master->tick * scale);
+			
+			/* draw the lines */
+			while(current){ /*sweep the list content */
+				/* apply the scale and offset */
+				ok = 1;
+				
+				ok &= !(isnan(xd0 = round((current->x0 - ofs_x) * scale)));
+				ok &= !(isnan(yd0 = round((current->y0 - ofs_y) * scale)));
+				ok &= !(isnan(xd1 = round((current->x1 - ofs_x) * scale)));
+				ok &= !(isnan(yd1 = round((current->y1 - ofs_y) * scale)));
+					
+				//y0 = (int) round((current->y0 - ofs_y) * scale);
+				//x1 = (int) round((current->x1 - ofs_x) * scale);
+				//y1 = (int) round((current->y1 - ofs_y) * scale);
+				
+				if (ok){
+					x0 = (int) xd0;
+					y0 = (int) yd0;
+					x1 = (int) xd1;
+					y1 = (int) yd1;
+					
+					double patt_len = 0.0, x, y;
+					
+					/* get polar parameters of line */
+					x = xd1 - xd0;
+					y = yd1 - yd0;
+					double modulus = sqrt(pow(x, 2) + pow(y, 2));
+					double ang = atan2(y, x);
+					double cosine = cos(ang);
+					double sine = sin(ang);
+					
+					
+					
+					
+					for (i = 0; i <= master->patt_size && i < 20; i++){
+						patt_len += fabs(master->pattern[i]);
+					}
+				
+					
+					patt_len *= scale;
+					
+					double patt_int, patt_rem;
+					
+					patt_rem = fabs(modf(modulus/patt_len, &patt_int));
+					patt_rem *= patt_len;
+					
+					int patt_a_i = 0;
+					double patt_acc = 0.0;
+					for (i = 0; i <= master->patt_size && i < 20; i++){
+						patt_a_i = i;
+						if (patt_rem < patt_acc) {
+							patt_rem = patt_acc - patt_rem;
+							break;
+						}
+						patt_acc += fabs(master->pattern[i]) * scale;
+					}
+					
+					double patt_start = xd0 * cosine + yd0 * sine;
+					double patt_start_i;
+					patt_start = fabs(modf(patt_start/patt_len, &patt_start_i) * patt_len);
+					patt_acc = 0.0;
+					for (i = 0; i <= master->patt_size && i < 20; i++){
+						patt_i = i;
+						if (patt_start <= patt_acc) break;
+						patt_acc += fabs(master->pattern[i]) * scale;
+					}
+					
+					
+					double p1x, p1y, p2x, p2y;
+					p1x = xd0;
+					p1y = yd0;
+					
+					p2x = patt_rem * cosine + p1x;
+					p2y = patt_rem * sine + p1y;
+					if (master->pattern[patt_i] >= 0.0){
+						bmp_line(img, p1x, p1y, p2x, p2y);
+					}
+					
+					p1x = p2x;
+					p1y = p2y;
+					patt_i++;
+					if (patt_i > master->patt_size) patt_i = 0;
+					
+					for (i = (int) (patt_int * (master->patt_size + 1)) + patt_a_i - 2; i > 0; i--){
+						
+						p2x = fabs(master->pattern[patt_i]) * scale * cosine + p1x;
+						p2y = fabs(master->pattern[patt_i]) * scale * sine + p1y;
+						if (master->pattern[patt_i] >= 0.0){
+							bmp_line(img, p1x, p1y, p2x, p2y);
+						}
+						
+						p1x = p2x;
+						p1y = p2y;
+						patt_i++;
+						if (patt_i > master->patt_size) patt_i = 0;
+					}
+					if ((fabs(p1x - xd1) > TOLERANCE) || (fabs(p1y - yd1) > TOLERANCE)){
+						if (master->pattern[patt_i] >= 0.0) bmp_line(img, p1x, p1y, xd1, yd1);
+					}
+					
+					//bmp_line(img, xd0, yd0, xd1, yd1);
+					//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
+					
+					if (master->fill && (corners < 1000)){ /* check if object is filled */
+						/*build the lists of corners */
+						if (((x0 != prev_x)||(y0 != prev_y))||(corners == 0)){
+							corner_x[corners] = x0;
+							corner_y[corners] = y0;
+							stroke[corners] = 0;
+							corners++;
+						}
+						corner_x[corners] = x1;
+						corner_y[corners] = y1;
+						stroke[corners] = 1;
+						corners++;
+						
+						prev_x = x1;
+						prev_y = y1;
+					}
+				}
+				current = current->next; /* go to next */
+			}
+			
+			if (master->fill && corners){ /* check if object is filled */
+				/* draw a filled polygon */
+				bmp_poly_fill(img, corners, corner_x, corner_y, stroke);
+			}
+		}
+	}
+}
+
 void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale, bmp_color color){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
@@ -1200,7 +1353,7 @@ int graph_list_draw(list_node *list, bmp_img * img, double ofs_x, double ofs_y, 
 		while (current != NULL){
 			if (current->data){
 				curr_graph = (graph_obj *)current->data;
-				graph_draw(curr_graph, img, ofs_x, ofs_y, scale);
+				graph_draw2(curr_graph, img, ofs_x, ofs_y, scale);
 			}
 			current = current->next;
 		}
