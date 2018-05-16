@@ -61,6 +61,8 @@ struct Bmp_img {
 typedef struct Bmp_img bmp_img;
 
 
+int line_clip(bmp_img *img, double *x0, double *y0, double *x1, double *y1);
+
 rect_pos rect_find_pos(double x, double y, double xmin, double ymin, double xmax, double ymax);
 
 void bmp_fit(bmp_img *img, double min_x, double min_y, double max_x, double max_y, double *zoom, double *ofs_x, double *ofs_y);

@@ -400,15 +400,20 @@ void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
-			int x0, y0, x1, y1, ok = 1;
+			double x0, y0, x1, y1;
+			int ok = 1;
 			double xd0, yd0, xd1, yd1;
 			line_node *current = master->list->next;
 			int corners = 0, prev_x, prev_y; /* for fill */
 			int corner_x[1000], corner_y[1000], stroke[1000];
 			int i;
-			int patt_i = 0;
+			int patt_i = 0, patt_a_i = 0;
+			double patt_len = 0.0, patt_int, patt_part, patt_rem = 0.0, patt_acc;
+			double patt_start_x = 0, patt_start_y = 0;
+			double patt_start = 0, patt_start_i;
 			
-			
+			double dx, dy, modulus, sine, cosine;
+			double p1x, p1y, p2x, p2y, last_x, last_y;
 			
 			/* set the pattern */
 			patt_change(img, (double[]){1.0,}, 1);
@@ -418,6 +423,83 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 			/* set the tickness */
 			if (master->thick_const) img->tick = (int) round(master->tick);
 			else img->tick = (int) round(master->tick * scale);
+			
+			/* get the pattern length */
+			for (i = 0; i <= master->patt_size && i < 20; i++){
+				patt_len += fabs(master->pattern[i]);
+			}
+			//patt_len *= scale;
+			
+			/*first vertice*/
+			if (current){
+				x0 = current->x0;
+				y0 = current->y0;
+				x1 = current->x1;
+				y1 = current->y1;
+				
+				
+				/* get polar parameters of line */
+				dx = x1 - x0;
+				dy = y1 - y0;
+				modulus = sqrt(pow(dx, 2) + pow(dy, 2));
+				cosine = 1.0;
+				sine = 0.0;
+				
+				if (modulus > TOLERANCE){
+					cosine = dx/modulus;
+					sine = dy/modulus;
+				}
+				
+				/* find the start point of pattern, based in line - axis interceptions*/
+				patt_start_x = x0;
+				patt_start_y = y0;
+				patt_start = 0;
+				
+				if (fabs(dy) > TOLERANCE){
+					patt_start_x = (dy * x0 - dx * y0) / dy;
+					patt_start_x /= 2;
+				}else patt_start_x = 0;
+				
+				if (fabs(dx) > TOLERANCE){
+					patt_start_y = (dx * y0 - dy * x0) / dx;
+					patt_start_y /= 2;
+				}else patt_start_y = 0;
+				
+				/*find distance between pattern start and segment's first point */
+				if (fabs(cosine) > TOLERANCE){
+					patt_start = (patt_start_x - x0)/ cosine;
+				}
+				else if (fabs(sine) > TOLERANCE){
+					patt_start = (patt_start_y - y0)/ sine;
+				}
+				
+				/* find the pattern initial conditions for the first point*/
+				if (patt_start < 0){ /* start of pattern outside segment */
+					patt_start = fabs(fmod(patt_start, patt_len));
+					patt_acc = fabs(master->pattern[0]);// * scale;
+					for (i = 1; i < master->patt_size && i < 20; i++){
+						patt_i = i - 1;
+						if (patt_start <= patt_acc){
+							patt_rem = (patt_acc - patt_start);
+							break;
+						}
+						patt_acc += fabs(master->pattern[i]);// * scale;
+					}
+				}
+				else { /* start of pattern on segment -> reverse the search */
+					patt_start = fabs(fmod(patt_start, patt_len));
+					patt_acc = fabs(master->pattern[master->patt_size - 1]);// * scale;
+					for (i = 1; i < master->patt_size && i < 20; i++){
+						patt_i = master->patt_size - i;
+						if (patt_start <= patt_acc){
+							patt_rem = fabs(master->pattern[patt_i]) - (patt_acc - patt_start);
+							break;
+						}
+						patt_acc += fabs(master->pattern[patt_i - 1]);// * scale;
+					}
+				}
+			}
+			
 			
 			/* draw the lines */
 			while(current){ /*sweep the list content */
@@ -433,65 +515,46 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 				//x1 = (int) round((current->x1 - ofs_x) * scale);
 				//y1 = (int) round((current->y1 - ofs_y) * scale);
 				
-				if (ok){
-					x0 = (int) xd0;
-					y0 = (int) yd0;
-					x1 = (int) xd1;
-					y1 = (int) yd1;
+				if ((ok)   ){//&& (line_clip(img, &xd0, &yd0, &xd1, &yd1))) {
+					x0 = current->x0;
+					y0 = current->y0;
+					x1 = current->x1;
+					y1 = current->y1;
 					
-					double patt_len = 0.0, x, y;
 					
 					/* get polar parameters of line */
-					x = xd1 - xd0;
-					y = yd1 - yd0;
-					double modulus = sqrt(pow(x, 2) + pow(y, 2));
-					double ang = atan2(y, x);
-					double cosine = cos(ang);
-					double sine = sin(ang);
+					dx = x1 - x0;
+					dy = y1 - y0;
+					modulus = sqrt(pow(dx, 2) + pow(dy, 2));
+					cosine = 1.0;
+					sine = 0.0;
 					
-					
-					
-					
-					for (i = 0; i <= master->patt_size && i < 20; i++){
-						patt_len += fabs(master->pattern[i]);
-					}
-				
-					
-					patt_len *= scale;
-					
-					double patt_int, patt_rem;
-					
-					patt_rem = fabs(modf(modulus/patt_len, &patt_int));
-					patt_rem *= patt_len;
-					
-					int patt_a_i = 0;
-					double patt_acc = 0.0;
-					for (i = 0; i <= master->patt_size && i < 20; i++){
-						patt_a_i = i;
-						if (patt_rem < patt_acc) {
-							patt_rem = patt_acc - patt_rem;
-							break;
-						}
-						patt_acc += fabs(master->pattern[i]) * scale;
+					if (modulus > TOLERANCE){
+						cosine = dx/modulus;
+						sine = dy/modulus;
 					}
 					
-					double patt_start = xd0 * cosine + yd0 * sine;
-					double patt_start_i;
-					patt_start = fabs(modf(patt_start/patt_len, &patt_start_i) * patt_len);
-					patt_acc = 0.0;
-					for (i = 0; i <= master->patt_size && i < 20; i++){
-						patt_i = i;
-						if (patt_start <= patt_acc) break;
-						patt_acc += fabs(master->pattern[i]) * scale;
+					/* find how many interations over whole pattern */ 
+					patt_part = fabs(modf(modulus/patt_len, &patt_int));
+					patt_part *= patt_len; /* remainder for the next step*/
+					
+					/* find how many interations over partial pattern */
+					patt_a_i = 0;
+					patt_acc = fabs(master->pattern[0]);// * scale;
+					for (i = 1; i < master->patt_size && i < 20; i++){
+						patt_a_i = i - 1;
+						if (patt_part < patt_acc) break;
+						patt_acc += fabs(master->pattern[i]);// * scale;
 					}
 					
 					
-					double p1x, p1y, p2x, p2y;
-					p1x = xd0;
-					p1y = yd0;
+					p1x = round((x0 - ofs_x) * scale);
+					p1y = round((y0 - ofs_y) * scale);
+					last_x = round((x1 - ofs_x) * scale);
+					last_y = round((y1 - ofs_y) * scale);
 					
-					p2x = patt_rem * cosine + p1x;
-					p2y = patt_rem * sine + p1y;
+					p2x = patt_rem * scale * cosine + p1x;
+					p2y = patt_rem * scale * sine + p1y;
 					if (master->pattern[patt_i] >= 0.0){
 						bmp_line(img, p1x, p1y, p2x, p2y);
 					}
@@ -499,9 +562,11 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 					p1x = p2x;
 					p1y = p2y;
 					patt_i++;
-					if (patt_i > master->patt_size) patt_i = 0;
+					if (patt_i >= master->patt_size) patt_i = 0;
 					
-					for (i = (int) (patt_int * (master->patt_size + 1)) + patt_a_i - 2; i > 0; i--){
+					int iter = (int) (patt_int * (master->patt_size)) + patt_a_i;
+					
+					for (i = 1; i <= iter; i++){
 						
 						p2x = fabs(master->pattern[patt_i]) * scale * cosine + p1x;
 						p2y = fabs(master->pattern[patt_i]) * scale * sine + p1y;
@@ -511,12 +576,18 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 						
 						p1x = p2x;
 						p1y = p2y;
-						patt_i++;
-						if (patt_i > master->patt_size) patt_i = 0;
+						//if (i < iter - 1){
+							patt_i++;
+							if (patt_i >= master->patt_size) patt_i = 0;
+						//}
 					}
-					if ((fabs(p1x - xd1) > TOLERANCE) || (fabs(p1y - yd1) > TOLERANCE)){
-						if (master->pattern[patt_i] >= 0.0) bmp_line(img, p1x, p1y, xd1, yd1);
+					if ((fabs(p1x - last_x) > TOLERANCE) || (fabs(p1y - last_y) > TOLERANCE)){
+						if (master->pattern[patt_i] >= 0.0) bmp_line(img, p1x, p1y, last_x, last_y);
 					}
+					p1x = (p1x - last_x)/scale;
+					p1y = (p1y - last_y)/scale;
+					//patt_rem = fabs(master->pattern[patt_i]) - sqrt(pow(p1x, 2) + pow(p1y, 2));
+					patt_rem = 0;
 					
 					//bmp_line(img, xd0, yd0, xd1, yd1);
 					//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
@@ -1553,3 +1624,24 @@ graph_obj * graph_list_isect(list_node *list, double rect_pt1[2], double rect_pt
 	}
 	return NULL;
 }
+
+/*
+https://stackoverflow.com/questions/11907947/how-to-check-if-a-point-lies-on-a-line-between-2-other-points
+by https://stackoverflow.com/users/688624/imallett
+
+This is independent of Javascript. Try the following algorithm, with points p1=point1 and p2=point2, and your third point being p3=currPoint:
+
+v1 = p2 - p1
+v2 = p3 - p1
+v3 = p3 - p2
+if (dot(v2,v1)>0 and dot(v3,v1)<0) return between
+else return not between
+If you want to be sure it's on the line segment between p1 and p2 as well:
+
+v1 = normalize(p2 - p1)
+v2 = normalize(p3 - p1)
+v3 = p3 - p2
+if (fabs(dot(v2,v1)-1.0)<EPS and dot(v3,v1)<0) return between
+else return not between
+
+*/
