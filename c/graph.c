@@ -407,10 +407,10 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 			int corners = 0, prev_x, prev_y; /* for fill */
 			int corner_x[1000], corner_y[1000], stroke[1000];
 			int i;
-			int patt_i = 0, patt_a_i = 0;
-			double patt_len = 0.0, patt_int, patt_part, patt_rem = 0.0, patt_acc;
+			int patt_i = 0, patt_a_i = 0, patt_p_i = 0, draw;
+			double patt_len = 0.0, patt_int, patt_part, patt_rem = 0.0, patt_acc, patt_rem_n;
 			double patt_start_x = 0, patt_start_y = 0;
-			double patt_start = 0, patt_start_i;
+			double patt_start = 0;
 			
 			double dx, dy, modulus, sine, cosine;
 			double p1x, p1y, p2x, p2y, last_x, last_y;
@@ -498,6 +498,7 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 						patt_acc += fabs(master->pattern[patt_i - 1]);// * scale;
 					}
 				}
+				
 			}
 			
 			
@@ -535,16 +536,26 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 					}
 					
 					/* find how many interations over whole pattern */ 
-					patt_part = fabs(modf(modulus/patt_len, &patt_int));
+					patt_part = fabs(modf((modulus - patt_rem)/patt_len, &patt_int));
 					patt_part *= patt_len; /* remainder for the next step*/
+					//patt_part -= patt_rem;
 					
 					/* find how many interations over partial pattern */
 					patt_a_i = 0;
-					patt_acc = fabs(master->pattern[0]);// * scale;
-					for (i = 1; i < master->patt_size && i < 20; i++){
-						patt_a_i = i - 1;
+					patt_p_i = patt_i + 1;
+					if (patt_p_i >= master->patt_size) patt_p_i = 0;
+					patt_acc = fabs(master->pattern[patt_p_i]);// * scale;
+					patt_rem_n = 0;//patt_acc - patt_part; /* remainder for next segment continues */
+					for (i = 0; i < master->patt_size && i < 20; i++){
+						patt_a_i = i;
 						if (patt_part < patt_acc) break;
-						patt_acc += fabs(master->pattern[i]);// * scale;
+						
+						patt_p_i++;
+						if (patt_p_i >= master->patt_size) patt_p_i = 0;
+						
+						patt_acc += fabs(master->pattern[patt_p_i]);// * scale;
+						
+						patt_rem_n = patt_acc - patt_part;
 					}
 					
 					
@@ -552,25 +563,38 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 					p1y = round((y0 - ofs_y) * scale);
 					last_x = round((x1 - ofs_x) * scale);
 					last_y = round((y1 - ofs_y) * scale);
+					draw = master->pattern[patt_i] >= 0.0;
+					if (patt_rem <= modulus){
+						
+						p2x = patt_rem * scale * cosine + p1x;
+						p2y = patt_rem * scale * sine + p1y;
+						
+						patt_rem = patt_rem_n;
+						patt_i++;
+						if (patt_i >= master->patt_size) patt_i = 0;
+					}
+					else{
+						p2x = modulus * scale * cosine + p1x;
+						p2y = modulus * scale * sine + p1y;
+						
+						patt_rem -= modulus;
+					}
 					
-					p2x = patt_rem * scale * cosine + p1x;
-					p2y = patt_rem * scale * sine + p1y;
-					if (master->pattern[patt_i] >= 0.0){
+					if (draw){
 						bmp_line(img, p1x, p1y, p2x, p2y);
 					}
 					
 					p1x = p2x;
 					p1y = p2y;
-					patt_i++;
-					if (patt_i >= master->patt_size) patt_i = 0;
+					
 					
 					int iter = (int) (patt_int * (master->patt_size)) + patt_a_i;
 					
-					for (i = 1; i <= iter; i++){
-						
+					for (i = 0; i < iter; i++){
+						draw = master->pattern[patt_i] >= 0.0;
 						p2x = fabs(master->pattern[patt_i]) * scale * cosine + p1x;
 						p2y = fabs(master->pattern[patt_i]) * scale * sine + p1y;
-						if (master->pattern[patt_i] >= 0.0){
+						if (draw){
 							bmp_line(img, p1x, p1y, p2x, p2y);
 						}
 						
@@ -580,14 +604,16 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 							patt_i++;
 							if (patt_i >= master->patt_size) patt_i = 0;
 						//}
+						
 					}
 					if ((fabs(p1x - last_x) > TOLERANCE) || (fabs(p1y - last_y) > TOLERANCE)){
-						if (master->pattern[patt_i] >= 0.0) bmp_line(img, p1x, p1y, last_x, last_y);
+						draw = master->pattern[patt_i] >= 0.0;
+						if (draw) bmp_line(img, p1x, p1y, last_x, last_y);
 					}
-					p1x = (p1x - last_x)/scale;
-					p1y = (p1y - last_y)/scale;
+					//p1x = (p1x - last_x)/scale;
+					//p1y = (p1y - last_y)/scale;
 					//patt_rem = fabs(master->pattern[patt_i]) - sqrt(pow(p1x, 2) + pow(p1y, 2));
-					patt_rem = 0;
+					//patt_rem = 0;
 					
 					//bmp_line(img, xd0, yd0, xd1, yd1);
 					//printf("%f %d %d %d %d\n", scale, x0, y0, x1, y1);
