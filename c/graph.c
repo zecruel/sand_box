@@ -472,7 +472,7 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 				}
 				
 				/* find the pattern initial conditions for the first point*/
-				if (patt_start < 0){ /* start of pattern outside segment */
+				if (patt_start <= 0){ /* start of pattern outside segment */
 					patt_start = fabs(fmod(patt_start, patt_len));
 					patt_acc = fabs(master->pattern[0]);
 					for (i = 1; i < master->patt_size && i < 20; i++){
@@ -523,10 +523,10 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 				
 				draw = master->pattern[patt_i] >= 0.0;
 				
-				p1x = round((x0 - ofs_x) * scale);
-				p1y = round((y0 - ofs_y) * scale);
-				last_x = round((x1 - ofs_x) * scale);
-				last_y = round((y1 - ofs_y) * scale);
+				p1x = ((x0 - ofs_x) * scale);
+				p1y = ((y0 - ofs_y) * scale);
+				last_x = ((x1 - ofs_x) * scale);
+				last_y = ((y1 - ofs_y) * scale);
 				
 				if (patt_rem <= modulus){
 				
@@ -536,7 +536,8 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 					
 					/* find how many interations over partial pattern */
 					patt_a_i = 0;
-					patt_p_i = patt_i + 1;
+					patt_p_i = patt_i;
+					if (patt_rem > 0) patt_p_i++;
 					if (patt_p_i >= master->patt_size) patt_p_i = 0;
 					patt_acc = fabs(master->pattern[patt_p_i]);
 					patt_rem_n = patt_part; /* remainder for next segment continues */
@@ -566,6 +567,8 @@ void graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, 
 							bmp_line(img, p1x, p1y, p2x, p2y);
 						}
 					}
+					else if (modulus > fabs(master->pattern[patt_p_i])) patt_a_i++; //<------<-------<--------<---------<
+					
 					patt_rem = patt_rem_n;
 					p1x = p2x;
 					p1y = p2y;
