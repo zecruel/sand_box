@@ -609,6 +609,79 @@ void bmp_poly_fill(bmp_img *img, int verts, int vert_x[], int vert_y[], int stro
 	}
 }
 
+void bmp_rect_fill(bmp_img *img, int vert_x[4], int vert_y[4]){
+	int i, w = img->width, h = img->height;
+	int x0, y0, x1, y1;
+	int min_x, max_x, min_y, max_y;
+	int nodes = 0, node_x[2], swap;
+	int pix_x, pix_y;
+	
+	
+	/* find min and max in coordinates*/
+	min_x = vert_x[0];
+	max_x = vert_x[0];
+	min_y = vert_y[0];
+	max_y = vert_y[0];
+	for (i = 1; i < 4; i++){
+		x0 = vert_x[i];
+		y0 = vert_y[i];
+		/* update min and max vars*/
+		min_x = (min_x < x0) ? min_x : x0;
+		max_x = (max_x > x0) ? max_x : x0;
+		min_y = (min_y < y0) ? min_y : y0;
+		max_y = (max_y > y0) ? max_y : y0;
+	}
+	
+	if((min_x < w) && (max_x > 0) && (min_y < h) && (max_y > 0 )){
+		
+		min_x = (min_x > 0) ? min_x : 0;
+		max_x = (max_x < w) ? max_x : w;
+		min_y = (min_y > 0) ? min_y : 0;
+		max_y = (max_y < h) ? max_y : h;
+		
+		
+		for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
+			nodes = 0;
+			x0 = vert_x[3];
+			y0 = vert_y[3];
+			for (i = 0; i < 4; i++){
+				/* create a list of nodes (intersections of sweep line on polygon) */
+				x1 = vert_x[i];
+				y1 = vert_y[i];
+				
+				/* verify intersection */
+				if(((y0 < pix_y) && (y1 >= pix_y)) || 
+				((y1 < pix_y) && (y0 >= pix_y))){
+					/* find x coord of intersection and add to list */
+					node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+					node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
+					node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
+					nodes++;
+				}
+				
+				x0 = vert_x[i];
+				y0 = vert_y[i];
+			}
+			
+			/* sort the nodes*/
+			swap = node_x[0];
+			if (swap > node_x[1]){
+				node_x[0] = node_x[1];
+				node_x[1] = swap;
+			}
+				
+			/*fill the pixels between node pairs*/
+			for (i = 0; i < nodes ; i += 2){
+				if (i+1 < nodes){
+					for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+						bmp_point_raw(img, pix_x, pix_y);
+					}
+				}
+			}
+		}
+	}
+}
+
 
 void bmp_thick_line(bmp_img *img, int p1x, int p1y, int p2x, int p2y) {
 /* Draw a line on bmp image
