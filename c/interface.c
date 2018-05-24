@@ -1,6 +1,7 @@
 
 #include <SDL.h>
 
+
 #include "dxf.h"
 #include "bmp.h"
 #include "graph.h"
@@ -824,7 +825,10 @@ int main(int argc, char** argv){
 					//printf("Info\n");
 				}
 				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_TOOL]))){
-					printf("Tools\n");
+					//printf("Tools\n");
+					#ifdef OS_WIN
+					DebugBreak();
+					#endif
 				}
 				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_GEAR]))){
 					printf("Config\n");
