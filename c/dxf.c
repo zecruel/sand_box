@@ -900,8 +900,8 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 			current = current->next;
 		}
 		
-		/* adjust pattern to pixel units */
-		/* first, find the max patt length*/
+		/* adjust pattern to pixel units 
+		/* first, find the max patt length
 		max = 0.0;
 		for(j = 0; j < size; j++){
 			if (max < fabs(pat[j])){
@@ -909,10 +909,11 @@ void dxf_ltype_assemb (dxf_drawing *drawing){
 			}
 		}
 		if (max == 0.0) max = 1.0;
-		/* then normalize each value in pattern */
+		/* then normalize each value in pattern 
 		for(j = 0; j < size; j++){
 			pat[j] = pat[j]/max;
 		}
+		*/
 		
 		/* set the variables on the current ltype in drawing structure */
 		if ((i + 1) < DXF_MAX_LTYPES){

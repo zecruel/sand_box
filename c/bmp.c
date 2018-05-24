@@ -716,7 +716,15 @@ void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 	*/
 	
 	if (line_clip(img, &x0, &y0, &x1, &y1)) {
-		bmp_thick_line(img, (int) x0, (int) y0, (int) x1, (int) y1);
+		int x_0 = (int) x0, y_0 = (int) y0;
+		int x_1 = (int) x1, y_1 = (int) y1;
+		if ((x_0 == x_1) && (y_0 == y_1)){ /* a dot*/
+			int thick = 0;
+			if (img != NULL) thick = img->tick/2;
+			if (thick <= 0) thick = 1; /* minimal thick */
+			bmp_circle_fill(img, x_0, y_0, thick);
+		}
+		else bmp_thick_line(img, x_0, y_0, x_1, y_1);
 	}
 }
 
