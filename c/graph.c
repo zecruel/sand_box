@@ -574,7 +574,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 					if (patt_i >= master->patt_size) patt_i = 0;
 					
 					if (draw){
-						bmp_line(img, p1x, p1y, p2x, p2y);
+						bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					}
 				}
 				
@@ -589,7 +589,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 					p2x = fabs(master->pattern[patt_i]) * scale * cosine + p1x;
 					p2y = fabs(master->pattern[patt_i]) * scale * sine + p1y;
 					if (draw){
-						bmp_line(img, p1x, p1y, p2x, p2y);
+						bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					}
 					
 					p1x = p2x;
@@ -604,7 +604,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				p2x = last * scale * cosine + p1x;
 				p2y = last * scale * sine + p1y;
 				draw = master->pattern[patt_i] >= 0.0;
-				if (draw) bmp_line(img, p1x, p1y, p2x, p2y);
+				if (draw) bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
 			}
 			else{ /* current segment is in same past iteration pattern */
 				p2x = modulus * scale * cosine + p1x;
@@ -613,7 +613,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				patt_rem -= modulus;
 			
 				if (draw){
-					bmp_line(img, p1x, p1y, p2x, p2y);
+					bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
 				}
 				p1x = p2x;
 				p1y = p2y;
