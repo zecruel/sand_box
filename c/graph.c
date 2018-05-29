@@ -404,6 +404,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 	if (master->list->next == NULL) return 0;
 	
 	double x0, y0, x1, y1;
+	double dx, dy, modulus, sine, cosine;
 	line_node *current = master->list->next;
 	int corners = 0, prev_x, prev_y; /* for fill */
 	int corner_x[1000], corner_y[1000], stroke[1000];
@@ -424,7 +425,6 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 		double patt_start_x = 0, patt_start_y = 0;
 		double patt_start = 0;
 		
-		double dx, dy, modulus, sine, cosine;
 		double p1x, p1y, p2x, p2y;
 		double last;
 		
@@ -574,7 +574,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 					if (patt_i >= master->patt_size) patt_i = 0;
 					
 					if (draw){
-						bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
+						bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					}
 				}
 				
@@ -589,7 +589,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 					p2x = fabs(master->pattern[patt_i]) * scale * cosine + p1x;
 					p2y = fabs(master->pattern[patt_i]) * scale * sine + p1y;
 					if (draw){
-						bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
+						bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					}
 					
 					p1x = p2x;
@@ -604,7 +604,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				p2x = last * scale * cosine + p1x;
 				p2y = last * scale * sine + p1y;
 				draw = master->pattern[patt_i] >= 0.0;
-				if (draw) bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
+				if (draw) bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 			}
 			else{ /* current segment is in same past iteration pattern */
 				p2x = modulus * scale * cosine + p1x;
@@ -613,7 +613,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				patt_rem -= modulus;
 			
 				if (draw){
-					bmp_line2(img, p1x, p1y, p2x, p2y, -sine, cosine);
+					bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 				}
 				p1x = p2x;
 				p1y = p2y;
@@ -647,8 +647,20 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			x1 = (current->x1 - ofs_x) * scale;
 			y1 = (current->y1 - ofs_y) * scale;
 			
+			/* get polar parameters of line */
+			dx = x1 - x0;
+			dy = y1 - y0;
+			modulus = sqrt(pow(dx, 2) + pow(dy, 2));
+			cosine = 1.0;
+			sine = 0.0;
+			
+			if (modulus > TOLERANCE){
+				cosine = dx/modulus;
+				sine = dy/modulus;
+			}
+			
 			if (master->pattern[0] >= 0.0)
-				bmp_line(img, x0, y0, x1, y1);
+				bmp_line_norm(img, x0, y0, x1, y1, -sine, cosine);
 			
 			if (master->fill && (corners < 1000)){ /* check if object is filled */
 				/*build the lists of corners */

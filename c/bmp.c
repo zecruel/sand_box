@@ -764,39 +764,44 @@ from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	}
 }
 
-void bmp_thick_line2(bmp_img *img, int p1x, int p1y, int p2x, int p2y, double norm_x, double norm_y) {
+void bmp_thick_line_norm(bmp_img *img, int p1x, int p1y, int p2x, int p2y, double norm_x, double norm_y) {
 /* Draw a line on bmp image
+	Uses normal vector as auxiliary calculation.
+	--NOT CHECK PATTERN--
 Bitmap/Bresenham's line algorithm
 from: http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C */
 	
 	int x0 = p1x, y0 = p1y, x1 = p2x, y1 = p2y;
-	int half_x, half_y; /* to determine line's center*/
+	int normal_x, normal_y, half_x, half_y; /* to determine line's center*/
 	double x, y, modulus;
 	int start_x, start_y, end_x, end_y;
 	
-	int normal_x = (int)(round((double)img->tick * norm_x));
-	int normal_y = (int)(round((double)img->tick * norm_y));
-	
-	half_x = (int)(round((double)img->tick * norm_x/2));
-	half_y = (int)(round((double)img->tick * norm_y/2));
-	
-	/*update line conection parameters */
-	img->end_x[2] = x0 - half_x;
-	img->end_y[2] = y0 - half_y;
-	img->end_x[3]  = img->end_x[2] + normal_x;
-	img->end_y[3] = img->end_y[2] + normal_y;
-	if ((img->tick > 1) && (img->prev_x == x0) && (img->prev_y == y0)){ /* if the point have a tickness */
-		/* draw a filled  polygon as line conection*/
-		bmp_poly_fill(img, 4, img->end_x, img->end_y, NULL);
+	if (img->tick > 1) {
+		normal_x = (int)(round((double)img->tick * norm_x));
+		normal_y = (int)(round((double)img->tick * norm_y));
+		
+		half_x = normal_x/2;
+		half_y = normal_y/2;
+		
+		/*update line conection parameters */
+		img->end_x[2] = x0 - half_x;
+		img->end_y[2] = y0 - half_y;
+		img->end_x[3]  = img->end_x[2] + normal_x;
+		img->end_y[3] = img->end_y[2] + normal_y;
+		
+		if ((img->prev_x == x0) && (img->prev_y == y0)){ /* if the point have a tickness */
+			/* draw a filled  polygon as line conection*/
+			bmp_rect_fill(img, img->end_x, img->end_y);
+		}
+		
+		/*update line conection parameters for next line*/
+		img->prev_x = x1;
+		img->prev_y = y1;
+		img->end_x[1] = x1 - half_x;
+		img->end_y[1] = y1 - half_y;
+		img->end_x[0]  = img->end_x[1] + normal_x;
+		img->end_y[0] = img->end_y[1] + normal_y;
 	}
-	
-	/*update line conection parameters for next line*/
-	img->prev_x = x1;
-	img->prev_y = y1;
-	img->end_x[1] = x1 - half_x;
-	img->end_y[1] = y1 - half_y;
-	img->end_x[0]  = img->end_x[1] + normal_x;
-	img->end_y[0] = img->end_y[1] + normal_y;
 	
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
 	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
@@ -873,19 +878,19 @@ void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1) {
 	}
 }
 
-void bmp_line2(bmp_img *img, double x0, double y0, double x1, double y1, double normal_x, double normal_y) {
+void bmp_line_norm(bmp_img *img, double x0, double y0, double x1, double y1, double normal_x, double normal_y) {
 
 	/* 
-	Draw a line on bmp image - clip the line on the window area
+	Draw a line on bmp image. Uses normal vector as auxiliary calculation.
 	*/
 	
-	if (line_clip(img, &x0, &y0, &x1, &y1)) {
+	if (line_clip(img, &x0, &y0, &x1, &y1)) { /*clip the line on the window area*/
 		int x_0 = (int) round(x0);
 		int y_0 = (int) round(y0);
 		int x_1 = (int) round(x1);
 		int y_1 = (int) round(y1);
 		
-		bmp_thick_line2(img, x_0, y_0, x_1, y_1, normal_x, normal_y);
+		bmp_thick_line_norm(img, x_0, y_0, x_1, y_1, normal_x, normal_y);
 	}
 }
 

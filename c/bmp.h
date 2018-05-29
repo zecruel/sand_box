@@ -85,6 +85,10 @@ int patt_check(bmp_img *img);
 
 void bmp_line(bmp_img *img, double x0, double y0, double x1, double y1);
 
+void bmp_line_norm(bmp_img *img, double x0, double y0, double x1, double y1, double normal_x, double normal_y);
+
+void bmp_rect_fill(bmp_img *img, int vert_x[4], int vert_y[4]);
+
 void bmp_copy(bmp_img *src, bmp_img *dst, int x, int y);
 
 void bmp_thick_line(bmp_img *img, int x0, int y0, int x1, int y1);
