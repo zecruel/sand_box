@@ -2033,6 +2033,163 @@ graph_obj * graph_list_isect(list_node *list, double rect_pt1[2], double rect_pt
 	return NULL;
 }
 
+double pt_dist(double x0, double y0, double x1, double y1){
+	return sqrt(pow(x1-x0, 2) + pow(y1-y0, 2));
+}
+
+int pt_lies_seg (double ln_x0, double ln_y0, double ln_x1 , double ln_y1, double pt_x, double pt_y){
+	double ln = pt_dist(ln_x0, ln_y0, ln_x1, ln_y1);
+	double seg1 = pt_dist(ln_x0, ln_y0, pt_x, pt_y);
+	double seg2 = pt_dist(pt_x, pt_y, ln_x1, ln_y1);
+	return fabs(ln - seg1 - seg2) < TOLERANCE;
+}
+
+void graph_hatch(graph_obj * master, 
+double angle, double orig_x, double orig_y, double delta, double skew){
+	
+	int i, j;//, w = img->width, h = img->height;
+	int x0, y0, x1, y1;
+	int min_x, max_x, min_y, max_y;
+	//int nodes = 0, node_x[1000], swap;
+	int pix_x, pix_y, strk = 0;
+	
+	int nodes = 0, steps = 0;
+	
+	double  start, end;
+	double node_x[1000], node_y[1000];
+	  
+	double a = sin(angle);
+	double b = -cos(angle);
+	double c = -(a*orig_x+b*orig_y);
+	
+	/* find min and max in coordinates*/
+	min_x = master->ext_min_x;
+	max_x = master->ext_max_x;
+	min_y = master->ext_min_y;
+	max_y = master->ext_max_y;
+	
+	/* calcule distances between cornes of graph rectangle and line at orign */
+	double dist1 = (a*min_x + b*min_y + c)/
+			sqrt(pow(a, 2) + pow(b, 2));
+	
+	double dist2 = (a*min_x + b*max_y + c)/
+			sqrt(pow(a, 2) + pow(b, 2));
+			
+	double dist3 = (a*max_x + b*min_y + c)/
+			sqrt(pow(a, 2) + pow(b, 2));
+	
+	double dist4 = (a*max_x + b*max_y + c)/
+			sqrt(pow(a, 2) + pow(b, 2));
+	
+	if (dist1 < dist2){
+		start = floor(dist1/delta) * delta;
+	}
+	else{
+		start = floor(dist2/delta) * delta;
+	}
+		
+	if (dist3 > dist4){
+		end = ceil(dist3/delta) * delta;
+	}
+	else{
+		end = ceil(dist4/delta) * delta;
+	}
+	
+	steps = (int) fabs(round((end - start)/delta));
+	//printf("\nsteps = %d\n", steps);
+	
+	c -= start;
+	
+	for (i = 0; i < steps; i++){
+		if(master->list->next){ /* check if list is not empty */
+			line_node *current = master->list->next;
+			
+			while(current){ /*sweep the list content */
+				double a2 = current->y1 - current->y0;
+				double b2 = -(current->x1 - current->x0);
+				double c2 = current->x1 * current->y0 - current->y1 * current->x0;
+				
+				
+				double den =b*a2-b2*a;
+				if ( (fabs(den) > TOLERANCE) && (nodes < 1000)){
+					double x = (b*c2-b2*c)/-den;
+					double y = (a*c2-a2*c)/den;
+					
+					if (pt_lies_seg(current->x0, current->y0, current->x1, current->y1, x, y)){
+						node_x[nodes] = x;
+						node_y[nodes] = y;
+						nodes++;
+					}
+				}
+				current = current->next; /* go to next */
+			}
+		}
+		
+		if (nodes > 1){
+			for (j = 0; j < nodes; j += 2){
+				printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", node_x[j], node_y[j], node_x[j+1], node_y[j+1]);
+				fflush( stdout );
+			}
+		}
+		
+		c -= delta;
+		nodes = 0;
+	}
+	#if(0)
+	for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
+		nodes = 0;
+		x0 = vert_x[0];
+		y0 = vert_y[0];
+		for (i = 1; i < verts; i++){
+			/* create a list of nodes (intersections of sweep line on polygon) */
+			x1 = vert_x[i];
+			y1 = vert_y[i];
+			
+			strk = (stroke)? stroke[i] : 1; 
+			/* verify intersection */
+			if ((nodes < 1000) && (strk != 0)){
+				if(((y0 < pix_y) && (y1 >= pix_y)) || 
+				((y1 < pix_y) && (y0 >= pix_y))){
+					/* find x coord of intersection and add to list */
+					node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+					node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
+					node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
+					nodes++;
+				}
+			}
+			x0 = vert_x[i];
+			y0 = vert_y[i];
+		}
+		/* last vertice -> close polygon by default or if stroke[0] is 1 */
+		x1 = vert_x[0];
+		y1 = vert_y[0];
+		strk = (stroke)? stroke[0] : 1; 
+		if ((nodes < 1000) && (strk != 0)){
+			if(((y0 < pix_y) && (y1 >= pix_y)) || 
+			((y1 < pix_y) && (y0 >= pix_y))){
+				/* find x coord of intersection and add to list */
+				node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+				node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
+				node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
+				nodes++;
+			}
+		}
+		
+		/* sort the nodes, via quick sort*/
+		//quick_sort(node_x, 0, nodes - 1);
+			
+		/*fill the pixels between node pairs*/
+		for (i = 0; i < nodes ; i += 2){
+			if (i+1 < nodes){
+				for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+					//bmp_point_raw(img, pix_x, pix_y);
+				}
+			}
+		}
+	}
+	#endif
+}
+
 /*
 https://stackoverflow.com/questions/11907947/how-to-check-if-a-point-lies-on-a-line-between-2-other-points
 by https://stackoverflow.com/users/688624/imallett

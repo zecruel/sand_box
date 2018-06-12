@@ -831,7 +831,49 @@ int main(int argc, char** argv){
 					#endif
 				}
 				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_GEAR]))){
-					printf("Config\n");
+					//printf("Config\n");
+					/*--------------------------------------
+					test **** test **** test *** test ****/
+					
+					if (gui->sel_list != NULL){
+						
+						
+						list_node *current = gui->sel_list->next, *curr_gr_n, *grph_list;
+						dxf_node *curr_ent;
+						graph_obj *curr_graph = NULL;
+						
+						
+						// starts the content sweep 
+						while (current != NULL){
+							if (current->data){
+								if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
+									
+									curr_ent = (dxf_node *)current->data;
+									
+									grph_list = curr_ent->obj.graphics;
+									
+									if (grph_list != NULL){
+										curr_gr_n = grph_list->next;
+										
+										/* sweep the main curr_ent->obj.graphics */
+										while (curr_gr_n != NULL){
+											if (curr_gr_n->data){
+												curr_graph = (graph_obj *)curr_gr_n->data;
+												graph_hatch(curr_graph, M_PI/4, 0.0, 0.0, 0.5, 0.0);
+											}
+											curr_gr_n = curr_gr_n->next;
+										}
+									}
+								}
+							}
+							current = current->next;
+						}
+						//list_clear(gui->sel_list);
+					}
+					/*------------------------------*/
+					
+					
+					
 				}
 				nk_group_end(gui->ctx);
 			}
