@@ -2044,18 +2044,20 @@ int pt_lies_seg (double ln_x0, double ln_y0, double ln_x1 , double ln_y1, double
 	return fabs(ln - seg1 - seg2) < TOLERANCE;
 }
 
-void graph_hatch(graph_obj * master, 
-double angle, double orig_x, double orig_y, double delta, double skew){
+graph_obj * graph_hatch(graph_obj * ref, 
+double angle,
+double orig_x, double orig_y,
+double delta,
+double skew,
+int pool_idx){
+	graph_obj *ret_graph = NULL;//graph_new(pool_idx);
 	
-	int i, j;//, w = img->width, h = img->height;
-	int x0, y0, x1, y1;
-	int min_x, max_x, min_y, max_y;
-	//int nodes = 0, node_x[1000], swap;
-	int pix_x, pix_y, strk = 0;
+	int i, j;
+	double min_x, max_x, min_y, max_y;
 	
 	int nodes = 0, steps = 0;
 	
-	double  start, end;
+	double  start, end, swap;
 	double node_x[1000], node_y[1000];
 	  
 	double a = sin(angle);
@@ -2063,10 +2065,10 @@ double angle, double orig_x, double orig_y, double delta, double skew){
 	double c = -(a*orig_x+b*orig_y);
 	
 	/* find min and max in coordinates*/
-	min_x = master->ext_min_x;
-	max_x = master->ext_max_x;
-	min_y = master->ext_min_y;
-	max_y = master->ext_max_y;
+	min_x = ref->ext_min_x;
+	max_x = ref->ext_max_x;
+	min_y = ref->ext_min_y;
+	max_y = ref->ext_max_y;
 	
 	/* calcule distances between cornes of graph rectangle and line at orign */
 	double dist1 = (a*min_x + b*min_y + c)/
@@ -2098,11 +2100,13 @@ double angle, double orig_x, double orig_y, double delta, double skew){
 	steps = (int) fabs(round((end - start)/delta));
 	//printf("\nsteps = %d\n", steps);
 	
+	if (steps > 0) ret_graph = graph_new(pool_idx);
+	
 	c -= start;
 	
 	for (i = 0; i < steps; i++){
-		if(master->list->next){ /* check if list is not empty */
-			line_node *current = master->list->next;
+		if((ref->list->next) && (ret_graph != NULL)) { /* check if list is not empty */
+			line_node *current = ref->list->next;
 			
 			while(current){ /*sweep the list content */
 				double a2 = current->y1 - current->y0;
@@ -2126,68 +2130,50 @@ double angle, double orig_x, double orig_y, double delta, double skew){
 		}
 		
 		if (nodes > 1){
+			double pos1, pos2;
+			
+			/* Sort the nodes, via a simple “Bubble” sort. */
+			j=0;
+			while (j < nodes - 1) {
+				if (fabs(b) > TOLERANCE){
+					pos1 = (node_x[j] + c * a) / b;
+					pos2 = (node_x[j+1] + c * a) / b;
+				}
+				else if (fabs(a) > TOLERANCE){
+					pos1 = -(node_y[j] + c * b) / a;
+					pos2 = -(node_y[j+1] + c * b) / a;
+				}
+				
+				if (pos1 > pos2) {
+					swap = node_x[j];
+					node_x[j] = node_x[j+1];
+					node_x[j+1] = swap;
+					
+					swap = node_y[j];
+					node_y[j] = node_y[j+1];
+					node_y[j+1] = swap;
+					
+					if (j) j--;
+				}
+				else {
+					j++;
+				}
+			}
+			
 			for (j = 0; j < nodes; j += 2){
-				printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", node_x[j], node_y[j], node_x[j+1], node_y[j+1]);
-				fflush( stdout );
+				//printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", node_x[j], node_y[j], node_x[j+1], node_y[j+1]);
+				//fflush( stdout );
+				
+				line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
 			}
 		}
 		
 		c -= delta;
 		nodes = 0;
 	}
-	#if(0)
-	for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
-		nodes = 0;
-		x0 = vert_x[0];
-		y0 = vert_y[0];
-		for (i = 1; i < verts; i++){
-			/* create a list of nodes (intersections of sweep line on polygon) */
-			x1 = vert_x[i];
-			y1 = vert_y[i];
-			
-			strk = (stroke)? stroke[i] : 1; 
-			/* verify intersection */
-			if ((nodes < 1000) && (strk != 0)){
-				if(((y0 < pix_y) && (y1 >= pix_y)) || 
-				((y1 < pix_y) && (y0 >= pix_y))){
-					/* find x coord of intersection and add to list */
-					node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
-					node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
-					node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
-					nodes++;
-				}
-			}
-			x0 = vert_x[i];
-			y0 = vert_y[i];
-		}
-		/* last vertice -> close polygon by default or if stroke[0] is 1 */
-		x1 = vert_x[0];
-		y1 = vert_y[0];
-		strk = (stroke)? stroke[0] : 1; 
-		if ((nodes < 1000) && (strk != 0)){
-			if(((y0 < pix_y) && (y1 >= pix_y)) || 
-			((y1 < pix_y) && (y0 >= pix_y))){
-				/* find x coord of intersection and add to list */
-				node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
-				node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
-				node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
-				nodes++;
-			}
-		}
-		
-		/* sort the nodes, via quick sort*/
-		//quick_sort(node_x, 0, nodes - 1);
-			
-		/*fill the pixels between node pairs*/
-		for (i = 0; i < nodes ; i += 2){
-			if (i+1 < nodes){
-				for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
-					//bmp_point_raw(img, pix_x, pix_y);
-				}
-			}
-		}
-	}
-	#endif
+	
+	return ret_graph;
+	
 }
 
 /*

@@ -117,6 +117,15 @@ char * svg_data[] = {
 	"  <path stroke-width=\"0\" fill=\"#f9f9f9\" id=\"hand1\" d=\"m20.825,12c-0.228,0.59 -3.052,6.998 -3.772,8.614c-0.756,1.695 -2.229,3.386 -4.951,3.386l-4.729,0c-2.865,0 -4.373,-1.7 -4.373,-4.673l0,-12.975c0,-1.721 2.37,-1.633 2.37,-0.08l0,5.689c0,0.468 0.858,0.465 0.858,0l0,-9.142c0,-1.769 2.65,-1.722 2.65,0l0,8.63c0,0.476 0.797,0.456 0.797,-0.01l0,-10.128c0,-1.722 2.624,-1.773 2.624,0l0.001,10.245c0,0.459 0.826,0.469 0.826,0l0,-8.604c0,-1.629 2.873,-1.679 2.873,0l0,9.75c0,0.597 0.587,0.692 0.811,0.236c0.212,-0.433 1.089,-2.368 1.1,-2.389c0.883,-1.849 3.832,-0.726 2.915,1.451z\"/>"
 	"</svg>"},
 
+	[SVG_HATCH] = (char[]){"<svg width=\"24\" height=\"24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\">"
+	"  <path stroke=\"#f9f9f9\" id=\"hatch2\" d=\"m1.56323,4.32194c0,0 3.62478,14.56643 3.69727,14.56643c0.0725,0 14.20913,2.32763 14.20913,2.32763c0,0 3.11731,-13.36507 3.11731,-13.36507c0,0 -4.78471,-4.35491 -4.78471,-4.35491c0,0 -16.23901,0.82593 -16.23901,0.82593z\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" fill=\"none\"/>"
+	"  <line id=\"hatch3\" y2=\"8.75194\" x2=\"2.98984\" y1=\"4.09669\" x1=\"6.81916\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" stroke=\"#f9f9f9\" fill=\"none\"/>"
+	"  <line stroke=\"#f9f9f9\" id=\"hatch4\" y2=\"13.55736\" x2=\"4.1943\" y1=\"4.15558\" x1=\"11.92802\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" fill=\"none\"/>"
+	"  <line stroke=\"#f9f9f9\" id=\"hatch6\" y2=\"17.98735\" x2=\"5.84616\" y1=\"4.11288\" x1=\"17.25904\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" fill=\"none\"/>"
+	"  <line id=\"hatch7\" stroke=\"#f9f9f9\" y2=\"20.04409\" x2=\"9.3376\" y1=\"6.16962\" x1=\"20.75047\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" fill=\"none\"/>"
+	"  <line stroke=\"#f9f9f9\" id=\"hatch8\" y2=\"20.71985\" x2=\"14.06794\" y1=\"11.59191\" x1=\"21.5764\" stroke-linecap=\"null\" stroke-linejoin=\"null\" stroke-dasharray=\"null\" stroke-width=\"2\" fill=\"none\"/>"
+	"</svg>"},
+
 	[SVG_HELP] = (char[]){"<svg width=\"24\" height=\"24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\">"
 	"  <path stroke-width=\"0\" fill=\"#f9f9f9\" id=\"help\" d=\"m14.601,21.5c0,1.38 -1.116,2.5 -2.499,2.5c-1.378,0 -2.499,-1.12 -2.499,-2.5s1.121,-2.5 2.499,-2.5c1.383,0 2.499,1.119 2.499,2.5zm-2.42,-21.5c-4.029,0 -7.06,2.693 -7.06,8l3.955,0c0,-2.304 0.906,-4.189 3.024,-4.189c1.247,0 2.57,0.828 2.684,2.411c0.123,1.666 -0.767,2.511 -1.892,3.582c-2.924,2.78 -2.816,4.049 -2.816,7.196l3.943,0c0,-1.452 -0.157,-2.508 1.838,-4.659c1.331,-1.436 2.986,-3.222 3.021,-5.943c0.047,-3.963 -2.751,-6.398 -6.697,-6.398z\"/>"
 	"</svg>"},

@@ -31,6 +31,7 @@ enum {
     SVG_FREEZE,
     SVG_GEAR,
     SVG_HAND,
+    SVG_HATCH,
     SVG_HELP,
     SVG_IMAGE,
     SVG_IMPORT,
