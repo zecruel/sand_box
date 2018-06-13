@@ -1,0 +1,8 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+  <path stroke="#000000" id="hatch2" d="m1.56323,4.32194c0,0 3.62478,14.56643 3.69727,14.56643c0.0725,0 14.20913,2.32763 14.20913,2.32763c0,0 3.11731,-13.36507 3.11731,-13.36507c0,0 -4.78471,-4.35491 -4.78471,-4.35491c0,0 -16.23901,0.82593 -16.23901,0.82593z" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="hatch3" y2="8.75194" x2="2.98984" y1="4.09669" x1="6.81916" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" stroke="#000000" fill="none"/>
+  <line stroke="#000000" id="hatch4" y2="13.55736" x2="4.1943" y1="4.15558" x1="11.92802" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line stroke="#000000" id="hatch6" y2="17.98735" x2="5.84616" y1="4.11288" x1="17.25904" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line id="hatch7" stroke="#000000" y2="20.04409" x2="9.3376" y1="6.16962" x1="20.75047" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+  <line stroke="#000000" id="hatch8" y2="20.71985" x2="14.06794" y1="11.59191" x1="21.5764" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="2" fill="none"/>
+</svg>
