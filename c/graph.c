@@ -2044,12 +2044,46 @@ int pt_lies_seg (double ln_x0, double ln_y0, double ln_x1 , double ln_y1, double
 	return fabs(ln - seg1 - seg2) < TOLERANCE;
 }
 
+int graph_is_closed(graph_obj * master){
+	if (master == NULL) return 0;
+	if (master->list->next == NULL) return 0; /* check if list is not empty */
+	
+	double curr_x, curr_y, prev_x, prev_y, first_x, first_y;
+	int first = 0;
+	line_node *current = master->list->next;
+	
+	while(current){ /*sweep the list content */
+		curr_x = current->x0;
+		curr_y = current->y0;
+		
+		if (!first){
+			first = 1;
+			first_x = current->x0;
+			first_y = current->y0;
+		}
+		else if ((fabs(curr_x - prev_x) > TOLERANCE) || 
+			(fabs(curr_y - prev_y) > TOLERANCE)) return 0;
+		
+		prev_x = current->x1;
+		prev_y = current->y1;
+		
+		current = current->next; /* go to next */
+	}
+	
+	if ((fabs(first_x - prev_x) > TOLERANCE) || 
+		(fabs(first_y - prev_y) > TOLERANCE)) return 0;
+	
+	return 1;
+}
+
 graph_obj * graph_hatch(graph_obj * ref, 
 double angle,
 double orig_x, double orig_y,
 double delta,
 double skew,
 int pool_idx){
+	if (!graph_is_closed(ref)) return NULL; /* verify if reference is a closed path */
+	
 	graph_obj *ret_graph = NULL;//graph_new(pool_idx);
 	
 	int i, j;

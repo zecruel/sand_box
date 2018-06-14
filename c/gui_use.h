@@ -48,4 +48,8 @@ int gui_block_interactive(gui_obj *gui);
 
 int gui_block_info (gui_obj *gui);
 
+int gui_hatch_interactive(gui_obj *gui);
+
+int gui_hatch_info (gui_obj *gui);
+
 #endif

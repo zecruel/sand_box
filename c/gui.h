@@ -57,6 +57,7 @@ enum Modal {
 	MOVE,
 	SCALE,
 	NEW_BLK,
+	HATCH,
 	INSERT
 };
 

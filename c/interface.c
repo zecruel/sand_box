@@ -1144,50 +1144,8 @@ int main(int argc, char** argv){
 				
 			}
 			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_HATCH]))){
-				/*--------------------------------------
-				test **** test **** test *** test ****/
-				
-				if (gui->sel_list != NULL){
-					
-					
-					list_node *current = gui->sel_list->next, *curr_gr_n, *grph_list;
-					dxf_node *curr_ent;
-					graph_obj *curr_graph = NULL, *hatch;
-					
-					
-					// starts the content sweep 
-					while (current != NULL){
-						if (current->data){
-							if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-								
-								curr_ent = (dxf_node *)current->data;
-								
-								grph_list = curr_ent->obj.graphics;
-								
-								if (grph_list != NULL){
-									curr_gr_n = grph_list->next;
-									
-									/* sweep the main curr_ent->obj.graphics */
-									while (curr_gr_n != NULL){
-										if (curr_gr_n->data){
-											curr_graph = (graph_obj *)curr_gr_n->data;
-											hatch = graph_hatch(curr_graph, 0.0,//M_PI/2, 
-											0.0, 0.0, 0.5, 0.0, 0);
-											if (hatch){
-												list_push(grph_list, list_new((void *)hatch, 0));
-											}
-										}
-										curr_gr_n = curr_gr_n->next;
-									}
-								}
-							}
-						}
-						current = current->next;
-					}
-					//list_clear(gui->sel_list);
-				}
-				/*------------------------------*/
-				
+				gui->modal = HATCH;
+				gui->step = 0;
 			}
 			if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_BOOK]))){
 				recv_comm_flag = 1;
@@ -1216,6 +1174,7 @@ int main(int argc, char** argv){
 				gui_scale_info (gui);
 				gui_insert_info (gui);
 				gui_block_info (gui);
+				gui_hatch_info (gui);
 				
 				nk_group_end(gui->ctx);
 			}
@@ -1523,7 +1482,7 @@ int main(int argc, char** argv){
 				goto first_step;
 			}
 			else{
-				snprintf(gui->log_msg, 63, "No gui->actions to undo");
+				snprintf(gui->log_msg, 63, "No actions to undo");
 			}
 			gui->draw = 1;
 		}
@@ -1536,7 +1495,7 @@ int main(int argc, char** argv){
 				goto first_step;
 			}
 			else{
-				snprintf(gui->log_msg, 63, "No gui->actions to redo");
+				snprintf(gui->log_msg, 63, "No actions to redo");
 			}
 			gui->draw = 1;
 		}
@@ -1752,6 +1711,7 @@ int main(int argc, char** argv){
 			
 		gui_insert_interactive(gui);
 		gui_block_interactive(gui);
+		gui_hatch_interactive(gui);
 		
 		
 		
