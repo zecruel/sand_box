@@ -4,7 +4,7 @@
 //#include "dxf_colors.h"
 extern bmp_color dxf_colors[];
 #include <string.h>
-
+graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx);
 
 int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 	int color = 7;
@@ -1827,6 +1827,17 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 				}
 				
 			}
+			else if (strcmp(current->obj.name, "HATCH") == 0){
+				//ent_type = DXF_POLYLINE;
+				curr_graph = dxf_hatch_parse(drawing, current, p_space, pool_idx);
+				if (curr_graph){
+					/* store the graph in the return vector */
+					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos]);
+					mod_idx++;
+				}
+				
+			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
 				ent_type = DXF_VERTEX;
 				
@@ -2448,4 +2459,471 @@ int dxf_ents_isect2(list_node *list, dxf_drawing *drawing, double rect_pt1[2], d
 	}
 	
 	return num;
+}
+
+
+int dxf_find_hatch_bound(dxf_node *obj, dxf_node **start, dxf_node **end){
+	/* find the range of attributes of boundary data of hatch */
+	dxf_node *current;
+	int found = 0;
+	int ok = 0;
+	
+	*start = NULL;
+	*end = NULL;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				/* try to find the first entry, by matching the attribute 91 -> number of boundaries */
+				if (!found){
+					if (current->type == DXF_ATTR){
+						if(current->value.group == 91){
+							found = current->value.i_data; /* found - return number of boundaries*/
+							*start = current;
+							*end = current;
+						}
+					}
+				}
+				else{
+					/* after the first entry, look by end */
+					if (current->type == DXF_ATTR){
+						/* breaks if is found a hatch style entry (code 75) */
+						if(current->value.group == 75){
+							ok = 1;
+							break;
+						}
+						/* update the end mark */
+						*end = current;
+					}
+					/* breaks if is found a entity */
+					else break;
+				}
+				current = current->next;
+			}
+			if (!ok) found = 0; /* if is not correct end*/ 
+		}
+	}
+	return found;
+}
+
+int dxf_find_hatch_patt(dxf_node *obj, dxf_node **start, dxf_node **end){
+	/* find the range of attributes of patterns data of hatch */
+	dxf_node *current;
+	int found = 0;
+	int ok = 0;
+	
+	*start = NULL;
+	*end = NULL;
+	
+	if(obj != NULL){ /* check if exist */
+		if (obj->type == DXF_ENT){
+			current = obj->obj.content->next;
+			while (current){
+				/* try to find the first entry, by matching the attribute 78 -> number of lines */
+				if (!found){
+					if (current->type == DXF_ATTR){
+						if(current->value.group == 78){
+							found = current->value.i_data; /* found - return number of boundaries*/
+							*start = current;
+							*end = current;
+						}
+					}
+				}
+				else{
+					/* after the first entry, look by end */
+					if (current->type == DXF_ATTR){
+						/* breaks if is found a number seed entry (code 98) */
+						if(current->value.group == 98){
+							ok = 1;
+							break;
+						}
+						/* update the end mark */
+						*end = current;
+					}
+					/* breaks if is found a entity */
+					else break;
+				}
+				current = current->next;
+			}
+			//if (!ok) found = 0; /* if is not correct end*/ 
+		}
+	}
+	return found;
+}
+
+int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next, int pool_idx){
+	int num_bound = 0;
+	*next = NULL;
+	*curr_graph = NULL;
+	
+	if(ent){
+		dxf_node *current = NULL;
+		
+		double pt1_x = 0, pt1_y = 0;
+		//double start_w = 0, end_w = 0, fix_w = 0;
+		double bulge = 0;
+		//double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		
+		//int pline_flag = 0;
+		int curr_bound = 0, prev_bound = 0;
+		int bound_type = 0;
+		int first = 0, closed =0;
+		double prev_x, prev_y,  last_x, last_y,  curr_x;
+		double prev_bulge = 0;
+		//double elev = 0.0;
+		
+		enum Edge_type{
+			EDGE_POLY = 0,
+			EDGE_LINE = 1,
+			EDGE_CIRC_ARC = 2,
+			EDGE_ELL_ARC  = 3,
+			EDGE_SPLINE = 4,
+			EDGE_NONE = 5
+		};
+		int edge_type = EDGE_NONE;
+		
+		/*flags*/
+		int pt1 = 0, init = 0;
+		
+		current = ent;
+		
+		
+		while (current){
+			
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 10:
+						pt1_x = current->value.d_data;
+						pt1 = 1; /* set flag */
+						break;
+					case 20:
+						pt1_y = current->value.d_data; 
+						//pt1 = 1; /* set flag */
+						break;
+					case 42:
+						bulge = current->value.d_data;
+						break;
+					case 73:
+						closed = current->value.i_data;
+						break;
+					case 75: /* end of bondary definitions */
+						bound_type = 0;
+						curr_bound++;
+						break;
+					case 92:
+						bound_type = current->value.i_data;
+						curr_bound++;
+						break;
+				}
+				
+				
+			}
+			if ((curr_bound != prev_bound) || (current->next == NULL)){
+				/* ends the previous boundary */
+				if (edge_type == EDGE_POLY){
+					/* last vertex */
+					if((first != 0) && (*curr_graph != NULL)){
+						//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
+						if (prev_bulge == 0){
+							line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
+						}
+						else{
+							graph_arc_bulge(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0, prev_bulge);
+							//bulge =0;
+						}
+						prev_x = curr_x;
+						prev_y = pt1_y;
+					}
+					
+					if((closed != 0) && (*curr_graph != NULL)){
+						if (bulge == 0){
+							line_add(*curr_graph, prev_x, prev_y, 0.0, last_x, last_y, 0.0);
+						}
+						else{
+							graph_arc_bulge(*curr_graph, prev_x, prev_y, 0.0, last_x, last_y, 0.0, bulge);
+						}
+					}
+				}
+				/* verify if boundary is closed - TODO*/
+				if(*curr_graph != NULL){
+					num_bound++;
+				}
+				
+				
+				/* initialize current boundary*/
+				//init = 0;
+				//*curr_graph = NULL;
+				first = 0; pt1 = 0; closed = 0; prev_bulge = 0;
+				edge_type = EDGE_NONE;
+				if (bound_type & 2) edge_type = EDGE_POLY;
+				prev_bound = curr_bound;
+			}
+			
+			
+			if ((pt1) && (edge_type == EDGE_POLY)){
+				pt1 = 0;
+				
+				if((init != 0) &&(first == 0)){
+					first = 1;
+					
+					//printf("primeiro vertice\n");
+					last_x = curr_x;
+					last_y = pt1_y;
+					prev_x = curr_x;
+					prev_y = pt1_y;
+				}
+				else if(init == 0) {
+					init = 1;
+					*curr_graph = graph_new(pool_idx);
+					if (*curr_graph){
+						
+						/*if (pline_flag & 1){
+							closed = 1;
+						}
+						else {
+							closed = 0;
+						}*/
+					}
+				}
+				else if((first != 0) && (*curr_graph != NULL)){
+					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
+					if (prev_bulge == 0){
+						line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
+					}
+					else{
+						graph_arc_bulge(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0, prev_bulge);
+						//bulge =0;
+					}
+					prev_x = curr_x;
+					prev_y = pt1_y;
+				}
+				
+				prev_bulge = bulge;
+				bulge = 0;
+				
+				curr_x = pt1_x;
+			}
+			
+			/* breaks loop if is found a hatch style entry (code 75) */
+			if(current->value.group == 75){
+				
+				break;
+			}
+			
+			
+			/* update the end mark */
+			*next = current;
+			current = current->next; /* go to the next in the list */
+		}
+		
+		
+		
+		//return current;
+	}
+	return num_bound;
+}
+
+int dxf_hatch_get_def(graph_obj **ret_graph, graph_obj *bound, dxf_node * ent, dxf_node **next, int pool_idx){
+	int num_def = 0;
+	*next = NULL;
+	*ret_graph = NULL;
+	
+	if(ent){
+		dxf_node *current = NULL;
+		
+		int curr_def = 0, prev_def = 0, init =0;
+		double angle = 0.0, orig_x = 0.0, orig_y = 0.0;
+		double ofs_x = 0.0, ofs_y = 0.0;
+		double dash[DXF_MAX_PAT];
+		
+		int num_dash = 0;
+		
+		current = ent;
+		
+		
+		while (current){
+			
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 53:
+						angle = current->value.d_data;
+						curr_def++;
+						break;
+					case 43:
+						orig_x = current->value.d_data; 
+						break;
+					case 44:
+						orig_y = current->value.d_data; 
+						break;
+					case 45:
+						ofs_x = current->value.d_data; 
+						break;
+					case 46:
+						ofs_y = current->value.d_data; 
+						break;
+					case 49:
+						if (num_dash < DXF_MAX_PAT){
+							dash[num_dash] = current->value.d_data;
+							num_dash++;
+						}
+						break;
+					case 98: /* end of definition lines */
+						curr_def++;
+						break;
+				}
+				
+				
+			}
+			if ((curr_def != prev_def) || (current->next == NULL)){
+				/* ends the previous definition line */
+				if (!init){
+					init = 1;
+				}
+				else{
+					double hatch_spacing = sqrt(pow(ofs_x, 2) + pow(ofs_y,2));
+					*ret_graph = graph_hatch(bound, angle*M_PI/180,
+										orig_x, orig_y, hatch_spacing, 0.0, pool_idx);
+				}
+				
+				num_def++;
+				
+				/* initialize current definition line*/
+				orig_x = 0.0; orig_y = 0.0;
+				ofs_x = 0.0; ofs_y = 0.0;
+				num_dash = 0;
+				
+				prev_def = curr_def;
+			}
+			
+			
+			/**/
+			
+			/* breaks loop if is found a hatch style entry (code 75) */
+			if(current->value.group == 98){
+				
+				break;
+			}
+			
+			
+			/* update the end mark */
+			*next = current;
+			current = current->next; /* go to the next in the list */
+		}
+		
+		
+		
+		//return current;
+	}
+	return num_def;
+}
+
+graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+	if(ent){
+		dxf_node *current = NULL;
+		dxf_node *next;
+		graph_obj *curr_graph;
+		double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
+		double elev = 0.0;
+		double p_angle = 0.0, p_scale =1.0;
+		
+		char name_patt[DXF_MAX_CHARS];
+		
+		/*flags*/
+		int paper = 0, solid = 0, assoc = 0, patt_double = 0;
+		
+		int num_bound = 0, h_style = 0, h_type = 0, num_def = 0, num_seed = 0;
+		
+		if (ent->type == DXF_ENT){
+			if (ent->obj.content){
+				current = ent->obj.content->next;
+				//printf("%s\n", ent->obj.name);
+			}
+		}
+		while (current){
+			if (current->type == DXF_ATTR){ /* DXF attibute */
+				switch (current->value.group){
+					case 2:
+						strcpy(name_patt, current->value.s_data);
+						break;
+					case 30:
+						elev = current->value.d_data;
+						break;
+					case 41:
+						p_scale = current->value.d_data;
+						break;
+					case 52:
+						p_angle = current->value.d_data;
+						break;
+					case 67:
+						paper = current->value.i_data;
+						break;
+					case 70:
+						solid = current->value.i_data;
+						break;
+					case 71:
+						assoc = current->value.i_data;
+						break;
+					case 75:
+						h_style = current->value.i_data;
+						break;
+					case 76:
+						h_type = current->value.i_data;
+						break;
+					case 77:
+						patt_double = current->value.i_data;
+						break;
+					case 78:
+						num_def = current->value.i_data;
+						
+						//dxf_node *next;
+						graph_obj *lines_graph;
+						dxf_hatch_get_def(&lines_graph, curr_graph, current, &next, pool_idx);
+						if (lines_graph){
+							curr_graph = lines_graph;
+						}
+						if (next) current = next;
+					
+						break;
+					case 91:
+						num_bound = current->value.i_data;
+						
+						dxf_hatch_get_bound (&curr_graph, current, &next, pool_idx);
+						if (next) current = next;
+						break;
+					
+					case 98:
+						num_seed = current->value.i_data;
+					
+						
+						break;
+					case 210:
+						extru_x = current->value.d_data;
+						break;
+					case 220:
+						extru_y = current->value.d_data;
+						break;
+					case 230:
+						extru_z = current->value.d_data;
+				}
+			}
+			current = current->next; /* go to the next in the list */
+		}
+		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
+			//graph_obj *curr_graph = graph_new(pool_idx);
+			if (curr_graph){
+				
+				/* add the graph */
+				//graph_arc(curr_graph, pt1_x, pt1_y, pt1_z, radius, 0.0, 0.0, 1);
+				
+				/* convert OCS to WCS */
+				normal[0] = extru_x;
+				normal[1] = extru_y;
+				normal[2] = extru_z;
+				graph_mod_axis(curr_graph, normal, elev);
+			}
+			return curr_graph;
+		}
+	}
+	return NULL;
 }
