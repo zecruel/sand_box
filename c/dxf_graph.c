@@ -2560,13 +2560,14 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 	if(ent){
 		dxf_node *current = NULL;
 		
-		double pt1_x = 0, pt1_y = 0;
+		double pt1_x = 0, pt1_y = 0, pt2_x = 0, pt2_y = 0;
 		//double start_w = 0, end_w = 0, fix_w = 0;
 		double bulge = 0;
 		//double extru_x = 0.0, extru_y = 0.0, extru_z = 1.0, normal[3];
 		
 		//int pline_flag = 0;
 		int curr_bound = 0, prev_bound = 0;
+		int curr_edge = 0, prev_edge = 0;
 		int bound_type = 0;
 		int first = 0, closed =0;
 		double prev_x, prev_y,  last_x, last_y,  curr_x;
@@ -2597,12 +2598,21 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						pt1_x = current->value.d_data;
 						pt1 = 1; /* set flag */
 						break;
+					case 11:
+						pt2_x = current->value.d_data; 
+						break;
 					case 20:
 						pt1_y = current->value.d_data; 
-						//pt1 = 1; /* set flag */
+						break;
+					case 21:
+						pt2_y = current->value.d_data; 
 						break;
 					case 42:
 						bulge = current->value.d_data;
+						break;
+					case 72:
+						edge_type = current->value.i_data;
+						curr_edge++;
 						break;
 					case 73:
 						closed = current->value.i_data;
@@ -2645,6 +2655,10 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						}
 					}
 				}
+				else if (edge_type != EDGE_NONE){
+					curr_edge++;
+				}
+				
 				/* verify if boundary is closed - TODO*/
 				if(*curr_graph != NULL){
 					num_bound++;
@@ -2655,7 +2669,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				//init = 0;
 				//*curr_graph = NULL;
 				first = 0; pt1 = 0; closed = 0; prev_bulge = 0;
-				edge_type = EDGE_NONE;
+				//edge_type = EDGE_NONE;
 				if (bound_type & 2) edge_type = EDGE_POLY;
 				prev_bound = curr_bound;
 			}
@@ -2704,6 +2718,21 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				
 				curr_x = pt1_x;
 			}
+			
+			else if (curr_edge != prev_edge) {
+				if (edge_type == EDGE_LINE){
+					if(init == 0) {
+						init = 1;
+						*curr_graph = graph_new(pool_idx);
+					}
+					else if (*curr_graph != NULL){
+						line_add(*curr_graph, pt1_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
+					}
+				}
+				prev_edge = curr_edge;
+			}
+			
+			
 			
 			/* breaks loop if is found a hatch style entry (code 75) */
 			if(current->value.group == 75){

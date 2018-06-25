@@ -2194,11 +2194,23 @@ int pool_idx){
 				}
 			}
 			
-			for (j = 0; j < nodes; j += 2){
+			/*for (j = 0; j < nodes; j += 2){
 				//printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", node_x[j], node_y[j], node_x[j+1], node_y[j+1]);
 				//fflush( stdout );
 				
 				line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
+			}*/
+			j = 0;
+			while (j < nodes - 1){
+				if  ((fabs(node_x[j] - node_x[j+1]) < TOLERANCE) &&
+					(fabs(node_y[j] - node_y[j+1]) < TOLERANCE)){
+					/* ignore duplicated nodes*/
+					j++;
+				}
+				else {
+					line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
+					j += 2;
+				}
 			}
 		}
 		
