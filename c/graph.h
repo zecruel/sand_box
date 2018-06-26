@@ -117,6 +117,11 @@ void cross_product(double a[3], double b[3], double c[3]);
 
 void unit_vector(double a[3]);
 
-graph_obj * graph_hatch(graph_obj * ref, double angle, double orig_x, double orig_y, double delta, double skew, int pool_idx);
+graph_obj * graph_hatch(graph_obj * ref, 
+double angle,
+double orig_x, double orig_y,
+double delta_x, double delta_y,
+double dash[], int num_dash,
+int pool_idx);
 
 #endif

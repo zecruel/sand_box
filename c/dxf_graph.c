@@ -4,7 +4,8 @@
 //#include "dxf_colors.h"
 extern bmp_color dxf_colors[];
 #include <string.h>
-graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx);
+
+int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx);
 
 int dxf_ent_get_color(dxf_drawing *drawing, dxf_node * ent, int ins_color){
 	int color = 7;
@@ -1829,14 +1830,27 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 			}
 			else if (strcmp(current->obj.name, "HATCH") == 0){
 				//ent_type = DXF_POLYLINE;
-				curr_graph = dxf_hatch_parse(drawing, current, p_space, pool_idx);
-				if (curr_graph){
-					/* store the graph in the return vector */
-					list_push(list_ret, list_new((void *)curr_graph, pool_idx));
-					proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos]);
-					mod_idx++;
-				}
+				list_node *hatch_items = list_new(NULL, ONE_TIME);
 				
+				int num_h_items= dxf_hatch_parse(hatch_items, drawing, current, p_space, pool_idx);
+				
+				if ((hatch_items != NULL) && (num_h_items)){
+					list_node *curr_node = hatch_items->next;
+					
+					// starts the content sweep 
+					while (curr_node != NULL){
+						if (curr_node->data){
+							curr_graph = (graph_obj *)curr_node->data;
+							/* store the graph in the return vector */
+							list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+							proc_obj_graph(drawing, current, curr_graph, ins_stack[ins_stack_pos]);
+							mod_idx++;
+						}
+						curr_node = curr_node->next;
+					}
+				}
+				list_clear (hatch_items);
+				list_mem_pool(ZERO_LIST, ONE_TIME);
 			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
 				ent_type = DXF_VERTEX;
@@ -2753,16 +2767,17 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 	return num_bound;
 }
 
-int dxf_hatch_get_def(graph_obj **ret_graph, graph_obj *bound, dxf_node * ent, dxf_node **next, int pool_idx){
+int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf_node **next, int pool_idx){
 	int num_def = 0;
 	*next = NULL;
-	*ret_graph = NULL;
+	graph_obj *curr_graph = NULL;
 	
 	if(ent){
 		dxf_node *current = NULL;
 		
 		int curr_def = 0, prev_def = 0, init =0;
 		double angle = 0.0, orig_x = 0.0, orig_y = 0.0;
+		double prev_angle = 0.0;
 		double ofs_x = 0.0, ofs_y = 0.0;
 		double dash[DXF_MAX_PAT];
 		
@@ -2811,8 +2826,13 @@ int dxf_hatch_get_def(graph_obj **ret_graph, graph_obj *bound, dxf_node * ent, d
 				}
 				else{
 					double hatch_spacing = sqrt(pow(ofs_x, 2) + pow(ofs_y,2));
-					*ret_graph = graph_hatch(bound, angle*M_PI/180,
-										orig_x, orig_y, hatch_spacing, 0.0, pool_idx);
+					//curr_graph = graph_hatch2(bound, prev_angle * M_PI/180,
+					//					orig_x, orig_y, hatch_spacing, 0.0, pool_idx);
+					curr_graph = graph_hatch(bound, prev_angle * M_PI/180,
+										orig_x, orig_y, ofs_x, ofs_y, dash, num_dash,  pool_idx);
+					
+					/* store the graph in the return vector */
+					if ((curr_graph != NULL) && (list_ret != NULL)) list_push(list_ret, list_new((void *)curr_graph, pool_idx));
 				}
 				
 				num_def++;
@@ -2823,6 +2843,7 @@ int dxf_hatch_get_def(graph_obj **ret_graph, graph_obj *bound, dxf_node * ent, d
 				num_dash = 0;
 				
 				prev_def = curr_def;
+				prev_angle = angle;
 			}
 			
 			
@@ -2847,7 +2868,8 @@ int dxf_hatch_get_def(graph_obj **ret_graph, graph_obj *bound, dxf_node * ent, d
 	return num_def;
 }
 
-graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int p_space, int pool_idx){
+	int num_graph = 0;
 	if(ent){
 		dxf_node *current = NULL;
 		dxf_node *next;
@@ -2906,18 +2928,23 @@ graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 						num_def = current->value.i_data;
 						
 						//dxf_node *next;
-						graph_obj *lines_graph;
+						/*graph_obj *lines_graph;
 						dxf_hatch_get_def(&lines_graph, curr_graph, current, &next, pool_idx);
 						if (lines_graph){
 							curr_graph = lines_graph;
-						}
+						}*/
+						dxf_hatch_get_def(list_ret, curr_graph, current, &next, pool_idx);
 						if (next) current = next;
 					
 						break;
 					case 91:
 						num_bound = current->value.i_data;
 						
+						curr_graph = NULL;
 						dxf_hatch_get_bound (&curr_graph, current, &next, pool_idx);
+						/* store the graph in the return vector */
+						if ((curr_graph != NULL) && (list_ret != NULL)) list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+					
 						if (next) current = next;
 						break;
 					
@@ -2939,20 +2966,23 @@ graph_obj * dxf_hatch_parse(dxf_drawing *drawing, dxf_node * ent, int p_space, i
 			current = current->next; /* go to the next in the list */
 		}
 		if (((p_space == 0) && (paper == 0)) || ((p_space != 0) && (paper != 0))){
-			//graph_obj *curr_graph = graph_new(pool_idx);
-			if (curr_graph){
+			/* convert OCS to WCS */
+			normal[0] = extru_x;
+			normal[1] = extru_y;
+			normal[2] = extru_z;
+			if (list_ret != NULL){
+				list_node *curr_node = list_ret->next;
 				
-				/* add the graph */
-				//graph_arc(curr_graph, pt1_x, pt1_y, pt1_z, radius, 0.0, 0.0, 1);
-				
-				/* convert OCS to WCS */
-				normal[0] = extru_x;
-				normal[1] = extru_y;
-				normal[2] = extru_z;
-				graph_mod_axis(curr_graph, normal, elev);
+				// starts the content sweep 
+				while (curr_node != NULL){
+					if (curr_node->data){
+						graph_mod_axis((graph_obj *)curr_node->data, normal, elev);
+						num_graph++;
+					}
+					curr_node = curr_node->next;
+				}
 			}
-			return curr_graph;
 		}
 	}
-	return NULL;
+	return num_graph;
 }
