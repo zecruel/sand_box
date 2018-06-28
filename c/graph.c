@@ -2263,6 +2263,7 @@ double dash[], int num_dash){
 			sine = dy/modulus;
 		}
 		
+		int sign = (sine * cosine >= 0.0)? 1:-1;
 		
 		/*find distance between pattern start and segment's first point */
 		if (fabs(cosine) > TOLERANCE){
@@ -2273,7 +2274,7 @@ double dash[], int num_dash){
 		}
 		
 		/* find the pattern initial conditions for the first point*/
-		if (patt_start <= 0){ /* start of pattern outside segment */
+		if (sign*patt_start <= 0){ /* start of pattern outside segment */
 			patt_start = fabs(fmod(patt_start, patt_len));
 			patt_acc = fabs(dash[0]);
 			for (i = 1; i < num_dash && i < 20; i++){
@@ -2347,6 +2348,7 @@ double dash[], int num_dash){
 				
 				if (draw){
 					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 				}
 			}
 			
@@ -2362,6 +2364,7 @@ double dash[], int num_dash){
 				p2y = fabs(dash[patt_i]) * sine + p1y;
 				if (draw){
 					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 				}
 				
 				p1x = p2x;
@@ -2377,6 +2380,7 @@ double dash[], int num_dash){
 			p2y = last * sine + p1y;
 			draw = dash[patt_i] >= 0.0;
 			//if (draw) bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+			if (draw) line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 		}
 		else{ /* current segment is in same past iteration pattern */
 			p2x = modulus * cosine + p1x;
@@ -2386,6 +2390,7 @@ double dash[], int num_dash){
 		
 			if (draw){
 				//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+				line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 			}
 			p1x = p2x;
 			p1y = p2y;
@@ -2407,6 +2412,7 @@ double dash[], int num_dash){
 		
 		if (dash[0] >= 0.0){
 			//bmp_line_norm(img, x0, y0, x1, y1, -sine, cosine);
+			line_add(master, x0, y0, 0.0, x1, y1, 0.0);
 		}
 	}
 
@@ -2437,6 +2443,8 @@ int pool_idx){
 	
 	double delta = fabs( a * delta_x + b * delta_y);
 	
+	int sign = (angle > M_PI/2)? 1: -1;
+	
 	/* find min and max in coordinates*/
 	min_x = ref->ext_min_x;
 	max_x = ref->ext_max_x;
@@ -2444,17 +2452,13 @@ int pool_idx){
 	max_y = ref->ext_max_y;
 	
 	/* calcule distances between cornes of graph rectangle and line at orign */
-	double dist1 = (a*min_x + b*min_y + c)/
-			sqrt(pow(a, 2) + pow(b, 2));
+	double dist1 = (a*min_x + b*min_y + c);
 	
-	double dist2 = (a*min_x + b*max_y + c)/
-			sqrt(pow(a, 2) + pow(b, 2));
+	double dist2 = (a*min_x + b*max_y + c);
 			
-	double dist3 = (a*max_x + b*min_y + c)/
-			sqrt(pow(a, 2) + pow(b, 2));
+	double dist3 = (a*max_x + b*min_y + c);
 	
-	double dist4 = (a*max_x + b*max_y + c)/
-			sqrt(pow(a, 2) + pow(b, 2));
+	double dist4 = (a*max_x + b*max_y + c);
 	
 	if (dist1 < dist2){
 		start = floor(dist1/delta) * delta;
@@ -2476,6 +2480,8 @@ int pool_idx){
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
 	c -= start;
+	orig_x -= sign * start/delta * delta_x;
+	orig_y -= sign * start/delta * delta_y;
 	
 	for (i = 0; i < steps; i++){
 		if((ref->list->next) && (ret_graph != NULL)) { /* check if list is not empty */
@@ -2517,7 +2523,7 @@ int pool_idx){
 					pos2 = -(node_y[j+1] + c * b) / a;
 				}
 				
-				if (pos1 > pos2) {
+				if (pos1 < pos2) {
 					swap = node_x[j];
 					node_x[j] = node_x[j+1];
 					node_x[j+1] = swap;
@@ -2547,14 +2553,18 @@ int pool_idx){
 					j++;
 				}
 				else {
-					line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
+					//line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
+					graph_dash(ret_graph, node_x[j], node_y[j],
+					node_x[j+1], node_y[j+1],
+					sign*orig_x, sign*orig_y, dash, num_dash);
+					
 					j += 2;
 				}
 			}
 		}
 		
-		//orig_x -= delta_x;
-		//orig_y += delta_y;
+		orig_x -= sign * delta_x;
+		orig_y -= sign * delta_y;
 		c += a*delta_x+b*delta_y;
 		nodes = 0;
 	}

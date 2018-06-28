@@ -2767,7 +2767,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 	return num_bound;
 }
 
-int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf_node **next, int pool_idx){
+int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf_node **next, double p_scale, int pool_idx){
 	int num_def = 0;
 	*next = NULL;
 	graph_obj *curr_graph = NULL;
@@ -2933,7 +2933,7 @@ int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, i
 						if (lines_graph){
 							curr_graph = lines_graph;
 						}*/
-						dxf_hatch_get_def(list_ret, curr_graph, current, &next, pool_idx);
+						dxf_hatch_get_def(list_ret, curr_graph, current, &next, p_scale, pool_idx);
 						if (next) current = next;
 					
 						break;
