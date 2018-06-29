@@ -2781,6 +2781,7 @@ int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf
 		double ofs_x = 0.0, ofs_y = 0.0;
 		double dash[DXF_MAX_PAT];
 		
+		dash[0] = 1;
 		int num_dash = 0;
 		
 		current = ent;
@@ -2841,6 +2842,7 @@ int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf
 				orig_x = 0.0; orig_y = 0.0;
 				ofs_x = 0.0; ofs_y = 0.0;
 				num_dash = 0;
+				dash[0] = 1;
 				
 				prev_def = curr_def;
 				prev_angle = angle;

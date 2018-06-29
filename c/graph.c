@@ -2224,6 +2224,11 @@ int pool_idx){
 }
 #endif
 
+int get_i(int pos, int len, int rev){
+	if (!rev) return pos;
+	else return len - 1 - pos;
+}
+
 int graph_dash(graph_obj * master, double x0, double y0, 
 double x1, double y1,
 double orig_x, double orig_y,
@@ -2233,7 +2238,7 @@ double dash[], int num_dash){
 	
 	double dx, dy, modulus, sine, cosine;
 	
-	int i, iter;
+	int i, iter, reverse = 0, idx = 0;
 	
 	
 	if (num_dash > 1) { /* if graph is dashed lines */
@@ -2246,7 +2251,7 @@ double dash[], int num_dash){
 		double last;
 		
 		/* get the pattern length */
-		for (i = 0; i <= num_dash && i < 20; i++){
+		for (i = 0; i < num_dash && i < 20; i++){
 			patt_len += fabs(dash[i]);
 		}
 			
@@ -2272,6 +2277,8 @@ double dash[], int num_dash){
 		else if (fabs(sine) > TOLERANCE){
 			patt_start = (orig_y - y0)/ sine;
 		}
+		
+		reverse = sign*patt_start > 0;
 		
 		/* find the pattern initial conditions for the first point*/
 		if (sign*patt_start <= 0){ /* start of pattern outside segment */
@@ -2480,8 +2487,8 @@ int pool_idx){
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
 	c -= start;
-	orig_x -= sign * start/delta * delta_x;
-	orig_y -= sign * start/delta * delta_y;
+	orig_x -= (double)sign * start/delta * delta_x;
+	orig_y -= (double)sign * start/delta * delta_y;
 	
 	for (i = 0; i < steps; i++){
 		if((ref->list->next) && (ret_graph != NULL)) { /* check if list is not empty */
@@ -2563,8 +2570,8 @@ int pool_idx){
 			}
 		}
 		
-		orig_x -= sign * delta_x;
-		orig_y -= sign * delta_y;
+		orig_x -= (double)sign * delta_x;
+		orig_y -= (double)sign * delta_y;
 		c += a*delta_x+b*delta_y;
 		nodes = 0;
 	}
