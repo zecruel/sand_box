@@ -2492,12 +2492,13 @@ double dash[], int num_dash){
 		
 		
 		/* initial point */
-		draw = dash[patt_i] >= 0.0;
+		draw = dash[get_i(patt_i, num_dash, reverse)] >= 0.0;
 		p1x = x0;
 		p1y = y0;
 		
 		if (patt_rem <= modulus){ /* current segment needs some iterations over pattern */
-		
+			if(reverse) reverse = sine * cosine > 0.0;
+			else reverse = sine * cosine < 0.0;
 			/* find how many interations over whole pattern */ 
 			patt_part = modf((modulus - patt_rem)/patt_len, &patt_int);
 			patt_part *= patt_len; /* remainder for the next step*/
