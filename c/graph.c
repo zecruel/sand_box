@@ -2222,12 +2222,6 @@ int pool_idx){
 	return ret_graph;
 	
 }
-#endif
-
-int get_i(int pos, int len, int rev){
-	if (!rev) return pos;
-	else return len - 1 - pos;
-}
 
 int graph_dash(graph_obj * master, double x0, double y0, 
 double x1, double y1,
@@ -2425,6 +2419,198 @@ double dash[], int num_dash){
 
 }
 
+#endif
+
+int get_i(int pos, int len, int rev){
+	if (!rev) return pos;
+	else return len - 1 - pos;
+}
+
+int graph_dash(graph_obj * master, double x0, double y0, 
+double x1, double y1,
+double orig_x, double orig_y,
+double dash[], int num_dash){
+	if (master == NULL) return 0;
+	 /* check if list is not empty */
+	
+	double dx, dy, modulus, sine, cosine;
+	
+	int i, iter, reverse = 0, idx = 0;
+	
+	
+	if (num_dash > 1) { /* if graph is dashed lines */
+		int patt_i = 0, patt_a_i = 0, patt_p_i = 0, draw;
+		double patt_len = 0.0, patt_int, patt_part, patt_rem = 0.0, patt_acc, patt_rem_n;
+		double patt_start_x = 0, patt_start_y = 0;
+		double patt_start = 0;
+		
+		double p1x, p1y, p2x, p2y;
+		double last;
+		
+		/* get the pattern length */
+		for (i = 0; i < num_dash && i < 20; i++){
+			patt_len += fabs(dash[i]);
+		}
+			
+			
+		/* get polar parameters of line */
+		dx = x1 - x0;
+		dy = y1 - y0;
+		modulus = sqrt(pow(dx, 2) + pow(dy, 2));
+		cosine = 1.0;
+		sine = 0.0;
+		
+		if (modulus > TOLERANCE){
+			cosine = dx/modulus;
+			sine = dy/modulus;
+		}
+		
+		//int sign = (sine * cosine >= 0.0)? 1:-1;
+		
+		/*find distance between pattern start and segment's first point */
+		if (fabs(cosine) > TOLERANCE){
+			patt_start = (orig_x - x0)/ cosine;
+		}
+		else if (fabs(sine) > TOLERANCE){
+			patt_start = (orig_y - y0)/ sine;
+		}
+		
+		reverse = patt_start > 0;
+		
+		/* find the pattern initial conditions for the first point*/
+		patt_start = fabs(fmod(patt_start, patt_len));
+		iter = get_i(0, num_dash, reverse);
+		patt_acc = fabs(dash[iter]);
+		for (i = 1; i < num_dash && i < 20; i++){
+			patt_i = i - 1;
+			if (patt_start <= patt_acc){
+				patt_rem = (patt_acc - patt_start);
+				break;
+			}
+			patt_acc += fabs(dash[get_i(i, num_dash, reverse)]);
+		}
+		
+		
+		/* initial point */
+		draw = dash[patt_i] >= 0.0;
+		p1x = x0;
+		p1y = y0;
+		
+		if (patt_rem <= modulus){ /* current segment needs some iterations over pattern */
+		
+			/* find how many interations over whole pattern */ 
+			patt_part = modf((modulus - patt_rem)/patt_len, &patt_int);
+			patt_part *= patt_len; /* remainder for the next step*/
+			
+			/* find how many interations over partial pattern */
+			patt_a_i = 0;
+			patt_p_i = patt_i;
+			if (patt_rem > 0) patt_p_i++;
+			if (patt_p_i >= num_dash) patt_p_i = 0;
+			
+			patt_acc = fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
+			
+			patt_rem_n = patt_part; /* remainder pattern for next segment continues */
+			if (patt_part < patt_acc) patt_rem_n = patt_acc - patt_part;
+			
+			last = modulus - patt_int*patt_len - patt_rem; /* the last stroke (pattern fractional part) of current segment*/
+			for (i = 0; i < num_dash && i < 20; i++){
+				patt_a_i = i;
+				if (patt_part < patt_acc) break;
+				
+				last -= fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
+				
+				patt_p_i++;
+				if (patt_p_i >= num_dash) patt_p_i = 0;
+				
+				patt_acc += fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
+				
+				patt_rem_n = patt_acc - patt_part;
+				
+				
+			}
+			
+			/* first stroke - remainder of past pattern*/
+			p2x = patt_rem * cosine + p1x;
+			p2y = patt_rem * sine + p1y;
+			
+			if (patt_rem > 0) {
+				patt_i++;
+				if (patt_i >= num_dash) patt_i = 0;
+				
+				if (draw){
+					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
+				}
+			}
+			
+			patt_rem = patt_rem_n; /* for next segment */
+			p1x = p2x;
+			p1y = p2y;
+			
+			/* draw pattern */
+			iter = (int) (patt_int * (num_dash)) + patt_a_i;
+			for (i = 0; i < iter; i++){
+				idx = get_i(patt_i, num_dash, reverse);
+				draw = dash[idx] >= 0.0;
+				p2x = fabs(dash[idx]) * cosine + p1x;
+				p2y = fabs(dash[idx]) * sine + p1y;
+				if (draw){
+					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
+				}
+				
+				p1x = p2x;
+				p1y = p2y;
+				//if (i < iter - 1){
+					patt_i++;
+					if (patt_i >= num_dash) patt_i = 0;
+				//}
+				
+			}
+			idx = get_i(patt_i, num_dash, reverse);
+			p2x = last * cosine + p1x;
+			p2y = last * sine + p1y;
+			draw = dash[idx] >= 0.0;
+			//if (draw) bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+			if (draw) line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
+		}
+		else{ /* current segment is in same past iteration pattern */
+			p2x = modulus * cosine + p1x;
+			p2y = modulus * sine + p1y;
+			
+			patt_rem -= modulus;
+		
+			if (draw){
+				//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
+				line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
+			}
+			p1x = p2x;
+			p1y = p2y;
+		}
+	}
+	else{ /* for continuous lines*/
+		
+		/* get polar parameters of line */
+		dx = x1 - x0;
+		dy = y1 - y0;
+		modulus = sqrt(pow(dx, 2) + pow(dy, 2));
+		cosine = 1.0;
+		sine = 0.0;
+		
+		if (modulus > TOLERANCE){
+			cosine = dx/modulus;
+			sine = dy/modulus;
+		}
+		
+		if (dash[0] >= 0.0){
+			//bmp_line_norm(img, x0, y0, x1, y1, -sine, cosine);
+			line_add(master, x0, y0, 0.0, x1, y1, 0.0);
+		}
+	}
+
+}
+
 
 graph_obj * graph_hatch(graph_obj * ref, 
 double angle,
@@ -2518,7 +2704,7 @@ int pool_idx){
 		if (nodes > 1){
 			double pos1, pos2;
 			
-			/* Sort the nodes, via a simple “Bubble” sort. */
+			/* Sort the nodes, via a simple Bubble sort. */
 			j=0;
 			while (j < nodes - 1) {
 				if (fabs(b) > TOLERANCE){
