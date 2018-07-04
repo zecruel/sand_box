@@ -2467,7 +2467,7 @@ double dash[], int num_dash){
 		
 		//int sign = (sine * cosine >= 0.0)? 1:-1;
 		
-		/*find distance between pattern start and segment's first point */
+		/*find distance between pattern start and segment's first point 
 		if (fabs(cosine) > TOLERANCE){
 			patt_start = (orig_x - x0)/ cosine;
 		}
@@ -2475,21 +2475,25 @@ double dash[], int num_dash){
 			patt_start = (orig_y - y0)/ sine;
 		}
 		
-		reverse = patt_start > 0;
+		reverse = patt_start > 0;*/
+		
+		patt_start = cosine*x0 + sine*y0 - orig_x;
+		reverse = patt_start < 0;
 		
 		/* find the pattern initial conditions for the first point*/
 		patt_start = fabs(fmod(patt_start, patt_len));
 		iter = get_i(0, num_dash, reverse);
 		patt_acc = fabs(dash[iter]);
 		for (i = 1; i < num_dash && i < 20; i++){
-			patt_i = i - 1;
+			
 			if (patt_start <= patt_acc){
-				patt_rem = (patt_acc - patt_start);
+				
 				break;
 			}
 			patt_acc += fabs(dash[get_i(i, num_dash, reverse)]);
 		}
-		
+		patt_i = i - 1;
+		patt_rem = (patt_acc - patt_start);
 		
 		/* initial point */
 		draw = dash[get_i(patt_i, num_dash, reverse)] >= 0.0;
@@ -2497,8 +2501,8 @@ double dash[], int num_dash){
 		p1y = y0;
 		
 		if (patt_rem <= modulus){ /* current segment needs some iterations over pattern */
-			if(reverse) reverse = sine * cosine > 0.0;
-			else reverse = sine * cosine < 0.0;
+			//if(reverse) reverse = sine * cosine > 0.0;
+			//else reverse = sine * cosine < 0.0;
 			/* find how many interations over whole pattern */ 
 			patt_part = modf((modulus - patt_rem)/patt_len, &patt_int);
 			patt_part *= patt_len; /* remainder for the next step*/
@@ -2636,6 +2640,8 @@ int pool_idx){
 	double c = -(a*orig_x+b*orig_y);
 	
 	double delta = fabs( a * delta_x + b * delta_y);
+	double skew = -b * delta_x + a * delta_y;
+	double curr_skew = -(-b * orig_x + a * orig_y);
 	
 	int sign = (angle > M_PI/2)? 1: -1;
 	
@@ -2649,7 +2655,7 @@ int pool_idx){
 	double dist1 = (a*min_x + b*min_y + c);
 	
 	double dist2 = (a*min_x + b*max_y + c);
-			
+	
 	double dist3 = (a*max_x + b*min_y + c);
 	
 	double dist4 = (a*max_x + b*max_y + c);
@@ -2674,8 +2680,10 @@ int pool_idx){
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
 	c -= start;
-	orig_x -= (double)sign * start/delta * delta_x;
-	orig_y -= (double)sign * start/delta * delta_y;
+	orig_x += start/delta * delta_x;
+	orig_y += start/delta * delta_y;
+	
+	curr_skew -= start/delta * skew;
 	
 	for (i = 0; i < steps; i++){
 		if((ref->list->next) && (ret_graph != NULL)) { /* check if list is not empty */
@@ -2750,15 +2758,16 @@ int pool_idx){
 					//line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
 					graph_dash(ret_graph, node_x[j], node_y[j],
 					node_x[j+1], node_y[j+1],
-					sign*orig_x, sign*orig_y, dash, num_dash);
+					curr_skew, 0.0, dash, num_dash);
 					
 					j += 2;
 				}
 			}
 		}
 		
-		orig_x -= (double)sign * delta_x;
-		orig_y -= (double)sign * delta_y;
+		orig_x += delta_x;
+		orig_y += delta_y;
+		curr_skew += skew;
 		c += a*delta_x+b*delta_y;
 		nodes = 0;
 	}

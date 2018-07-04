@@ -75,7 +75,7 @@ int gui_hatch_info (gui_obj *gui){
 									if (curr_gr_n->data){
 										curr_graph = (graph_obj *)curr_gr_n->data;
 										hatch = graph_hatch(curr_graph, hatch_angle*M_PI/180,
-										0.0, 0.0, hatch_spacing, 0.0, 0);
+										0.0, 0.0, hatch_spacing, 0.0, (double[]){1}, 1, 0);
 										if (hatch){
 											list_push(grph_list, list_new((void *)hatch, 0));
 										}
