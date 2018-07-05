@@ -2484,23 +2484,32 @@ double dash[], int num_dash){
 		patt_start = fabs(fmod(patt_start, patt_len));
 		iter = get_i(0, num_dash, reverse);
 		patt_acc = fabs(dash[iter]);
+		patt_rem_n = patt_start;
 		for (i = 1; i < num_dash && i < 20; i++){
 			
 			if (patt_start < patt_acc){
 				
 				break;
 			}
+			patt_rem_n -= fabs(dash[get_i(i, num_dash, reverse)]);
 			patt_acc += fabs(dash[get_i(i, num_dash, reverse)]);
 		}
 		patt_i = i - 1;
-		patt_rem = (patt_acc - patt_start);
+		
+		if (reverse) patt_rem = patt_rem_n;
+		else patt_rem = (patt_acc - patt_start);
 		
 		/* initial point */
 		draw = dash[get_i(patt_i, num_dash, reverse)] >= 0.0;
 		p1x = x0;
 		p1y = y0;
 		
-		if (patt_rem <= modulus){ /* current segment needs some iterations over pattern */
+		
+		
+		patt_i = get_i(patt_i, num_dash, reverse);
+		reverse = 0;
+		
+		if (patt_rem < modulus){ /* current segment needs some iterations over pattern */
 			//if(reverse) reverse = sine * cosine > 0.0;
 			//else reverse = sine * cosine < 0.0;
 			
@@ -2517,8 +2526,8 @@ double dash[], int num_dash){
 			
 			patt_acc = fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
 			
-			patt_rem_n = patt_part; /* remainder pattern for next segment continues */
-			if (patt_part < patt_acc) patt_rem_n = patt_acc - patt_part;
+			//patt_rem_n = patt_part; /* remainder pattern for next segment continues */
+			//if (patt_part < patt_acc) patt_rem_n = patt_acc - patt_part;
 			
 			last = modulus - patt_int*patt_len - patt_rem; /* the last stroke (pattern fractional part) of current segment*/
 			for (i = 0; i < num_dash && i < 20; i++){
@@ -2532,7 +2541,7 @@ double dash[], int num_dash){
 				
 				patt_acc += fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
 				
-				patt_rem_n = patt_acc - patt_part;
+				//patt_rem_n = patt_acc - patt_part;
 				
 				
 			}
@@ -2551,7 +2560,7 @@ double dash[], int num_dash){
 				}
 			}
 			
-			patt_rem = patt_rem_n; /* for next segment */
+			//patt_rem = patt_rem_n; /* for next segment */
 			p1x = p2x;
 			p1y = p2y;
 			
@@ -2643,7 +2652,7 @@ int pool_idx){
 	
 	double delta = fabs( a * delta_x + b * delta_y);
 	double skew = -b * delta_x + a * delta_y;
-	double curr_skew = -(-b * orig_x + a * orig_y);
+	double curr_skew = (-b * orig_x + a * orig_y);
 	
 	int sign = (angle > M_PI/2)? 1: -1;
 	
@@ -2769,7 +2778,7 @@ int pool_idx){
 		
 		//orig_x += delta_x;
 		//orig_y += delta_y;
-		curr_skew += skew;
+		curr_skew -= skew;
 		c += a*delta_x+b*delta_y;
 		nodes = 0;
 	}
