@@ -2486,7 +2486,7 @@ double dash[], int num_dash){
 		patt_acc = fabs(dash[iter]);
 		for (i = 1; i < num_dash && i < 20; i++){
 			
-			if (patt_start <= patt_acc){
+			if (patt_start < patt_acc){
 				
 				break;
 			}
@@ -2503,6 +2503,8 @@ double dash[], int num_dash){
 		if (patt_rem <= modulus){ /* current segment needs some iterations over pattern */
 			//if(reverse) reverse = sine * cosine > 0.0;
 			//else reverse = sine * cosine < 0.0;
+			
+			
 			/* find how many interations over whole pattern */ 
 			patt_part = modf((modulus - patt_rem)/patt_len, &patt_int);
 			patt_part *= patt_len; /* remainder for the next step*/
@@ -2680,8 +2682,8 @@ int pool_idx){
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
 	c -= start;
-	orig_x += start/delta * delta_x;
-	orig_y += start/delta * delta_y;
+	//orig_x -= start/delta * delta_x;
+	//orig_y -= start/delta * delta_y;
 	
 	curr_skew -= start/delta * skew;
 	
@@ -2765,8 +2767,8 @@ int pool_idx){
 			}
 		}
 		
-		orig_x += delta_x;
-		orig_y += delta_y;
+		//orig_x += delta_x;
+		//orig_y += delta_y;
 		curr_skew += skew;
 		c += a*delta_x+b*delta_y;
 		nodes = 0;
