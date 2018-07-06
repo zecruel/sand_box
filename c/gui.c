@@ -703,8 +703,30 @@ nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt)
 			nk_input_key(ctx, NK_KEY_TEXT_REDO, down && state[SDL_SCANCODE_LCTRL]);
 		else if (sym == SDLK_c)
 			nk_input_key(ctx, NK_KEY_COPY, down && state[SDL_SCANCODE_LCTRL]);
-		else if (sym == SDLK_v)
+		else if ((sym == SDLK_v) && (state[SDL_SCANCODE_LCTRL])){
 			nk_input_key(ctx, NK_KEY_PASTE, down && state[SDL_SCANCODE_LCTRL]);
+			/*
+			const char *text = SDL_GetClipboardText();
+			if (text){
+				nk_rune str_uni;
+				int glyph_size;
+				char *curr = (char *)text;
+				
+				while ((curr - text) < strlen(text)) {
+				
+					glyph_size = nk_utf_decode(curr, &str_uni, 2);
+					if (glyph_size){
+						nk_input_unicode(ctx, str_uni);
+						curr += glyph_size;
+					}
+					else {
+						break;
+					}
+				}
+				SDL_free(text);
+				SDL_Delay(100);
+			}*/
+		}
 		else if (sym == SDLK_x)
 			nk_input_key(ctx, NK_KEY_CUT, down && state[SDL_SCANCODE_LCTRL]);
 		else if (sym == SDLK_b)
@@ -767,6 +789,19 @@ nk_sdl_handle_event(gui_obj *gui, SDL_Window *win, SDL_Event *evt)
 			return 1;
 		}
 		else return 0;
+	}
+	else if (evt->type == SDL_DROPFILE) {      // In case if dropped file
+		char *dropped_filedir = evt->drop.file;
+		
+		SDL_SetClipboardText(dropped_filedir);
+		
+		SDL_free(dropped_filedir);    // Free dropped_filedir memory
+		
+		nk_input_key(ctx, NK_KEY_PASTE, 1);
+		//SDL_Delay(100);
+		nk_input_key(ctx, NK_KEY_PASTE, 0);
+		
+		return 1;
 	}
 	return 0;
 }

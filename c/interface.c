@@ -339,7 +339,11 @@ int main(int argc, char** argv){
 	unsigned int quit = 0;
 	unsigned int wait_open = 0;
 	int show_app_about = 0;
+	int show_app_file = 0;
 	int show_info = 0;
+	
+	char file_path[DXF_MAX_CHARS];
+	int file_path_len = 0;
 	
 	int show_lay_mng = 0, sel_tmp = 0, show_color_pick = 0, show_lay_name = 0;
 	
@@ -633,16 +637,16 @@ int main(int argc, char** argv){
 						break;
 					
 					case (SDL_DROPFILE): {      // In case if dropped file
-						dropped_filedir = event.drop.file;
+						//dropped_filedir = event.drop.file;
 						// Shows directory of dropped file
 						//SDL_ShowSimpleMessageBox(
 						//	SDL_MESSAGEBOX_INFORMATION,
 						//	"File dropped on window",
 						//	dropped_filedir,
 						//	window);
-						printf(dropped_filedir);
-						printf("\n----------------------------\n");
-						SDL_free(dropped_filedir);    // Free dropped_filedir memory
+						//printf(dropped_filedir);
+						//printf("\n----------------------------\n");
+						//SDL_free(dropped_filedir);    // Free dropped_filedir memory
 						}
 						break;
 					case SDL_KEYDOWN:
@@ -704,7 +708,8 @@ int main(int argc, char** argv){
 					printf("NEW\n");
 				}
 				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_OPEN]))){
-					gui->action = FILE_OPEN;
+					//gui->action = FILE_OPEN;
+					show_app_file = 1;
 				}
 				if (nk_button_image_styled(gui->ctx, &gui->b_icon, nk_image_ptr(gui->svg_bmp[SVG_SAVE]))){
 					gui->action = FILE_SAVE;
@@ -1013,6 +1018,48 @@ int main(int argc, char** argv){
 					nk_label(gui->ctx, "CadZinho is licensed under the MIT License.",  NK_TEXT_LEFT);
 					nk_popup_end(gui->ctx);
 				} else show_app_about = nk_false;
+			}
+			
+			if (show_app_file){
+				/* about popup */
+				static struct nk_rect s = {20, 100, 400, 150};
+				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "File", NK_WINDOW_CLOSABLE, s)){
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "File to Open:", NK_TEXT_CENTERED);
+					//nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, file_path, DXF_MAX_CHARS, nk_filter_default);
+					nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
+					nk_edit_string(gui->ctx, NK_EDIT_SIMPLE | NK_EDIT_CLIPBOARD, file_path, &file_path_len, DXF_MAX_CHARS, nk_filter_default);
+					
+					nk_layout_row_dynamic(gui->ctx, 20, 2);
+					if (nk_button_label(gui->ctx, "OK")) {
+						file_path[file_path_len] = 0;
+						if (strlen(file_path) > 4){
+							dxf_mem_pool(ZERO_DXF, 0);
+							graph_mem_pool(ZERO_GRAPH, 0);
+							graph_mem_pool(ZERO_LINE, 0);
+							
+							wait_open = 1;
+							progress = 0;
+							
+							file_buf = dxf_load_file(file_path, &file_size);
+							open_prg = dxf_read(gui->drawing, file_buf, file_size, &progress);
+							
+							low_proc = 0;
+							progr_win = 1;
+						}
+						show_app_file = nk_false;
+						file_path_len = 0;
+					}
+					if (nk_button_label(gui->ctx, "Explore")) {
+						gui->action = FILE_OPEN;
+						show_app_file = nk_false;
+						file_path_len = 0;
+					}
+					nk_popup_end(gui->ctx);
+				} else {
+					show_app_file = nk_false;
+					file_path_len = 0;
+				}
 			}
 			
 		}

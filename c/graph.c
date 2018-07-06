@@ -2491,7 +2491,7 @@ double dash[], int num_dash){
 				
 				break;
 			}
-			patt_rem_n -= fabs(dash[get_i(i, num_dash, reverse)]);
+			patt_rem_n -= fabs(dash[get_i(i - 1, num_dash, reverse)]);
 			patt_acc += fabs(dash[get_i(i, num_dash, reverse)]);
 		}
 		patt_i = i - 1;
