@@ -2650,7 +2650,7 @@ int pool_idx){
 	double b = -cos(angle);
 	double c = -(a*orig_x+b*orig_y);
 	
-	double delta = fabs( a * delta_x + b * delta_y);
+	double delta = -(a * delta_x + b * delta_y);
 	double skew = -b * delta_x + a * delta_y;
 	double curr_skew = (-b * orig_x + a * orig_y);
 	
