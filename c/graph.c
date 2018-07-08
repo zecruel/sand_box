@@ -2654,42 +2654,35 @@ int pool_idx){
 	double skew = -b * delta_x + a * delta_y;
 	double curr_skew = (-b * orig_x + a * orig_y);
 	
-	int sign = (delta> 0)? 1: -1;
-	
-	/* find min and max in coordinates*/
+	/* find min and max by reference graph rectangle*/
 	min_x = ref->ext_min_x;
 	max_x = ref->ext_max_x;
 	min_y = ref->ext_min_y;
 	max_y = ref->ext_max_y;
 	
 	/* calcule distances between cornes of graph rectangle and line at orign */
+	double dist[4], tmp;
+	dist[0] = (a*min_x + b*min_y + c);
+	dist[1] = (a*min_x + b*max_y + c);
+	dist[2] = (a*max_x + b*min_y + c);
+	dist[3] = (a*max_x + b*max_y + c);
 	
-	double dist1 = (a*min_x + b*min_y + c);
-	
-	double dist2 = (a*min_x + b*max_y + c);
-	
-	double dist3 = (a*max_x + b*min_y + c);
-	
-	double dist4 = (a*max_x + b*max_y + c);
-	
-	if (dist1 < dist2){
-		start = floor(dist1/fabs(delta)) * fabs(delta);
-	}
-	else{
-		start = floor(dist2/fabs(delta)) * fabs(delta);
-	}
-		
-	if (dist3 > dist4){
-		end = ceil(dist3/fabs(delta)) * fabs(delta);
-	}
-	else{
-		end = ceil(dist4/fabs(delta)) * fabs(delta);
+	/* Sort the distances, via a simple Bubble sort. */
+	for (i = 3; i > 0; i--){
+		for (j = 0; j < i; j++){
+			if (dist[j] > dist[j+1]){
+				tmp = dist[j];
+				dist[j] = dist[j+1];
+				dist[j+1] = tmp;
+			}
+		}
 	}
 	
-	if (delta < 0){
-		double tmp = start;
-		start = end;
-		end = tmp;
+	start = floor(dist[0]/delta) * (delta);
+	end = ceil(dist[3]/delta) * (delta);
+	if (delta < 0){ /* invert corners */
+		start = floor(dist[3]/delta) * (delta);
+		end = ceil(dist[0]/delta) * (delta);
 	}
 	
 	steps = (int) fabs(round((end - start)/delta));
@@ -2698,8 +2691,6 @@ int pool_idx){
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
 	c -= start;
-	//orig_x -= start/delta * delta_x;
-	//orig_y -= start/delta * delta_y;
 	
 	curr_skew -= start/delta * skew;
 	
@@ -2759,12 +2750,6 @@ int pool_idx){
 				}
 			}
 			
-			/*for (j = 0; j < nodes; j += 2){
-				//printf("(%0.2f,%0.2f)-(%0.2f,%0.2f)\n", node_x[j], node_y[j], node_x[j+1], node_y[j+1]);
-				//fflush( stdout );
-				
-				line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
-			}*/
 			j = 0;
 			while (j < nodes - 1){
 				if  ((fabs(node_x[j] - node_x[j+1]) < TOLERANCE) &&
@@ -2783,8 +2768,6 @@ int pool_idx){
 			}
 		}
 		
-		//orig_x += delta_x;
-		//orig_y += delta_y;
 		curr_skew -= skew;
 		c -= delta;
 		nodes = 0;
