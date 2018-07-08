@@ -2654,7 +2654,7 @@ int pool_idx){
 	double skew = -b * delta_x + a * delta_y;
 	double curr_skew = (-b * orig_x + a * orig_y);
 	
-	int sign = (angle > M_PI/2)? 1: -1;
+	int sign = (delta> 0)? 1: -1;
 	
 	/* find min and max in coordinates*/
 	min_x = ref->ext_min_x;
@@ -2663,6 +2663,7 @@ int pool_idx){
 	max_y = ref->ext_max_y;
 	
 	/* calcule distances between cornes of graph rectangle and line at orign */
+	
 	double dist1 = (a*min_x + b*min_y + c);
 	
 	double dist2 = (a*min_x + b*max_y + c);
@@ -2672,17 +2673,23 @@ int pool_idx){
 	double dist4 = (a*max_x + b*max_y + c);
 	
 	if (dist1 < dist2){
-		start = floor(dist1/delta) * delta;
+		start = floor(dist1/fabs(delta)) * fabs(delta);
 	}
 	else{
-		start = floor(dist2/delta) * delta;
+		start = floor(dist2/fabs(delta)) * fabs(delta);
 	}
 		
 	if (dist3 > dist4){
-		end = ceil(dist3/delta) * delta;
+		end = ceil(dist3/fabs(delta)) * fabs(delta);
 	}
 	else{
-		end = ceil(dist4/delta) * delta;
+		end = ceil(dist4/fabs(delta)) * fabs(delta);
+	}
+	
+	if (delta < 0){
+		double tmp = start;
+		start = end;
+		end = tmp;
 	}
 	
 	steps = (int) fabs(round((end - start)/delta));
@@ -2779,7 +2786,7 @@ int pool_idx){
 		//orig_x += delta_x;
 		//orig_y += delta_y;
 		curr_skew -= skew;
-		c += a*delta_x+b*delta_y;
+		c -= delta;
 		nodes = 0;
 	}
 	
