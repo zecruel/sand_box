@@ -2646,6 +2646,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 					case 75: /* end of bondary definitions */
 						bound_type = 0;
 						curr_bound++;
+						//pt1 = 1;
 						break;
 					case 92:
 						bound_type = current->value.i_data;
@@ -2656,8 +2657,14 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				
 			}
 			if ((curr_bound != prev_bound) || (current->next == NULL)){
+				if(init == 0) {
+					init = 1;
+					*curr_graph = graph_new(pool_idx);
+				}
+				
+				
 				/* ends the previous boundary */
-				if (edge_type == EDGE_POLY){
+				if (prev_edge_type == EDGE_POLY){
 					/* last vertex */
 					if((first != 0) && (*curr_graph != NULL)){
 						//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
@@ -2681,9 +2688,24 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						}
 					}
 				}
-				else if (edge_type != EDGE_NONE){
-					curr_edge++;
+				else if (prev_edge_type == EDGE_LINE){
+					
+					if (*curr_graph != NULL){
+						line_add(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
+					}
 				}
+				else if (prev_edge_type == EDGE_CIRC_ARC){
+					
+					if (*curr_graph != NULL){
+						if (ccw < 0){
+							double tmp;
+							start_ang = 360 - start_ang;
+							end_ang = 360 - end_ang;
+						}
+						graph_arc(*curr_graph, curr_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
+					}
+				}
+				
 				
 				/* verify if boundary is closed - TODO*/
 				if(*curr_graph != NULL){
@@ -2695,61 +2717,50 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				//init = 0;
 				//*curr_graph = NULL;
 				first = 0; pt1 = 0; closed = 0; prev_bulge = 0;
+				radius = 0; start_ang = 0; end_ang = 0;
+				
 				edge_type = EDGE_NONE;
+				prev_edge_type = EDGE_NONE;
 				if (bound_type & 2) edge_type = EDGE_POLY;
+				//prev_edge_type = edge_type;
+				
 				prev_bound = curr_bound;
+				
+				if ((edge_type != EDGE_NONE) && (edge_type != EDGE_POLY)){
+					pt1 = 1;
+				}
 			}
 			
 			
-			if ((pt1) && (edge_type == EDGE_POLY)){
+			if (pt1){
 				pt1 = 0;
-				
-				if((init != 0) &&(first == 0)){
-					first = 1;
-					
-					//printf("primeiro vertice\n");
-					last_x = curr_x;
-					last_y = pt1_y;
-					prev_x = curr_x;
-					prev_y = pt1_y;
-				}
-				else if(init == 0) {
-					init = 1;
-					*curr_graph = graph_new(pool_idx);
-					if (*curr_graph){
+				if (prev_edge_type == EDGE_POLY) {
+					if((init != 0) &&(first == 0)){
+						first = 1;
 						
-						/*if (pline_flag & 1){
-							closed = 1;
+						//printf("primeiro vertice\n");
+						last_x = curr_x;
+						last_y = pt1_y;
+						prev_x = curr_x;
+						prev_y = pt1_y;
+					}
+					else if((first != 0) && (*curr_graph != NULL)){
+						//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
+						if (prev_bulge == 0){
+							line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
 						}
-						else {
-							closed = 0;
-						}*/
+						else{
+							graph_arc_bulge(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0, prev_bulge);
+							//bulge =0;
+						}
+						prev_x = curr_x;
+						prev_y = pt1_y;
 					}
 				}
-				else if((first != 0) && (*curr_graph != NULL)){
-					//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
-					if (prev_bulge == 0){
-						line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
-					}
-					else{
-						graph_arc_bulge(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0, prev_bulge);
-						//bulge =0;
-					}
-					prev_x = curr_x;
-					prev_y = pt1_y;
-				}
-				
-				prev_bulge = bulge;
-				bulge = 0;
-				
-				curr_x = pt1_x;
-			}
-			
-			else if (curr_edge != prev_edge) {
-				if (prev_edge_type == EDGE_LINE){
+				else if (prev_edge_type == EDGE_LINE){
 					
 					if (*curr_graph != NULL){
-						line_add(*curr_graph, pt1_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
+						line_add(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
 					}
 				}
 				else if (prev_edge_type == EDGE_CIRC_ARC){
@@ -2760,18 +2771,19 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 							start_ang = 360 - start_ang;
 							end_ang = 360 - end_ang;
 						}
-						graph_arc(*curr_graph, pt1_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
+						graph_arc(*curr_graph, curr_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
 					}
 				}
-				else if(init == 0) {
-					init = 1;
-					*curr_graph = graph_new(pool_idx);
-				}
+				prev_bulge = bulge;
+				bulge = 0;
+				
+				curr_x = pt1_x;
+				
 				radius = 0; start_ang = 0; end_ang = 0;
 				prev_edge = curr_edge;
 				prev_edge_type = edge_type;
+				
 			}
-			
 			
 			
 			/* breaks loop if is found a hatch style entry (code 75) */
