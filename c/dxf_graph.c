@@ -2583,8 +2583,9 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 		int curr_bound = 0, prev_bound = 0;
 		int curr_edge = 0, prev_edge = 0;
 		int bound_type = 0;
-		int first = 0, closed =0;
+		int first = 0, closed =0, ccw = 0;
 		double prev_x, prev_y,  last_x, last_y,  curr_x;
+		double radius, start_ang, end_ang;
 		double prev_bulge = 0;
 		//double elev = 0.0;
 		
@@ -2597,6 +2598,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 			EDGE_NONE = 5
 		};
 		int edge_type = EDGE_NONE;
+		int prev_edge_type = EDGE_NONE;
 		
 		/*flags*/
 		int pt1 = 0, init = 0;
@@ -2621,8 +2623,17 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 					case 21:
 						pt2_y = current->value.d_data; 
 						break;
+					case 40:
+						radius = current->value.d_data;
+						break;
 					case 42:
 						bulge = current->value.d_data;
+						break;
+					case 50:
+						start_ang = current->value.d_data;
+						break;
+					case 51:
+						end_ang = current->value.d_data;
 						break;
 					case 72:
 						edge_type = current->value.i_data;
@@ -2630,6 +2641,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						break;
 					case 73:
 						closed = current->value.i_data;
+						ccw = (current->value.i_data != 0)? 1: -1;
 						break;
 					case 75: /* end of bondary definitions */
 						bound_type = 0;
@@ -2683,7 +2695,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				//init = 0;
 				//*curr_graph = NULL;
 				first = 0; pt1 = 0; closed = 0; prev_bulge = 0;
-				//edge_type = EDGE_NONE;
+				edge_type = EDGE_NONE;
 				if (bound_type & 2) edge_type = EDGE_POLY;
 				prev_bound = curr_bound;
 			}
@@ -2734,16 +2746,30 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 			}
 			
 			else if (curr_edge != prev_edge) {
-				if (edge_type == EDGE_LINE){
-					if(init == 0) {
-						init = 1;
-						*curr_graph = graph_new(pool_idx);
-					}
-					else if (*curr_graph != NULL){
+				if (prev_edge_type == EDGE_LINE){
+					
+					if (*curr_graph != NULL){
 						line_add(*curr_graph, pt1_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
 					}
 				}
+				else if (prev_edge_type == EDGE_CIRC_ARC){
+					
+					if (*curr_graph != NULL){
+						if (ccw < 0){
+							double tmp;
+							start_ang = 360 - start_ang;
+							end_ang = 360 - end_ang;
+						}
+						graph_arc(*curr_graph, pt1_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
+					}
+				}
+				else if(init == 0) {
+					init = 1;
+					*curr_graph = graph_new(pool_idx);
+				}
+				radius = 0; start_ang = 0; end_ang = 0;
 				prev_edge = curr_edge;
+				prev_edge_type = edge_type;
 			}
 			
 			
@@ -2935,8 +2961,10 @@ int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, i
 						if (lines_graph){
 							curr_graph = lines_graph;
 						}*/
-						dxf_hatch_get_def(list_ret, curr_graph, current, &next, p_scale, pool_idx);
-						if (next) current = next;
+						if (!solid){
+							dxf_hatch_get_def(list_ret, curr_graph, current, &next, p_scale, pool_idx);
+							if (next) current = next;
+						}
 					
 						break;
 					case 91:
@@ -2945,7 +2973,10 @@ int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, i
 						curr_graph = NULL;
 						dxf_hatch_get_bound (&curr_graph, current, &next, pool_idx);
 						/* store the graph in the return vector */
-						if ((curr_graph != NULL) && (list_ret != NULL)) list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+						if ((curr_graph != NULL) && (list_ret != NULL)){
+							if (solid) curr_graph->fill = 1;
+							list_push(list_ret, list_new((void *)curr_graph, pool_idx));
+						}
 					
 						if (next) current = next;
 						break;
