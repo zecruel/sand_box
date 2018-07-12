@@ -2636,8 +2636,10 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						end_ang = current->value.d_data;
 						break;
 					case 72:
-						edge_type = current->value.i_data;
-						curr_edge++;
+						if (!(bound_type & 2)){
+							edge_type = current->value.i_data;
+							curr_edge++;
+						}
 						break;
 					case 73:
 						closed = current->value.i_data;
@@ -2666,7 +2668,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				/* ends the previous boundary */
 				if (prev_edge_type == EDGE_POLY){
 					/* last vertex */
-					if((first != 0) && (*curr_graph != NULL)){
+					if((first > 1) && (*curr_graph != NULL)){
 						//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
 						if (prev_bulge == 0){
 							line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
@@ -2734,17 +2736,17 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 			
 			if (pt1){
 				pt1 = 0;
+				if(first == 1){
+					
+					//printf("primeiro vertice\n");
+					last_x = curr_x;
+					last_y = pt1_y;
+					prev_x = curr_x;
+					prev_y = pt1_y;
+				}
 				if (prev_edge_type == EDGE_POLY) {
-					if((init != 0) &&(first == 0)){
-						first = 1;
-						
-						//printf("primeiro vertice\n");
-						last_x = curr_x;
-						last_y = pt1_y;
-						prev_x = curr_x;
-						prev_y = pt1_y;
-					}
-					else if((first != 0) && (*curr_graph != NULL)){
+					
+					if((first > 1) && (*curr_graph != NULL)){
 						//printf("(%0.2f, %0.2f)-(%0.2f, %0.2f)\n", prev_x, prev_y, curr_x, pt1_y);
 						if (prev_bulge == 0){
 							line_add(*curr_graph, prev_x, prev_y, 0.0, curr_x, pt1_y, 0.0);
@@ -2777,6 +2779,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				prev_bulge = bulge;
 				bulge = 0;
 				
+				first ++;
 				curr_x = pt1_x;
 				
 				radius = 0; start_ang = 0; end_ang = 0;
