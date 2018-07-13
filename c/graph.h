@@ -63,6 +63,8 @@ graph_obj * graph_new(int pool_idx);
 
 void line_add(graph_obj * master, double x0, double y0, double z0, double x1, double y1, double z1);
 
+void graph_merge(graph_obj * master, graph_obj *tail);
+
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale);
 
 void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig);

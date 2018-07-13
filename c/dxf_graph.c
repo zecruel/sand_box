@@ -1,5 +1,6 @@
 #include "dxf_graph.h"
 #include "list.h"
+#include "dxf_attract.h"
 
 //#include "dxf_colors.h"
 extern bmp_color dxf_colors[];
@@ -2707,6 +2708,25 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						graph_arc(*curr_graph, curr_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
 					}
 				}
+				else if (prev_edge_type == EDGE_ELL_ARC){
+					
+					if((first > 0) && (*curr_graph != NULL)){
+						
+						start_ang *= M_PI/180.0;
+						end_ang *= M_PI/180.0;
+						
+						start_ang =  ellipse_par (start_ang, 1.0, radius);
+						end_ang =  ellipse_par (end_ang, 1.0, radius);
+						
+						if (ccw < 0){
+							double tmp;
+							tmp = start_ang;
+							start_ang = 2*M_PI - end_ang;
+							end_ang = 2*M_PI - tmp;
+						}
+						graph_ellipse(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0, radius, start_ang, end_ang);
+					}
+				}
 				
 				
 				/* verify if boundary is closed - TODO*/
@@ -2728,7 +2748,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				
 				prev_bound = curr_bound;
 				
-				if ((edge_type != EDGE_NONE) && (edge_type != EDGE_POLY)){
+				if ((current->next == NULL) && (edge_type != EDGE_POLY)){
 					pt1 = 1;
 				}
 			}
@@ -2761,19 +2781,37 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				}
 				else if (prev_edge_type == EDGE_LINE){
 					
-					if (*curr_graph != NULL){
+					if((first > 0) && (*curr_graph != NULL)){
 						line_add(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0);
 					}
 				}
 				else if (prev_edge_type == EDGE_CIRC_ARC){
 					
-					if (*curr_graph != NULL){
+					if((first > 0) && (*curr_graph != NULL)){
 						if (ccw < 0){
-							double tmp;
 							start_ang = 360 - start_ang;
 							end_ang = 360 - end_ang;
 						}
 						graph_arc(*curr_graph, curr_x, pt1_y, 0.0 , radius, start_ang, end_ang, ccw);
+					}
+				}
+				else if (prev_edge_type == EDGE_ELL_ARC){
+					
+					if((first > 0) && (*curr_graph != NULL)){
+						
+						start_ang *= M_PI/180.0;
+						end_ang *= M_PI/180.0;
+						
+						start_ang =  ellipse_par (start_ang, 1.0, radius);
+						end_ang =  ellipse_par (end_ang, 1.0, radius);
+						
+						if (ccw < 0){
+							double tmp;
+							tmp = start_ang;
+							start_ang = 2*M_PI - end_ang;
+							end_ang = 2*M_PI - tmp;
+						}
+						graph_ellipse(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0, radius, start_ang, end_ang);
 					}
 				}
 				prev_bulge = bulge;

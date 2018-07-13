@@ -327,6 +327,44 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 	}
 }
 
+void graph_merge(graph_obj * master, graph_obj *tail){
+	
+	if ((master) && (tail)){
+		
+		line_node *new_line = tail->list->next;
+		if (new_line){
+			
+			if(master->list->next == NULL){ /* check if list is empty */
+				/* then, the new line is the first element */
+				master->list->next = new_line;
+			}
+			else{ /* look for the end of list */
+				line_node *tmp = master->list->next;
+				while(tmp->next != NULL){
+					tmp = tmp->next;
+				}
+				/* then, the new line is put in end of list */
+				tmp->next = new_line;
+			}
+			/*update the extent of graph */
+			/* sort the coordinates of entire line*/
+			if (master->ext_ini == 0){
+				master->ext_ini = 1;
+				master->ext_min_x = tail->ext_min_x;
+				master->ext_min_y = tail->ext_min_y;
+				master->ext_max_x = tail->ext_max_x;
+				master->ext_max_y = tail->ext_max_y;
+			}
+			else{
+				master->ext_min_x = (master->ext_min_x < tail->ext_min_x) ? master->ext_min_x : tail->ext_min_x;
+				master->ext_min_y = (master->ext_min_y < tail->ext_min_y) ? master->ext_min_y : tail->ext_min_y;
+				master->ext_max_x = (master->ext_max_x > tail->ext_max_x) ? master->ext_max_x : tail->ext_max_x;
+				master->ext_max_y = (master->ext_max_y > tail->ext_max_y) ? master->ext_max_y : tail->ext_max_y;
+			}
+		}
+	}
+}
+
 void graph_draw(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, double scale){
 	if ((master != NULL) && (img != NULL)){
 		if(master->list->next){ /* check if list is not empty */
@@ -1177,7 +1215,7 @@ void graph_ellipse(graph_obj * master,
 		double p2_x, double p2_y, double p2_z,
 		double minor_ax, double ang_start, double ang_end){
 	if (master){
-		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang, major_ax, cosine, sine;
 		int steps, i;
 		double x0, y0, x1, y1;
@@ -2289,7 +2327,7 @@ double orig_x, double orig_y,
 double delta_x, double delta_y,
 double dash[], int num_dash,
 int pool_idx){
-	if (!graph_is_closed(ref)) return NULL; /* verify if reference is a closed path */
+	//if (!graph_is_closed(ref)) return NULL; /* verify if reference is a closed path */
 	
 	graph_obj *ret_graph = NULL;//graph_new(pool_idx);
 	

@@ -71,4 +71,6 @@ double axis, double ratio, double rot,
 double ln_a, double ln_b, double ln_c, /*line in general form ax+bx = c*/
 double inter_x[2], double inter_y[2]);
 
+double ellipse_par (double ang, double a, double b);
+
 #endif
