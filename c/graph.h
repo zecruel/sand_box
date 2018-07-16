@@ -126,4 +126,7 @@ double delta_x, double delta_y,
 double dash[], int num_dash,
 int pool_idx);
 
+int graph_fill(graph_obj * ref, bmp_img * img,
+double ofs_x, double ofs_y, double scale);
+
 #endif

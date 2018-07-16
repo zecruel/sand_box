@@ -657,8 +657,8 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				p1y = p2y;
 			}
 			
-			if (master->fill && (corners < 1000)){ /* check if object is filled */
-				/*build the lists of corners */
+			/*if (master->fill && (corners < 1000)){ /* check if object is filled */
+				/*build the lists of corners 
 				if (((x0 != prev_x)||(y0 != prev_y))||(corners == 0)){
 					corner_x[corners] = x0;
 					corner_y[corners] = y0;
@@ -672,7 +672,7 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				
 				prev_x = x1;
 				prev_y = y1;
-			}
+			}*/
 		
 			current = current->next; /* go to next */
 		}
@@ -700,8 +700,8 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 			if (master->pattern[0] >= 0.0)
 				bmp_line_norm(img, x0, y0, x1, y1, -sine, cosine);
 			
-			if (master->fill && (corners < 1000)){ /* check if object is filled */
-				/*build the lists of corners */
+			/*if (master->fill && (corners < 1000)){ /* check if object is filled */
+				/*build the lists of corners 
 				if (((x0 != prev_x)||(y0 != prev_y))||(corners == 0)){
 					corner_x[corners] = x0;
 					corner_y[corners] = y0;
@@ -715,15 +715,19 @@ int graph_draw2(graph_obj * master, bmp_img * img, double ofs_x, double ofs_y, d
 				
 				prev_x = x1;
 				prev_y = y1;
-			}
+			}*/
 			
 			current = current->next; /* go to next */
 		}
 	}
 	
-	if (master->fill && corners){ /* check if object is filled */
-		/* draw a filled polygon */
+	/*if (master->fill && corners){ /* check if object is filled */
+		/* draw a filled polygon 
 		bmp_poly_fill(img, corners, corner_x, corner_y, stroke);
+	}*/
+	
+	if (master->fill){
+		graph_fill(master, img, ofs_x, ofs_y, scale);
 	}
 
 }
@@ -1137,7 +1141,7 @@ void graph_draw_fix(graph_obj * master, bmp_img * img, double ofs_x, double ofs_
 
 void graph_arc(graph_obj * master, double c_x, double c_y, double c_z, double radius, double ang_start, double ang_end, int sig){
 	if (master){
-		int n = 256; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang;
 		int steps, i;
 		double x0, y0, x1, y1;
@@ -1215,7 +1219,7 @@ void graph_ellipse(graph_obj * master,
 		double p2_x, double p2_y, double p2_z,
 		double minor_ax, double ang_start, double ang_end){
 	if (master){
-		int n = 32; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
+		int n = 64; //numero de vertices do polígono regular que aproxima o circulo ->bom numero 
 		double ang, major_ax, cosine, sine;
 		int steps, i;
 		double x0, y0, x1, y1;
@@ -2467,6 +2471,103 @@ int pool_idx){
 	}
 	
 	return ret_graph;
+	
+}
+
+/*int bmp_units (double value, double ofs, double scale){
+	return (int)round((value - ofs) * scale);
+}*/
+
+#define BMP_U(value, ofs, scale) (int)round((value - ofs) * scale)
+
+int graph_fill(graph_obj * ref, bmp_img * img,
+double ofs_x, double ofs_y, double scale){
+	
+	//if (!graph_is_closed(ref)) return 0; /* verify if reference is a closed path */
+	
+	int i, j;
+	int min_x, max_x, min_y, max_y;
+	
+	int nodes = 0, steps = 0;
+	
+	//double  start, end, swap;
+	int x0, y0, x1, y1, swap;
+	int node_x[1000];//, node_y[1000];
+	int pix_x, pix_y;
+	
+	
+	/* find min and max by reference graph rectangle*/
+	min_x = BMP_U(ref->ext_min_x, ofs_x, scale);
+	max_x = BMP_U(ref->ext_max_x, ofs_x, scale);
+	min_y = BMP_U(ref->ext_min_y, ofs_y, scale);
+	max_y = BMP_U(ref->ext_max_y, ofs_y, scale);
+	
+	int w = img->width, h = img->height;
+	if((min_x < w) && (max_x > 0) && (min_y < h) && (max_y > 0 )){
+		
+		min_x = (min_x > 0) ? min_x : 0;
+		max_x = (max_x < w) ? max_x : w;
+		min_y = (min_y > 0) ? min_y : 0;
+		max_y = (max_y < h) ? max_y : h;
+		
+		
+		
+		for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
+			if(ref->list->next) { /* check if list is not empty */
+				line_node *current = ref->list->next;
+				
+				while(current){ /*sweep the list content */
+					x0 = BMP_U(current->x0, ofs_x, scale);
+					y0 = BMP_U(current->y0, ofs_y, scale);
+					x1 = BMP_U(current->x1, ofs_x, scale);
+					y1 = BMP_U(current->y1, ofs_y, scale);
+					
+					if(((y0 < pix_y) && (y1 >= pix_y)) || 
+						((y1 < pix_y) && (y0 >= pix_y))){
+						/* find x coord of intersection and add to list */
+						node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+						node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
+						node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
+						nodes++;
+					}
+					
+					current = current->next; /* go to next */
+				}
+			}
+			
+			if (nodes > 1){
+				
+				
+				/* Sort the nodes, via a simple Bubble sort. */
+				j=0;
+				while (j < nodes - 1) {
+					
+					if (node_x[j] > node_x[j+1]) {
+						swap = node_x[j];
+						node_x[j] = node_x[j+1];
+						node_x[j+1] = swap;
+						
+						if (j) j--;
+					}
+					else {
+						j++;
+					}
+				}
+				
+				/*fill the pixels between node pairs*/
+				for (i = 0; i < nodes ; i += 2){
+					if (i+1 < nodes){
+						for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+							bmp_point_raw(img, pix_x, pix_y);
+						}
+					}
+				}
+			}
+			nodes = 0;
+		}
+	}
+	
+	return 1;
 	
 }
 
