@@ -1713,7 +1713,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 	
 	/* for attrib and attdef objects */
 	/* initialize the attrib list */
-	list_node * att_list = list_new(NULL, ONE_TIME);
+	list_node * att_list = list_new(NULL, FRAME_LIFE);
 	
 	struct ins_save ins_stack[10];
 	int ins_stack_pos = 0;
@@ -1831,7 +1831,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 			}
 			else if (strcmp(current->obj.name, "HATCH") == 0){
 				//ent_type = DXF_POLYLINE;
-				list_node *hatch_items = list_new(NULL, ONE_TIME);
+				list_node *hatch_items = list_new(NULL, FRAME_LIFE);
 				
 				int num_h_items= dxf_hatch_parse(hatch_items, drawing, current, p_space, pool_idx);
 				
@@ -1851,7 +1851,6 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					}
 				}
 				list_clear (hatch_items);
-				list_mem_pool(ZERO_LIST, ONE_TIME);
 			}
 			else if (strcmp(current->obj.name, "VERTEX") == 0){
 				ent_type = DXF_VERTEX;
@@ -1903,7 +1902,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					
 					/* store the graph in a temporary list.
 					this approach avoid to modify the attributes inside INSERTs*/
-					list_node * att_el = list_new(curr_graph, ONE_TIME);
+					list_node * att_el = list_new(curr_graph, FRAME_LIFE);
 					if (att_el){
 						list_push(att_list, att_el);
 					}
@@ -1917,7 +1916,7 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 					
 					/* store the graph in a temporary list.
 					this approach avoid to modify the attributes inside INSERTs*/
-					list_node * att_el = list_new(curr_graph, ONE_TIME);
+					list_node * att_el = list_new(curr_graph, FRAME_LIFE);
 					if (att_el){
 						list_push(att_list, att_el);
 					}
@@ -2243,9 +2242,9 @@ int dxf_obj_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, int
 		att_curr = att_curr->next;
 	}
 	
-	
 	list_clear(att_list);
-	list_mem_pool(ZERO_LIST, ONE_TIME);
+	
+	//list_mem_pool(ZERO_LIST, ONE_TIME);
 	return 1;
 }
 
