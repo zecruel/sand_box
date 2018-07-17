@@ -9,7 +9,7 @@
 #include "bmp.h"
 #include "list.h"
 
-#define MAX_SPLINE_PTS 1000
+#define MAX_SPLINE_PTS 10000
 #define GRAPH_POOL_PAGES 1000
 
 enum graph_pool_action{

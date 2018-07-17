@@ -2589,6 +2589,13 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 		double prev_bulge = 0;
 		//double elev = 0.0;
 		
+		int num_cpts, order, num_ret;
+		double weight = 1.0;
+		double ctrl_pts[3 * MAX_SPLINE_PTS], ret[3 * MAX_SPLINE_PTS];
+		double weights[MAX_SPLINE_PTS];
+
+		int count =0;
+		
 		enum Edge_type{
 			EDGE_POLY = 0,
 			EDGE_LINE = 1,
@@ -2628,6 +2635,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						break;
 					case 42:
 						bulge = current->value.d_data;
+						weight = current->value.d_data;
 						break;
 					case 50:
 						start_ang = current->value.d_data;
@@ -2653,6 +2661,12 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 					case 92:
 						bound_type = current->value.i_data;
 						curr_bound++;
+						break;
+					case 94:
+						order = current->value.i_data;
+						break;
+					case 96:
+						num_cpts = current->value.i_data;
 						break;
 				}
 				
@@ -2726,6 +2740,38 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						graph_ellipse(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0, radius, start_ang, end_ang);
 					}
 				}
+				else if (prev_edge_type == EDGE_SPLINE){
+					
+					if((first > 0) && (*curr_graph != NULL) && (count < MAX_SPLINE_PTS)){
+						ctrl_pts[count*3+1] = curr_x;
+						ctrl_pts[count*3+2] = pt1_y;
+						ctrl_pts[count*3+3] = 0.0;
+						weights[count+1] = weight;
+						count++;
+					}
+					if ((*curr_graph) && ((count + order)*5 < MAX_SPLINE_PTS)){
+						int i;
+						num_ret = (num_cpts + order)*5; /* num pts on curve */
+						
+						for(i = 1; i <= 3*num_ret; i++){
+							ret[i] = 0.0;
+						}
+						
+						rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
+						
+						prev_x = ret[1];
+						prev_y = ret[2];
+						//prev_z = ret[3];
+						
+						for(i =4 ; i <= 3*num_ret; i = i+3){
+							line_add(*curr_graph, prev_x, prev_y, 0.0, ret[i], ret[i+1], 0.0);
+							prev_x = ret[i];
+							prev_y = ret[i+1];
+							//prev_z = ret[i+2];
+							/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
+						}
+					}
+				}
 				
 				
 				/* verify if boundary is closed - TODO*/
@@ -2739,6 +2785,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				//*curr_graph = NULL;
 				first = 0; pt1 = 0; closed = 0; prev_bulge = 0;
 				radius = 0; start_ang = 0; end_ang = 0;
+				count = 0;
 				
 				edge_type = EDGE_NONE;
 				prev_edge_type = EDGE_NONE;
@@ -2813,8 +2860,43 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						graph_ellipse(*curr_graph, curr_x, pt1_y, 0.0, pt2_x, pt2_y, 0.0, radius, start_ang, end_ang);
 					}
 				}
+				else if (prev_edge_type == EDGE_SPLINE){
+					
+					if((first > 0) && (*curr_graph != NULL) && (count < MAX_SPLINE_PTS)){
+						ctrl_pts[count*3+1] = curr_x;
+						ctrl_pts[count*3+2] = pt1_y;
+						ctrl_pts[count*3+3] = 0.0;
+						weights[count+1] = weight;
+						count++;
+					}
+					if ((prev_edge != curr_edge) && (*curr_graph) && ((count + order)*5 < MAX_SPLINE_PTS)){
+						int i;
+						num_ret = (num_cpts + order)*5; /* num pts on curve */
+						
+						for(i = 1; i <= 3*num_ret; i++){
+							ret[i] = 0.0;
+						}
+						
+						rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
+						
+						prev_x = ret[1];
+						prev_y = ret[2];
+						//prev_z = ret[3];
+						
+						for(i =4 ; i <= 3*num_ret; i = i+3){
+							line_add(*curr_graph, prev_x, prev_y, 0.0, ret[i], ret[i+1], 0.0);
+							prev_x = ret[i];
+							prev_y = ret[i+1];
+							//prev_z = ret[i+2];
+							/*printf(" %f %f %f \n",ret[i],ret[i+1],ret[i+2]);*/
+						}
+						count = 0;
+					}
+				}
+				
 				prev_bulge = bulge;
 				bulge = 0;
+				weight = 1.0;
 				
 				first ++;
 				curr_x = pt1_x;

@@ -752,6 +752,7 @@ void graph_line_t(bmp_img *img, double x0, double y0, double x1, double y1, doub
 			vert_y[2] = (int) round(y1 + norm_y);
 
 			bmp_rect_fill(img, vert_x, vert_y);
+			
 		}
 	}
 	else{
