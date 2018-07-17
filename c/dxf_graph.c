@@ -2589,7 +2589,7 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 		double prev_bulge = 0;
 		//double elev = 0.0;
 		
-		int num_cpts, order, num_ret;
+		int num_cpts, order, num_ret, prev_num_cpts, prev_order;
 		double weight = 1.0;
 		double ctrl_pts[3 * MAX_SPLINE_PTS], ret[3 * MAX_SPLINE_PTS];
 		double weights[MAX_SPLINE_PTS];
@@ -2749,15 +2749,15 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						weights[count+1] = weight;
 						count++;
 					}
-					if ((*curr_graph) && ((count + order)*5 < MAX_SPLINE_PTS)){
+					if ((*curr_graph) && ((count + prev_order)*5 < MAX_SPLINE_PTS)){
 						int i;
-						num_ret = (num_cpts + order)*5; /* num pts on curve */
+						num_ret = (prev_num_cpts + prev_order)*5; /* num pts on curve */
 						
 						for(i = 1; i <= 3*num_ret; i++){
 							ret[i] = 0.0;
 						}
 						
-						rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
+						rbspline(prev_num_cpts, prev_order+1, num_ret, ctrl_pts, weights, ret);
 						
 						prev_x = ret[1];
 						prev_y = ret[2];
@@ -2869,15 +2869,15 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 						weights[count+1] = weight;
 						count++;
 					}
-					if ((prev_edge != curr_edge) && (*curr_graph) && ((count + order)*5 < MAX_SPLINE_PTS)){
+					if ((prev_edge != curr_edge) && (*curr_graph) && ((count + prev_order)*5 < MAX_SPLINE_PTS)){
 						int i;
-						num_ret = (num_cpts + order)*5; /* num pts on curve */
+						num_ret = (prev_num_cpts + prev_order)*5; /* num pts on curve */
 						
 						for(i = 1; i <= 3*num_ret; i++){
 							ret[i] = 0.0;
 						}
 						
-						rbspline(num_cpts, order+1, num_ret, ctrl_pts, weights, ret);
+						rbspline(prev_num_cpts, prev_order+1, num_ret, ctrl_pts, weights, ret);
 						
 						prev_x = ret[1];
 						prev_y = ret[2];
@@ -2895,6 +2895,8 @@ int dxf_hatch_get_bound(graph_obj **curr_graph, dxf_node * ent, dxf_node **next,
 				}
 				
 				prev_bulge = bulge;
+				prev_num_cpts = num_cpts;
+				prev_order = order;
 				bulge = 0;
 				weight = 1.0;
 				
