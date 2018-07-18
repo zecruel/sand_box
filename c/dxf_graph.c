@@ -3111,6 +3111,10 @@ int dxf_hatch_parse(list_node *list_ret, dxf_drawing *drawing, dxf_node * ent, i
 						/* store the graph in the return vector */
 						if ((curr_graph != NULL) && (list_ret != NULL)){
 							if (solid) curr_graph->fill = 1;
+							if (!assoc){
+								curr_graph->patt_size = 1;
+								curr_graph->pattern[0] = -1.0;
+							}
 							list_push(list_ret, list_new((void *)curr_graph, pool_idx));
 						}
 					
