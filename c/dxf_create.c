@@ -1,5 +1,5 @@
 #include "dxf_create.h"
-
+#include "dxf_hatch.h"
 
 /*
 enum LineWeight { //AcDb::LineWeight
@@ -1675,6 +1675,129 @@ int dxf_new_layer (dxf_drawing *drawing, char *name, int color, char *ltype){
 	}
 	
 	return ok;
+}
+
+dxf_node * dxf_new_hatch (struct h_pattern *pattern, graph_obj *bound,
+int solid, int assoc,
+int style, /* 0 = normal odd, 1 = outer, 2 = ignore */
+int type, /* 0 = user, 1 = predefined, 2 =custom */
+double rot, double scale,
+int color, char *layer, char *ltype, int lw, int paper){
+	/* create a new hatch */
+	const char *handle = "0";
+	const char *dxf_class = "AcDbEntity";
+	const char *dxf_subclass = "AcDbHatch";
+	int ok = 1, int_zero = 0;
+	double d_zero = 0.0, d_one = 1.0;
+	dxf_node * hatch = dxf_obj_new ("HATCH");
+	
+	if ((!pattern) || (!bound)) return NULL;
+	
+	ok &= dxf_attr_append(hatch, 5, (void *) handle);
+	ok &= dxf_attr_append(hatch, 100, (void *) dxf_class);
+	ok &= dxf_attr_append(hatch, 67, (void *) &paper);
+	ok &= dxf_attr_append(hatch, 8, (void *) layer);
+	ok &= dxf_attr_append(hatch, 6, (void *) ltype);
+	ok &= dxf_attr_append(hatch, 62, (void *) &color);
+	ok &= dxf_attr_append(hatch, 370, (void *) &lw);
+	
+	ok &= dxf_attr_append(hatch, 100, (void *) dxf_subclass);
+	
+	/* elevation point */
+	ok &= dxf_attr_append(hatch, 10, (void *) &d_zero); /*always zero*/
+	ok &= dxf_attr_append(hatch, 20, (void *) &d_zero); /*always zero*/
+	ok &= dxf_attr_append(hatch, 30, (void *) &d_zero); /* z coordinate is the elevation*/
+	
+	/* pattern name */
+	ok &= dxf_attr_append(hatch, 2, (void *) pattern->name);
+	
+	/* fill flag */
+	ok &= dxf_attr_append(hatch, 70, (void *) &solid);
+	/* associativity flag */
+	ok &= dxf_attr_append(hatch, 71, (void *) &assoc);
+	
+	/* number of boundary loops */
+	ok &= dxf_attr_append(hatch, 91, (void *) (int[]){1});
+	
+	/*============== bondaries =============*/
+	/* boundary type */
+	ok &= dxf_attr_append(hatch, 92, (void *) (int[]){0}); /* not polyline*/
+	
+	int num_edges = 0;
+	line_node *curr_graph = bound->list->next;
+	while(curr_graph){ /*get number of edges */
+		num_edges++;
+		curr_graph = curr_graph->next; /* go to next */
+	}
+	
+	ok &= dxf_attr_append(hatch, 93, (void *) &num_edges);
+	
+	curr_graph = bound->list->next;
+	while(curr_graph){ /*sweep the list content */
+		ok &= dxf_attr_append(hatch, 72, (void *) (int[]){1}); /* 1 = Line edge */
+		ok &= dxf_attr_append(hatch, 10, (void *) &(curr_graph->x0));
+		ok &= dxf_attr_append(hatch, 20, (void *) &(curr_graph->y0));
+		ok &= dxf_attr_append(hatch, 11, (void *) &(curr_graph->x1));
+		ok &= dxf_attr_append(hatch, 21, (void *) &(curr_graph->y1));
+		
+		curr_graph = curr_graph->next; /* go to next */
+	}
+	
+	/* number of source boundary objects - ?? */
+	ok &= dxf_attr_append(hatch, 97, (void *) &int_zero);
+	
+	/*===================================*/
+	
+	/* hatch style */
+	ok &= dxf_attr_append(hatch, 75, (void *) &style);
+	/* pattern type */
+	ok &= dxf_attr_append(hatch, 76, (void *) &type);
+	
+	if (!solid){
+		/* pattern rotation */
+		ok &= dxf_attr_append(hatch, 52, (void *) &rot);
+		/* pattern scale */
+		ok &= dxf_attr_append(hatch, 41, (void *) &scale);
+		/* double pattern - ?? */
+		ok &= dxf_attr_append(hatch, 77, (void *) &int_zero);
+		
+		/* number of definition lines */
+		ok &= dxf_attr_append(hatch, 78, (void *) &(pattern->num_lines));
+		
+		/*============== lines =============*/
+		struct hatch_line *curr_l = pattern->lines;
+		while (curr_l){
+			 /* line angle */
+			ok &= dxf_attr_append(hatch, 53, (void *) &(curr_l->ang));
+			/* base point */
+			ok &= dxf_attr_append(hatch, 43, (void *) &(curr_l->ox));
+			ok &= dxf_attr_append(hatch, 44, (void *) &(curr_l->oy));
+			/*offset*/
+			ok &= dxf_attr_append(hatch, 45, (void *) &(curr_l->dx));
+			ok &= dxf_attr_append(hatch, 46, (void *) &(curr_l->dy));
+			/*number of dash elements*/
+			ok &= dxf_attr_append(hatch, 79, (void *) &(curr_l->num_dash));
+			
+			int i;
+			for (i = 0; i < curr_l->num_dash; i++){
+				ok &= dxf_attr_append(hatch, 49, (void *) &(curr_l->dash[i]));
+			}
+			
+			curr_l = curr_l->next;
+		}
+	
+		/*===================================*/
+		
+	}
+	
+	/* number seed points - ?? */
+	ok &= dxf_attr_append(hatch, 98, (void *) &int_zero);
+	
+	if(ok){
+		return hatch;
+	}
+
+	return NULL;
 }
 
 

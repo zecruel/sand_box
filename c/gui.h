@@ -10,6 +10,7 @@
 #include "list.h"
 #include "dxf_create.h"
 #include "dxf_attract.h"
+#include "dxf_hatch.h"
 
 #include <SDL.h>
 
@@ -147,7 +148,7 @@ struct Gui_obj {
 	list_node *phanton;
 	struct do_list list_do;
 	
-	
+	struct h_pattern list_pattern;
 	
 };
 typedef struct Gui_obj gui_obj;
