@@ -879,6 +879,9 @@ int gui_start(gui_obj *gui){
 	gui->layer_idx = 0;
 	gui->ltypes_idx = 0;
 	
+	gui->hatch_angle = 45.0;
+	gui->hatch_spacing = 1.0;
+	
 	gui->step = 0;
 	gui->user_flag_x = 0;
 	gui->user_flag_y = 0;

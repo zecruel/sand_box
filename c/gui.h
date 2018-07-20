@@ -109,6 +109,9 @@ struct Gui_obj {
 	double bulge, scale;
 	double txt_h;
 	
+	double hatch_angle;
+	double hatch_spacing;
+	
 	int color_idx, lw_idx, t_al_v, t_al_h;
 	int layer_idx, ltypes_idx;
 	
