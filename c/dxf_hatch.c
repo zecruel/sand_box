@@ -51,6 +51,7 @@ int dxf_parse_patt(char *buf, struct h_pattern *ret){
 							curr_h->lines = NULL;
 							curr_h->name[0] = 0; /*clear strings*/
 							curr_h->descr[0] = 0;
+							curr_h->num_lines = 0;
 							
 							curr_l = &(curr_h->lines);
 							
@@ -120,6 +121,8 @@ int dxf_parse_patt(char *buf, struct h_pattern *ret){
 				for (i = 0; i < num_dash; i++){
 					(*curr_l)->dash[i] = dashes[i];
 				}
+				
+				curr_h->num_lines++;
 				
 				curr_l = &((*curr_l)->next);
 				//printf("%s|%s|%0.2f|%0.2f|%0.2f|%0.2f|%0.2f|%d\n", name, descr, ang, org_x, org_y, delta_x, delta_y, num_dash);

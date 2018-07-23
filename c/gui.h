@@ -119,7 +119,7 @@ struct Gui_obj {
 	
 	int text2tag;
 	
-	int hatch_idx;
+	int hatch_idx, hatch_solid, hatch_assoc, hatch_user, hatch_predef;
 	
 	
 	int en_distance; /* enable distance entry */
@@ -190,7 +190,7 @@ extern const char *dxf_lw_descr[];
 extern bmp_color dxf_colors[];
 extern const char *text_al_h[];
 extern const char *text_al_v[];
-
+extern const char *acadiso_pat;
 
 #ifndef DXF_LW_LEN
 	#define DXF_LW_LEN 24

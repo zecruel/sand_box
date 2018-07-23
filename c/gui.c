@@ -923,6 +923,10 @@ int gui_start(gui_obj *gui){
 	
 	/* initialize the hatch pattern list */
 	gui->hatch_idx = 0;
+	gui->hatch_solid = 0;
+	gui->hatch_assoc = 0;
+	gui->hatch_user = 1;
+	gui->hatch_predef = 0;
 	
 	gui->user_patt.ang = 45.0;
 	gui->user_patt.ox = 0.0; gui->user_patt.oy = 0.0;
@@ -935,6 +939,8 @@ int gui_start(gui_obj *gui){
 	gui->list_pattern.num_lines = 1;
 	gui->list_pattern.lines = &(gui->user_patt);
 	gui->list_pattern.next = NULL;
+	
+	dxf_parse_patt((char*)acadiso_pat, &(gui->list_pattern));
 	
 	return 1;
 }

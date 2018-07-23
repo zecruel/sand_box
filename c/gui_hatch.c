@@ -59,7 +59,8 @@ int gui_hatch_interactive(gui_obj *gui){
 					}
 					
 					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
-					0, 1, 0, 0, 0.0, 1.0,
+					gui->hatch_solid, gui->hatch_assoc,
+					0, 0, 0.0, 1.0,
 					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
 					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 					0); /* paper space */
@@ -119,60 +120,57 @@ int gui_hatch_interactive(gui_obj *gui){
 
 int gui_hatch_info (gui_obj *gui){
 	if (gui->modal == HATCH) {
+		nk_layout_row_dynamic(gui->ctx, 20, 3);
+		nk_checkbox_label(gui->ctx, "Associative", &gui->hatch_assoc);
+		
+		nk_layout_row_dynamic(gui->ctx, 20, 3);
+		if (nk_selectable_label(gui->ctx, "User", NK_TEXT_CENTERED, &gui->hatch_user)){
+			if(gui->hatch_user) {
+				gui->hatch_predef = 0;
+				gui->hatch_solid = 0;
+				
+				gui->hatch_idx = 0;
+			}
+		}
+		if (nk_selectable_label(gui->ctx, "Library", NK_TEXT_CENTERED, &gui->hatch_predef)){
+			if(gui->hatch_predef) {
+				gui->hatch_user = 0;
+				gui->hatch_solid = 0;
+			}
+		}
+		if (nk_selectable_label(gui->ctx, "Solid", NK_TEXT_CENTERED, &gui->hatch_solid)){
+			if(gui->hatch_solid) {
+				gui->hatch_predef = 0;
+				gui->hatch_user = 0;
+			}
+		}
+		
+		if (gui->hatch_user){
+			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			
+			gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", -180.0d, gui->user_patt.ang, 180.0d, 0.5d, 0.5d);
+			gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
+		}
+		else if (gui->hatch_predef){
+			struct h_pattern *curr_h = &(gui->list_pattern);
+			int i = 0;
+			nk_layout_row_dynamic(gui->ctx, 120, 1);
+			if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				while (curr_h){
+					if (nk_button_label(gui->ctx, curr_h->name)){
+						gui->hatch_idx = i;
+					}
+					
+					i++;
+					curr_h = curr_h->next;
+				}
+				nk_group_end(gui->ctx);
+			}
+		}
+		
 		
 		nk_layout_row_dynamic(gui->ctx, 20, 1);
-		
-		gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", -180.0d, gui->user_patt.ang, 180.0d, 0.5d, 0.5d);
-		gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
-		if (nk_button_label(gui->ctx, "By Selection")) {
-			
-				
-				#if(0)
-				/*--------------------------------------
-				test **** test **** test *** test ****/
-				
-				if (gui->sel_list != NULL){
-					
-					
-				list_node *current = gui->sel_list->next, *curr_gr_n, *grph_list;
-				dxf_node *curr_ent;
-				graph_obj *curr_graph = NULL, *hatch;
-				
-				
-				// starts the content sweep 
-				while (current != NULL){
-					if (current->data){
-						if (((dxf_node *)current->data)->type == DXF_ENT){ // DXF entity 
-							
-							curr_ent = (dxf_node *)current->data;
-							
-							grph_list = curr_ent->obj.graphics;
-							
-							if (grph_list != NULL){
-								curr_gr_n = grph_list->next;
-								
-								/* sweep the main curr_ent->obj.graphics */
-								while (curr_gr_n != NULL){
-									if (curr_gr_n->data){
-										curr_graph = (graph_obj *)curr_gr_n->data;
-										hatch = graph_hatch(curr_graph, hatch_angle*M_PI/180,
-										0.0, 0.0, hatch_spacing, 0.0, (double[]){1}, 1, 0);
-										if (hatch){
-											list_push(grph_list, list_new((void *)hatch, 0));
-										}
-									}
-									curr_gr_n = curr_gr_n->next;
-								}
-							}
-						}
-					}
-					current = current->next;
-				}
-				//list_clear(gui->sel_list);
-			}
-			/*------------------------------*/
-			#endif
-		}
 		if (gui->step == 0){
 			nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
 		} else {
