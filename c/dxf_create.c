@@ -1708,6 +1708,10 @@ int color, char *layer, char *ltype, int lw, int paper){
 	ok &= dxf_attr_append(hatch, 20, (void *) &d_zero); /*always zero*/
 	ok &= dxf_attr_append(hatch, 30, (void *) &d_zero); /* z coordinate is the elevation*/
 	
+	ok &= dxf_attr_append(hatch, 210, (void *) &d_zero);
+	ok &= dxf_attr_append(hatch, 220, (void *) &d_zero);
+	ok &= dxf_attr_append(hatch, 230, (void *) &d_one);
+	
 	/* pattern name */
 	ok &= dxf_attr_append(hatch, 2, (void *) pattern->name);
 	
@@ -1773,8 +1777,13 @@ int color, char *layer, char *ltype, int lw, int paper){
 			ok &= dxf_attr_append(hatch, 43, (void *) &(curr_l->ox));
 			ok &= dxf_attr_append(hatch, 44, (void *) &(curr_l->oy));
 			/*offset*/
-			ok &= dxf_attr_append(hatch, 45, (void *) &(curr_l->dx));
-			ok &= dxf_attr_append(hatch, 46, (void *) &(curr_l->dy));
+			double cosine = cos(curr_l->ang * M_PI/180);
+			double sine = sin(curr_l->ang * M_PI/180);
+			
+			double dx = cosine*curr_l->dx - sine*curr_l->dy;
+			double dy = sine*curr_l->dx + cosine*curr_l->dy;
+			ok &= dxf_attr_append(hatch, 45, (void *) &dx);
+			ok &= dxf_attr_append(hatch, 46, (void *) &dy);
 			/*number of dash elements*/
 			ok &= dxf_attr_append(hatch, 79, (void *) &(curr_l->num_dash));
 			

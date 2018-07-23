@@ -109,9 +109,6 @@ struct Gui_obj {
 	double bulge, scale;
 	double txt_h;
 	
-	double hatch_angle;
-	double hatch_spacing;
-	
 	int color_idx, lw_idx, t_al_v, t_al_h;
 	int layer_idx, ltypes_idx;
 	
@@ -121,6 +118,8 @@ struct Gui_obj {
 	int near_attr;
 	
 	int text2tag;
+	
+	int hatch_idx;
 	
 	
 	int en_distance; /* enable distance entry */
@@ -152,6 +151,7 @@ struct Gui_obj {
 	struct do_list list_do;
 	
 	struct h_pattern list_pattern;
+	struct hatch_line user_patt;
 	
 };
 typedef struct Gui_obj gui_obj;

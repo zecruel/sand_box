@@ -7,6 +7,7 @@
 #include "dxf.h"
 #include "list.h"
 #include "graph.h"
+#include "dxf_hatch.h"
 
 struct do_item {
 	struct do_item *prev;
@@ -129,5 +130,12 @@ int dxf_edit_scale (dxf_node * obj, double scale_x, double scale_y, double scale
 int ent_handle(dxf_drawing *drawing, dxf_node *element);
 
 void drawing_ent_append(dxf_drawing *drawing, dxf_node *element);
+
+dxf_node * dxf_new_hatch (struct h_pattern *pattern, graph_obj *bound,
+int solid, int assoc,
+int style, /* 0 = normal odd, 1 = outer, 2 = ignore */
+int type, /* 0 = user, 1 = predefined, 2 =custom */
+double rot, double scale,
+int color, char *layer, char *ltype, int lw, int paper);
 
 #endif

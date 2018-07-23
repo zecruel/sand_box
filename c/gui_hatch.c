@@ -45,11 +45,33 @@ int gui_hatch_interactive(gui_obj *gui){
 				gui->draw_tmp = 0;
 				if (gui->step == 2){
 					dxf_lwpoly_remove (new_el, -1);
-					new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
-					drawing_ent_append(gui->drawing, new_el);
+					//new_el->obj.graphics = dxf_graph_parse(gui->drawing, new_el, 0 , 0);
+					//drawing_ent_append(gui->drawing, new_el);
 					
-					do_add_entry(&gui->list_do, "HATCH");
-					do_add_item(gui->list_do.current, NULL, new_el);
+					graph_obj *bound = dxf_lwpline_parse(gui->drawing, new_el, 0 , 0);
+					
+					struct h_pattern *curr_h = &(gui->list_pattern);
+					int i = 0;
+					
+					while ((curr_h) && (i < gui->hatch_idx)){
+						i++;
+						curr_h = curr_h->next;
+					}
+					
+					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
+					0, 1, 0, 0, 0.0, 1.0,
+					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
+					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
+					0); /* paper space */
+					
+					if (new_hatch_el){
+						new_hatch_el->obj.graphics = dxf_graph_parse(gui->drawing, new_hatch_el, 0 , 0);
+						
+						drawing_ent_append(gui->drawing, new_hatch_el);
+						
+						do_add_entry(&gui->list_do, "HATCH");
+						do_add_item(gui->list_do.current, NULL, new_hatch_el);
+					}
 					
 					gui->step = 0;
 				}
@@ -100,8 +122,8 @@ int gui_hatch_info (gui_obj *gui){
 		
 		nk_layout_row_dynamic(gui->ctx, 20, 1);
 		
-		gui->hatch_angle = nk_propertyd(gui->ctx, "Angle", -180.0d, gui->hatch_angle, 180.0d, 0.5d, 0.5d);
-		gui->hatch_spacing = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->hatch_spacing, DBL_MAX, 0.1d, 0.1d);
+		gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", -180.0d, gui->user_patt.ang, 180.0d, 0.5d, 0.5d);
+		gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
 		if (nk_button_label(gui->ctx, "By Selection")) {
 			
 				

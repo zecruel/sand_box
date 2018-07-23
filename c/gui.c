@@ -879,9 +879,6 @@ int gui_start(gui_obj *gui){
 	gui->layer_idx = 0;
 	gui->ltypes_idx = 0;
 	
-	gui->hatch_angle = 45.0;
-	gui->hatch_spacing = 1.0;
-	
 	gui->step = 0;
 	gui->user_flag_x = 0;
 	gui->user_flag_y = 0;
@@ -922,6 +919,22 @@ int gui_start(gui_obj *gui){
 	gui->sel_list = NULL;
 	gui->phanton = NULL;
 	//gui->list_do;
+	
+	
+	/* initialize the hatch pattern list */
+	gui->hatch_idx = 0;
+	
+	gui->user_patt.ang = 45.0;
+	gui->user_patt.ox = 0.0; gui->user_patt.oy = 0.0;
+	gui->user_patt.dx = 0.0; gui->user_patt.dy = 1;
+	gui->user_patt.num_dash = 0;
+	gui->user_patt.next = NULL;
+	
+	strncpy(gui->list_pattern.name, "USER_DEF", DXF_MAX_CHARS);
+	strncpy(gui->list_pattern.descr, "User definied simple pattern", DXF_MAX_CHARS);
+	gui->list_pattern.num_lines = 1;
+	gui->list_pattern.lines = &(gui->user_patt);
+	gui->list_pattern.next = NULL;
 	
 	return 1;
 }
