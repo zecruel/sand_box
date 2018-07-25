@@ -942,6 +942,11 @@ int gui_start(gui_obj *gui){
 	
 	dxf_parse_patt((char*)acadiso_pat, &(gui->list_pattern));
 	
+	gui->patt_scale = 1.0;
+	gui->patt_ang = 0.0;
+	gui->patt_name[0] = 0;
+	gui->patt_descr[0] = 0;
+	
 	return 1;
 }
 

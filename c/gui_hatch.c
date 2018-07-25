@@ -120,6 +120,8 @@ int gui_hatch_interactive(gui_obj *gui){
 
 int gui_hatch_info (gui_obj *gui){
 	if (gui->modal == HATCH) {
+		static int show_pat_pp = 0;
+		
 		nk_layout_row_dynamic(gui->ctx, 20, 3);
 		nk_checkbox_label(gui->ctx, "Associative", &gui->hatch_assoc);
 		
@@ -148,24 +150,184 @@ int gui_hatch_info (gui_obj *gui){
 		if (gui->hatch_user){
 			nk_layout_row_dynamic(gui->ctx, 20, 1);
 			
-			gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", -180.0d, gui->user_patt.ang, 180.0d, 0.5d, 0.5d);
+			gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", 0.0d, gui->user_patt.ang, 360.0d, 0.5d, 0.5d);
 			gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
 		}
 		else if (gui->hatch_predef){
 			struct h_pattern *curr_h = &(gui->list_pattern);
 			int i = 0;
-			nk_layout_row_dynamic(gui->ctx, 120, 1);
-			if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				while (curr_h){
-					if (nk_button_label(gui->ctx, curr_h->name)){
-						gui->hatch_idx = i;
+			
+			while (curr_h){
+				if (gui->hatch_idx == i){
+					
+					strncpy(gui->patt_name, curr_h->name, DXF_MAX_CHARS);
+					strncpy(gui->patt_descr, curr_h->descr, DXF_MAX_CHARS);
+				}
+				
+				i++;
+				curr_h = curr_h->next;
+			}
+			
+			nk_layout_row_dynamic(gui->ctx, 20, 2);
+			nk_label(gui->ctx, "Pattern:", NK_TEXT_CENTERED);
+			nk_label(gui->ctx, gui->patt_name, NK_TEXT_CENTERED);
+			nk_layout_row_dynamic(gui->ctx, 20, 1);
+			nk_label(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED);
+			
+			gui->patt_scale = nk_propertyd(gui->ctx, "Scale", 0.0d, gui->patt_scale, DBL_MAX, 0.1d, 0.1d);
+			gui->patt_ang = nk_propertyd(gui->ctx, "Angle", 0.0d, gui->patt_ang, 360.0d, 0.5d, 0.5d);
+			
+			
+			if (nk_button_label(gui->ctx, "Explore")) show_pat_pp = 1;
+			if (show_pat_pp){
+				/* select block popup */
+				static struct nk_rect s = {100, 10, 420, 330};
+				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Pattern", NK_WINDOW_CLOSABLE, s)){
+					graph_obj *ref_graph = NULL, *curr_graph = NULL;
+					list_node * pat_g = NULL;
+					
+					int pat_ei = 0; /*extents flag */
+					/* extents and zoom parameters */
+					double pat_x0, pat_y0, pat_x1, pat_y1, z, z_x, z_y, o_x, o_y;
+					double cosine, sine, dx, dy, max;
+					
+					nk_layout_row_dynamic(gui->ctx, 225, 2);
+					if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
+						nk_layout_row_dynamic(gui->ctx, 20, 1);
+						curr_h = &(gui->list_pattern);
+						i = 0;
+						while (curr_h){
+							if (nk_button_label(gui->ctx, curr_h->name)){
+								gui->hatch_idx = i;
+								strncpy(gui->patt_name, curr_h->name, DXF_MAX_CHARS);
+								strncpy(gui->patt_descr, curr_h->descr, DXF_MAX_CHARS);
+							}
+							
+							i++;
+							curr_h = curr_h->next;
+						}
+						nk_group_end(gui->ctx);
 					}
 					
-					i++;
-					curr_h = curr_h->next;
+					/*get current hatch */
+					curr_h = &(gui->list_pattern);
+					i = 0;
+					while (curr_h){
+						if (gui->hatch_idx == i) break;
+						
+						i++;
+						curr_h = curr_h->next;
+					}
+					
+					struct hatch_line *curr_l = NULL;
+					if (curr_h){
+						max = 0.0;
+						double patt_len = 0.0;
+						
+						curr_l = curr_h->lines;
+						while (curr_l){
+							/*
+							for (i = 0; i < curr_l->num_dash; i++ ){
+								patt_len += fabs(curr_l->dash[i]);
+							}*/
+							
+							if (curr_l->num_dash < 2)
+								max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy))? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy);
+							else
+								max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash)? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash;
+							
+							curr_l = curr_l->next;
+						}
+							
+						max *= 10;
+						
+						pat_g = list_new(NULL, FRAME_LIFE);
+						
+						/*create reference graph*/
+						ref_graph = graph_new(FRAME_LIFE);
+						line_add(ref_graph, 0.0, 0.0, 0.0, max, 00.0, 0.0);
+						line_add(ref_graph, max, 0.0, 0.0, max, max, 0.0);
+						line_add(ref_graph, max, max, 0.0, 0.0, max, 0.0);
+						line_add(ref_graph, 0.0, max, 0.0, 0.0, 0.0, 0.0);
+						
+						curr_l = curr_h->lines;
+					}
+			
+					while (curr_l){
+						
+						cosine = cos(curr_l->ang * M_PI/180);
+						sine = sin(curr_l->ang * M_PI/180);
+						dx = cosine*curr_l->dx - sine*curr_l->dy;
+						dy = sine*curr_l->dx + cosine*curr_l->dy;
+						
+						if (curr_l->num_dash > 0){
+							curr_graph = graph_hatch(ref_graph, curr_l->ang * M_PI/180,
+								curr_l->ox, curr_l->oy,
+								dx, dy,
+								curr_l->dash, curr_l->num_dash,
+								FRAME_LIFE);
+						}
+						else{
+							curr_graph = graph_hatch(ref_graph, curr_l->ang * M_PI/180,
+								curr_l->ox, curr_l->oy,
+								dx, dy,
+								(double[]){1.0}, 1,
+								FRAME_LIFE);
+						}
+						
+						if ((curr_graph != NULL) && (pat_g != NULL)) list_push(pat_g, list_new((void *)curr_graph, FRAME_LIFE));
+						
+						
+						
+						curr_l = curr_l->next;
+					}
+					
+					graph_list_ext(pat_g, &pat_ei, &pat_x0, &pat_y0, &pat_x1, &pat_y1);
+						
+					/* calcule the zoom and offset for preview */
+					z_x = fabs(pat_x1 - pat_x0)/gui->preview_img->width;
+					z_y = fabs(pat_y1 - pat_y0)/gui->preview_img->height;
+					z = (z_x > z_y) ? z_x : z_y;
+					if (z <= 0) z =1;
+					else z = 1/(1.1 * z);
+					o_x = pat_x0 - (fabs((pat_x1 - pat_x0)*z - gui->preview_img->width)/2)/z;
+					o_y = pat_y0 - (fabs((pat_y1 - pat_y0)*z - gui->preview_img->height)/2)/z;
+					
+					/* draw graphics in preview bitmap */
+					bmp_fill(gui->preview_img, gui->preview_img->bkg); /* clear bitmap */
+					graph_list_draw(pat_g, gui->preview_img, o_x, o_y, z);
+					
+					
+					if (nk_group_begin(gui->ctx, "Patt_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
+						/* preview img */
+						nk_layout_row_dynamic(gui->ctx, 175, 1);
+						nk_button_image(gui->ctx,  nk_image_ptr(gui->preview_img));
+						
+						/* current pattern name */
+						nk_layout_row_dynamic(gui->ctx, 20, 1);
+						nk_label(gui->ctx, gui->patt_name, NK_TEXT_CENTERED);
+						
+						/* current pattern description */
+						nk_layout_row_dynamic(gui->ctx, 15, 1);
+						//nk_style_push_font(gui->ctx, &font_tiny_nk); /* change font to tiny*/
+						nk_label(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED);
+						//nk_style_pop_font(gui->ctx); /* back to default font*/
+						
+						nk_group_end(gui->ctx);
+					}
+					
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					
+					//nk_checkbox_label(gui->ctx, "Hidden", &show_hidden_blks);
+					
+					if (nk_button_label(gui->ctx, "Select")){
+						show_pat_pp = 0;
+						nk_popup_close(gui->ctx);
+					}
+					
+					nk_popup_end(gui->ctx);
 				}
-				nk_group_end(gui->ctx);
+				else show_pat_pp = 0;
 			}
 		}
 		

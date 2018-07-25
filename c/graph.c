@@ -2181,7 +2181,7 @@ double dash[], int num_dash){
 		/* find the pattern initial conditions for the first point*/
 		patt_start = fabs(fmod(patt_start, patt_len));
 		iter = get_i(0, num_dash, reverse);
-		patt_acc = fabs(dash[iter]);
+		patt_acc = fabs(dash[iter]) + TOLERANCE;
 		patt_rem_n = patt_start;
 		for (i = 1; i < num_dash && i < 20; i++){
 			
@@ -2222,7 +2222,7 @@ double dash[], int num_dash){
 			if (patt_rem > 0) patt_p_i++;
 			if (patt_p_i >= num_dash) patt_p_i = 0;
 			
-			patt_acc = fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
+			patt_acc = fabs(dash[get_i(patt_p_i, num_dash, reverse)]) + TOLERANCE;
 			
 			//patt_rem_n = patt_part; /* remainder pattern for next segment continues */
 			//if (patt_part < patt_acc) patt_rem_n = patt_acc - patt_part;

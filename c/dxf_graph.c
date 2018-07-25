@@ -2988,7 +2988,7 @@ int dxf_hatch_get_def(list_node *list_ret, graph_obj *bound, dxf_node * ent, dxf
 					init = 1;
 				}
 				else{
-					double hatch_spacing = sqrt(pow(ofs_x, 2) + pow(ofs_y,2));
+					//double hatch_spacing = sqrt(pow(ofs_x, 2) + pow(ofs_y,2));
 					//curr_graph = graph_hatch2(bound, prev_angle * M_PI/180,
 					//					orig_x, orig_y, hatch_spacing, 0.0, pool_idx);
 					curr_graph = graph_hatch(bound, prev_angle * M_PI/180,

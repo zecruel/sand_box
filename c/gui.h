@@ -80,6 +80,12 @@ struct sort_by_idx{
 	void *data;
 };
 
+
+struct font_obj{
+	shape *shx_font;
+	double scale;
+};
+
 struct Gui_obj {
 	struct nk_context *ctx;
 	struct nk_user_font *font;
@@ -108,6 +114,8 @@ struct Gui_obj {
 	double near_x, near_y;
 	double bulge, scale;
 	double txt_h;
+	
+	double patt_scale, patt_ang;
 	
 	int color_idx, lw_idx, t_al_v, t_al_h;
 	int layer_idx, ltypes_idx;
@@ -146,6 +154,9 @@ struct Gui_obj {
 	char blk_name[DXF_MAX_CHARS];
 	char tag_mark[DXF_MAX_CHARS];
 	
+	char patt_name[DXF_MAX_CHARS];
+	char patt_descr[DXF_MAX_CHARS];
+	
 	list_node * sel_list;
 	list_node *phanton;
 	struct do_list list_do;
@@ -155,11 +166,6 @@ struct Gui_obj {
 	
 };
 typedef struct Gui_obj gui_obj;
-
-struct font_obj{
-	shape *shx_font;
-	double scale;
-};
 
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK, THEME_ZE};
 
