@@ -1771,25 +1771,35 @@ int color, char *layer, char *ltype, int lw, int paper){
 		/*============== lines =============*/
 		struct hatch_line *curr_l = pattern->lines;
 		while (curr_l){
-			 /* line angle */
-			ok &= dxf_attr_append(hatch, 53, (void *) &(curr_l->ang));
-			/* base point */
-			ok &= dxf_attr_append(hatch, 43, (void *) &(curr_l->ox));
-			ok &= dxf_attr_append(hatch, 44, (void *) &(curr_l->oy));
-			/*offset*/
-			double cosine = cos(curr_l->ang * M_PI/180);
-			double sine = sin(curr_l->ang * M_PI/180);
+			double ang = fmod(curr_l->ang + rot, 360.0);
+			double cosine = cos(ang * M_PI/180);
+			double sine = sin(ang * M_PI/180);
+			double dx = scale * (cosine*curr_l->dx - sine*curr_l->dy);
+			double dy = scale * (sine*curr_l->dx + cosine*curr_l->dy);
+			cosine = cos(rot * M_PI/180);
+			sine = sin(rot * M_PI/180);
+			double ox = scale * (cosine*curr_l->ox - sine*curr_l->oy);
+			double oy = scale * (sine*curr_l->ox + cosine*curr_l->oy);
+			int i;
+			double dash[20];
 			
-			double dx = cosine*curr_l->dx - sine*curr_l->dy;
-			double dy = sine*curr_l->dx + cosine*curr_l->dy;
+			for (i = 0; i < curr_l->num_dash; i++){
+				dash[i] = scale * curr_l->dash[i];
+			}
+			
+			 /* line angle */
+			ok &= dxf_attr_append(hatch, 53, (void *) &ang);
+			/* base point */
+			ok &= dxf_attr_append(hatch, 43, (void *) &ox);
+			ok &= dxf_attr_append(hatch, 44, (void *) &oy);
+			/*offset*/
 			ok &= dxf_attr_append(hatch, 45, (void *) &dx);
 			ok &= dxf_attr_append(hatch, 46, (void *) &dy);
 			/*number of dash elements*/
 			ok &= dxf_attr_append(hatch, 79, (void *) &(curr_l->num_dash));
 			
-			int i;
 			for (i = 0; i < curr_l->num_dash; i++){
-				ok &= dxf_attr_append(hatch, 49, (void *) &(curr_l->dash[i]));
+				ok &= dxf_attr_append(hatch, 49, (void *) &(dash[i]));
 			}
 			
 			curr_l = curr_l->next;

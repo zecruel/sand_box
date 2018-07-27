@@ -1920,6 +1920,10 @@ int main(int argc, char** argv){
 	for (i = 0; i<gui->drawing->num_fonts; i++){
 		shx_font_free(gui->drawing->text_fonts[i].shx_font);
 	}
+	
+	dxf_hatch_free(gui->list_pattern.next);
+	
+	
 	free(gui->drawing);
 	nk_sdl_shutdown(gui);
 	shx_font_free(font.shx_font);
@@ -1927,6 +1931,7 @@ int main(int argc, char** argv){
 	
 	lua_close(Lua1);
 	return 0;
+	
 };
 
 /*

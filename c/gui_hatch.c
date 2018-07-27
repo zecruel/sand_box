@@ -60,7 +60,8 @@ int gui_hatch_interactive(gui_obj *gui){
 					
 					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
 					gui->hatch_solid, gui->hatch_assoc,
-					0, 0, 0.0, 1.0,
+					0, 0, /* style, type */
+					gui->patt_ang, gui->patt_scale,
 					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
 					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 					0); /* paper space */
@@ -148,7 +149,7 @@ int gui_hatch_info (gui_obj *gui){
 			}
 		}
 		
-		nk_layout_row_dynamic(gui->ctx, 130, 1);
+		nk_layout_row_dynamic(gui->ctx, 110, 1);
 		if (nk_group_begin(gui->ctx, "Patt_controls", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 		
 			if (gui->hatch_user){
@@ -176,8 +177,7 @@ int gui_hatch_info (gui_obj *gui){
 				nk_label(gui->ctx, "Name:", NK_TEXT_RIGHT);
 				nk_label_colored(gui->ctx, gui->patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				nk_label_colored(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
-				
+				//nk_label_colored(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
 				if (nk_button_label(gui->ctx, "Explore")) show_pat_pp = 1;
 				
 				gui->patt_scale = nk_propertyd(gui->ctx, "#Scale", 0.0d, gui->patt_scale, DBL_MAX, 0.1d, 0.1d);
@@ -211,7 +211,7 @@ int gui_hatch_info (gui_obj *gui){
 				double ang, ox, oy, dash[20];
 				int num_dash;
 				
-				nk_layout_row_dynamic(gui->ctx, 300, 2);
+				nk_layout_row_dynamic(gui->ctx, 400, 2);
 				if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					curr_h = &(gui->list_pattern);
@@ -245,22 +245,16 @@ int gui_hatch_info (gui_obj *gui){
 					max = 0.0;
 					double patt_len = 0.0;
 					
-					curr_l = curr_h->lines;
-					while (curr_l){
-						/*
-						for (i = 0; i < curr_l->num_dash; i++ ){
-							patt_len += fabs(curr_l->dash[i]);
-						}*/
-						
-						if (curr_l->num_dash < 2)
-							max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy))? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy);
-						else
-							max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash)? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash;
-						
-						curr_l = curr_l->next;
-					}
-					
 					if (patt_idx != last_idx){
+						curr_l = curr_h->lines;
+						while (curr_l){
+							if (curr_l->num_dash < 2)
+								max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy))? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy);
+							else
+								max = (max > sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash)? max : sqrt(curr_l->dx*curr_l->dx + curr_l->dy*curr_l->dy)/curr_l->num_dash;
+							curr_l = curr_l->next;
+						}
+						
 						if (max > 0.0) patt_scale = 1/max;
 						else patt_scale = 1.0;
 						
@@ -268,9 +262,6 @@ int gui_hatch_info (gui_obj *gui){
 						
 						last_idx = patt_idx;
 					}
-						
-					max *= 10;
-					
 					
 					pat_g = list_new(NULL, FRAME_LIFE);
 					
@@ -342,30 +333,28 @@ int gui_hatch_info (gui_obj *gui){
 				if (nk_group_begin(gui->ctx, "Patt_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 					/* current pattern name */
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					nk_label(gui->ctx, "10 x 10 units", NK_TEXT_CENTERED);
+					nk_label_colored(gui->ctx, patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
 					
 					/* preview img */
 					nk_layout_row_dynamic(gui->ctx, 175, 1);
 					nk_button_image(gui->ctx,  nk_image_ptr(gui->preview_img));
+					nk_layout_row_dynamic(gui->ctx, 50, 1);
+					nk_label_colored_wrap(gui->ctx, patt_descr, nk_rgb(100,115,255));
 					
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					nk_label(gui->ctx, "Ref: 10 x 10 units", NK_TEXT_CENTERED);
 					patt_scale = nk_propertyd(gui->ctx, "#Scale", 0.001, patt_scale, DBL_MAX, 0.001, 0.001);
 					patt_rot = nk_propertyd(gui->ctx, "#Rotation", 0.00, patt_rot, 360.0, 0.1, 0.1);
 					
+					if (nk_button_label(gui->ctx, "Select")){
+						gui->hatch_idx = patt_idx;
+						gui->patt_scale = patt_scale;
+						gui->patt_ang = patt_rot;
+						show_pat_pp = 0;
+					}
+					
+					
 					nk_group_end(gui->ctx);
-				}
-				
-				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.2f, 0.8f});
-				nk_label(gui->ctx, "Name:", NK_TEXT_RIGHT);
-				nk_label_colored(gui->ctx, patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
-				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				nk_label_colored(gui->ctx, patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
-				
-				//nk_layout_row_dynamic(gui->ctx, 20, 1);
-				if (nk_button_label(gui->ctx, "Select")){
-					gui->hatch_idx = patt_idx;
-					show_pat_pp = 0;
-					nk_popup_close(gui->ctx);
 				}
 				
 				nk_popup_end(gui->ctx);
