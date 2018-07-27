@@ -258,6 +258,8 @@ int gui_hatch_info (gui_obj *gui){
 						if (max > 0.0) patt_scale = 1/max;
 						else patt_scale = 1.0;
 						
+						if (curr_h->num_lines > 1) patt_scale *= log(curr_h->num_lines);
+						
 						patt_rot = 0.0;
 						
 						last_idx = patt_idx;
