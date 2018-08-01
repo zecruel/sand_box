@@ -1000,7 +1000,7 @@ int main(int argc, char** argv){
 			/*------------ end second line --------------*/
 			
 			if (show_app_about){
-				/* about popup */
+				/* file open popup */
 				static struct nk_rect s = {20, 100, 400, 150};
 				if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "About", NK_WINDOW_CLOSABLE, s)){
 					nk_layout_row_dynamic(gui->ctx, 50, 2);
@@ -1921,7 +1921,8 @@ int main(int argc, char** argv){
 		shx_font_free(gui->drawing->text_fonts[i].shx_font);
 	}
 	
-	dxf_hatch_free(gui->list_pattern.next);
+	//dxf_hatch_free(gui->list_pattern.next);
+	dxf_h_fam_free(gui->hatch_fam.next);
 	
 	
 	free(gui->drawing);

@@ -50,14 +50,32 @@ int gui_hatch_interactive(gui_obj *gui){
 					
 					graph_obj *bound = dxf_lwpline_parse(gui->drawing, new_el, 0 , 0);
 					
-					struct h_pattern *curr_h = &(gui->list_pattern);
+					struct h_pattern *curr_h;// = &(gui->list_pattern);
+					struct h_family *curr_fam = gui->hatch_fam.next;
 					int i = 0;
 					
-					while ((curr_h) && (i < gui->hatch_idx)){
-						i++;
-						curr_h = curr_h->next;
+					if(gui->hatch_user) {
+						curr_h = &(gui->list_pattern);
 					}
-					
+					else{
+						curr_h = NULL;
+						
+						while (curr_fam){
+							if (gui->hatch_fam_idx == i){
+								curr_h = curr_fam->list->next;
+								break;
+							}
+							
+							i++;
+							curr_fam = curr_fam->next;
+						}
+						i = 0;
+						
+						while ((curr_h) && (i < gui->hatch_idx)){
+							i++;
+							curr_h = curr_h->next;
+						}
+					}
 					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
 					gui->hatch_solid, gui->hatch_assoc,
 					0, 0, /* style, type */
@@ -121,8 +139,9 @@ int gui_hatch_interactive(gui_obj *gui){
 
 int gui_hatch_info (gui_obj *gui){
 	if (gui->modal == HATCH) {
-		static int show_pat_pp = 0;
-		struct h_pattern *curr_h = &(gui->list_pattern);
+		static int show_pat_pp = 0, show_pat_file = 0;
+		struct h_pattern *curr_h = NULL;
+		struct h_family *curr_fam = gui->hatch_fam.next;
 		static double patt_scale = 1, patt_rot = 0.0;
 		
 		int i = 0;
@@ -132,8 +151,8 @@ int gui_hatch_info (gui_obj *gui){
 			if(gui->hatch_user) {
 				gui->hatch_predef = 0;
 				gui->hatch_solid = 0;
-				
-				gui->hatch_idx = 0;
+				gui->patt_scale = 1;
+				gui->patt_ang = 0.0;
 			}
 		}
 		if (nk_selectable_label(gui->ctx, "Library", NK_TEXT_CENTERED, &gui->hatch_predef)){
@@ -149,7 +168,7 @@ int gui_hatch_info (gui_obj *gui){
 			}
 		}
 		
-		nk_layout_row_dynamic(gui->ctx, 110, 1);
+		nk_layout_row_dynamic(gui->ctx, 125, 1);
 		if (nk_group_begin(gui->ctx, "Patt_controls", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 		
 			if (gui->hatch_user){
@@ -159,7 +178,28 @@ int gui_hatch_info (gui_obj *gui){
 				gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
 			}
 			else if (gui->hatch_predef){
-				curr_h = &(gui->list_pattern);
+				curr_fam = gui->hatch_fam.next;
+				i = 0;
+				
+				gui->patt_name[0] = 0;
+				gui->patt_descr[0] = 0;
+				curr_h = NULL;
+				
+				while (curr_fam){
+					if (gui->hatch_fam_idx == i){
+						
+						strncpy(gui->h_fam_name, curr_fam->name, DXF_MAX_CHARS);
+						strncpy(gui->h_fam_descr, curr_fam->descr, DXF_MAX_CHARS);
+						curr_h = curr_fam->list->next;
+					}
+					
+					i++;
+					curr_fam = curr_fam->next;
+				}
+				
+				
+				
+				//curr_h = &(gui->list_pattern);
 				i = 0;
 				
 				while (curr_h){
@@ -173,13 +213,33 @@ int gui_hatch_info (gui_obj *gui){
 					curr_h = curr_h->next;
 				}
 				
+				
+				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.85f, 0.15f});
+				//nk_label_colored(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
+				if (nk_combo_begin_label(gui->ctx, gui->h_fam_name, nk_vec2(150,300))){
+					nk_layout_row_dynamic(gui->ctx, 20, 1);
+					curr_fam = gui->hatch_fam.next;
+					i = 0;
+					while (curr_fam){
+						if (nk_button_label(gui->ctx, curr_fam->name)){
+							gui->hatch_fam_idx = i;
+							gui->hatch_idx = 0;
+							nk_combo_close(gui->ctx);
+						}
+						i++;
+						curr_fam = curr_fam->next;
+					}
+					
+					nk_combo_end(gui->ctx);
+				}
+				if (nk_button_symbol(gui->ctx, NK_SYMBOL_PLUS)) show_pat_file = 1;
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				if (nk_button_label(gui->ctx, "Explore")) show_pat_pp = 1;
+				
 				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.2f, 0.8f});
 				nk_label(gui->ctx, "Name:", NK_TEXT_RIGHT);
 				nk_label_colored(gui->ctx, gui->patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				//nk_label_colored(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
-				if (nk_button_label(gui->ctx, "Explore")) show_pat_pp = 1;
-				
 				gui->patt_scale = nk_propertyd(gui->ctx, "#Scale", 0.0d, gui->patt_scale, DBL_MAX, 0.1d, 0.1d);
 				gui->patt_ang = nk_propertyd(gui->ctx, "Angle", 0.0d, gui->patt_ang, 360.0d, 0.5d, 0.5d);
 			}
@@ -199,7 +259,7 @@ int gui_hatch_info (gui_obj *gui){
 			/* select block popup */
 			static int patt_idx = 0, last_idx = 0;
 			static char patt_name[DXF_MAX_CHARS], patt_descr[DXF_MAX_CHARS];
-			static struct nk_rect s = {120, 10, 420, 450};
+			static struct nk_rect s = {120, -210, 420, 490};
 			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Pattern", NK_WINDOW_CLOSABLE, s)){
 				graph_obj *ref_graph = NULL, *curr_graph = NULL;
 				list_node * pat_g = NULL;
@@ -211,10 +271,29 @@ int gui_hatch_info (gui_obj *gui){
 				double ang, ox, oy, dash[20];
 				int num_dash;
 				
-				nk_layout_row_dynamic(gui->ctx, 400, 2);
+				curr_fam = gui->hatch_fam.next;
+				i = 0;
+				curr_h = NULL;
+				
+				while (curr_fam){
+					if (gui->hatch_fam_idx == i){
+						curr_h = curr_fam->list->next;
+					}
+					
+					i++;
+					curr_fam = curr_fam->next;
+				}
+				
+				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.15f, 0.85f});
+				nk_label(gui->ctx, "Family:", NK_TEXT_RIGHT);
+				nk_label_colored(gui->ctx, gui->h_fam_name, NK_TEXT_LEFT, nk_rgb(255,255,0));
+				nk_layout_row_dynamic(gui->ctx, 50, 1);
+				nk_label_colored_wrap(gui->ctx, gui->h_fam_descr, nk_rgb(100,115,255));
+				
+				nk_layout_row_dynamic(gui->ctx, 360, 2);
 				if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					curr_h = &(gui->list_pattern);
+					//curr_h = &(gui->list_pattern);
 					i = 0;
 					while (curr_h){
 						if (nk_button_label(gui->ctx, curr_h->name)){
@@ -228,7 +307,19 @@ int gui_hatch_info (gui_obj *gui){
 				}
 				
 				/*get current hatch */
-				curr_h = &(gui->list_pattern);
+				//curr_h = &(gui->list_pattern);
+				curr_fam = gui->hatch_fam.next;
+				i = 0;
+				curr_h = NULL;
+				
+				while (curr_fam){
+					if (gui->hatch_fam_idx == i){
+						curr_h = curr_fam->list->next;
+					}
+					
+					i++;
+					curr_fam = curr_fam->next;
+				}
 				i = 0;
 				while (curr_h){
 					strncpy(patt_name, curr_h->name, DXF_MAX_CHARS);
@@ -258,7 +349,7 @@ int gui_hatch_info (gui_obj *gui){
 						if (max > 0.0) patt_scale = 1/max;
 						else patt_scale = 1.0;
 						
-						if (curr_h->num_lines > 1) patt_scale *= log(curr_h->num_lines);
+						if (curr_h->num_lines > 1) patt_scale *= sqrt(curr_h->num_lines);
 						
 						patt_rot = 0.0;
 						
@@ -362,6 +453,36 @@ int gui_hatch_info (gui_obj *gui){
 				nk_popup_end(gui->ctx);
 			}
 			else show_pat_pp = 0;
+		}
+		if (show_pat_file){
+			/* file open popup */
+			static char pat_path[DXF_MAX_CHARS];
+			static int pat_path_len = 0;
+			
+			static struct nk_rect s = {20, 100, 400, 150};
+			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Add pattern family", NK_WINDOW_CLOSABLE, s)){
+				nk_layout_row_dynamic(gui->ctx, 20, 1);
+				nk_label(gui->ctx, "File to Open:", NK_TEXT_CENTERED);
+				//nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, pat_path, DXF_MAX_CHARS, nk_filter_default);
+				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
+				nk_edit_string(gui->ctx, NK_EDIT_SIMPLE | NK_EDIT_CLIPBOARD, pat_path, &pat_path_len, DXF_MAX_CHARS, nk_filter_default);
+				
+				nk_layout_row_dynamic(gui->ctx, 20, 2);
+				if (nk_button_label(gui->ctx, "OK")) {
+					pat_path[pat_path_len] = 0;
+					if (strlen(pat_path) > 4){
+						
+						gui->end_fam->next = dxf_hatch_family_file(NULL, pat_path);
+						if(gui->end_fam->next) gui->end_fam = gui->end_fam->next;
+					}
+					show_pat_file = nk_false;
+					pat_path_len = 0;
+				}
+				nk_popup_end(gui->ctx);
+			} else {
+				show_pat_file = nk_false;
+				pat_path_len = 0;
+			}
 		}
 	}
 	return 1;

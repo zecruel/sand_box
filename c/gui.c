@@ -922,6 +922,7 @@ int gui_start(gui_obj *gui){
 	
 	
 	/* initialize the hatch pattern list */
+	gui->hatch_fam_idx = 0;
 	gui->hatch_idx = 0;
 	gui->hatch_solid = 0;
 	gui->hatch_assoc = 0;
@@ -940,12 +941,22 @@ int gui_start(gui_obj *gui){
 	gui->list_pattern.lines = &(gui->user_patt);
 	gui->list_pattern.next = NULL;
 	
-	dxf_parse_patt((char*)acadiso_pat, &(gui->list_pattern));
+	strncpy(gui->hatch_fam.name, "USER_DEF", DXF_MAX_CHARS);
+	strncpy(gui->hatch_fam.descr, "User definied simple pattern", DXF_MAX_CHARS);
+	gui->hatch_fam.list = &(gui->list_pattern);
+	gui->hatch_fam.next = NULL;
+	gui->end_fam = &(gui->hatch_fam);
+	
+	gui->hatch_fam.next = dxf_hatch_family("STANDARD", "STANDARD", (char*)acadiso_pat);
+	if(gui->hatch_fam.next) gui->end_fam = gui->hatch_fam.next;
+	//dxf_parse_patt((char*)acadiso_pat, &(gui->list_pattern));
 	
 	gui->patt_scale = 1.0;
 	gui->patt_ang = 0.0;
 	gui->patt_name[0] = 0;
 	gui->patt_descr[0] = 0;
+	gui->h_fam_name[0] = 0;
+	gui->h_fam_descr[0] = 0;
 	
 	return 1;
 }

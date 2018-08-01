@@ -259,6 +259,10 @@ graph_obj * graph_new(int pool_idx){
 		
 		/* extent init */
 		new_obj->ext_ini = 0;
+		new_obj->ext_min_x = 0.0;
+		new_obj->ext_min_y = 0.0;
+		new_obj->ext_max_x = 0.0;
+		new_obj->ext_max_y = 0.0;
 		
 		/* allocate the line list */
 		//new_obj->list = malloc(sizeof(line_node));
@@ -306,8 +310,8 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 			}
 			/*update the extent of graph */
 			/* sort the coordinates of entire line*/
-			double min_x = (x0 < x1) ? x0 : x1;
-			double min_y = (y0 < y1) ? y0 : y1;
+			double min_x = (x0 <= x1) ? x0 : x1;
+			double min_y = (y0 <= y1) ? y0 : y1;
 			double max_x = (x0 > x1) ? x0 : x1;
 			double max_y = (y0 > y1) ? y0 : y1;
 			if (master->ext_ini == 0){
@@ -318,8 +322,8 @@ void line_add(graph_obj * master, double x0, double y0, double z0, double x1, do
 				master->ext_max_y = max_y;
 			}
 			else{
-				master->ext_min_x = (master->ext_min_x < min_x) ? master->ext_min_x : min_x;
-				master->ext_min_y = (master->ext_min_y < min_y) ? master->ext_min_y : min_y;
+				master->ext_min_x = (master->ext_min_x <= min_x) ? master->ext_min_x : min_x;
+				master->ext_min_y = (master->ext_min_y <= min_y) ? master->ext_min_y : min_y;
 				master->ext_max_x = (master->ext_max_x > max_x) ? master->ext_max_x : max_x;
 				master->ext_max_y = (master->ext_max_y > max_y) ? master->ext_max_y : max_y;
 			}
@@ -2152,8 +2156,8 @@ double dash[], int num_dash){
 			
 			
 		/* get polar parameters of line */
-		dx = x1 - x0;
-		dy = y1 - y0;
+		dx = x1 - x0 + TOLERANCE;
+		dy = y1 - y0 + TOLERANCE;
 		modulus = sqrt(pow(dx, 2) + pow(dy, 2));
 		cosine = 1.0;
 		sine = 0.0;

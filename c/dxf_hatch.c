@@ -160,3 +160,60 @@ int dxf_hatch_free (struct h_pattern *hatch){
 	}
 	return 1;
 }
+
+struct h_family * dxf_hatch_family(char *name, char* descr, char *buf){
+	struct h_family *ret = NULL;
+	struct h_pattern *list = NULL;
+	
+	if (buf == NULL) return NULL; /* error: file not loaded*/
+	
+	/* initialize structures*/
+	ret = malloc(sizeof(struct h_family));
+	if (ret == NULL) return NULL; /* return NULL on error*/
+	list = malloc(sizeof(struct h_pattern));
+	if (list == NULL){
+		free (ret);
+		return NULL; /* return NULL on error*/
+	}
+	ret->list = list;
+	ret->next = NULL;
+	if (name) strncpy(ret->name, name, DXF_MAX_CHARS);
+	else strncpy(ret->name, "Untitled", DXF_MAX_CHARS);
+	if (descr) strncpy(ret->descr, descr, DXF_MAX_CHARS);
+	else ret->descr[0] = 0;
+	
+	dxf_parse_patt(buf, list);
+	
+	return ret;
+}
+
+struct h_family * dxf_hatch_family_file(char *name, char *path){
+	long fsize;
+	struct h_family *ret = NULL;
+	
+	if (path == NULL) return NULL; /* error: no path*/
+	/* load file */
+	char *buf = dxf_load_file(path, &fsize);
+	
+	ret = dxf_hatch_family(name, path, buf);
+	free(buf);
+	
+	return ret;
+}
+
+int dxf_h_fam_free (struct h_family *fam){
+	struct h_family *curr = NULL;
+	struct h_family *next = NULL;
+	
+	curr = fam;
+	
+	while (curr){
+		dxf_hatch_free (curr->list);
+		
+		next = curr->next;
+		free(curr);
+		curr = next;
+		
+	}
+	return 1;
+}

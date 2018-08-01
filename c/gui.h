@@ -127,7 +127,7 @@ struct Gui_obj {
 	
 	int text2tag;
 	
-	int hatch_idx, hatch_solid, hatch_assoc, hatch_user, hatch_predef;
+	int hatch_fam_idx, hatch_idx, hatch_solid, hatch_assoc, hatch_user, hatch_predef;
 	
 	
 	int en_distance; /* enable distance entry */
@@ -156,6 +156,8 @@ struct Gui_obj {
 	
 	char patt_name[DXF_MAX_CHARS];
 	char patt_descr[DXF_MAX_CHARS];
+	char h_fam_name[DXF_MAX_CHARS];
+	char h_fam_descr[DXF_MAX_CHARS];
 	
 	list_node * sel_list;
 	list_node *phanton;
@@ -163,6 +165,8 @@ struct Gui_obj {
 	
 	struct h_pattern list_pattern;
 	struct hatch_line user_patt;
+	struct h_family hatch_fam;
+	struct h_family *end_fam;
 	
 };
 typedef struct Gui_obj gui_obj;
