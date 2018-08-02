@@ -1,6 +1,58 @@
 #include "gui_use.h"
 #include <float.h>
 
+char *get_filename(char *path){
+	static char buf[DXF_MAX_CHARS];
+	char *ret = NULL;
+	
+	strncpy(buf, path, DXF_MAX_CHARS);
+	ret = strrchr(buf, '/');
+	if (ret == NULL) ret = strrchr(buf, '\\');
+	
+	if (ret) ret++;
+	else {
+		buf[0] = 0;
+		ret = buf;
+	}
+	
+	return ret;
+}
+
+char *get_ext(char *path){
+	static char buf[DXF_MAX_CHARS];
+	char *ret = NULL;
+	int i;
+	
+	strncpy(buf, path, DXF_MAX_CHARS);
+	ret = strrchr(buf, '.');
+	
+	if (ret) {
+		ret++;
+		i = 0;
+		while(ret[i]){
+			ret[i] = tolower(ret[i]);
+			i++;
+		}
+	}
+	else {
+		buf[0] = 0;
+		ret = buf;
+	}
+	
+	return ret;
+}
+
+void strip_ext(char *filename){
+	char *ret = NULL;
+	if (filename){
+		ret = strrchr(filename, '.');
+		if (ret){
+			int pos = (int)(ret - filename);
+			filename[pos] = 0;
+		}
+	}
+}
+
 int gui_hatch_interactive(gui_obj *gui){
 	if (gui->modal == HATCH){
 		static dxf_node *new_el;
@@ -54,8 +106,19 @@ int gui_hatch_interactive(gui_obj *gui){
 					struct h_family *curr_fam = gui->hatch_fam.next;
 					int i = 0;
 					
+					double rot = 0.0, scale = 1.0;
+					
 					if(gui->hatch_user) {
+						strncpy(gui->list_pattern.name, "USER_DEF", DXF_MAX_CHARS);
 						curr_h = &(gui->list_pattern);
+						rot = 0.0;
+						scale = 1.0;
+					}
+					else if(gui->hatch_solid) {
+						strncpy(gui->list_pattern.name, "SOLID", DXF_MAX_CHARS);
+						curr_h = &(gui->list_pattern);
+						rot = 0.0;
+						scale = 1.0;
 					}
 					else{
 						curr_h = NULL;
@@ -75,11 +138,13 @@ int gui_hatch_interactive(gui_obj *gui){
 							i++;
 							curr_h = curr_h->next;
 						}
+						rot = gui->patt_ang;
+						scale = gui->patt_scale;
 					}
 					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
 					gui->hatch_solid, gui->hatch_assoc,
 					0, 0, /* style, type */
-					gui->patt_ang, gui->patt_scale,
+					rot, scale,
 					gui->color_idx, gui->drawing->layers[gui->layer_idx].name, /* color, layer */
 					gui->drawing->ltypes[gui->ltypes_idx].name, dxf_lw[gui->lw_idx], /* line type, line weight */
 					0); /* paper space */
@@ -140,6 +205,7 @@ int gui_hatch_interactive(gui_obj *gui){
 int gui_hatch_info (gui_obj *gui){
 	if (gui->modal == HATCH) {
 		static int show_pat_pp = 0, show_pat_file = 0;
+		static int patt_idx = 0, last_idx = -1;
 		struct h_pattern *curr_h = NULL;
 		struct h_family *curr_fam = gui->hatch_fam.next;
 		static double patt_scale = 1, patt_rot = 0.0;
@@ -151,8 +217,6 @@ int gui_hatch_info (gui_obj *gui){
 			if(gui->hatch_user) {
 				gui->hatch_predef = 0;
 				gui->hatch_solid = 0;
-				gui->patt_scale = 1;
-				gui->patt_ang = 0.0;
 			}
 		}
 		if (nk_selectable_label(gui->ctx, "Library", NK_TEXT_CENTERED, &gui->hatch_predef)){
@@ -187,7 +251,6 @@ int gui_hatch_info (gui_obj *gui){
 				
 				while (curr_fam){
 					if (gui->hatch_fam_idx == i){
-						
 						strncpy(gui->h_fam_name, curr_fam->name, DXF_MAX_CHARS);
 						strncpy(gui->h_fam_descr, curr_fam->descr, DXF_MAX_CHARS);
 						curr_h = curr_fam->list->next;
@@ -225,6 +288,8 @@ int gui_hatch_info (gui_obj *gui){
 							gui->hatch_fam_idx = i;
 							gui->hatch_idx = 0;
 							nk_combo_close(gui->ctx);
+							patt_idx = 0;
+							last_idx = -1;
 						}
 						i++;
 						curr_fam = curr_fam->next;
@@ -257,7 +322,7 @@ int gui_hatch_info (gui_obj *gui){
 		
 		if (show_pat_pp){
 			/* select block popup */
-			static int patt_idx = 0, last_idx = 0;
+			
 			static char patt_name[DXF_MAX_CHARS], patt_descr[DXF_MAX_CHARS];
 			static struct nk_rect s = {120, -210, 420, 490};
 			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Select Pattern", NK_WINDOW_CLOSABLE, s)){
@@ -470,12 +535,15 @@ int gui_hatch_info (gui_obj *gui){
 				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				if (nk_button_label(gui->ctx, "OK")) {
 					pat_path[pat_path_len] = 0;
-					if (strlen(pat_path) > 4){
-						
-						gui->end_fam->next = dxf_hatch_family_file(NULL, pat_path);
+					char *ext = get_ext(pat_path);
+					if (strcmp(ext, "pat") == 0){
+						char *filename = get_filename(pat_path);
+						strip_ext(filename);
+						gui->end_fam->next = dxf_hatch_family_file(filename, pat_path);
 						if(gui->end_fam->next) gui->end_fam = gui->end_fam->next;
+						show_pat_file = nk_false;
 					}
-					show_pat_file = nk_false;
+					
 					pat_path_len = 0;
 				}
 				nk_popup_end(gui->ctx);

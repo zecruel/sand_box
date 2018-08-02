@@ -175,6 +175,8 @@ struct h_family * dxf_hatch_family(char *name, char* descr, char *buf){
 		free (ret);
 		return NULL; /* return NULL on error*/
 	}
+	list->next = NULL;
+	list->lines = NULL;
 	ret->list = list;
 	ret->next = NULL;
 	if (name) strncpy(ret->name, name, DXF_MAX_CHARS);
