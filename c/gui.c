@@ -947,7 +947,7 @@ int gui_start(gui_obj *gui){
 	gui->hatch_fam.next = NULL;
 	gui->end_fam = &(gui->hatch_fam);
 	
-	gui->hatch_fam.next = dxf_hatch_family("Standard", "Internal standard pattern library", (char*)acadiso_pat);
+	gui->hatch_fam.next = dxf_hatch_family("Standard", "Internal standard pattern library", (char*)std_h_pat);
 	if(gui->hatch_fam.next) gui->end_fam = gui->hatch_fam.next;
 	//dxf_parse_patt((char*)acadiso_pat, &(gui->list_pattern));
 	
