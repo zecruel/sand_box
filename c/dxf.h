@@ -171,6 +171,12 @@ void str_upp(char *str);
 
 char * trimwhitespace(char *str);
 
+char *get_filename(char *path);
+
+char *get_ext(char *path);
+
+void strip_ext(char *filename);
+
 void dxf_ent_print2 (dxf_node *ent);
 
 void dxf_ent_print_f (dxf_node *ent, char *path);

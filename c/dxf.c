@@ -35,6 +35,67 @@ char * trimwhitespace(char *str){
 	return str;
 }
 
+char *get_filename(char *path){
+	/* Get the filename with extension from path string.
+	This function does not modify the original string,
+	but the return string must be used imediatly */
+	static char buf[DXF_MAX_CHARS];
+	char *ret = NULL;
+	
+	strncpy(buf, path, DXF_MAX_CHARS);
+	ret = strrchr(buf, '/');
+	if (ret == NULL) ret = strrchr(buf, '\\');
+	
+	if (ret) ret++;
+	else {
+		buf[0] = 0;
+		ret = buf;
+	}
+	
+	return ret;
+}
+
+char *get_ext(char *path){
+	/* Get the extension of file from path string.
+	This function does not modify the original string,
+	but the return string must be used imediatly.
+	Return string is in lower case*/
+	static char buf[DXF_MAX_CHARS];
+	char *ret = NULL;
+	int i;
+	
+	strncpy(buf, path, DXF_MAX_CHARS);
+	ret = strrchr(buf, '.');
+	
+	if (ret) {
+		ret++;
+		i = 0;
+		while(ret[i]){
+			ret[i] = tolower(ret[i]);
+			i++;
+		}
+	}
+	else {
+		buf[0] = 0;
+		ret = buf;
+	}
+	
+	return ret;
+}
+
+void strip_ext(char *filename){
+	/* Strip extension from filename string.
+	Atention: This function modify the original string */
+	char *ret = NULL;
+	if (filename){
+		ret = strrchr(filename, '.');
+		if (ret){
+			int pos = (int)(ret - filename);
+			filename[pos] = 0;
+		}
+	}
+}
+
 char *str_replace(char *orig, char *rep, char *with) {
 	/*
 	Author: jmucchiello

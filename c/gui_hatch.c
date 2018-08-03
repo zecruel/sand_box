@@ -1,59 +1,8 @@
 #include "gui_use.h"
 #include <float.h>
 
-char *get_filename(char *path){
-	static char buf[DXF_MAX_CHARS];
-	char *ret = NULL;
-	
-	strncpy(buf, path, DXF_MAX_CHARS);
-	ret = strrchr(buf, '/');
-	if (ret == NULL) ret = strrchr(buf, '\\');
-	
-	if (ret) ret++;
-	else {
-		buf[0] = 0;
-		ret = buf;
-	}
-	
-	return ret;
-}
-
-char *get_ext(char *path){
-	static char buf[DXF_MAX_CHARS];
-	char *ret = NULL;
-	int i;
-	
-	strncpy(buf, path, DXF_MAX_CHARS);
-	ret = strrchr(buf, '.');
-	
-	if (ret) {
-		ret++;
-		i = 0;
-		while(ret[i]){
-			ret[i] = tolower(ret[i]);
-			i++;
-		}
-	}
-	else {
-		buf[0] = 0;
-		ret = buf;
-	}
-	
-	return ret;
-}
-
-void strip_ext(char *filename){
-	char *ret = NULL;
-	if (filename){
-		ret = strrchr(filename, '.');
-		if (ret){
-			int pos = (int)(ret - filename);
-			filename[pos] = 0;
-		}
-	}
-}
-
 int gui_hatch_interactive(gui_obj *gui){
+	/* Initially, uses a lwpolyline (without bulge) as bondary. */
 	if (gui->modal == HATCH){
 		static dxf_node *new_el;
 		
@@ -108,21 +57,23 @@ int gui_hatch_interactive(gui_obj *gui){
 					
 					double rot = 0.0, scale = 1.0;
 					
-					if(gui->hatch_user) {
+					if(gui->hatch_user) { /* user definied simple pattern */
 						strncpy(gui->list_pattern.name, "USER_DEF", DXF_MAX_CHARS);
 						curr_h = &(gui->list_pattern);
 						rot = 0.0;
 						scale = 1.0;
 					}
-					else if(gui->hatch_solid) {
+					else if(gui->hatch_solid) { /* solid pattern */
 						strncpy(gui->list_pattern.name, "SOLID", DXF_MAX_CHARS);
 						curr_h = &(gui->list_pattern);
 						rot = 0.0;
 						scale = 1.0;
 					}
-					else{
-						curr_h = NULL;
+					else{ /* pattern from library */
 						
+						/* get current family */
+						curr_h = NULL;
+						i = 0;
 						while (curr_fam){
 							if (gui->hatch_fam_idx == i){
 								curr_h = curr_fam->list->next;
@@ -132,15 +83,19 @@ int gui_hatch_interactive(gui_obj *gui){
 							i++;
 							curr_fam = curr_fam->next;
 						}
-						i = 0;
 						
+						/* get current hatch pattern */
+						i = 0;
 						while ((curr_h) && (i < gui->hatch_idx)){
 							i++;
 							curr_h = curr_h->next;
 						}
+						/* optional rotation and scale */
 						rot = gui->patt_ang;
 						scale = gui->patt_scale;
 					}
+					
+					/* make DXF HATCH entity */
 					dxf_node *new_hatch_el = dxf_new_hatch (curr_h, bound,
 					gui->hatch_solid, gui->hatch_assoc,
 					0, 0, /* style, type */
@@ -150,10 +105,11 @@ int gui_hatch_interactive(gui_obj *gui){
 					0); /* paper space */
 					
 					if (new_hatch_el){
+						/* parse entity */
 						new_hatch_el->obj.graphics = dxf_graph_parse(gui->drawing, new_hatch_el, 0 , 0);
-						
+						/* and append to drawing */
 						drawing_ent_append(gui->drawing, new_hatch_el);
-						
+						/* add to the undo/redo list*/
 						do_add_entry(&gui->list_do, "HATCH");
 						do_add_item(gui->list_do.current, NULL, new_hatch_el);
 					}
@@ -211,7 +167,10 @@ int gui_hatch_info (gui_obj *gui){
 		static double patt_scale = 1, patt_rot = 0.0;
 		
 		int i = 0;
-		//nk_layout_row_dynamic(gui->ctx, 20, 3);
+		/* Tabs for select three options:
+			- User definied simple hatch;
+			- Hatch pattern from a library;
+			- Solid fill; */
 		nk_layout_row(gui->ctx, NK_STATIC, 20, 3, (float[]){40, 60, 40});
 		if (nk_selectable_label(gui->ctx, "User", NK_TEXT_CENTERED, &gui->hatch_user)){
 			if(gui->hatch_user) {
@@ -235,20 +194,25 @@ int gui_hatch_info (gui_obj *gui){
 		nk_layout_row_dynamic(gui->ctx, 125, 1);
 		if (nk_group_begin(gui->ctx, "Patt_controls", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
 		
-			if (gui->hatch_user){
+			if (gui->hatch_user){/*User definied simple hatch*/
+				/* the user can select only angle and spacing of continuous lines*/
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
-				
 				gui->user_patt.ang = nk_propertyd(gui->ctx, "Angle", 0.0d, gui->user_patt.ang, 360.0d, 0.5d, 0.5d);
 				gui->user_patt.dy = nk_propertyd(gui->ctx, "Spacing", 0.0d, gui->user_patt.dy, DBL_MAX, 0.1d, 0.1d);
 			}
-			else if (gui->hatch_predef){
+			else if (gui->hatch_predef){ /*Hatch pattern from a library */
+				/*the library or family of pattern hatchs is a .pat file, according the
+				Autodesk especification.
+				
+				The Standard family is embeded in program and the user can load
+				other librarys from files (see the popup windows below)*/
+				
+				/* get current family */
 				curr_fam = gui->hatch_fam.next;
 				i = 0;
-				
-				gui->patt_name[0] = 0;
+				gui->patt_name[0] = 0; /*clear data of current pattern */
 				gui->patt_descr[0] = 0;
 				curr_h = NULL;
-				
 				while (curr_fam){
 					if (gui->hatch_fam_idx == i){
 						strncpy(gui->h_fam_name, curr_fam->name, DXF_MAX_CHARS);
@@ -260,14 +224,10 @@ int gui_hatch_info (gui_obj *gui){
 					curr_fam = curr_fam->next;
 				}
 				
-				
-				
-				//curr_h = &(gui->list_pattern);
+				/*get current pattern */
 				i = 0;
-				
 				while (curr_h){
 					if (gui->hatch_idx == i){
-						
 						strncpy(gui->patt_name, curr_h->name, DXF_MAX_CHARS);
 						strncpy(gui->patt_descr, curr_h->descr, DXF_MAX_CHARS);
 					}
@@ -278,7 +238,7 @@ int gui_hatch_info (gui_obj *gui){
 				
 				
 				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.85f, 0.15f});
-				//nk_label_colored(gui->ctx, gui->patt_descr, NK_TEXT_CENTERED, nk_rgb(100,115,255));
+				/* selection of families */
 				if (nk_combo_begin_label(gui->ctx, gui->h_fam_name, nk_vec2(150,300))){
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					curr_fam = gui->hatch_fam.next;
@@ -297,23 +257,30 @@ int gui_hatch_info (gui_obj *gui){
 					
 					nk_combo_end(gui->ctx);
 				}
+				/* for load other pattern families from file */
 				if (nk_button_symbol(gui->ctx, NK_SYMBOL_PLUS)) show_pat_file = 1;
+				
+				/* for selection of pattern*/
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
 				if (nk_button_label(gui->ctx, "Explore")) show_pat_pp = 1;
 				
+				/*show data of current pattern*/
 				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.2f, 0.8f});
 				nk_label(gui->ctx, "Name:", NK_TEXT_RIGHT);
 				nk_label_colored(gui->ctx, gui->patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
+				
+				/* optional rotation and scale */
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
 				gui->patt_scale = nk_propertyd(gui->ctx, "#Scale", 0.0d, gui->patt_scale, DBL_MAX, 0.1d, 0.1d);
 				gui->patt_ang = nk_propertyd(gui->ctx, "Angle", 0.0d, gui->patt_ang, 360.0d, 0.5d, 0.5d);
 			}
 			nk_group_end(gui->ctx);
 		}
-		
+		/* associative flag for Hatch*/
 		nk_layout_row_dynamic(gui->ctx, 20, 1);
 		nk_checkbox_label(gui->ctx, "Associative", &gui->hatch_assoc);
 		
+		/*messages for user in iteractive mode*/
 		if (gui->step == 0){
 			nk_label(gui->ctx, "Enter first point", NK_TEXT_LEFT);
 		} else {
@@ -321,7 +288,7 @@ int gui_hatch_info (gui_obj *gui){
 		}
 		
 		if (show_pat_pp){
-			/* select block popup */
+			/* selection pattern popup window */
 			
 			static char patt_name[DXF_MAX_CHARS], patt_descr[DXF_MAX_CHARS];
 			static struct nk_rect s = {120, -210, 420, 490};
@@ -336,10 +303,10 @@ int gui_hatch_info (gui_obj *gui){
 				double ang, ox, oy, dash[20];
 				int num_dash;
 				
+				/* get current family */
 				curr_fam = gui->hatch_fam.next;
 				i = 0;
 				curr_h = NULL;
-				
 				while (curr_fam){
 					if (gui->hatch_fam_idx == i){
 						curr_h = curr_fam->list->next;
@@ -349,42 +316,42 @@ int gui_hatch_info (gui_obj *gui){
 					curr_fam = curr_fam->next;
 				}
 				
+				/* show data of current family */
 				nk_layout_row(gui->ctx, NK_DYNAMIC, 20, 2, (float[]){0.15f, 0.85f});
 				nk_label(gui->ctx, "Family:", NK_TEXT_RIGHT);
 				nk_label_colored(gui->ctx, gui->h_fam_name, NK_TEXT_LEFT, nk_rgb(255,255,0));
 				nk_layout_row_dynamic(gui->ctx, 50, 1);
 				nk_label_colored_wrap(gui->ctx, gui->h_fam_descr, nk_rgb(100,115,255));
 				
+				/* show and allow selection of patterns in current library*/
 				nk_layout_row_dynamic(gui->ctx, 360, 2);
 				if (nk_group_begin(gui->ctx, "Patt_names", NK_WINDOW_BORDER)) {
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
-					//curr_h = &(gui->list_pattern);
 					i = 0;
 					while (curr_h){
 						if (nk_button_label(gui->ctx, curr_h->name)){
 							patt_idx = i;
 						}
-						
 						i++;
 						curr_h = curr_h->next;
 					}
 					nk_group_end(gui->ctx);
 				}
 				
-				/*get current hatch */
-				//curr_h = &(gui->list_pattern);
+				/* in next, create the preview visualization of selected pattern*/
+				/* get current family */
 				curr_fam = gui->hatch_fam.next;
 				i = 0;
 				curr_h = NULL;
-				
 				while (curr_fam){
 					if (gui->hatch_fam_idx == i){
 						curr_h = curr_fam->list->next;
 					}
-					
 					i++;
 					curr_fam = curr_fam->next;
 				}
+				
+				/* get selected hatch pattern */
 				i = 0;
 				while (curr_h){
 					strncpy(patt_name, curr_h->name, DXF_MAX_CHARS);
@@ -395,9 +362,9 @@ int gui_hatch_info (gui_obj *gui){
 					curr_h = curr_h->next;
 				}
 				
+				/* calcule the ideal scale for preview */
 				struct hatch_line *curr_l = NULL;
 				if (curr_h){
-					
 					max = 0.0;
 					double patt_len = 0.0;
 					
@@ -423,7 +390,7 @@ int gui_hatch_info (gui_obj *gui){
 					
 					pat_g = list_new(NULL, FRAME_LIFE);
 					
-					/*create reference graph*/
+					/*create reference graph bondary (10 x 10 units) */
 					ref_graph = graph_new(FRAME_LIFE);
 					line_add(ref_graph, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0);
 					line_add(ref_graph, 10.0, 0.0, 0.0, 10.0, 10.0, 0.0);
@@ -432,10 +399,11 @@ int gui_hatch_info (gui_obj *gui){
 					
 					curr_l = curr_h->lines;
 				}
-		
+				
+				/* create graph for each definition lines in pattern */
 				while (curr_l){
+					/* apply scale and rotation*/
 					ang = fmod(curr_l->ang + patt_rot, 360.0);
-					
 					cosine = cos(ang * M_PI/180);
 					sine = sin(ang * M_PI/180);
 					dx = patt_scale * (cosine*curr_l->dx - sine*curr_l->dy);
@@ -445,14 +413,14 @@ int gui_hatch_info (gui_obj *gui){
 					ox = patt_scale * (cosine*curr_l->ox - sine*curr_l->oy);
 					oy = patt_scale * (sine*curr_l->ox + cosine*curr_l->oy);
 					num_dash = curr_l->num_dash;
-					
 					for (i = 0; i < num_dash; i++){
 						dash[i] = patt_scale * curr_l->dash[i];
 					}
-					if (num_dash == 0) {
+					if (num_dash == 0) { /* for continuous line*/
 						dash[0] = 1.0;
 						num_dash = 1;
 					}
+					/* get hatch graph of current def line*/
 					curr_graph = graph_hatch(ref_graph, ang * M_PI/180,
 						ox, oy,
 						dx, dy,
@@ -460,7 +428,7 @@ int gui_hatch_info (gui_obj *gui){
 						FRAME_LIFE);
 					
 					if ((curr_graph != NULL) && (pat_g != NULL)){
-						/*change color*/
+						/*change color -> white*/
 						curr_graph->color.r = 255;// - gui->preview_img->bkg.r;
 						curr_graph->color.g = 255;// - gui->preview_img->bkg.g;
 						curr_graph->color.b = 255;// - gui->preview_img->bkg.b;
@@ -468,13 +436,12 @@ int gui_hatch_info (gui_obj *gui){
 						list_push(pat_g, list_new((void *)curr_graph, FRAME_LIFE));
 					}
 					
-					
 					curr_l = curr_l->next;
 				}
 				
-				graph_list_ext(pat_g, &pat_ei, &pat_x0, &pat_y0, &pat_x1, &pat_y1);
-					
 				/* calcule the zoom and offset for preview */
+				graph_list_ext(pat_g, &pat_ei, &pat_x0, &pat_y0, &pat_x1, &pat_y1);
+				
 				z_x = fabs(pat_x1 - pat_x0)/gui->preview_img->width;
 				z_y = fabs(pat_y1 - pat_y0)/gui->preview_img->height;
 				z = (z_x > z_y) ? z_x : z_y;
@@ -489,7 +456,7 @@ int gui_hatch_info (gui_obj *gui){
 				
 				
 				if (nk_group_begin(gui->ctx, "Patt_prev", NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR)) {
-					/* current pattern name */
+					/*show data of current pattern*/
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label_colored(gui->ctx, patt_name, NK_TEXT_CENTERED, nk_rgb(255,255,0));
 					
@@ -501,17 +468,17 @@ int gui_hatch_info (gui_obj *gui){
 					
 					nk_layout_row_dynamic(gui->ctx, 20, 1);
 					nk_label(gui->ctx, "Ref: 10 x 10 units", NK_TEXT_CENTERED);
+					/* optional parameters -> change the preview */
 					patt_scale = nk_propertyd(gui->ctx, "#Scale", 0.001, patt_scale, DBL_MAX, 0.001, 0.001);
 					patt_rot = nk_propertyd(gui->ctx, "#Rotation", 0.00, patt_rot, 360.0, 0.1, 0.1);
 					
-					if (nk_button_label(gui->ctx, "Select")){
+					if (nk_button_label(gui->ctx, "Select")){ /*done the selection*/
+						/* update  the main parameters */
 						gui->hatch_idx = patt_idx;
 						gui->patt_scale = patt_scale;
 						gui->patt_ang = patt_rot;
-						show_pat_pp = 0;
+						show_pat_pp = 0; /* close */
 					}
-					
-					
 					nk_group_end(gui->ctx);
 				}
 				
@@ -520,7 +487,7 @@ int gui_hatch_info (gui_obj *gui){
 			else show_pat_pp = 0;
 		}
 		if (show_pat_file){
-			/* file open popup */
+			/* Load other pattern libraries */
 			static char pat_path[DXF_MAX_CHARS];
 			static int pat_path_len = 0;
 			
@@ -528,20 +495,24 @@ int gui_hatch_info (gui_obj *gui){
 			if (nk_popup_begin(gui->ctx, NK_POPUP_STATIC, "Add pattern family", NK_WINDOW_CLOSABLE, s)){
 				nk_layout_row_dynamic(gui->ctx, 20, 1);
 				nk_label(gui->ctx, "File to Open:", NK_TEXT_CENTERED);
-				//nk_edit_string_zero_terminated(gui->ctx, NK_EDIT_SIMPLE, pat_path, DXF_MAX_CHARS, nk_filter_default);
+				/* get the file path */
 				nk_edit_focus(gui->ctx, NK_EDIT_SIMPLE|NK_EDIT_SIG_ENTER|NK_EDIT_SELECTABLE|NK_EDIT_AUTO_SELECT);
 				nk_edit_string(gui->ctx, NK_EDIT_SIMPLE | NK_EDIT_CLIPBOARD, pat_path, &pat_path_len, DXF_MAX_CHARS, nk_filter_default);
 				
 				nk_layout_row_dynamic(gui->ctx, 20, 2);
 				if (nk_button_label(gui->ctx, "OK")) {
-					pat_path[pat_path_len] = 0;
+					pat_path[pat_path_len] = 0; /* terminate string */
+					/* check if filename extension is ".pat" */
 					char *ext = get_ext(pat_path);
 					if (strcmp(ext, "pat") == 0){
+						/*use the filename without extension for name the library */
 						char *filename = get_filename(pat_path);
 						strip_ext(filename);
+						/* parse the file*/
 						gui->end_fam->next = dxf_hatch_family_file(filename, pat_path);
+						/* and append to list*/
 						if(gui->end_fam->next) gui->end_fam = gui->end_fam->next;
-						show_pat_file = nk_false;
+						show_pat_file = nk_false; /*close the window*/
 					}
 					
 					pat_path_len = 0;
