@@ -2130,15 +2130,11 @@ int get_i(int pos, int len, int rev){
 
 int graph_dash(graph_obj * master, double x0, double y0, 
 double x1, double y1,
-double orig_x, double orig_y,
-double dash[], int num_dash){
-	if (master == NULL) return 0;
-	 /* check if list is not empty */
+double skew, double dash[], int num_dash){
+	if (master == NULL) return 0; /* check if list is not empty */
 	
 	double dx, dy, modulus, sine, cosine;
-	
 	int i, iter, reverse = 0, idx = 0;
-	
 	
 	if (num_dash > 1) { /* if graph is dashed lines */
 		int patt_i = 0, patt_a_i = 0, patt_p_i = 0, draw;
@@ -2153,8 +2149,7 @@ double dash[], int num_dash){
 		for (i = 0; i < num_dash && i < 20; i++){
 			patt_len += fabs(dash[i]);
 		}
-			
-			
+		
 		/* get polar parameters of line */
 		dx = x1 - x0 + TOLERANCE;
 		dy = y1 - y0 + TOLERANCE;
@@ -2167,19 +2162,7 @@ double dash[], int num_dash){
 			sine = dy/modulus;
 		}
 		
-		//int sign = (sine * cosine >= 0.0)? 1:-1;
-		
-		/*find distance between pattern start and segment's first point 
-		if (fabs(cosine) > TOLERANCE){
-			patt_start = (orig_x - x0)/ cosine;
-		}
-		else if (fabs(sine) > TOLERANCE){
-			patt_start = (orig_y - y0)/ sine;
-		}
-		
-		reverse = patt_start > 0;*/
-		
-		patt_start = cosine*x0 + sine*y0 - orig_x;
+		patt_start = cosine*x0 + sine*y0 - skew;
 		reverse = patt_start < 0;
 		
 		/* find the pattern initial conditions for the first point*/
@@ -2205,16 +2188,10 @@ double dash[], int num_dash){
 		draw = dash[get_i(patt_i, num_dash, reverse)] >= 0.0;
 		p1x = x0;
 		p1y = y0;
-		
-		
-		
 		patt_i = get_i(patt_i, num_dash, reverse);
 		reverse = 0;
 		
 		if (patt_rem < modulus){ /* current segment needs some iterations over pattern */
-			//if(reverse) reverse = sine * cosine > 0.0;
-			//else reverse = sine * cosine < 0.0;
-			
 			
 			/* find how many interations over whole pattern */ 
 			patt_part = modf((modulus - patt_rem)/patt_len, &patt_int);
@@ -2226,12 +2203,9 @@ double dash[], int num_dash){
 			if (patt_rem > 0) patt_p_i++;
 			if (patt_p_i >= num_dash) patt_p_i = 0;
 			
+			/* calcule the last stroke (pattern fractional part) of current segment*/
 			patt_acc = fabs(dash[get_i(patt_p_i, num_dash, reverse)]) + TOLERANCE;
-			
-			//patt_rem_n = patt_part; /* remainder pattern for next segment continues */
-			//if (patt_part < patt_acc) patt_rem_n = patt_acc - patt_part;
-			
-			last = modulus - patt_int*patt_len - patt_rem; /* the last stroke (pattern fractional part) of current segment*/
+			last = modulus - patt_int*patt_len - patt_rem;
 			for (i = 0; i < num_dash && i < 20; i++){
 				patt_a_i = i;
 				if (patt_part < patt_acc) break;
@@ -2242,13 +2216,9 @@ double dash[], int num_dash){
 				if (patt_p_i >= num_dash) patt_p_i = 0;
 				
 				patt_acc += fabs(dash[get_i(patt_p_i, num_dash, reverse)]);
-				
-				//patt_rem_n = patt_acc - patt_part;
-				
-				
 			}
 			
-			/* first stroke - remainder of past pattern*/
+			/* do the first stroke - partial dash*/
 			p2x = patt_rem * cosine + p1x;
 			p2y = patt_rem * sine + p1y;
 			
@@ -2257,12 +2227,11 @@ double dash[], int num_dash){
 				if (patt_i >= num_dash) patt_i = 0;
 				
 				if (draw){
-					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 				}
 			}
 			
-			//patt_rem = patt_rem_n; /* for next segment */
+			/* do the dashes */
 			p1x = p2x;
 			p1y = p2y;
 			
@@ -2274,23 +2243,19 @@ double dash[], int num_dash){
 				p2x = fabs(dash[idx]) * cosine + p1x;
 				p2y = fabs(dash[idx]) * sine + p1y;
 				if (draw){
-					//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 					line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 				}
-				
 				p1x = p2x;
 				p1y = p2y;
-				//if (i < iter - 1){
-					patt_i++;
-					if (patt_i >= num_dash) patt_i = 0;
-				//}
-				
+				patt_i++;
+				if (patt_i >= num_dash) patt_i = 0;
 			}
+			
+			/* do the last stroke - partial dash*/
 			idx = get_i(patt_i, num_dash, reverse);
 			p2x = last * cosine + p1x;
 			p2y = last * sine + p1y;
 			draw = dash[idx] >= 0.0;
-			//if (draw) bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 			if (draw) line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 		}
 		else{ /* current segment is in same past iteration pattern */
@@ -2300,7 +2265,6 @@ double dash[], int num_dash){
 			patt_rem -= modulus;
 		
 			if (draw){
-				//bmp_line_norm(img, p1x, p1y, p2x, p2y, -sine, cosine);
 				line_add(master, p1x, p1y, 0.0, p2x, p2y, 0.0);
 			}
 			p1x = p2x;
@@ -2322,7 +2286,6 @@ double dash[], int num_dash){
 		}
 		
 		if (dash[0] >= 0.0){
-			//bmp_line_norm(img, x0, y0, x1, y1, -sine, cosine);
 			line_add(master, x0, y0, 0.0, x1, y1, 0.0);
 		}
 	}
@@ -2352,8 +2315,8 @@ int pool_idx){
 	double b = -cos(angle);
 	double c = -(a*orig_x+b*orig_y);
 	
-	double delta = -(a * delta_x + b * delta_y);
-	double skew = -b * delta_x + a * delta_y;
+	double delta = -(a * delta_x + b * delta_y); /* distance between hatch lines */
+	double skew = -b * delta_x + a * delta_y; /* dash skew in hatch line direction*/
 	double curr_skew = (-b * orig_x + a * orig_y);
 	
 	/* find min and max by reference graph rectangle*/
@@ -2387,31 +2350,34 @@ int pool_idx){
 		end = ceil(dist[0]/delta) * (delta);
 	}
 	
+	/* how many lines are sampled */
 	steps = (int) fabs(round((end - start)/delta));
-	//printf("\nsteps = %d\n", steps);
 	
 	if (steps > 0) ret_graph = graph_new(pool_idx);
 	
-	c -= start;
+	c -= start; /* perpenticular displacement of line */
 	
-	curr_skew -= start/delta * skew;
+	curr_skew -= start/delta * skew; /* linear displacement of dahes */
 	
 	for (i = 0; i < steps; i++){
 		if((ref->list->next) && (ret_graph != NULL)) { /* check if list is not empty */
 			line_node *current = ref->list->next;
 			
-			while(current){ /*sweep the list content */
+			while(current){ /*sweep the bondary segments list */
+				
+				/* get line parameters of current boundary segment*/
 				double a2 = current->y1 - current->y0;
 				double b2 = -(current->x1 - current->x0);
 				double c2 = current->x1 * current->y0 - current->y1 * current->x0;
 				
-				
+				/* calcule intersections between hatch line and boundary segment*/
 				double den =b*a2-b2*a;
 				if ( (fabs(den) > TOLERANCE) && (nodes < 1000)){
 					double x = (b*c2-b2*c)/-den;
 					double y = (a*c2-a2*c)/den;
 					
 					if (pt_lies_seg(current->x0, current->y0, current->x1, current->y1, x, y)){
+						/* if intersection is in segment, add point to hatch vertices list*/
 						node_x[nodes] = x;
 						node_y[nodes] = y;
 						nodes++;
@@ -2424,7 +2390,7 @@ int pool_idx){
 		if (nodes > 1){
 			double pos1, pos2;
 			
-			/* Sort the nodes, via a simple Bubble sort. */
+			/* Sort the hatch vertices, via a simple Bubble sort. */
 			j=0;
 			while (j < nodes - 1) {
 				if (fabs(b) > TOLERANCE){
@@ -2452,6 +2418,7 @@ int pool_idx){
 				}
 			}
 			
+			/*create the hatch segments between vertices pairs*/
 			j = 0;
 			while (j < nodes - 1){
 				if  ((fabs(node_x[j] - node_x[j+1]) < TOLERANCE) &&
@@ -2460,16 +2427,15 @@ int pool_idx){
 					j++;
 				}
 				else {
-					//line_add(ret_graph, node_x[j], node_y[j], 0.0, node_x[j+1], node_y[j+1], 0.0);
 					graph_dash(ret_graph, node_x[j], node_y[j],
 					node_x[j+1], node_y[j+1],
-					curr_skew, 0.0, dash, num_dash);
+					curr_skew, dash, num_dash);
 					
 					j += 2;
 				}
 			}
 		}
-		
+		/* update the next line parameters */
 		curr_skew -= skew;
 		c -= delta;
 		nodes = 0;
@@ -2478,6 +2444,89 @@ int pool_idx){
 	return ret_graph;
 	
 }
+
+#define plot_(X,Y,D) do{ unsigned char alfa = img->frg.a;	\
+  img->frg.a = (D) * alfa;	\
+  bmp_point_raw(img, (X), (Y));	\
+  img->frg.a = alfa; }while(0)
+
+/* font: http://rosettacode.org/wiki/Xiaolin_Wu%27s_line_algorithm#C */
+#define ipart_(X) ((int)(X))
+#define round_(X) ((int)(((double)(X))+0.5))
+#define fpart_(X) (((double)(X))-(double)ipart_(X))
+#define rfpart_(X) (1.0-fpart_(X))
+ 
+#define swap_(a, b) do{ __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }while(0)
+void draw_line_antialias( bmp_img * img, int x1, int y1, int x2, int y2){
+	double dx = (double)x2 - (double)x1;
+	double dy = (double)y2 - (double)y1;
+	
+	if ( fabs(dx) > fabs(dy) ) {
+		if ( x2 < x1 ) {
+			swap_(x1, x2);
+			swap_(y1, y2);
+		}
+		double gradient = dy / dx;
+		double xend = round_(x1);
+		double yend = y1 + gradient*(xend - x1);
+		double xgap = rfpart_(x1 + 0.5);
+		int xpxl1 = xend;
+		int ypxl1 = ipart_(yend);
+		plot_(xpxl1, ypxl1, rfpart_(yend)*xgap);
+		plot_(xpxl1, ypxl1+1, fpart_(yend)*xgap);
+		double intery = yend + gradient;
+
+		xend = round_(x2);
+		yend = y2 + gradient*(xend - x2);
+		xgap = fpart_(x2+0.5);
+		int xpxl2 = xend;
+		int ypxl2 = ipart_(yend);
+		plot_(xpxl2, ypxl2, rfpart_(yend) * xgap);
+		plot_(xpxl2, ypxl2 + 1, fpart_(yend) * xgap);
+
+		int x;
+		for(x=xpxl1+1; x < xpxl2; x++) {
+			plot_(x, ipart_(intery), rfpart_(intery));
+			plot_(x, ipart_(intery) + 1, fpart_(intery));
+			intery += gradient;
+		}
+	} else {
+		if ( y2 < y1 ) {
+			swap_(x1, x2);
+			swap_(y1, y2);
+		}
+		double gradient = dx / dy;
+		double yend = round_(y1);
+		double xend = x1 + gradient*(yend - y1);
+		double ygap = rfpart_(y1 + 0.5);
+		int ypxl1 = yend;
+		int xpxl1 = ipart_(xend);
+		plot_(xpxl1, ypxl1, rfpart_(xend)*ygap);
+		plot_(xpxl1 + 1, ypxl1, fpart_(xend)*ygap);
+		double interx = xend + gradient;
+
+		yend = round_(y2);
+		xend = x2 + gradient*(yend - y2);
+		ygap = fpart_(y2+0.5);
+		int ypxl2 = yend;
+		int xpxl2 = ipart_(xend);
+		plot_(xpxl2, ypxl2, rfpart_(xend) * ygap);
+		plot_(xpxl2 + 1, ypxl2, fpart_(xend) * ygap);
+
+		int y;
+		for(y=ypxl1+1; y < ypxl2; y++) {
+			plot_(ipart_(interx), y, rfpart_(interx));
+			plot_(ipart_(interx) + 1, y, fpart_(interx));
+			interx += gradient;
+		}
+	}
+}
+#undef swap_
+#undef plot_
+#undef ipart_
+#undef fpart_
+#undef round_
+#undef rfpart_
 
 /*int bmp_units (double value, double ofs, double scale){
 	return (int)round((value - ofs) * scale);
@@ -2501,6 +2550,21 @@ double ofs_x, double ofs_y, double scale){
 	int pix_x, pix_y;
 	
 	
+	
+	line_node *current = ref->list->next;
+	
+	while(current){ /*sweep the list content */
+		x0 = BMP_U(current->x0, ofs_x, scale);
+		y0 = BMP_U(current->y0, ofs_y, scale);
+		x1 = BMP_U(current->x1, ofs_x, scale);
+		y1 = BMP_U(current->y1, ofs_y, scale);
+		
+		draw_line_antialias(img, x0, y0, x1, y1);
+		
+		current = current->next; /* go to next */
+	}
+	
+	
 	/* find min and max by reference graph rectangle*/
 	min_x = BMP_U(ref->ext_min_x, ofs_x, scale);
 	max_x = BMP_U(ref->ext_max_x, ofs_x, scale);
@@ -2519,7 +2583,7 @@ double ofs_x, double ofs_y, double scale){
 		
 		for (pix_y = min_y; pix_y < max_y; pix_y++){ /* sweep line in y coordinate*/
 			if(ref->list->next) { /* check if list is not empty */
-				line_node *current = ref->list->next;
+				current = ref->list->next;
 				
 				while(current){ /*sweep the list content */
 					x0 = BMP_U(current->x0, ofs_x, scale);
@@ -2530,7 +2594,7 @@ double ofs_x, double ofs_y, double scale){
 					if(((y0 < pix_y) && (y1 >= pix_y)) || 
 						((y1 < pix_y) && (y0 >= pix_y))){
 						/* find x coord of intersection and add to list */
-						node_x[nodes] = (int) round(x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
+						node_x[nodes] = (int) (x1 + (double) (pix_y - y1)/(y0 - y1)*(x0 - x1));
 						node_x[nodes] = (node_x[nodes] >= 0) ? node_x[nodes] : -1;
 						node_x[nodes] = (node_x[nodes] <= max_x) ? node_x[nodes] : max_x + 1;
 						nodes++;
@@ -2562,11 +2626,13 @@ double ofs_x, double ofs_y, double scale){
 				/*fill the pixels between node pairs*/
 				for (i = 0; i < nodes ; i += 2){
 					if (i+1 < nodes){
-						for(pix_x = node_x[i]; pix_x < node_x[i + 1]; pix_x++){
+						for(pix_x = node_x[i]+1; pix_x <= node_x[i + 1]; pix_x++){
 							bmp_point_raw(img, pix_x, pix_y);
 						}
 					}
 				}
+				
+				
 			}
 			nodes = 0;
 		}
