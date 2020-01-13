@@ -5,8 +5,13 @@
 #Include <File.au3>
 #include <ListViewConstants.au3>
 #include <GuiListView.au3>
+#include <GuiRichEdit.au3>
 
-$ini = 'function copia(texto) {var existsTextarea = document.getElementById("inputPesquisaDireta"); existsTextarea.value = texto; existsTextarea.select();document.execCommand("copy"); existsTextarea.blur();} function isvisible(element) { return (element.offsetWidth > 0 && element.offsetHeight > 0);} function ver_ficha(){ if(isvisible(document.getElementById("modalDetalhesFichaCorpo"))){ copia("ficha_ok");} else{copia("nao");}} function cont_aprov(){ if(isvisible(document.getElementById("modalAprovarCorpo"))){ copia("aprov_ini_ok");} else{copia("nao");}} function cont_reprov(){ if(isvisible(document.getElementById("modalRejeitarCorpo"))){ copia("reprov_ini_ok");} else{copia("nao");}} function limpa() {var existsTextarea = document.getElementById("inputPesquisaDireta"); existsTextarea.value = "";} function proc_ficha() { document.getElementById("tableInbox").tHead.rows[1].cells[2].children[0].select();} function abre_ficha() { if (document.getElementById("tableInbox").rows[2].cells.length == 13) { document.getElementById("tableInbox").tBodies[0].rows[0].cells[2].children[0].children[0].click();} else {copia("ficha_erro");}} function fecha_ficha() { document.getElementById("modalDetalhesFichaX").click();} function proc_arq(arq) {var lista = document.getElementById("detalhesFicha").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children;var pos = 0; for(i = 0, len = lista.length; i < len; i++){ if (lista[i].children[1].children[0].children[0].children[0].text.trim().toLowerCase() == arq.toLowerCase()){pos=i+1;break;}};return pos;} function up_arq_e(pos) {document.getElementById("detalhesFicha").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children[pos].children[1].children[0].children[1].children[0].click();} function up_arq_n() {document.getElementById("detalhesFicha").children[1].children[0].children[0].children[1].children[5].click();} function up_arq(arq) {var indice = proc_arq(arq); if (indice > 0){up_arq_e(indice - 1);} else { up_arq_n(); }; copia("up_ok");} function abre_arq() {document.getElementById("formUpload").click(); copia("arq_ok");} function aprova_ini() {document.getElementById("detalhesFicha").children[0].children[0].children[0].children[1].children[0].children[0].click();} function reprova_ini() {document.getElementById("detalhesFicha").children[0].children[0].children[0].children[1].children[0].children[1].click();} function aprova(coment) {document.getElementById("WorkflowStep_Comentarios").value = coment; document.getElementById("modalAprovarProsseguir").click();} function reprova(coment) {document.getElementById("WorkflowStep_Comentarios").value = coment; document.getElementById("modalRejeitarProsseguir").click();} copia("ini_ok");'
+$ini = 'function copia(texto) {var existsTextarea = document.getElementById("inputPesquisaDireta"); existsTextarea.value = texto; existsTextarea.select();document.execCommand("copy"); existsTextarea.blur();} function isvisible(element) { return (element.offsetWidth > 0 && element.offsetHeight > 0);} function ver_ficha(){ if(isvisible(document.getElementById("modalDetalhesFichaCorpo"))){ copia("ficha_ok");} else{copia("nao");}} function cont_aprov(){ if(isvisible(document.getElementById("modalAprovarCorpo"))){ copia("aprov_ini_ok");} else{copia("nao");}} function cont_reprov(){ if(isvisible(document.getElementById("modalRejeitarCorpo"))){ copia("reprov_ini_ok");} else{copia("nao");}} function limpa() {var existsTextarea = document.getElementById("inputPesquisaDireta"); existsTextarea.value = "";} function proc_ficha() { document.getElementById("tableInbox").tHead.rows[1].cells[2].children[0].select();} function abre_ficha() { if (document.getElementById("tableInbox").rows[2].cells.length == 13) { document.getElementById("tableInbox").tBodies[0].rows[0].cells[2].children[0].children[0].click();} else {copia("ficha_erro");}} function fecha_ficha() { document.getElementById("modalDetalhesFichaX").click();} function proc_arq(arq) {var lista = document.getElementById("detalhesFicha").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children;var pos = 0; for(i = 0, len = lista.length; i < len; i++){ if (lista[i].children[1].children[0].children[0].children[0].text.trim().toLowerCase() == arq.toLowerCase()){pos=i+1;break;}};return pos;} function up_arq_e(pos) {document.getElementById("detalhesFicha").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children[pos].children[1].children[0].children[1].children[0].click();} function up_arq_n() {document.getElementById("detalhesFicha").children[1].children[0].children[0].children[1].children[5].click();} function up_arq(arq) {var indice = proc_arq(arq); if (indice > 0){up_arq_e(indice - 1);} else { up_arq_n(); }; copia("up_ok");} function abre_arq() {document.getElementById("formUpload").click(); copia("arq_ok");} function aprova_ini() {document.getElementById("detalhesFicha").children[0].children[0].children[0].children[1].children[0].children[0].click();} function reprova_ini() {document.getElementById("detalhesFicha").children[0].children[0].children[0].children[1].children[0].children[1].click();} function aprova(coment) {document.getElementById("WorkflowStep_Comentarios").value = coment; document.getElementById("modalAprovarProsseguir").click();} function reprova(coment) {document.getElementById("WorkflowStep_Comentarios").value = coment; document.getElementById("modalRejeitarProsseguir").click();} function proc_ficha_pesq() {document.getElementById("tableResultadoPesquisa").tHead.rows[1].cells[2].children[0].select();} copia("ini_ok");'
+$pesq1 = 'http://gedoc2/?sm=corp&q='
+$pesq2 = '&t=5&m=true'
+
+$ini2 = 'function copia(texto) {var existsTextarea = document.getElementById("Keywords"); existsTextarea.value = texto; existsTextarea.select();document.execCommand("copy"); existsTextarea.blur();} function proc_ficha_pesq() {document.getElementById("tableResultadoPesquisa").tHead.rows[1].cells[2].children[0].select();} function abre_ficha2() { if (document.getElementById("tableResultadoPesquisa").rows[2].cells.length == 13) { document.getElementById("tableResultadoPesquisa").tBodies[0].rows[0].cells[2].children[0].children[0].click();} else {copia("ficha_erro");}} copia("ini_ok");'
 
 Global $gaDropFiles[1]
 
@@ -25,26 +30,37 @@ AutoItSetOption("SendKeyDelay", 0)
 
 $hTimer = TimerInit() ; Begin the timer and store the handle in a variable.
 
-Const $gui_x = 800, $gui_y =500
+Const $gui_x = 900, $gui_y = 600
 Dim $arq_drive, $arq_dir, $arquivo, $arq_ext
 
 $sDirINI = @ScriptDir & "\comando.ini"
 
 $g_princ = GUICreate("Submete GEDEX", $gui_x, $gui_y,-1,-1,-1,$WS_EX_ACCEPTFILES)  ; Cria a caixa de dialogo
 
-$b_exec = GUICtrlCreateButton("Executa", 10, 20, 100)
-$b_para = GUICtrlCreateButton("Para", 120, 20, 100)
+Local $idTab = GUICtrlCreateTab(10, 10, $gui_x - 20, $gui_y - 20)
 
-$b_remove = GUICtrlCreateButton("Remove", $gui_x - 120, 20, 100)
+GUICtrlCreateTabItem("Caixa de Entrada")
 
-$lv_lista_arq = GUICtrlCreateListView("Ficha                                   |A|R|Caminho                             |OK", 10, 60, $gui_x - 20, $gui_y - 185, BitOR($LVS_SHOWSELALWAYS, $LVS_SINGLESEL, $LVS_EDITLABELS, $LVS_NOSORTHEADER))
+$b_exec = GUICtrlCreateButton("Executa", 20, 40, 100)
+$b_para = GUICtrlCreateButton("Para", 130, 40, 100)
+
+$b_remove = GUICtrlCreateButton("Remove", $gui_x - 120, 40, 100)
+
+$lv_lista_arq = GUICtrlCreateListView("Ficha                                   |A|R|Caminho                             |OK", 20, 70, $gui_x - 40, $gui_y - 205, BitOR($LVS_SHOWSELALWAYS, $LVS_SINGLESEL, $LVS_EDITLABELS, $LVS_NOSORTHEADER))
 GUICtrlSetState(-1, $GUI_DROPACCEPTED)
 
-GUICtrlCreateLabel ("Comentários:", 15, $gui_y - 110)
+GUICtrlCreateLabel ("Comentários:", 25, $gui_y - 125)
 
-$status = GUICtrlCreateLabel ("Parado", 350, 20,100)
+$status = GUICtrlCreateLabel ("Parado", 350, 45,100)
 
-$e_status = GUICtrlCreateEdit("", 10, $gui_y - 95, $gui_x - 20, 85, $ES_WANTRETURN+$ES_MULTILINE)
+$e_status = GUICtrlCreateEdit("", 20, $gui_y - 105, $gui_x - 40, 85, $ES_WANTRETURN+$ES_MULTILINE)
+
+GUICtrlCreateTabItem("Baixar pesquisa")
+	  $b_busca = GUICtrlCreateButton("Busca", 500, 40, 100)
+    $e_busca = GUICtrlCreateEdit("", 20, 40, 400, 400, BitOR($ES_WANTRETURN, $ES_MULTILINE, $WS_VSCROLL, $ES_AUTOVSCROLL))
+	;$e_busca = _GUICtrlRichEdit_Create($g_princ, "", 20, 40, 400, 400, BitOR($ES_WANTRETURN, $ES_MULTILINE, $WS_VSCROLL, $ES_AUTOVSCROLL))
+
+GUICtrlCreateTabItem(""); end tabitem definition
 
 GUISetState(@SW_SHOW,$g_princ)
 
@@ -82,6 +98,8 @@ GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 	  Case $msg[0] = $b_remove
 		  _GUICtrlListView_DeleteItemsSelected ($lv_lista_arq)
 
+	  Case $msg[0] = $b_busca
+		  busca()
 
 	  Case $msg[0] = $GUI_EVENT_DROPPED
 		  For $i = 0 To UBound($gaDropFiles) - 1
@@ -336,3 +354,39 @@ Func WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	  Return False
    EndIf
 EndFunc
+
+ Func envia_comando2($comando)
+   If (WinActivate("GEDEX - Portal - Google Chrome") <> 0) Then
+	  ClipPut($comando)
+	  Send("{CTRLDOWN}l{CTRLUP}")
+	  Sleep (200)
+	  Send("javascript: ")
+	  Sleep (100)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Sleep (100)
+	  Send("{ENTER}")
+	  Return True
+   Else
+	  Return False
+   EndIf
+EndFunc
+
+Func busca()
+   If (WinActivate("GEDEX - Portal - Google Chrome") <> 0) Then
+	  ;Sleep (200)
+	  ClipPut('http://gedoc2/?sm=corp&q=111424cs05080c386|111424cs05082c19a28|11142cs05082c19a28&t=5&m=true')
+	  ;MsgBox(0, "teste", "teste")
+
+	  Send("{CTRLDOWN}l{CTRLUP}")
+	  Sleep (200)
+	  ;Send("javascript: ")
+	  ;Sleep (100)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Sleep (100)
+	  Send("{ENTER}")
+	  Return True
+   Else
+	  Return False
+   EndIf
+EndFunc
+
