@@ -77,9 +77,9 @@ function get_term (ent)
 	for _, inside in ipairs(cadzinho.get_blk_ents(name)) do
 		-- get extended data table
 		local ext = cadzinho.get_ext (inside, "cadzinho")
-		if #ext > 0 then
+		if #ext > 1 then
 			-- try to find terminal mark
-			if type(ext[1] == "string") then
+			if type(ext[1] == "string")  and type(ext[2] == "string")  then
 				local descript = ext[1]:upper()
 				if descript == "TERMINAL" then
 					--found mark then get points and id
@@ -92,7 +92,7 @@ function get_term (ent)
 						term_pts[i].z = ins_pt.z + pt.z
 					end
 					-- store terminal points in table, with id as key
-					terms[ext[2]] = term_pts
+					terms[ext[2]:upper()] = term_pts
 				end
 			end
 		end
@@ -120,6 +120,7 @@ components = {}
 -- node_defs are refered to BLOCKs with one terminal definition
 node_defs = {}
 
+-- ----------- get informations from drawing ---------------------
 -- sweep all entities in drawing
 for i, ent in ipairs(cadzinho.get_all()) do
 	-- look for extended data with appid "cadzinho"
@@ -142,17 +143,14 @@ for i, ent in ipairs(cadzinho.get_all()) do
 				-- get tagged informations
 				for _, attr in ipairs(cadzinho.get_attribs(ent)) do
 					if type(attr.tag) == "string" then
-						if attr.tag == "ID" then
-							comp.id = attr.value:upper()
-						end
+						comp[attr.tag:upper()] = attr.value
+						--if attr.tag == "ID" then
+						--	comp.id = attr.value:upper()
+						--end
 					end
 				end
 				-- get terminals
 				comp.terms = get_term(ent)
-				
-				comp.blk = cadzinho.get_blk_name (ent)
-				pts = cadzinho.get_points(ent)
-				comp.ins_pt = pts[1]
 				
 				-- store in table
 				components[#components +1] = comp
@@ -178,80 +176,76 @@ cadzinho.db_print (("Wires=%d"):format(#wires))
 cadzinho.db_print (("Components=%d"):format(#components))
 cadzinho.db_print (("Node_defs=%d\n"):format(#node_defs))
 
-for i, comp in ipairs(components) do
-	--cadzinho.db_print (("%d:%s"):format(i, comp.id))
-	for t, pts in pairs(comp.terms) do
-		--cadzinho.db_print (("    %s-(%.2f,%.2f)"):format(t, pts[1].x, pts[1].y))
-	end
-end
+-- --------------------- proccess graphic informations to generate a net list -----------------------
 
+-- firs, identify wires according node definitions connected to it
+-- unmarked wires would remain unnamed
 for i, n_def in ipairs(node_defs) do
-	--cadzinho.db_print (("%d:%s"):format(i, n_def.id))
 	for t, pts in pairs(n_def.terms) do
-		--cadzinho.db_print (("    %s-(%.2f,%.2f)"):format(t, pts[1].x, pts[1].y))
+		-- verify if any node_def's terminal connect to any wire
 		for _, w in pairs (wires) do
 			if test_connect(pts, w.pts) then
-				w.id = n_def.id
+				w.id = n_def.id -- apply label to wire
 			end
 		end
 	end
 end
 
-
-
---[[
-for _, w in pairs (wires) do
-	if type(w.id) == "nil" then
-		w.id = ("WIRE%d"):format(j)
-		j = j +1
-	end
-end
---]]
-
+-- next, generate node list
 nodes = {}
 for _, w in pairs (wires) do
 	no_own = true
 	if w.owner then
 		no_own = false
 	else
+		-- create a node list element
 		w.owner = {}
 		w.owner.wires = {w}
+		w.owner.terms = {}
 	end
 	
-	if not w.owner.id and type(w.id) == "string" then w.owner.id = w.id end
+	if not w.owner.id and type(w.id) == "string" then w.owner.id = w.id end -- apply label to node
 	
 	for _, w2 in pairs (wires) do
+		-- check if two wires are connected by label
 		if w ~= w2 and  type(w.id) == "string" and type(w2.id) == "string" and w.id == w2.id then
-			if w2.owner then
+			if w2.owner then -- if the wire already belongs to a node
 				if no_own then
+					-- transfers ownership
 					no_own = false
 					for i = 1, #w.owner.wires do
 						w2.owner.wires[#w2.owner.wires +1] = w.owner.wires[i]
 					end
 					w.owner = w2.owner
 				end
-			else
+			else -- the node becomes owner of wire
 				w.owner.wires[#w.owner.wires +1] = w2
 				w2.owner = w.owner
 			end
 		end
-	
+		
+		-- check if two wires are connected by vertex or intersection
 		if w ~= w2 and test_connect(w2.pts, w.pts) then
-			if w2.owner then
+			if w2.owner then -- if the wire already belongs to a node
 				if no_own then
+					-- transfers ownership
 					no_own = false
 					for i = 1, #w.owner.wires do
 						w2.owner.wires[#w2.owner.wires +1] = w.owner.wires[i]
 					end
 					w.owner = w2.owner
+					
 					if type(w.id) == "string" and type(w2.owner.id) == "string" and w.id ~= w2.owner.id then
+						-- id and connection are inconsistent
 						cadzinho.db_print ("error")
 					end
 				end
-			else
+			else -- the node becomes owner of wire
 				w.owner.wires[#w.owner.wires +1] = w2
 				w2.owner = w.owner
+				
 				if type(w.owner.id) == "string" and type(w2.id) == "string" and w.owner.id ~= w2.id then
+					-- id and connection are inconsistent
 					cadzinho.db_print ("error")
 				end
 			end
@@ -260,46 +254,28 @@ for _, w in pairs (wires) do
 	end
 	
 	if no_own then
+		-- add node to main table
 		nodes[#nodes + 1] = w.owner
 	end
 end
 
---[[
-nodes = {}
-for _, w in pairs (wires) do
-	no_own = true
-	if w.owner then
-		no_own = false
-	else
-		w.owner = {w}
-	end
-		for _, w2 in pairs (wires) do
-			if w ~= w2 and test_connect(w2.pts, w.pts) then
-				if w2.owner then
-					if no_own then
-						no_own = false
-						for i = 1, #w.owner do
-							w2.owner[#w2.owner +1] = w.owner[i]
-						end
-						w.owner = w2.owner
-					end
-				else
-					w.owner[#w.owner +1] = w2
-					w2.owner = w.owner
-				end
+
+for i, comp in ipairs(components) do
+	--cadzinho.db_print (("%d:%s"):format(i, comp.id))
+	for t, pts in pairs(comp.terms) do
+		for _, w in pairs (wires) do
+			if test_connect(pts, w.pts) then
+				term = {}
+				term.comp = comp.ID
+				term.id = t
+				term.label = comp[t]
+				w.owner.terms[#w.owner.terms + 1] = term
 			end
 		end
-	
-	if no_own then
-		nodes[#nodes + 1] = w.owner
 	end
 end
 
 
-for _, w in pairs (wires) do
-	cadzinho.db_print (w.id)
-end
---]]
 cadzinho.db_print (("Nodes=%d\n"):format(#nodes))
 j = 1
 for i, n in ipairs(nodes) do
@@ -308,7 +284,10 @@ for i, n in ipairs(nodes) do
 		j = j +1
 	end
 	cadzinho.db_print (("%d:%s"):format(i, n.id))
-	for j = 1, #n.wires do
-		cadzinho.db_print (("    %s"):format(n.wires[j].id))
+	for k = 1, #n.wires do
+		cadzinho.db_print (("    %s"):format(n.wires[k].id))
+	end
+	for k = 1, #n.terms do
+		cadzinho.db_print (("    %s.%s"):format(n.terms[k].comp, n.terms[k].label))
 	end
 end
