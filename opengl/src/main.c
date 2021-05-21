@@ -14,27 +14,32 @@
 
 #define GLSL(src) "#version 150 core\n" #src
 
-#if(0)
-/* mantain one unique element in a sorted array */
-int unique (int n, float * a) {
-	int dst = 0, i;
-	for (i = 1; i < n; ++i) {
-	if (fabs (a[dst] - a[i]) > TOLERANCE)
-		a[++dst] = a[i];
-	}
-	return dst + 1;
-}
+struct Vertex {	/*use a struct to represent a vertex in openGL */
+    GLfloat pos[3];  /*vertex position - x, y, z*/
+    GLfloat uv[2];  /*texture coordinates */
+    GLubyte col[4]; /* vertex color - RGBA each 0-255d */
+};
 
-/* comparation function for qsort */
-int cmpfunc (const void * a, const void * b) {
-	float dif = *(float*)a - *(float*)b;
-	if (fabs(dif) < TOLERANCE) return 0;
-	else if (dif > 0.0) return 1;
-	else return -1;
-}
-#endif
+struct ogl { /* openGL context to pass main parameters */
+	struct Vertex *verts; /* vertex buffer */
+	GLuint *elems; /*elements buffer */
+	int vert_count; /* vertex count */
+	int elem_count; /* elements count */
+	
+	int win_w, win_h; /* canvas size - to perform pixel to openGL conversion */
+	int flip_y; /* orientation flag - use cartesian's like oritentation, or canvas like (window up corner) */
+	GLubyte fg[4], bg[4]; /*foreground and background colors */
+};
 
-/* mantain one unique element in a sorted array */
+struct edge { /* polygon edge */
+	int x0, y0, x1, y1;
+};
+
+struct p_node { /* node to perform scanline fill algorithm */
+	int up, low;
+};
+
+/* mantain one unique element in a sorted array - array of integer values */
 int unique (int n, int * a) {
 	int dst = 0, i;
 	for (i = 1; i < n; ++i) {
@@ -44,46 +49,27 @@ int unique (int n, int * a) {
 	return dst + 1;
 }
 
-/* comparation function for qsort */
-int cmpfunc (const void * a, const void * b) {
+/* comparation function for qsort - array of integer values */
+int cmp_int (const void * a, const void * b) {
 	return (*(int*)a - *(int*)b);
 }
 
-struct Vertex {
-    GLfloat pos[3];
-    GLfloat uv[2];
-    GLubyte col[4];
-};
-
-struct ogl {
-	struct Vertex *verts;
-	GLuint *elems;
-	int vert_count;
-	int elem_count;
-	
-	int win_w, win_h, flip_y;
-	GLubyte fg[4], bg[4]; /*foreground and background colors */
-};
-
-struct edge {
-	int x0, y0, x1, y1;
-};
-
-struct p_node {
-	int up, low;
-};
-
-/* comparation function for qsort */
+/* comparation function for qsort  - array of nodes */
 int cmp_node (const void * a, const void * b) {
 	struct p_node *aa, *bb;
 	aa = (struct p_node *) a; bb = (struct p_node *) b;
+	
 	int r = aa->up - bb->up;
 	if (r > 0) return 1;
 	else if (r < 0) return -1;
+	/* if node.up values are same, compare node.low values */
 	else return (aa->low - bb->low);
 }
 
 int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
+	/* emulate drawing a single line with thickness, using triangles in openGL */
+	
+	/* verify struct and buffers */
 	if (!gl_ctx) return 0;
 	if (!gl_ctx->verts) return 0;
 	if (!gl_ctx->elems) return 0;
@@ -94,28 +80,27 @@ int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
 	float modulus = sqrt(pow(dx, 2) + pow(dy, 2));
 	float cosine = 1.0;
 	float sine = 0.0;
-	
 	if (modulus > TOLERANCE){
 		cosine = dx/modulus;
 		sine = dy/modulus;
 	}
 	
-	int j = 0;
+	if (thick <= 0) thick = 1; /* one pixel as minimal thickness */
 	
-	if (thick <= 0) thick = 1;
-	
+	/* convert input coordinates, in pixles (int), to openGL units */
 	float tx = (float) thick / gl_ctx->win_w;
 	float ty = (float) thick / gl_ctx->win_h;
-		
-	j = gl_ctx->vert_count;
-	
 	float x0 = ((float) p0[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	float y0 = ((float) p0[1] / gl_ctx->win_h) * 2.0 - 1.0;
 	float x1 = ((float) p1[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	float y1 = ((float) p1[1] / gl_ctx->win_h) * 2.0 - 1.0;
 	
+	/* orientation in drawing area */
 	float flip_y = (gl_ctx->flip_y) ? -1.0 : 1.0;
 	
+	/* store vertices - 4 vertices */
+	/* 0 */
+	int j = gl_ctx->vert_count;
 	gl_ctx->verts[j].pos[0] = x0 - sine * tx;
 	gl_ctx->verts[j].pos[1] = flip_y * (y0 + cosine * ty);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -126,9 +111,8 @@ int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 1 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = x0 + sine * tx;
 	gl_ctx->verts[j].pos[1] = flip_y * (y0 - cosine * ty);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -139,9 +123,8 @@ int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 2 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = x1 - sine * tx;
 	gl_ctx->verts[j].pos[1] = flip_y * (y1 + cosine * ty);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -152,9 +135,8 @@ int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
 	gl_ctx->verts[j].uv[0] = 1.0;
 	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 3 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = x1 + sine * tx;
 	gl_ctx->verts[j].pos[1] = flip_y * (y1 - cosine * ty);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -166,29 +148,35 @@ int line_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int thick){
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
 	
+	/* store vertex indexes in elements buffer - 2 triangles that share vertices  */
+	/* 0 */
 	j = gl_ctx->elem_count * 3;
-	
 	gl_ctx->elems[j] = gl_ctx->vert_count - 4;
 	gl_ctx->elems[j+1] = gl_ctx->vert_count - 3;
 	gl_ctx->elems[j+2] = gl_ctx->vert_count - 2;
+	/* 1 */
 	gl_ctx->elems[j+3] = gl_ctx->vert_count - 3;
 	gl_ctx->elems[j+4] = gl_ctx->vert_count - 2;
 	gl_ctx->elems[j+5] = gl_ctx->vert_count - 1;
-	
 	gl_ctx->elem_count+= 2;
 	
 	return 1;
 }
 
 int quad_gl (struct ogl *gl_ctx, int tl[2], int bl[2], int tr[2], int br[2]){
+	/* emulate drawing a filled and convex quadrilateral, using triangles in openGL */
+	
+	/* verify struct and buffers */
 	if (!gl_ctx) return 0;
 	if (!gl_ctx->verts) return 0;
 	if (!gl_ctx->elems) return 0;
-		
-	int j = gl_ctx->vert_count;
 	
+	/* orientation in drawing area */
 	float flip_y = (gl_ctx->flip_y) ? -1.0 : 1.0;
 	
+	/* convert input coordinates, in pixles (int), to openGL units and store vertices - 4 vertices */
+	/* 0 */
+	int j = gl_ctx->vert_count;
 	gl_ctx->verts[j].pos[0] = ((float) bl[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) bl[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -199,9 +187,8 @@ int quad_gl (struct ogl *gl_ctx, int tl[2], int bl[2], int tr[2], int br[2]){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 1 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = ((float) tl[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) tl[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -212,9 +199,8 @@ int quad_gl (struct ogl *gl_ctx, int tl[2], int bl[2], int tr[2], int br[2]){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 2 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = ((float) br[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) br[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -225,9 +211,8 @@ int quad_gl (struct ogl *gl_ctx, int tl[2], int bl[2], int tr[2], int br[2]){
 	gl_ctx->verts[j].uv[0] = 1.0;
 	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 3 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = ((float) tr[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) tr[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -238,30 +223,35 @@ int quad_gl (struct ogl *gl_ctx, int tl[2], int bl[2], int tr[2], int br[2]){
 	gl_ctx->verts[j].uv[0] = 1.0;
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* store vertex indexes in elements buffer - 2 triangles that share vertices  */
+	/* 0 */
 	j = gl_ctx->elem_count * 3;
-	
 	gl_ctx->elems[j] = gl_ctx->vert_count - 4;
 	gl_ctx->elems[j+1] = gl_ctx->vert_count - 3;
 	gl_ctx->elems[j+2] = gl_ctx->vert_count - 2;
+	/* 1 */
 	gl_ctx->elems[j+3] = gl_ctx->vert_count - 3;
 	gl_ctx->elems[j+4] = gl_ctx->vert_count - 2;
 	gl_ctx->elems[j+5] = gl_ctx->vert_count - 1;
-	
 	gl_ctx->elem_count+= 2;
 	
 	return 1;
 }
 
 int triang_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int p2[2]){
+	/* add a triangle to openGL */
+	
+	/* verify struct and buffers */
 	if (!gl_ctx) return 0;
 	if (!gl_ctx->verts) return 0;
 	if (!gl_ctx->elems) return 0;
 		
-	int j = gl_ctx->vert_count;
-	
+	/* orientation in drawing area */
 	float flip_y = (gl_ctx->flip_y) ? -1.0 : 1.0;
 	
+	/* convert input coordinates, in pixles (int), to openGL units and store vertices - 3 vertices */
+	/* 0 */
+	int j = gl_ctx->vert_count;
 	gl_ctx->verts[j].pos[0] = ((float) p0[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) p0[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -272,9 +262,8 @@ int triang_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int p2[2]){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 1 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = ((float) p1[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) p1[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -285,9 +274,8 @@ int triang_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int p2[2]){
 	gl_ctx->verts[j].uv[0] = 0.0;
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
-	
+	/* 2 */
 	j = gl_ctx->vert_count;
-	
 	gl_ctx->verts[j].pos[0] = ((float) p2[0] / gl_ctx->win_w) * 2.0 - 1.0;
 	gl_ctx->verts[j].pos[1] = flip_y * (((float) p2[1] / gl_ctx->win_h) * 2.0 - 1.0);
 	gl_ctx->verts[j].pos[2] = 0.0;
@@ -299,82 +287,73 @@ int triang_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int p2[2]){
 	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y);
 	gl_ctx->vert_count ++;
 	
+	/* store vertex indexes in elements buffer - single element  */
 	j = gl_ctx->elem_count * 3;
-	
 	gl_ctx->elems[j] = gl_ctx->vert_count - 3;
 	gl_ctx->elems[j+1] = gl_ctx->vert_count - 2;
 	gl_ctx->elems[j+2] = gl_ctx->vert_count - 1;
-	
 	gl_ctx->elem_count++;
 	
 	return 1;
 }
 
-// To find orientation of ordered triplet (p, q, r).
-// The function returns following values
-// 0 --> p, q and r are colinear
-// 1 --> Clockwise
-// 2 --> Counterclockwise
-int orientation(int p[2], int q[2], int r[2])
-{
-    // See https://www.geeksforgeeks.org/orientation-3-ordered-points/
-    // for details of below formula.
-    int val = (q[1] - p[1]) * (r[0] - q[0]) -
-              (q[0] - p[0]) * (r[1] - q[1]);
-  
-    if (val == 0) return 0;  // colinear
-  
-    return (val > 0)? 1: 2; // clock or counterclock wise
-}
-
 int polygon_gl (struct ogl *gl_ctx, int n, struct edge edges[]){
+	/* draw a arbitrary and filled polygon, in openGL - use a scanline like algorithm */
+	
+	/* verify struct and buffers */
 	if (!gl_ctx) return 0;
 	if (!gl_ctx->verts) return 0;
 	if (!gl_ctx->elems) return 0;
 	
 	if (2 * n > MAX_SCAN_LINES) return 0;
 	
-	int scan_lines[MAX_SCAN_LINES];
+	int scan_lines[MAX_SCAN_LINES]; /* scan line defined by y coordinate */
 	struct p_node nodes[MAX_P_NODES];
 	
-	int i = 0, j = 0, k = 0, scan_count = 0, nodes_count = 0;
+	int i = 0, j = 0, scan_count = 0, nodes_count = 0;
 	
+	/* define a scanline in each edge vertex */
 	for (i = 0; i < n; i++){
 		scan_lines[scan_count] = edges[i].y0;
 		scan_count++;
 		scan_lines[scan_count] = edges[i].y1;
 		scan_count++;
 	}
-	qsort(scan_lines, scan_count, sizeof(int), cmpfunc);
 	
+	/* sort and delete duplicates in scanline array */
+	qsort(scan_lines, scan_count, sizeof(int), cmp_int);
 	scan_count = unique (scan_count, scan_lines);
 	
-	for (i = 1; i < scan_count; i++){
-		
+	/* perform polygon fill, by draw quads in scanline pairs */
+	for (i = 1; i < scan_count; i++){ /* sweep scanlines by pairs */
 		nodes_count = 0;
 		
-		for(j = 0; j < n; j++){
+		for(j = 0; j < n; j++){ /* sweep polygon edges */
 			if (((edges[j].y0 <= scan_lines[i - 1] && edges[j].y1 >= scan_lines[i - 1]) || 
 			(edges[j].y1 <= scan_lines[i - 1] && edges[j].y0 >= scan_lines[i - 1])) &&
 			((edges[j].y0 <= scan_lines[i] && edges[j].y1 >= scan_lines[i]) || 
 			(edges[j].y1 <= scan_lines[i ] && edges[j].y0 >= scan_lines[i]))){
-				if (edges[j].y0 == scan_lines[i - 1]) {
+				/* find interceptions between edges and  current scanlines pair */
+				
+				/* up scanline */
+				if (edges[j].y0 == scan_lines[i - 1]) { /*interception in one vertex */
 					nodes[nodes_count].up = edges[j].x0;
 				}
-				else if (edges[j].y1 == scan_lines[i-1]) {
+				else if (edges[j].y1 == scan_lines[i-1]) {  /*interception in other vertex */
 					nodes[nodes_count].up = edges[j].x1;
 				}
-				else {
+				else {  /* claculate interception in ege*/
 					nodes[nodes_count].up = (int) round(edges[j].x1 + (double) (scan_lines[i - 1] - edges[j].y1)/(edges[j].y0 - edges[j].y1)*(edges[j].x0 - edges[j].x1));
 				}
 				
-				if (edges[j].y0 == scan_lines[i]) {
+				/* lower scanline */
+				if (edges[j].y0 == scan_lines[i]) { /*interception in one vertex */
 					nodes[nodes_count].low = edges[j].x0;
 				}
-				else if (edges[j].y1 == scan_lines[i]) {
+				else if (edges[j].y1 == scan_lines[i]) { /*interception in other vertex */
 					nodes[nodes_count].low = edges[j].x1;
 				}
-				else {
+				else { /* claculate interception in ege*/
 					nodes[nodes_count].low = (int) round(edges[j].x1 + (double) (scan_lines[i] - edges[j].y1)/(edges[j].y0 - edges[j].y1)*(edges[j].x0 - edges[j].x1));
 				}
 				
@@ -382,29 +361,29 @@ int polygon_gl (struct ogl *gl_ctx, int n, struct edge edges[]){
 			}
 		}
 		
+		/* sort interception nodes, by x coordinates */
 		qsort(nodes, nodes_count, sizeof(struct p_node), cmp_node);
 		
-		for (j = 1; j < nodes_count; j+= 2){
+		/* draw quads (or triangles) between nodes pairs*/
+		for (j = 1; j < nodes_count; j+= 2){ /* triangle, if up corners are same */
 			if (nodes[j - 1].up == nodes[j].up){
 				triang_gl (gl_ctx, (int[]){nodes[j - 1].up, scan_lines[i-1]},
 					(int[]){nodes[j - 1].low, scan_lines[i]},
 					(int[]){nodes[j].low, scan_lines[i]});
 			}
 			
-			else if (nodes[j - 1].low == nodes[j].low){
+			else if (nodes[j - 1].low == nodes[j].low){ /* triangle, if lower corners are same */
 				triang_gl (gl_ctx, (int[]){nodes[j - 1].up, scan_lines[i-1]},
 					(int[]){nodes[j - 1].low, scan_lines[i]},
 					(int[]){nodes[j].up, scan_lines[i-1]});
 			}
-			else {
+			else { /* general case - quadrilateral polygon */
 				quad_gl (gl_ctx, (int[]){nodes[j - 1].up, scan_lines[i-1]},
 					(int[]){nodes[j - 1].low, scan_lines[i]},
 					(int[]){nodes[j].up, scan_lines[i-1]},
 					(int[]){nodes[j].low, scan_lines[i]});
 			}
 		}
-		
-		//printf("- y = %d\n", scan_lines[i]);
 	}
 	
 	return 1;
