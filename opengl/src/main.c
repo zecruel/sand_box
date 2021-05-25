@@ -6,6 +6,8 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #define MAX_TRIANG 500
 #define TOLERANCE 1e-6
@@ -29,6 +31,9 @@ struct ogl { /* openGL context to pass main parameters */
 	int win_w, win_h; /* canvas size - to perform pixel to openGL conversion */
 	int flip_y; /* orientation flag - use cartesian's like oritentation, or canvas like (window up corner) */
 	GLubyte fg[4], bg[4]; /*foreground and background colors */
+	
+	GLuint tex;
+	int tex_w, tex_h;
 };
 
 struct edge { /* polygon edge */
@@ -37,6 +42,11 @@ struct edge { /* polygon edge */
 
 struct p_node { /* node to perform scanline fill algorithm */
 	int up, low;
+};
+
+struct Image {
+	int w, h;
+	GLubyte *data;
 };
 
 /* mantain one unique element in a sorted array - array of integer values */
@@ -297,6 +307,100 @@ int triang_gl (struct ogl *gl_ctx, int p0[2], int p1[2], int p2[2]){
 	return 1;
 }
 
+int image_gl (struct ogl *gl_ctx, int x, int y, int w, int h, struct Image *img){
+	/* emulate drawing a filled and convex quadrilateral, using triangles in openGL */
+	
+	/* verify struct and buffers */
+	if (!gl_ctx) return 0;
+	if (!gl_ctx->verts) return 0;
+	if (!gl_ctx->elems) return 0;
+	if (!img) return 0;
+	
+	/* orientation in drawing area */
+	float flip_y = (gl_ctx->flip_y) ? -1.0 : 1.0;
+	float scale_u = 1.0;
+	float scale_v = 1.0;
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, gl_ctx->tex);
+	
+	if (img->w > gl_ctx->tex_w || img->h > gl_ctx->tex_h){
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
+		scale_u = 1.0;
+		scale_v = 1.0;
+		gl_ctx->tex_w = img->w;
+		gl_ctx->tex_h = img->h;
+	}
+	else {
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img->w, img->h, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
+		scale_u = (float) img->w / (float) gl_ctx->tex_w;
+		scale_v = (float) img->h / (float) gl_ctx->tex_h;
+	}
+	
+	/* convert input coordinates, in pixles (int), to openGL units and store vertices - 4 vertices */
+	/* 0 */
+	int j = gl_ctx->vert_count;
+	gl_ctx->verts[j].pos[0] = ((float) x / gl_ctx->win_w) * 2.0 - 1.0;
+	gl_ctx->verts[j].pos[1] = flip_y * (((float) y / gl_ctx->win_h) * 2.0 - 1.0);
+	gl_ctx->verts[j].pos[2] = 0.0;
+	gl_ctx->verts[j].col[0] = gl_ctx->fg[0];
+	gl_ctx->verts[j].col[1] = gl_ctx->fg[1];
+	gl_ctx->verts[j].col[2] = gl_ctx->fg[2];
+	gl_ctx->verts[j].col[3] = gl_ctx->fg[3];
+	gl_ctx->verts[j].uv[0] = 0.0;
+	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y) * scale_v;
+	gl_ctx->vert_count ++;
+	/* 1 */
+	j = gl_ctx->vert_count;
+	gl_ctx->verts[j].pos[0] = ((float) x / gl_ctx->win_w) * 2.0 - 1.0;
+	gl_ctx->verts[j].pos[1] = flip_y * (((float) (y + h) / gl_ctx->win_h) * 2.0 - 1.0);
+	gl_ctx->verts[j].pos[2] = 0.0;
+	gl_ctx->verts[j].col[0] = gl_ctx->fg[0];
+	gl_ctx->verts[j].col[1] = gl_ctx->fg[1];
+	gl_ctx->verts[j].col[2] = gl_ctx->fg[2];
+	gl_ctx->verts[j].col[3] = gl_ctx->fg[3];
+	gl_ctx->verts[j].uv[0] = 0.0;
+	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y) * scale_v;
+	gl_ctx->vert_count ++;
+	/* 2 */
+	j = gl_ctx->vert_count;
+	gl_ctx->verts[j].pos[0] = ((float) (x + w) / gl_ctx->win_w) * 2.0 - 1.0;
+	gl_ctx->verts[j].pos[1] = flip_y * (((float) y / gl_ctx->win_h) * 2.0 - 1.0);
+	gl_ctx->verts[j].pos[2] = 0.0;
+	gl_ctx->verts[j].col[0] = gl_ctx->fg[0];
+	gl_ctx->verts[j].col[1] = gl_ctx->fg[1];
+	gl_ctx->verts[j].col[2] = gl_ctx->fg[2];
+	gl_ctx->verts[j].col[3] = gl_ctx->fg[3];
+	gl_ctx->verts[j].uv[0] = scale_u;
+	gl_ctx->verts[j].uv[1] = (float)(gl_ctx->flip_y) * scale_v;
+	gl_ctx->vert_count ++;
+	/* 3 */
+	j = gl_ctx->vert_count;
+	gl_ctx->verts[j].pos[0] = ((float) (x + w) / gl_ctx->win_w) * 2.0 - 1.0;
+	gl_ctx->verts[j].pos[1] = flip_y * (((float) (y + h) / gl_ctx->win_h) * 2.0 - 1.0);
+	gl_ctx->verts[j].pos[2] = 0.0;
+	gl_ctx->verts[j].col[0] = gl_ctx->fg[0];
+	gl_ctx->verts[j].col[1] = gl_ctx->fg[1];
+	gl_ctx->verts[j].col[2] = gl_ctx->fg[2];
+	gl_ctx->verts[j].col[3] = gl_ctx->fg[3];
+	gl_ctx->verts[j].uv[0] =  scale_u;
+	gl_ctx->verts[j].uv[1] = (float)(1 - gl_ctx->flip_y) * scale_v;
+	gl_ctx->vert_count ++;
+	/* store vertex indexes in elements buffer - 2 triangles that share vertices  */
+	/* 0 */
+	j = gl_ctx->elem_count * 3;
+	gl_ctx->elems[j] = gl_ctx->vert_count - 4;
+	gl_ctx->elems[j+1] = gl_ctx->vert_count - 3;
+	gl_ctx->elems[j+2] = gl_ctx->vert_count - 2;
+	/* 1 */
+	gl_ctx->elems[j+3] = gl_ctx->vert_count - 3;
+	gl_ctx->elems[j+4] = gl_ctx->vert_count - 2;
+	gl_ctx->elems[j+5] = gl_ctx->vert_count - 1;
+	gl_ctx->elem_count+= 2;
+	
+	return 1;
+}
+
 int polygon_gl (struct ogl *gl_ctx, int n, struct edge edges[]){
 	/* draw a arbitrary and filled polygon, in openGL - use a scanline like algorithm */
 	
@@ -402,6 +506,10 @@ int main(int argc, char *argv[])
 	gl_ctx.fg[0] = 255; gl_ctx.fg[1] = 255; gl_ctx.fg[2] = 255; gl_ctx.fg[3] = 255;
 	gl_ctx.bg[0] = 100; gl_ctx.bg[1] = 100; gl_ctx.bg[2] = 100; gl_ctx.bg[3] = 255;
 	
+	gl_ctx.tex = 0;
+	gl_ctx.tex_w = 20;
+	gl_ctx.tex_h = 20;
+	
 	struct edge test_edges[] = {
 		{500, 100, 300, 300},
 		{300, 300, 300, 600},
@@ -445,7 +553,13 @@ int main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+	/* enable ati-aliasing */
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 1);
 	
 	SDL_Window* window = SDL_CreateWindow("OpenGL", 100, 100, gl_ctx.win_w, gl_ctx.win_h, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
 	SDL_GLContext context = SDL_GL_CreateContext(window);
@@ -543,12 +657,25 @@ int main(int argc, char *argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
-	// Black/white checkerboard
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gl_ctx.tex_w, gl_ctx.tex_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	
+	gl_ctx.tex = textures[1];
+	
+	struct Image bubble, checker;
+	
+	int img_w, img_h, num_ch;
+	bubble.data = stbi_load("bubble.png", &bubble.w, &bubble.h, &num_ch, 4);
+	
+	/* Black/white checkerboard */
 	GLubyte pixels[] = {
 		0,0,0,255,    255,255,255,255,
 		255,255,255,255,    0,0,0,255
 	};
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	checker.data = pixels;
+	checker.w = 2; checker.h = 2;
+	
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	
 	
 	glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 1);
 
@@ -572,6 +699,10 @@ int main(int argc, char *argv[])
         gl_ctx.verts = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
         gl_ctx.elems = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
 	
+	//glScissor(200,200,100,100);
+	//glEnable(GL_SCISSOR_TEST);
+	//glDisable(GL_SCISSOR_TEST);
+	
 	//polygon_gl (&gl_ctx, 13, test_edges);
 	
 	int i = 0, j;
@@ -591,11 +722,25 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		//glBindTexture(GL_TEXTURE_2D, textures[1]);
+		//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 2, 2, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		
+		/* load vertices/elements directly into vertex/element buffer */
+		gl_ctx.verts = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+		gl_ctx.elems = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+		
 		//i = !i;
-		glUniform1i(glGetUniformLocation(shaderProgram, "tex"), i);
+		//glUniform1i(glGetUniformLocation(shaderProgram, "tex"), i);
+		glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
 		
 		SDL_GetWindowSize(window, &gl_ctx.win_w, &gl_ctx.win_h);
 		glViewport(0, 0, gl_ctx.win_w, gl_ctx.win_h);
+		/* Clear the screen to black */
+		glClearColor((GLfloat) gl_ctx.bg[0] /255, (GLfloat) gl_ctx.bg[1] /255, (GLfloat) gl_ctx.bg[2] /255, (GLfloat) gl_ctx.bg[3] /255);
+		glClear(GL_COLOR_BUFFER_BIT);
+		
+		//gl_ctx.fg[0] = gl_ctx.bg[0]; gl_ctx.fg[1] = gl_ctx.bg[1]; gl_ctx.fg[2] = gl_ctx.bg[2]; gl_ctx.fg[3] = gl_ctx.bg[3];
+		//quad_gl (&gl_ctx, (int[]){0, 0},  (int[]){0, gl_ctx.win_h}, (int[]){gl_ctx.win_w, 0}, (int[]){gl_ctx.win_w, gl_ctx.win_h});
 		
 		gl_ctx.fg[0] = 255; gl_ctx.fg[1] = 0; gl_ctx.fg[2] = 0; gl_ctx.fg[3] = 150;
 		line_gl(&gl_ctx, (int[]){5, 5}, (int[]){120, 100}, 2);
@@ -623,16 +768,36 @@ int main(int argc, char *argv[])
 		gl_ctx.fg[0] = 0; gl_ctx.fg[1] = 0; gl_ctx.fg[2] = 255; gl_ctx.fg[3] = 100;
 		polygon_gl (&gl_ctx, 13, test_edges2);
 		
-		/* Clear the screen to black */
-		glClearColor((GLfloat) gl_ctx.bg[0] /255, (GLfloat) gl_ctx.bg[1] /255, (GLfloat) gl_ctx.bg[2] /255, (GLfloat) gl_ctx.bg[3] /255);
-		glClear(GL_COLOR_BUFFER_BIT);
+		
 
 		/* Draw a triangle from the 3 vertices */
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 		glDrawElements(GL_TRIANGLES, gl_ctx.elem_count*3, GL_UNSIGNED_INT, 0);
 		
 		gl_ctx.vert_count = 0;
 		gl_ctx.elem_count = 0;
+		
+		/* load vertices/elements directly into vertex/element buffer */
+		gl_ctx.verts = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+		gl_ctx.elems = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+		
+		//glBindTexture(GL_TEXTURE_2D, textures[1]);
+		//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img_w, img_h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		
+		glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 1);
+		gl_ctx.fg[0] = 255; gl_ctx.fg[1] = 255; gl_ctx.fg[2] = 255; gl_ctx.fg[3] = 255;
+		if (i) image_gl (&gl_ctx, 50, 50, 200, 200, &bubble);
+		else image_gl (&gl_ctx, 50, 50, 200, 200, &checker);
+		
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+		glDrawElements(GL_TRIANGLES, gl_ctx.elem_count*3, GL_UNSIGNED_INT, 0);
+		
+		gl_ctx.vert_count = 0;
+		gl_ctx.elem_count = 0;
+		
 
 		/* Swap buffers */
 		SDL_GL_SwapWindow(window);
@@ -648,6 +813,8 @@ int main(int argc, char *argv[])
 	glDeleteBuffers(1, &ebo);
 	glDeleteBuffers(1, &vbo);
 	glDeleteVertexArrays(1, &vao);
+	
+	free(bubble.data);
 	
 	SDL_GL_DeleteContext(context);
 	SDL_Quit();
