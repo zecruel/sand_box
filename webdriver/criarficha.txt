@@ -1,0 +1,25 @@
+http://gedex/Ficha/Criar
+xpath=//*[@id="main-container"]/div[2]/div/div[2]/div/div/div[4]/h1  - Cadastro de Novo Documento
+
+xpath=//*[@id="Projeto_chosen"]/a/span
+xpath=//*[@id="Projeto_chosen"]/div/div/input
+00023
+xpath=//*[@id="Grupo_chosen"]/a/span
+xpath=//*[@id="Grupo_chosen"]/div/div/input
+SE_ELTC
+id=IdentificacaoExterna
+id=RevisaoMaior
+id=Titulo
+linkText=INFORMAÇÕES COMPLEMENTARES
+xpath=//*[@id="formNovaFicha"]/div[3]/div/div[2]/div/div/div[2]/div/div/div/div/input[2]   -  aplicação
+xpath=//*[@id="Tipo_chosen"]/a/span
+xpath=//*[@id="Tipo_chosen"]/div/div/input
+	Diagrama unifilar de oper
+	diagrama unifilar/trifilar
+	lista de equip
+	servi
+	vista
+id=Classificacao
+xpath=//*[@id="modalASICorpo"]/div[2]/div[2]/div[3]/div/div[2]/div[2]/a/span
+id=Observacoes
+id=btnCriarFicha
