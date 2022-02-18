@@ -85,6 +85,41 @@ driver.set_window_rect(x=450, y=10, width=900, height=700)
 driver.get('http://gedex/Inbox/Pessoal');
 wait = WebDriverWait(driver, 60)
 
+def cria_ficha (ficha_el):
+    linha = tree.set(ficha_el)
+    #print (linha['titulo'])
+    driver.get('http://gedex/Ficha/Criar');
+    try:
+        element = wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-container"]/div[2]/div/div[2]/div/div/div[4]/h1')))
+        #element = driver.find_element(By.XPATH, '//*[@id="main-container"]/div[2]/div/div[2]/div/div/div[4]/h1')
+    except:
+        return False
+    if element.text != 'Cadastro de Novo Documento':
+        return False
+    #print (linha['titulo'])
+    element = driver.find_element(By.XPATH, '//*[@id="Projeto_chosen"]/a/span')
+    element.click()
+    element = wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="Projeto_chosen"]/div/div/input')))
+    element.clear()
+    element.send_keys('00023')
+    element.send_keys(u'\ue007')
+    time.sleep(0.5)
+    element = driver.find_element(By.XPATH, '//*[@id="Grupo_chosen"]/a/span')
+    element.click()
+    element = wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="Grupo_chosen"]/div/div/input')))
+    element.clear()
+    element.send_keys('SE_ELTC')
+    element.send_keys(u'\ue007')
+    time.sleep(0.5)
+    element = driver.find_element(By.ID, 'IdentificacaoExterna')
+    element.clear()
+    element.send_keys(linha['ficha'])
+    element = driver.find_element(By.ID, 'RevisaoMaior')
+    element.clear()
+    element.send_keys(linha['rev'])
+    element = driver.find_element(By.ID, 'Titulo')
+    element.clear()
+    element.send_keys(linha['titulo'])
 
 def pesquisa(busca):
     try:
@@ -146,10 +181,7 @@ def temporal():
         elif ficha_el != '':
             #print( 'Ficha: ' +  tree.item(ficha_el)['text'] )
             estado.set('proximo')
-            if pesquisa(tree.item(ficha_el)['text']):
-                print ("achei")
-            else:
-                print ("nao achei")
+            cria_ficha (ficha_el)
 
             
         if estado.get() == 'proximo':
