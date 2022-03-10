@@ -25,6 +25,45 @@ function in_polygon(pt, poly)
 	return check
 end
 
+function check_in (ent, fence)
+	bound = cadzinho.get_bound(ent)
+	return in_polygon(bound.low, fence) and in_polygon(bound.up, fence)
+end
+
+function get_in_cont(container)
+	fence = cadzinho.get_points(container)
+	content = {}
+	for i, ent in ipairs(cadzinho.get_all()) do
+		if check_in(ent, fence) then
+			content[#content+1] = ent
+		end
+	end
+	return content
+end
+
+function find_cont_id (content)
+	id = nil
+	for i, ent in ipairs(content) do
+		-- look for extended data with appid "cadzinho"
+		ext = cadzinho.get_ext (ent, "PELICANU")
+		if #ext > 0 then
+			if type(ext[1]) == "string" then
+				descript = ext[1]:upper() -- ignore case
+				
+				-- identify elements
+				-- container
+				if descript == "CONT_ID" then
+					id = cadzinho.get_text_data(ent)
+					break
+				end
+			end
+		end
+	end
+	if id then return id.text
+	else return nil
+	end
+end
+
 function wire_dyn(event)
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Place wire")
@@ -89,18 +128,36 @@ function container_dyn(event)
 		pline = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
 		cadzinho.pline_append(pline, pts[2].x, pts[2].y, 0)
 		cadzinho.pline_append(pline, pts[1].x, pts[2].y, 0)
+		--pline = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
 		cadzinho.pline_close(pline, true)
 		--[[for i = 3, count do
 			cadzinho.pline_append(pline, pts[i].x, pts[i].y, 0)
 		end]]--
-		cadzinho.ent_draw(pline)
+		if (pline) then cadzinho.ent_draw(pline) end
+		tx = pts[2].x
+		if tx < pts[1].x then tx = pts[1].x end
+		ty = pts[2].y
+		if ty < pts[1].y then ty = pts[1].y end
+		text = cadzinho.new_text(tx-0.4, ty-0.2, cont_id.value, 2.0, "right", "top")
+		if (text) then cadzinho.ent_draw(text) end
 		if event.type == 'enter' then
 			if pline then
-				cadzinho.add_ext(pline, "PELICANU", {"CONTAINER", cont_id.value})
+				cadzinho.add_ext(pline, "PELICANU", {"CONTAINER", cadzinho.unique_id()})
 				pline:write()
 			end
+			if text then
+				cadzinho.add_ext(text, "PELICANU", {"CONT_ID"})
+				--data = cadzinho.get_text_data(text)
+				--cadzinho.db_print(data.align.h)
+				text:write()
+			end
 			count = 1
+			--count = count + 1
 		elseif event.type == 'cancel' then
+			--[[if pline then
+				cadzinho.add_ext(pline, "PELICANU", {"CONTAINER", cont_id.value})
+				pline:write()
+			end]]--
 			count = 1
 		end
 	
@@ -120,8 +177,8 @@ function component_dyn(event)
 end
 
 function get_containers ()
-	local cont = nil
-	local wire = nil
+	local conts = {}
+	local wires = {}
 	
 	-- sweep all entities in drawing
 	for i, ent in ipairs(cadzinho.get_all()) do
@@ -134,21 +191,28 @@ function get_containers ()
 				-- identify elements
 				-- container
 				if descript == "CONTAINER" then
-					-- get points and store in table
-					cont = cadzinho.get_points(ent)
+					conts[#conts+1] = ent
 				
 				-- wires
 				elseif descript == "WIRE" then
-					-- get points and store in table
-					wire = cadzinho.get_points(ent)
+					wires[#wires+1] = ent
 				end
 			end
 		end
 	end
-	if cont ~= nil and wire ~= nil then
-		if in_polygon(wire[1], cont) then cadzinho.db_print("inside 1") end
-		if in_polygon(wire[2], cont) then cadzinho.db_print("inside 2") end
+	
+	for i, container in ipairs(conts) do
+		content = get_in_cont(container)
+		cadzinho.db_print(container, #content, find_cont_id(content) )
 	end
+	
+end
+
+function test()
+	--for i = 1, 100 do
+	--	cadzinho.db_print(cadzinho.unique_id())
+	--end
+	cadzinho.db_print(cadzinho.last_blk("*D"))
 end
 
 function pelicanu_win()
@@ -171,6 +235,10 @@ function pelicanu_win()
 	
 	if cadzinho.nk_button("get container") then
 		get_containers()
+	end
+	
+	if cadzinho.nk_button("test") then
+		test()
 	end
 	
 end
