@@ -1,0 +1,8 @@
+porta cozinha 	110	220	1
+fundo		210	50	1
+lado peq		66	50	2
+lado grande	66	207	1
+prateleiras	68	35	3
+suporte		66	35	2
+portas		65	62	3
+
