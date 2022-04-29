@@ -3,6 +3,8 @@ count = 1
 component = {value = ''}
 cont_id = {value = ''}
 pts = {}
+pelicanu ={}
+pelicanu.elems = {}
 
 function in_polygon(pt, poly)
 	-- Check if a point is inside a polygon
@@ -30,12 +32,53 @@ function check_in (ent, fence)
 	return in_polygon(bound.low, fence) and in_polygon(bound.up, fence)
 end
 
-function get_in_cont(container)
-	fence = cadzinho.get_points(container)
-	content = {}
+function pelicanu.get_all()
+	pelicanu.elems = {}
 	for i, ent in ipairs(cadzinho.get_all()) do
-		if check_in(ent, fence) then
-			content[#content+1] = ent
+		local ext = cadzinho.get_ext (ent, "PELICANU")
+		if #ext > 0 then
+			local elem = {}
+			local unique = "0"
+			local typ = "NONE"
+			if type(ext[1]) == "string" then
+				unique = ext[1]:upper() -- ignore case
+			end
+			if type(ext[2]) == "string" then
+				typ = ext[2]:upper() -- ignore case
+			end
+			local uniq = tonumber(unique,16)
+			elem.id = uniq
+			elem.ent = ent
+			elem.type = typ
+			
+			pelicanu.elems[uniq] = elem
+		end
+	end
+end
+
+function pelicanu.get_content(id)
+	local container = pelicanu.elems[id]
+	if container == nil then
+		return nil
+	end
+	fence = cadzinho.get_points(container.ent)
+	content = {}
+	for el_id, el in pairs(pelicanu.elems) do
+		if el ~= container then
+			if check_in(el.ent, fence) then
+				content[#content+1] = el_id
+			end
+		end
+	end
+	return content
+end
+
+function update_all_unique()
+	for i, ent in ipairs(cadzinho.get_all()) do
+		ext = cadzinho.get_ext (ent, "PELICANU")
+		if #ext > 1 then
+			cadzinho.edit_ext_i(ent, "PELICANU", 1, cadzinho.unique_id())
+			ent:write()
 		end
 	end
 	return content
@@ -46,9 +89,9 @@ function find_cont_id (content)
 	for i, ent in ipairs(content) do
 		-- look for extended data with appid "cadzinho"
 		ext = cadzinho.get_ext (ent, "PELICANU")
-		if #ext > 0 then
-			if type(ext[1]) == "string" then
-				descript = ext[1]:upper() -- ignore case
+		if #ext > 1 then
+			if type(ext[2]) == "string" then
+				descript = ext[2]:upper() -- ignore case
 				
 				-- identify elements
 				-- container
@@ -89,7 +132,7 @@ function wire_dyn(event)
 		cadzinho.ent_draw(wire)
 		if event.type == 'enter' then
 			if wire then
-				cadzinho.add_ext(wire, "PELICANU", {"WIRE", "-"})
+				cadzinho.add_ext(wire, "PELICANU", {cadzinho.unique_id(), "WIRE", "-"})
 				wire:write()
 				pts[1].x = event.x
 				pts[1].y = event.y
@@ -142,11 +185,11 @@ function container_dyn(event)
 		if (text) then cadzinho.ent_draw(text) end
 		if event.type == 'enter' then
 			if pline then
-				cadzinho.add_ext(pline, "PELICANU", {"CONTAINER", cadzinho.unique_id()})
+				cadzinho.add_ext(pline, "PELICANU", {cadzinho.unique_id(), "CONTAINER"})
 				pline:write()
 			end
 			if text then
-				cadzinho.add_ext(text, "PELICANU", {"CONT_ID"})
+				cadzinho.add_ext(text, "PELICANU", {cadzinho.unique_id(), "CONT_ID"})
 				--data = cadzinho.get_text_data(text)
 				--cadzinho.db_print(data.align.h)
 				text:write()
@@ -176,36 +219,91 @@ function component_dyn(event)
 	end
 end
 
+function sort_inner_aux (a, b)
+	if type(a) == table and type(b) == table then
+		for i, test in ipair(a.inner) do
+			if b == test then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function sort_num_inner_aux (a, b)
+	if type(a) == table and type(b) == table then
+		return #a.inner > #b.inner
+	end
+	return false
+end
+
 function get_containers ()
 	local conts = {}
 	local wires = {}
 	
-	-- sweep all entities in drawing
-	for i, ent in ipairs(cadzinho.get_all()) do
-		-- look for extended data with appid "cadzinho"
-		ext = cadzinho.get_ext (ent, "PELICANU")
-		if #ext > 0 then
-			if type(ext[1]) == "string" then
-				descript = ext[1]:upper() -- ignore case
-				
-				-- identify elements
-				-- container
-				if descript == "CONTAINER" then
-					conts[#conts+1] = ent
-				
-				-- wires
-				elseif descript == "WIRE" then
-					wires[#wires+1] = ent
-				end
-			end
+	update_all_unique()
+	pelicanu.get_all()
+	
+	for el_id, el in pairs(pelicanu.elems) do
+		if el.type == "CONTAINER" then
+			conts[#conts+1] = el_id
 		end
 	end
 	
+	local SetLib = require("Set")
+	
+	local containeres = {}
 	for i, container in ipairs(conts) do
-		content = get_in_cont(container)
-		cadzinho.db_print(container, #content, find_cont_id(content) )
+		cont = {}
+		content = pelicanu.get_content(container)
+		cont["unique"] = container
+		cont["type"] = "CONTAINER"
+		cont['content'] = SetLib.new(content)
+		cont['id'] = i
+		cont["inner"] = {}
+		
+		containeres[container] = cont
 	end
 	
+	sorted={}
+	
+	--adjust content
+	for k, cont in pairs(containeres) do
+		for el_id in pairs(cont.content) do
+			el = pelicanu.elems[el_id]
+			if el.type == "CONTAINER" then
+				cont.inner[#cont.inner+1] = containeres[el_id]
+			end
+		end
+		table.sort(cont.inner, sort_inner_aux)
+		sorted[#sorted+1] = cont
+	end
+	
+	table.sort(sorted, sort_inner_aux)
+	
+	for _, cont in ipairs(sorted) do
+		
+		for _,inner in ipairs(cont.inner) do
+			cont.content = cont.content - inner.content
+		end
+	end
+	
+	db = sqlite.open('pelicanu.db')
+	db:exec('DROP TABLE IF EXISTS elements')
+	db:exec('CREATE TABLE elements(uniq INTEGER NOT NULL PRIMARY KEY, type VARCHAR(100) NOT NULL, id VARCHAR(100), parent VARCHAR(100))')
+	
+	for _, container in ipairs(sorted) do
+		
+		db:exec("INSERT INTO elements VALUES("..
+			string.format('%d', container.unique) ..", '"..
+			container.type .."', '"..
+			string.format('%d', container.unique) .."', '"..
+			container.id..
+			"');")
+		cadzinho.db_print(string.format('%X', container.unique), container.type, #container.content, container.id )
+	end
+	
+	db:close()
 end
 
 function test()
