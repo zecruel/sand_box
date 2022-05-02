@@ -50,6 +50,7 @@ function pelicanu.get_all()
 			elem.id = uniq
 			elem.ent = ent
 			elem.type = typ
+			elem.descr = ""
 			
 			pelicanu.elems[uniq] = elem
 		end
@@ -69,6 +70,14 @@ function pelicanu.get_content(id)
 				content[#content+1] = el_id
 			end
 		end
+	end
+	return content
+end
+
+function pelicanu.get_content_all()
+	content = {}
+	for el_id in pairs(pelicanu.elems) do
+		content[#content+1] = el_id
 	end
 	return content
 end
@@ -100,6 +109,20 @@ function find_cont_id (content)
 					break
 				end
 			end
+		end
+	end
+	if id then return id.text
+	else return nil
+	end
+end
+
+function pelicanu.cont_id(content)
+	local id = nil
+	for el_id in pairs(content) do
+		el = pelicanu.elems[el_id]
+		if el.type == "CONT_ID" then
+			id = cadzinho.get_text_data(el.ent)
+			break
 		end
 	end
 	if id then return id.text
@@ -244,6 +267,8 @@ function get_containers ()
 	update_all_unique()
 	pelicanu.get_all()
 	
+	conts[#conts+1] = 'main'
+	
 	for el_id, el in pairs(pelicanu.elems) do
 		if el.type == "CONTAINER" then
 			conts[#conts+1] = el_id
@@ -255,7 +280,11 @@ function get_containers ()
 	local containeres = {}
 	for i, container in ipairs(conts) do
 		cont = {}
-		content = pelicanu.get_content(container)
+		if container == 'main' then
+			content = pelicanu.get_content_all()
+		else
+			content = pelicanu.get_content(container)
+		end
 		cont["unique"] = container
 		cont["type"] = "CONTAINER"
 		cont['content'] = SetLib.new(content)
@@ -288,19 +317,43 @@ function get_containers ()
 		end
 	end
 	
+	for _, cont in ipairs(sorted) do
+		cont.id = pelicanu.cont_id(cont.content)
+		el = pelicanu.elems[cont.unique]
+		if el then
+			el.descr = cont.id
+		end
+	end
+	
 	db = sqlite.open('pelicanu.db')
 	db:exec('DROP TABLE IF EXISTS elements')
-	db:exec('CREATE TABLE elements(uniq INTEGER NOT NULL PRIMARY KEY, type VARCHAR(100) NOT NULL, id VARCHAR(100), parent VARCHAR(100))')
+	db:exec('CREATE TABLE elements('..
+		'uniq INTEGER, '..
+		'type TEXT, id TEXT, parent INTEGER)')
 	
 	for _, container in ipairs(sorted) do
+		local parent
+		if type(container.unique) == 'number' then
+			parent = string.format('%d', container.unique)
+		else
+			parent = 'NULL'
+		end
+		for el_id in pairs(container.content) do
+			el = pelicanu.elems[el_id]
+			if el.type == "CONTAINER" then
+				cont.inner[#cont.inner+1] = containeres[el_id]
+			end
+			
+			db:exec("INSERT INTO elements VALUES("..
+			string.format('%d', el_id) ..", '"..
+			el.type .."', '"..
+			el.descr .."', "..
+			parent..
+			");")
+		end
 		
-		db:exec("INSERT INTO elements VALUES("..
-			string.format('%d', container.unique) ..", '"..
-			container.type .."', '"..
-			string.format('%d', container.unique) .."', '"..
-			container.id..
-			"');")
-		cadzinho.db_print(string.format('%X', container.unique), container.type, #container.content, container.id )
+		
+		cadzinho.db_print(parent, #container.content, container.id )
 	end
 	
 	db:close()
@@ -341,4 +394,4 @@ function pelicanu_win()
 	
 end
 
-cadzinho.win_show("pelicanu_win", "Pelicanu", 200,200,200,200)
+cadzinho.win_show("pelicanu_win", "Pelicanu", 1000,100,200,200)
