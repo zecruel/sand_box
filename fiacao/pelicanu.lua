@@ -6,6 +6,17 @@ pts = {}
 pelicanu ={}
 pelicanu.elems = {}
 
+
+inteiro = {value = 1}
+numero = {value = 12.5}
+inteiro2 = {value = 2}
+numero2 = {value = 13.5}
+
+combo = {value = 1, "ola", "mundo", "cruel"}
+option = {value = 1, "ola", "mundo", "cruel"}
+check = {value = false}
+tab = {value = 1, "ola", "mundo", "cruel"}
+
 function in_polygon(pt, poly)
 	-- Check if a point is inside a polygon
 	
@@ -237,6 +248,40 @@ function component_dyn(event)
 	cadzinho.nk_label("Component:")
 	cadzinho.nk_edit(component)
 	
+	
+	cadzinho.nk_layout(100, 1)
+	if cadzinho.nk_group_begin("Grupo", true, true, true) then
+		cadzinho.nk_layout(20, 1)
+		cadzinho.nk_slide_i(inteiro2, 0, 10)
+		cadzinho.nk_slide_f(numero2, -1.5, 20.8)
+		
+		cadzinho.nk_combo(combo, 100, 50)
+		cadzinho.nk_option(option)
+		cadzinho.nk_check("check", check)
+		cadzinho.nk_group_end()
+	end
+	
+	cadzinho.nk_layout(100, 1)
+	if cadzinho.nk_tab_begin("tabdin", tab) then
+		if tab.value == 1 then
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_slide_i(inteiro2, 0, 10)
+			cadzinho.nk_slide_f(numero2, -1.5, 20.8)
+		elseif tab.value == 2 then
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_combo(combo, 100, 50)
+			cadzinho.nk_option(option)
+			cadzinho.nk_check("check", check)
+			
+			
+		else
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_propertyi("inteiro", inteiro, 0, 10, 2)
+			cadzinho.nk_propertyd("numero", numero, -1, 40, 3)
+		end
+		cadzinho.nk_tab_end()
+	end
+	
 	if event.type == 'cancel' then
 		--cadzinho.stop_dynamic()
 	end
@@ -360,10 +405,21 @@ function get_containers ()
 end
 
 function test()
-	--for i = 1, 100 do
-	--	cadzinho.db_print(cadzinho.unique_id())
-	--end
-	cadzinho.db_print(cadzinho.last_blk("*D"))
+	if cadzinho.open_drwg('wooden_watch_tower.dxf') then
+		cadzinho.db_print ("pronto")
+		if cadzinho.save_drwg('test_save2.dxf') then
+			cadzinho.db_print ("pronto")
+		end
+	else
+		cadzinho.db_print ("falha")
+	end
+
+	cadzinho.new_drwg()
+
+	for index = 1, 10 do
+		cadzinho.gui_refresh()
+		cadzinho.db_print(index)
+	end
 end
 
 function pelicanu_win()
@@ -389,9 +445,37 @@ function pelicanu_win()
 	end
 	
 	if cadzinho.nk_button("test") then
-		test()
+		--test()
+		co = coroutine.create(test)
+		coroutine.resume(co)
 	end
 	
+	
+	cadzinho.nk_layout(100, 1)
+	--if cadzinho.nk_group_begin("Grupo", true, true, true) then
+	if cadzinho.nk_tab_begin("tab", tab) then
+		if tab.value == 1 then
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_slide_i(inteiro2, 0, 10)
+			cadzinho.nk_slide_f(numero2, -1.5, 20.8)
+		elseif tab.value == 2 then
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_combo(combo, 100, 50)
+			cadzinho.nk_option(option)
+			cadzinho.nk_check("check", check)
+			
+			
+		else
+			cadzinho.nk_layout(20, 1)
+			cadzinho.nk_propertyi("inteiro", inteiro, 0, 10, 2)
+			cadzinho.nk_propertyd("numero", numero, -1, 40, 3)
+		end
+		cadzinho.nk_tab_end()
+		--cadzinho.nk_group_end()
+	end
+	cadzinho.nk_layout(20, 1)
+	cadzinho.nk_label("fim")
+	cadzinho.nk_label("fim")
 end
 
-cadzinho.win_show("pelicanu_win", "Pelicanu", 1000,100,200,200)
+cadzinho.win_show("pelicanu_win", "Pelicanu", 900,100,300,500)
