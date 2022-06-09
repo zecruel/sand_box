@@ -62,7 +62,7 @@ function pelicanu.atualiza_elems()
 				tipo = ext[2]:upper() -- tipo de elemento PELICAnU (muda p/ maiusculo)
 			end
 			if #ext > 2 then
-				tipo = ext[3] -- dado especifico do tipo (opcional)
+				especifico = ext[3] -- dado especifico do tipo (opcional)
 			end
 			local unic = tonumber(unico,16)
 			elem.id = unic
@@ -335,7 +335,10 @@ function component_dyn(event)
 	end
 end
 
-function sort_inner_aux (a, b)
+
+function ordena_cont (a, b)
+	--função auxiliar para ordenar tabelas
+	-- verifica se b esta contida em a
 	if type(a) == table and type(b) == table then
 		for i, test in ipair(a.inner) do
 			if b == test then
@@ -346,32 +349,91 @@ function sort_inner_aux (a, b)
 	return false
 end
 
-function sort_num_inner_aux (a, b)
-	if type(a) == table and type(b) == table then
-		return #a.inner > #b.inner
-	end
-	return false
-end
-
-function get_containers ()
-	local conts = {}
-	local ligacoes = {}
+function obtem_caixas()
+	local caixas = {}
+	local SetLib = require("Set") -- biblioteca para matematica de conjuntos
+	local caixa
+	local conteudo
 	
+	-- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
 	pelicanu.atualiza_unicos()
+	-- atualiza a lista principal com os elementos
 	pelicanu.atualiza_elems()
 	
-	conts[#conts+1] = 'main'
+	-- caixa "desenho" para armazenar os elementos órfãos
+	caixa = {}
+	conteudo = pelicanu.conteudo_todo()
+	caixa['nome'] = ""
+	caixa['conteudo'] = SetLib.new(conteudo)
+	caixa['filhas'] = {}
+	caixas['desenho'] = caixa
 	
+	-- varre os elementos, cadastrando as caixas existentes no desenho
 	for el_id, el in pairs(pelicanu.elems) do
 		if el.tipo == "CAIXA" then
-			conts[#conts+1] = el_id
+			caixa = {}
+			conteudo = pelicanu.conteudo(el_id)
+			caixa['nome'] = ""
+			caixa['conteudo'] = SetLib.new(conteudo)
+			caixa['filhas'] = {}
+			caixas[el_id] = caixa
 		end
 	end
 	
-	local SetLib = require("Set")
+	-- repassa as caixas, cadastrando as caixas aninhadas
+	for _, caixa in pairs(caixas) do
+		for el_id in pairs(caixa.conteudo) do
+			el = pelicanu.elems[el_id]
+			if el.tipo == "CAIXA" then
+				caixa.filhas[#caixa.filhas+1] = caixas[el_id]
+			end
+		end
+	end
+	
+	-- com as caixas cadastradas, os conteúdos estarao sobrepostos ("repetidos")
+	-- ajusta os conteudos, ficando cada caixa com seus elementos exclusivos
+	for _, caixa in pairs(caixas) do
+		for _,filha in ipairs(caixa.filhas) do
+			caixa.conteudo = caixa.conteudo - filha.conteudo
+		end
+	end
+	
+	-- por fim, pega o nome de cada caixa
+	for id, caixa in pairs(caixas) do
+		caixa.nome = pelicanu.rotulo_caixa(caixa.conteudo)
+	end
+	
+	return caixas
+end
+
+function teste()
+	cadzinho.db_print ("teste")
+	local caixas = obtem_caixas()
+	for id, caixa in pairs(caixas) do
+		cadzinho.db_print (caixa.nome)
+		for el_id, _ in pairs(caixa.conteudo) do
+			el = pelicanu.elems[el_id]
+			cadzinho.db_print ("    " .. el.tipo)
+		end
+	end
+end
+
+function get_containers ()
+	local caixas = {}
+	local ligacoes = {}
+	
+	caixas[#caixas+1] = 'main'
+	
+	for el_id, el in pairs(pelicanu.elems) do
+		if el.tipo == "CAIXA" then
+			caixas[#caixas+1] = el_id
+		end
+	end
+	
+	local SetLib = require("Set") -- biblioteca para matematica de conjuntos
 	
 	local containeres = {}
-	for i, container in ipairs(conts) do
+	for i, container in ipairs(caixas) do
 		cont = {}
 		if container == 'main' then
 			conteudo = pelicanu.conteudo_todo()
@@ -397,11 +459,11 @@ function get_containers ()
 				cont.inner[#cont.inner+1] = containeres[el_id]
 			end
 		end
-		table.sort(cont.inner, sort_inner_aux)
+		table.sort(cont.inner, ordena_cont)
 		sorted[#sorted+1] = cont
 	end
 	
-	table.sort(sorted, sort_inner_aux)
+	table.sort(sorted, ordena_cont)
 	
 	for _, cont in ipairs(sorted) do
 		
@@ -487,6 +549,10 @@ function pelicanu_win()
 			
 			if cadzinho.nk_button("get container") then
 				get_containers()
+			end
+			
+			if cadzinho.nk_button("caixas") then
+				teste()
 			end
 		end
 		cadzinho.nk_tab_end()
