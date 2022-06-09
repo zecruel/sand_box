@@ -1,0 +1,18 @@
+PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
+
+Dados extendidos:
+1 - ID único
+2 - Tipo:
+	Caixa
+	Rotulo
+	Componente
+	Terminal
+	Ligacao
+	Borne
+	Referencia
+	Folha
+	Engate
+3- Específico do tipo
+
+Atributos:
+

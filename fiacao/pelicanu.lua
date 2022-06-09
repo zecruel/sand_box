@@ -1,241 +1,289 @@
--- globals
-count = 1
+-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
+
+-- ============= variáveis globais =====================
+pelicanu ={}  -- tabela principal
+pelicanu.elems = {} -- lista principal dos elementos
+
+-- para funcoes dinamicas
+num_pt = 1 -- numero de pontos
+pts = {} -- lista de pontos de entrada
+
+-- para a interface grafica
 component = {value = ''}
-cont_id = {value = ''}
-pts = {}
-pelicanu ={}
-pelicanu.elems = {}
+g_caixa_id = {value = ''}
+g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
 
+-- ============================================
 
-inteiro = {value = 1}
-numero = {value = 12.5}
-inteiro2 = {value = 2}
-numero2 = {value = 13.5}
-
-combo = {value = 1, "ola", "mundo", "cruel"}
-option = {value = 1, "ola", "mundo", "cruel"}
-check = {value = false}
-tab = {value = 1, "ola", "mundo", "cruel"}
-
-function in_polygon(pt, poly)
-	-- Check if a point is inside a polygon
+function dentro_poligono(pt, polig)
+	-- Verifica se um ponto esta dendro do poligono
 	
-	-- Verify if passed argments are valid
+	-- Verifica os parametros passados
 	if type(pt) ~= "table" then return false end
-	if type(poly) ~= "table" then return false end
+	if type(polig) ~= "table" then return false end
 	
-	local check = false
-	prev = #poly
+	local dentro = false
+	local ant = #polig -- ponto anterior (indice)
 	
-	for i = 1, #poly do
-		if ((poly[i].y > pt.y) ~= (poly[prev].y > pt.y)) and 
-		(pt.x < (poly[prev].x - poly[i].x) * (pt.y - poly[i].y) / (poly[prev].y - poly[i].y) + poly[i].x) then
-			check = not check
+	-- metodo de escaneamento por linha horizontal
+	for i = 1, #polig do
+		if ((polig[i].y > pt.y) ~= (polig[ant].y > pt.y)) and 
+		(pt.x < (polig[ant].x - polig[i].x) * (pt.y - polig[i].y) / (polig[ant].y - polig[i].y) + polig[i].x) then
+			dentro = not dentro
 		end
-		prev = i
+		ant = i
 	end
 	
-	return check
+	return dentro
 end
 
-function check_in (ent, fence)
-	bound = cadzinho.get_bound(ent)
-	return in_polygon(bound.low, fence) and in_polygon(bound.up, fence)
+function dentro_contorno (ent, contorno)
+	-- verifica se um objeto do desenho esta dentro de um contorno
+	
+	limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
+	-- verifica se o retangulo está dentro do contorno
+	return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
 end
 
-function pelicanu.get_all()
+function pelicanu.atualiza_elems()
 	pelicanu.elems = {}
-	for i, ent in ipairs(cadzinho.get_all()) do
-		local ext = cadzinho.get_ext (ent, "PELICANU")
+	for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
+		local ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
 		if #ext > 0 then
+			-- elemento do PELICAnU
 			local elem = {}
-			local unique = "0"
-			local typ = "NONE"
+			local unico = "0"
+			local tipo = "NADA"
+			local especifico = ""
 			if type(ext[1]) == "string" then
-				unique = ext[1]:upper() -- ignore case
+				unico = ext[1]:upper() -- identificador unico (muda p/ maiusculo)
 			end
-			if type(ext[2]) == "string" then
-				typ = ext[2]:upper() -- ignore case
+			if #ext > 1 then
+				tipo = ext[2]:upper() -- tipo de elemento PELICAnU (muda p/ maiusculo)
 			end
-			local uniq = tonumber(unique,16)
-			elem.id = uniq
+			if #ext > 2 then
+				tipo = ext[3] -- dado especifico do tipo (opcional)
+			end
+			local unic = tonumber(unico,16)
+			elem.id = unic
 			elem.ent = ent
-			elem.type = typ
-			elem.descr = ""
+			elem.tipo = tipo
+			elem.esp = especifico
 			
-			pelicanu.elems[uniq] = elem
+			pelicanu.elems[unic] = elem -- armazena na lista principal
 		end
 	end
 end
 
-function pelicanu.get_content(id)
-	local container = pelicanu.elems[id]
-	if container == nil then
+function pelicanu.conteudo(id)
+	-- pega o conteudo de uma caixa indicada pelo ID
+	
+	local caixa = pelicanu.elems[id] -- busca o elemento da lista principal
+	if caixa == nil then
 		return nil
 	end
-	fence = cadzinho.get_points(container.ent)
-	content = {}
+	
+	-- contorno da caixa, considerando ser uma polyline
+	contorno = cadzinho.get_points(caixa.ent)
+	conteudo = {}
+	
+	-- varredura em todos elementos
 	for el_id, el in pairs(pelicanu.elems) do
-		if el ~= container then
-			if check_in(el.ent, fence) then
-				content[#content+1] = el_id
+		if el ~= caixa then
+			-- verifica se o elemento atual está dentro da caixa
+			if dentro_contorno(el.ent, contorno) then
+				conteudo[#conteudo+1] = el_id -- adiciona-o a lista de retorno
 			end
 		end
 	end
-	return content
+	return conteudo -- retorna o conteudo da caixa
 end
 
-function pelicanu.get_content_all()
-	content = {}
+function pelicanu.conteudo_todo()
+	-- pega o conteúdo (elementos PELICAnU) do desenho inteiro
+	
+	conteudo = {}
 	for el_id in pairs(pelicanu.elems) do
-		content[#content+1] = el_id
+		conteudo[#conteudo+1] = el_id
 	end
-	return content
+	return conteudo
 end
 
-function update_all_unique()
-	for i, ent in ipairs(cadzinho.get_all()) do
-		ext = cadzinho.get_ext (ent, "PELICANU")
+function pelicanu.atualiza_unicos()
+	-- atualiza os identificadores únicos nos elementos do desenho
+	
+	for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
+		ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
 		if #ext > 1 then
+			-- muda o id unico e grava o no desenho
 			cadzinho.edit_ext_i(ent, "PELICANU", 1, cadzinho.unique_id())
 			ent:write()
 		end
 	end
-	return content
 end
 
-function find_cont_id (content)
-	id = nil
-	for i, ent in ipairs(content) do
-		-- look for extended data with appid "cadzinho"
-		ext = cadzinho.get_ext (ent, "PELICANU")
-		if #ext > 1 then
-			if type(ext[2]) == "string" then
-				descript = ext[2]:upper() -- ignore case
-				
-				-- identify elements
-				-- container
-				if descript == "CONT_ID" then
-					id = cadzinho.get_text_data(ent)
-					break
-				end
-			end
-		end
-	end
-	if id then return id.text
-	else return nil
-	end
-end
-
-function pelicanu.cont_id(content)
-	local id = nil
-	for el_id in pairs(content) do
+function pelicanu.rotulo_caixa(conteudo)
+	-- busca rotulo da caixa
+	
+	local rotulo = nil
+	for el_id in pairs(conteudo) do -- varredura do conteudo da caixa
 		el = pelicanu.elems[el_id]
-		if el.type == "CONT_ID" then
-			id = cadzinho.get_text_data(el.ent)
+		if el.tipo == "ROTULO" and el.esp == "CAIXA" then -- se for o tipo procurado
+			--pega seu texto (considerando que é uma entidade tipo TEXT)
+			rotulo = cadzinho.get_text_data(el.ent)
 			break
 		end
 	end
-	if id then return id.text
+	if rotulo then return rotulo.text
 	else return nil
 	end
 end
 
-function wire_dyn(event)
-	cadzinho.nk_layout(20, 1)
-	cadzinho.nk_label("Place wire")
-	
-	pts[count] = {}
-	pts[count].x = event.x
-	pts[count].y = event.y
+function ligacao_dyn(event)
+	-- funcao interativa para criacao de uma ligação
 	
 	cadzinho.nk_layout(20, 1)
-	if count == 1 then
-		cadzinho.nk_label('Enter start point')
-		if event.type == 'enter' then
-			count = count + 1
+	cadzinho.nk_label("Nova ligacao")
+	
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
+	
+	cadzinho.nk_layout(20, 1)
+	if num_pt == 1 then
+		cadzinho.nk_label('Primeiro ponto')
+		if event.type == 'enter' then -- usuario entra o primeiro ponto
+			num_pt = num_pt + 1
 			
-		elseif event.type == 'cancel' then
+		elseif event.type == 'cancel' then  -- usuario cancela
+			-- sai da funcao
+			cadzinho.set_color("by layer")
+			cadzinho.set_lw("by layer")
+			cadzinho.set_ltype("bylayer")
 			cadzinho.stop_dynamic()
 		end
 	else
-		cadzinho.nk_label('Enter end point')
-		cadzinho.set_ltype("Continuous")
-		cadzinho.set_color(1)
-		wire = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
-		cadzinho.ent_draw(wire)
-		if event.type == 'enter' then
-			if wire then
-				cadzinho.add_ext(wire, "PELICANU", {cadzinho.unique_id(), "WIRE", "-"})
-				wire:write()
+		cadzinho.nk_label('Proximo ponto')
+		cadzinho.set_ltype("Continuous") -- linha continua
+		cadzinho.set_color(1) -- cor vermelha
+		
+		-- o elemento "ligacao" eh uma linha simples
+		ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
+		cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
+		
+		if event.type == 'enter' then -- usuario entra o segundo ponto
+			if ligacao then
+				cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+				
+				-- grava o elemento no desenho
+				cadzinho.add_ext(ligacao, "PELICANU", {cadzinho.unique_id(), "LIGACAO", "-"})
+				ligacao:write()
+				
+				-- continua - considera o ponto atual como o primeiro da proxima ligação
 				pts[1].x = event.x
 				pts[1].y = event.y
 			end
-		elseif event.type == 'cancel' then
-			count = 1
+		elseif event.type == 'cancel' then -- usuario cancela
+			-- volta ao primeiro ponto
+			num_pt = 1
 		end
 	
 	end
 end
 
-function container_dyn(event)
+function caixa_dyn(event)
 	cadzinho.nk_layout(20, 1)
-	cadzinho.nk_label("Place container")
+	cadzinho.nk_label("Nova caixa")
 	cadzinho.nk_layout(20, 2)
 	cadzinho.nk_label("ID:")
-	cadzinho.nk_edit(cont_id)
+	cadzinho.nk_edit(g_caixa_id)
 	
-	pts[count] = {}
-	pts[count].x = event.x
-	pts[count].y = event.y
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
 	
 	cadzinho.nk_layout(20, 1)
-	if count == 1 then
-		cadzinho.nk_label('Enter start point')
+	if num_pt == 1 then
+		cadzinho.nk_label('Primeiro ponto')
 		if event.type == 'enter' then
-			count = count + 1
+			num_pt = num_pt + 1
 		elseif event.type == 'cancel' then
+			-- sai da funcao
+			cadzinho.set_color("by layer")
+			cadzinho.set_lw("by layer")
+			cadzinho.set_ltype("bylayer")
 			cadzinho.stop_dynamic()
 		end
 	else
-		cadzinho.nk_label('Enter next point')
-		cadzinho.set_ltype("Dashdot")
-		cadzinho.set_color(3)
+		cadzinho.nk_label('Proximo ponto')
 		
-		pline = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
-		cadzinho.pline_append(pline, pts[2].x, pts[2].y, 0)
-		cadzinho.pline_append(pline, pts[1].x, pts[2].y, 0)
-		--pline = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
-		cadzinho.pline_close(pline, true)
-		--[[for i = 3, count do
-			cadzinho.pline_append(pline, pts[i].x, pts[i].y, 0)
+		-- o elemento "caixa" principal -  eh uma polyline no formato retangulo
+		cadzinho.set_ltype("Dashdot") -- linha traco-ponto
+		cadzinho.set_color(3) -- cor verde
+		caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+		cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+		cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+		cadzinho.pline_close(caixa, true)
+		--[[
+		-- outro formato: poligono arbitrario fechado
+		for i = 3, num_pt do
+			cadzinho.pline_append(caixa, pts[i].x, pts[i].y, 0)
 		end]]--
-		if (pline) then cadzinho.ent_draw(pline) end
+		if (caixa) then cadzinho.ent_draw(caixa) end
+		
+		-- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
+		-- posicao do texto - canto superior direito
 		tx = pts[2].x
 		if tx < pts[1].x then tx = pts[1].x end
 		ty = pts[2].y
 		if ty < pts[1].y then ty = pts[1].y end
-		text = cadzinho.new_text(tx-0.4, ty-0.2, cont_id.value, 2.0, "right", "top")
-		if (text) then cadzinho.ent_draw(text) end
+		caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
+		
+		-- desenha um retangulo simples em volta do texto do identificador
+		local retan_txt = nil
+		if caixa_id then 
+			cadzinho.ent_draw(caixa_id) 
+			cx_tx = cadzinho.get_bound(caixa_id)
+			cx_tx.low.x = cx_tx.low.x - 0.3
+			cx_tx.low.y = cx_tx.low.y - 0.3
+			cx_tx.up.x = cx_tx.up.x + 0.3
+			cx_tx.up.y = cx_tx.up.y + 0.3
+			cadzinho.set_ltype("Continuous") -- linha continua
+			retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0, cx_tx.up.x, cx_tx.low.y, 0)
+			cadzinho.pline_append(retan_txt, cx_tx.up.x, cx_tx.up.y, 0)
+			cadzinho.pline_append(retan_txt, cx_tx.low.x, cx_tx.up.y, 0)
+			cadzinho.pline_close(retan_txt, true)
+		end
+		if retan_txt then cadzinho.ent_draw(retan_txt) end
+		
 		if event.type == 'enter' then
-			if pline then
-				cadzinho.add_ext(pline, "PELICANU", {cadzinho.unique_id(), "CONTAINER"})
-				pline:write()
+			cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+			
+			if caixa then
+				cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA"})
+				caixa:write()
 			end
-			if text then
-				cadzinho.add_ext(text, "PELICANU", {cadzinho.unique_id(), "CONT_ID"})
-				--data = cadzinho.get_text_data(text)
-				--cadzinho.db_print(data.align.h)
-				text:write()
+			if caixa_id then
+				cadzinho.add_ext(caixa_id, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
+				caixa_id:write()
 			end
-			count = 1
-			--count = count + 1
+			if retan_txt then retan_txt:write() end
+			
+			num_pt = 1
+			--[[
+			-- outro formato: poligono arbitrario fechado
+			num_pt = num_pt + 1]]--
+			
 		elseif event.type == 'cancel' then
-			--[[if pline then
-				cadzinho.add_ext(pline, "PELICANU", {"CONTAINER", cont_id.value})
-				pline:write()
+			--[[
+			-- outro formato: poligono arbitrario fechado
+			if caixa then
+				cadzinho.add_ext(caixa, "PELICANU", {"CAIXA", g_caixa_id.value})
+				caixa:write()
 			end]]--
-			count = 1
+			num_pt = 1
 		end
 	
 	end
@@ -307,15 +355,15 @@ end
 
 function get_containers ()
 	local conts = {}
-	local wires = {}
+	local ligacoes = {}
 	
-	update_all_unique()
-	pelicanu.get_all()
+	pelicanu.atualiza_unicos()
+	pelicanu.atualiza_elems()
 	
 	conts[#conts+1] = 'main'
 	
 	for el_id, el in pairs(pelicanu.elems) do
-		if el.type == "CONTAINER" then
+		if el.tipo == "CAIXA" then
 			conts[#conts+1] = el_id
 		end
 	end
@@ -326,13 +374,13 @@ function get_containers ()
 	for i, container in ipairs(conts) do
 		cont = {}
 		if container == 'main' then
-			content = pelicanu.get_content_all()
+			conteudo = pelicanu.conteudo_todo()
 		else
-			content = pelicanu.get_content(container)
+			conteudo = pelicanu.conteudo(container)
 		end
-		cont["unique"] = container
-		cont["type"] = "CONTAINER"
-		cont['content'] = SetLib.new(content)
+		cont["unico"] = container
+		cont["tipo"] = "CAIXA"
+		cont['conteudo'] = SetLib.new(conteudo)
 		cont['id'] = i
 		cont["inner"] = {}
 		
@@ -341,11 +389,11 @@ function get_containers ()
 	
 	sorted={}
 	
-	--adjust content
+	--adjust conteudo
 	for k, cont in pairs(containeres) do
-		for el_id in pairs(cont.content) do
+		for el_id in pairs(cont.conteudo) do
 			el = pelicanu.elems[el_id]
-			if el.type == "CONTAINER" then
+			if el.tipo == "CAIXA" then
 				cont.inner[#cont.inner+1] = containeres[el_id]
 			end
 		end
@@ -358,124 +406,92 @@ function get_containers ()
 	for _, cont in ipairs(sorted) do
 		
 		for _,inner in ipairs(cont.inner) do
-			cont.content = cont.content - inner.content
+			cont.conteudo = cont.conteudo - inner.conteudo
 		end
 	end
 	
 	for _, cont in ipairs(sorted) do
-		cont.id = pelicanu.cont_id(cont.content)
-		el = pelicanu.elems[cont.unique]
+		cont.id = pelicanu.rotulo_caixa(cont.conteudo)
+		el = pelicanu.elems[cont.unico]
 		if el then
-			el.descr = cont.id
+			el.esp = cont.id
 		end
 	end
 	
 	db = sqlite.open('pelicanu.db')
 	db:exec('DROP TABLE IF EXISTS elements')
 	db:exec('CREATE TABLE elements('..
-		'uniq INTEGER, '..
-		'type TEXT, id TEXT, parent INTEGER)')
+		'unic INTEGER, '..
+		'tipo TEXT, id TEXT, parent INTEGER)')
 	
 	for _, container in ipairs(sorted) do
 		local parent
-		if type(container.unique) == 'number' then
-			parent = string.format('%d', container.unique)
+		if type(container.unico) == 'number' then
+			parent = string.format('%d', container.unico)
 		else
 			parent = 'NULL'
 		end
-		for el_id in pairs(container.content) do
+		for el_id in pairs(container.conteudo) do
 			el = pelicanu.elems[el_id]
-			if el.type == "CONTAINER" then
+			if el.tipo == "CAIXA" then
 				cont.inner[#cont.inner+1] = containeres[el_id]
 			end
 			
 			db:exec("INSERT INTO elements VALUES("..
 			string.format('%d', el_id) ..", '"..
-			el.type .."', '"..
-			el.descr .."', "..
+			el.tipo .."', '"..
+			el.esp .."', "..
 			parent..
 			");")
 		end
 		
 		
-		cadzinho.db_print(parent, #container.content, container.id )
+		cadzinho.db_print(parent, #container.conteudo, container.id )
 	end
 	
 	db:close()
 end
 
-function test()
-	if cadzinho.open_drwg('wooden_watch_tower.dxf') then
-		cadzinho.db_print ("pronto")
-		if cadzinho.save_drwg('test_save2.dxf') then
-			cadzinho.db_print ("pronto")
-		end
-	else
-		cadzinho.db_print ("falha")
-	end
-
-	cadzinho.new_drwg()
-
-	for index = 1, 10 do
-		cadzinho.gui_refresh()
-		cadzinho.db_print(index)
-	end
-end
-
+--============== Janela Principal =======================
 function pelicanu_win()
-	cadzinho.nk_layout(20, 1)
-	if cadzinho.nk_button("APPID") then
-		cadzinho.new_appid("PELICANU")
-	end
-	if cadzinho.nk_button("wire") then
-		count = 1
-		cadzinho.start_dynamic("wire_dyn")
-	end
-	if cadzinho.nk_button("component") then
-		count = 1
-		cadzinho.start_dynamic("component_dyn")
-	end
-	if cadzinho.nk_button("container") then
-		count = 1
-		cadzinho.start_dynamic("container_dyn")
-	end
-	
-	if cadzinho.nk_button("get container") then
-		get_containers()
-	end
-	
-	if cadzinho.nk_button("test") then
-		--test()
-		co = coroutine.create(test)
-		coroutine.resume(co)
-	end
-	
-	
-	cadzinho.nk_layout(100, 1)
-	--if cadzinho.nk_group_begin("Grupo", true, true, true) then
-	if cadzinho.nk_tab_begin("tab", tab) then
-		if tab.value == 1 then
+	cadzinho.nk_layout(200, 1)
+	if cadzinho.nk_tab_begin("modo_ed", g_editor_abas) then
+		if g_editor_abas.value == 2 then -- biblioteca
 			cadzinho.nk_layout(20, 1)
-			cadzinho.nk_slide_i(inteiro2, 0, 10)
-			cadzinho.nk_slide_f(numero2, -1.5, 20.8)
-		elseif tab.value == 2 then
-			cadzinho.nk_layout(20, 1)
-			cadzinho.nk_combo(combo, 100, 50)
-			cadzinho.nk_option(option)
-			cadzinho.nk_check("check", check)
+			if cadzinho.nk_button("APPID") then
+				cadzinho.new_appid("PELICANU")
+			end
 			
 			
-		else
+			if cadzinho.nk_button("test") then
+				--test()
+				--co = coroutine.create(test)
+				--coroutine.resume(co)
+				cadzinho.print_drwg("teste.pdf", 210, 297, "mm", 5, 0,0)
+			end
+			
+		else -- padrao - esquematico
 			cadzinho.nk_layout(20, 1)
-			cadzinho.nk_propertyi("inteiro", inteiro, 0, 10, 2)
-			cadzinho.nk_propertyd("numero", numero, -1, 40, 3)
+			if cadzinho.nk_button("ligacao") then
+				num_pt = 1
+				cadzinho.start_dynamic("ligacao_dyn")
+			end
+			if cadzinho.nk_button("component") then
+				num_pt = 1
+				cadzinho.start_dynamic("component_dyn")
+			end
+			if cadzinho.nk_button("caixa") then
+				num_pt = 1
+				cadzinho.start_dynamic("caixa_dyn")
+			end
+			
+			if cadzinho.nk_button("get container") then
+				get_containers()
+			end
 		end
 		cadzinho.nk_tab_end()
-		--cadzinho.nk_group_end()
 	end
-	cadzinho.nk_layout(20, 1)
-	cadzinho.nk_label("fim")
-	cadzinho.nk_label("fim")
 end
 
+-- inicia a janela quando o script eh executado
 cadzinho.win_show("pelicanu_win", "Pelicanu", 900,100,300,500)
