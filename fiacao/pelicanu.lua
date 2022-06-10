@@ -7,13 +7,25 @@ pelicanu.elems = {} -- lista principal dos elementos
 -- para funcoes dinamicas
 num_pt = 1 -- numero de pontos
 pts = {} -- lista de pontos de entrada
+lista_comp = {}
 
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
+g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
+g_term_num = {value = 1}
+g_term_nome = {value = "1"}
+g_componente = {value = ""}
 
 -- ============================================
+function nome_arq(url)
+  return url:match("(.+)%..+$")
+end
+
+function extensao(url)
+  return url:match("^.+(%..+)$")
+end
 
 function dentro_poligono(pt, polig)
 	-- Verifica se um ponto esta dendro do poligono
@@ -193,6 +205,8 @@ function ligacao_dyn(event)
 end
 
 function caixa_dyn(event)
+	-- funcao interativa para criacao de uma caixa
+	
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Nova caixa")
 	cadzinho.nk_layout(20, 2)
@@ -289,6 +303,107 @@ function caixa_dyn(event)
 	end
 end
 
+function terminal_dyn(event)
+	-- funcao interativa para criacao de um terminal, no modo de edição de componente
+
+	cadzinho.nk_layout(20, 1)
+	cadzinho.nk_label("Adiciona um terminal")
+	cadzinho.nk_propertyi("Numero", g_term_num, 0, 100)
+	cadzinho.nk_layout(20, 2)
+	cadzinho.nk_label("Nome:")
+	cadzinho.nk_edit(g_term_nome)
+	
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
+	
+	texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
+	term_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "left", "middle")
+	if term_id then cadzinho.ent_draw(term_id) end
+	
+	cadzinho.nk_layout(20, 1)
+	if num_pt == 1 then
+		cadzinho.nk_label('Posicione o texto')
+		if event.type == 'enter' then
+			num_pt = num_pt + 1
+		elseif event.type == 'cancel' then
+			cadzinho.stop_dynamic()
+		end
+	else
+		cadzinho.nk_label('Confirme')
+		if event.type == 'enter' then
+			local sel = cadzinho.get_sel()
+			if (#sel > 0) and term_id then
+				cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+				for i = 1, #sel do
+					cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
+					sel[i]:write()
+				end
+				term_id:write()
+			end
+			cadzinho.clear_sel()
+			cadzinho.stop_dynamic()
+			num_pt = 1
+		elseif event.type == 'cancel' then
+			num_pt = 1
+		end
+	end
+end
+
+function componente_dyn(event)
+	-- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+	cadzinho.nk_layout(20, 1)
+	cadzinho.nk_label("Adiciona um componente")
+	
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
+	
+	cadzinho.nk_layout(150, 1)
+	if cadzinho.nk_group_begin("Biblioteca", true, true, true) then
+		cadzinho.nk_layout(20, 1)
+		for nome, caminho in pairs(lista_comp) do			
+			if cadzinho.nk_button(nome) then
+				g_componente.value = nome
+			end
+		end
+		cadzinho.nk_group_end()
+	end
+	cadzinho.nk_layout(20, 2)
+	cadzinho.nk_label("Nome:")
+	cadzinho.nk_edit(g_componente)
+	if cadzinho.nk_button("Insere") then
+		if type(lista_comp[g_componente.value]) == 'string' then
+			cadzinho.db_print(lista_comp[g_componente.value])
+			num_pt = 2
+		end
+	end
+	
+	cadzinho.nk_layout(20, 1)
+	if num_pt == 1 then
+		cadzinho.nk_label('Escolha o componente')
+		if event.type == 'enter' then
+			num_pt = num_pt + 1
+		elseif event.type == 'cancel' then
+			cadzinho.stop_dynamic()
+		end
+	else
+		cadzinho.nk_label('Confirme')
+		if event.type == 'enter' then
+			
+			cadzinho.clear_sel()
+			cadzinho.stop_dynamic()
+			num_pt = 1
+		elseif event.type == 'cancel' then
+			num_pt = 1
+		end
+	end
+	
+end
+
 function component_dyn(event)
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Place component")
@@ -336,18 +451,6 @@ function component_dyn(event)
 end
 
 
-function ordena_cont (a, b)
-	--função auxiliar para ordenar tabelas
-	-- verifica se b esta contida em a
-	if type(a) == table and type(b) == table then
-		for i, test in ipair(a.inner) do
-			if b == test then
-				return true
-			end
-		end
-	end
-	return false
-end
 
 function obtem_caixas()
 	local caixas = {}
@@ -418,101 +521,6 @@ function teste()
 	end
 end
 
-function get_containers ()
-	local caixas = {}
-	local ligacoes = {}
-	
-	caixas[#caixas+1] = 'main'
-	
-	for el_id, el in pairs(pelicanu.elems) do
-		if el.tipo == "CAIXA" then
-			caixas[#caixas+1] = el_id
-		end
-	end
-	
-	local SetLib = require("Set") -- biblioteca para matematica de conjuntos
-	
-	local containeres = {}
-	for i, container in ipairs(caixas) do
-		cont = {}
-		if container == 'main' then
-			conteudo = pelicanu.conteudo_todo()
-		else
-			conteudo = pelicanu.conteudo(container)
-		end
-		cont["unico"] = container
-		cont["tipo"] = "CAIXA"
-		cont['conteudo'] = SetLib.new(conteudo)
-		cont['id'] = i
-		cont["inner"] = {}
-		
-		containeres[container] = cont
-	end
-	
-	sorted={}
-	
-	--adjust conteudo
-	for k, cont in pairs(containeres) do
-		for el_id in pairs(cont.conteudo) do
-			el = pelicanu.elems[el_id]
-			if el.tipo == "CAIXA" then
-				cont.inner[#cont.inner+1] = containeres[el_id]
-			end
-		end
-		table.sort(cont.inner, ordena_cont)
-		sorted[#sorted+1] = cont
-	end
-	
-	table.sort(sorted, ordena_cont)
-	
-	for _, cont in ipairs(sorted) do
-		
-		for _,inner in ipairs(cont.inner) do
-			cont.conteudo = cont.conteudo - inner.conteudo
-		end
-	end
-	
-	for _, cont in ipairs(sorted) do
-		cont.id = pelicanu.rotulo_caixa(cont.conteudo)
-		el = pelicanu.elems[cont.unico]
-		if el then
-			el.esp = cont.id
-		end
-	end
-	
-	db = sqlite.open('pelicanu.db')
-	db:exec('DROP TABLE IF EXISTS elements')
-	db:exec('CREATE TABLE elements('..
-		'unic INTEGER, '..
-		'tipo TEXT, id TEXT, parent INTEGER)')
-	
-	for _, container in ipairs(sorted) do
-		local parent
-		if type(container.unico) == 'number' then
-			parent = string.format('%d', container.unico)
-		else
-			parent = 'NULL'
-		end
-		for el_id in pairs(container.conteudo) do
-			el = pelicanu.elems[el_id]
-			if el.tipo == "CAIXA" then
-				cont.inner[#cont.inner+1] = containeres[el_id]
-			end
-			
-			db:exec("INSERT INTO elements VALUES("..
-			string.format('%d', el_id) ..", '"..
-			el.tipo .."', '"..
-			el.esp .."', "..
-			parent..
-			");")
-		end
-		
-		
-		cadzinho.db_print(parent, #container.conteudo, container.id )
-	end
-	
-	db:close()
-end
 
 --============== Janela Principal =======================
 function pelicanu_win()
@@ -520,8 +528,16 @@ function pelicanu_win()
 	if cadzinho.nk_tab_begin("modo_ed", g_editor_abas) then
 		if g_editor_abas.value == 2 then -- biblioteca
 			cadzinho.nk_layout(20, 1)
-			if cadzinho.nk_button("APPID") then
-				cadzinho.new_appid("PELICANU")
+			cadzinho.nk_label("Caminho:")
+			cadzinho.nk_edit(g_biblioteca)
+		
+		
+			if cadzinho.nk_button("terminal") then
+				num_pt = 1
+				local sel = cadzinho.get_sel()
+				if (#sel > 0) then
+					cadzinho.start_dynamic("terminal_dyn")
+				end
 			end
 			
 			
@@ -538,9 +554,20 @@ function pelicanu_win()
 				num_pt = 1
 				cadzinho.start_dynamic("ligacao_dyn")
 			end
-			if cadzinho.nk_button("component") then
+			if cadzinho.nk_button("componente") then
 				num_pt = 1
-				cadzinho.start_dynamic("component_dyn")
+				lista_comp = {}
+				dir = fs.dir(g_biblioteca.value)
+				for i = 1, #dir do
+					local ext = extensao(dir[i])
+					if type(ext) == "string" then
+						if ext:upper() == ".DXF" then
+							lista_comp[nome_arq(dir[i])] = g_biblioteca.value .. dir[i]
+						end
+					end
+				end
+				
+				cadzinho.start_dynamic("componente_dyn")
 			end
 			if cadzinho.nk_button("caixa") then
 				num_pt = 1
