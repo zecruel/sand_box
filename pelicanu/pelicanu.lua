@@ -412,26 +412,61 @@ function engate_dyn(event)
 	end
 end
 
-function componente_id (comp, id)
+function muda_comp_id (comp, id)
 	local id1 = string.match(id, '^([^/]*)/?.*$')
 	local id2 = string.match(id, '/(.*)$')
 	local idx1 = 0
 	local idx2 = 0
 	attrs = cadzinho.get_attribs(comp)
-	--cadzinho.db_print(id1, id2)
+	
 	for i, attr in ipairs(cadzinho.get_attribs(comp)) do
-		if string.find(attr['tag'], "^ID1") then idx1 = i end
-		if string.find(attr['tag'], "^ID2") then idx2 = i end
+		if string.find(attr['tag'], "^ID1") then
+			idx1 = i
+		elseif string.find(attr['tag'], "^ID2") then
+			idx2 = i
+		end
 	end
-	--cadzinho.db_print("depois for")
+	
 	if idx1 > 0 and idx2 > 0 and id1 and id2 then
 		id1 = '%%U' .. id1
 		cadzinho.edit_attr(comp, idx1, 'ID1', id1, false)
 		cadzinho.edit_attr(comp, idx2, 'ID2', id2, false)
 	elseif idx1 > 0 then
-		--cadzinho.db_print("jah existe")
+		
 		cadzinho.edit_attr(comp, idx1, 'ID1', id, false)
 	end
+end
+
+function pega_comp_id (comp)
+	local id = ''
+	local id1 = ''
+	local id2 = ''
+	local idx1 = 0
+	local idx2 = 0
+	attrs = cadzinho.get_attribs(comp)
+	
+	for i, attr in ipairs(cadzinho.get_attribs(comp)) do
+		if string.find(attr['tag'], "^ID1") then 
+			idx1 = i
+			id1 = attr['value']
+			id1 = string.gsub(id1, '(%%%%%a)', '')
+		end
+		if string.find(attr['tag'], "^ID2") then
+			idx2 = i
+			id2 = attr['value']
+			id2 = string.gsub(id2, '(%%%%%a)', '')
+		end
+	end
+	
+	if idx1 > 0 then
+		if idx2 > 0 and #id2 > 0 then
+			id = id1 .. '/' .. id2
+		else
+			id= id1
+		end
+	end
+	
+	return id
 end
 
 function componente_dyn(event)
@@ -492,13 +527,62 @@ function componente_dyn(event)
 		cadzinho.nk_label("ID:")
 		cadzinho.nk_edit(g_comp_id)
 		if event.type == 'enter' then
-			componente_id (comp, g_comp_id.value)
+			muda_comp_id (comp, g_comp_id.value)
 			comp:write()
 			cadzinho.clear_sel()
 			cadzinho.stop_dynamic()
 			num_pt = 1
 		elseif event.type == 'cancel' then
 			num_pt = 1
+		end
+	end
+	
+end
+
+function id_dyn(event)
+	-- funcao interativa para editar o id de um componente
+
+	cadzinho.nk_layout(20, 1)
+	cadzinho.nk_label("Edita a ID")
+	
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
+	
+	
+	local sel = cadzinho.get_sel()
+	if #sel < 1 then
+		num_pt = 1
+		cadzinho.enable_sel()
+	end
+	
+	if #sel > 0 and  num_pt == 1 then
+		num_pt = 2
+		g_comp_id.value = pega_comp_id(sel[1])
+	end
+	
+	cadzinho.nk_layout(20, 1)
+	if num_pt == 1 then
+		cadzinho.nk_label('Selecione um componente')
+		
+		if event.type == 'cancel' then
+			cadzinho.stop_dynamic()
+		end
+	else
+		cadzinho.nk_label('Confirme')
+		cadzinho.nk_layout(20, 2)
+		cadzinho.nk_label("ID:")
+		cadzinho.nk_edit(g_comp_id)
+		if event.type == 'enter' then
+			muda_comp_id (sel[1], g_comp_id.value)
+			sel[1]:write()
+			cadzinho.clear_sel()
+			--cadzinho.stop_dynamic()
+			num_pt = 1
+		elseif event.type == 'cancel' then
+			num_pt = 1
+			cadzinho.clear_sel()
 		end
 	end
 	
@@ -680,6 +764,10 @@ function pelicanu_win()
 			if cadzinho.nk_button("caixa") then
 				num_pt = 1
 				cadzinho.start_dynamic("caixa_dyn")
+			end
+			if cadzinho.nk_button("Edita ID") then
+				num_pt = 1
+				cadzinho.start_dynamic("id_dyn")
 			end
 			
 			if cadzinho.nk_button("get container") then
