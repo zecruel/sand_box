@@ -9,7 +9,6 @@ num_pt = 1 -- numero de pontos
 pts = {} -- lista de pontos de entrada
 lista_comp = {}
 lista_comp_o = {}
-num_term = 0
 
 -- para a interface grafica
 component = {value = ''}
@@ -23,11 +22,7 @@ g_eng_num = {value = 1}
 g_eng_nome = {value = "E1"}
 g_componente = {value = ""}
 g_comp_id = {value = ""}
-g_terminais = { {value = ''},
-	{value = ''},
-	{value = ''},
-	{value = ''},
-	{value = ''}}
+g_terminais = {}
 
 -- ============================================
 function nome_arq(url)
@@ -425,23 +420,28 @@ function muda_comp_id (comp, id)
 	local id2 = string.match(id, '/(.*)$')
 	local idx1 = 0
 	local idx2 = 0
+	local ocul1 = false
+	local ocul2 = false
+	
 	attrs = cadzinho.get_attribs(comp)
 	
-	for i, attr in ipairs(cadzinho.get_attribs(comp)) do
+	for i, attr in ipairs(attrs) do
 		if string.find(attr['tag'], "^ID1") then
 			idx1 = i
+			ocul1 = attr['hidden']
 		elseif string.find(attr['tag'], "^ID2") then
 			idx2 = i
+			ocul2 = attr['hidden']
 		end
 	end
 	
 	if idx1 > 0 and idx2 > 0 and id1 and id2 then
 		id1 = '%%U' .. id1
-		cadzinho.edit_attr(comp, idx1, 'ID1', id1, false)
-		cadzinho.edit_attr(comp, idx2, 'ID2', id2, false)
+		cadzinho.edit_attr(comp, idx1, 'ID1', id1, ocul1)
+		cadzinho.edit_attr(comp, idx2, 'ID2', id2, ocul2)
 	elseif idx1 > 0 then
 		
-		cadzinho.edit_attr(comp, idx1, 'ID1', id, false)
+		cadzinho.edit_attr(comp, idx1, 'ID1', id, ocul1)
 	end
 end
 
@@ -453,7 +453,7 @@ function pega_comp_id (comp)
 	local idx2 = 0
 	attrs = cadzinho.get_attribs(comp)
 	
-	for i, attr in ipairs(cadzinho.get_attribs(comp)) do
+	for i, attr in ipairs(attrs) do
 		if string.find(attr['tag'], "^ID1") then 
 			idx1 = i
 			id1 = attr['value']
@@ -479,22 +479,12 @@ end
 
 function pega_terminais (comp)
 	local terminais = {}
-	local id = ''
-	local idx = 0
 	attrs = cadzinho.get_attribs(comp)
-	
-	for j = 1, 5 do
-		id = ''
-		idx = 0
-		for i, attr in ipairs(cadzinho.get_attribs(comp)) do
-			if string.find(attr['tag'], string.format("^T%d", j)) then 
-				idx = i
-				id = attr['value']
-				id = string.gsub(id1, '(%%%%%a)', '')
-			end
-		end
-		if idx > 0 then
-			terminais[#terminais+1] = id
+	for i, attr in ipairs(attrs) do
+		--cadzinho.db_print(string.format("^T%d", j))
+		local t_num = string.match(attr['tag'], "^T(%d)")
+		if t_num then
+			terminais[tonumber(t_num)] = attr['value']
 		end
 	end
 	
@@ -576,7 +566,7 @@ function componente_dyn(event)
 	
 end
 
-function id_dyn(event)
+function edita_dyn(event)
 	-- funcao interativa para editar o id de um componente
 
 	cadzinho.nk_layout(20, 1)
@@ -587,7 +577,6 @@ function id_dyn(event)
 	pts[num_pt].x = event.x
 	pts[num_pt].y = event.y
 	
-	
 	local sel = cadzinho.get_sel()
 	if #sel < 1 then
 		num_pt = 1
@@ -597,6 +586,11 @@ function id_dyn(event)
 	if #sel > 0 and  num_pt == 1 then
 		num_pt = 2
 		g_comp_id.value = pega_comp_id(sel[1])
+		local terminais = pega_terminais(sel[1])
+		g_terminais = {}
+		for i, term in ipairs(terminais) do
+			g_terminais[i] = {value = term}
+		end
 	end
 	
 	cadzinho.nk_layout(20, 1)
@@ -611,6 +605,15 @@ function id_dyn(event)
 		cadzinho.nk_layout(20, 2)
 		cadzinho.nk_label("ID:")
 		cadzinho.nk_edit(g_comp_id)
+		
+		cadzinho.nk_layout(20, 1)
+		cadzinho.nk_label("Terminais:")
+		cadzinho.nk_layout(20, 2)
+		for i, term in ipairs(g_terminais) do
+			cadzinho.nk_label(tostring(i)..':')
+			cadzinho.nk_edit(term)
+		end
+		
 		if event.type == 'enter' then
 			muda_comp_id (sel[1], g_comp_id.value)
 			sel[1]:write()
@@ -804,9 +807,9 @@ function pelicanu_win()
 				num_pt = 1
 				cadzinho.start_dynamic("caixa_dyn")
 			end
-			if cadzinho.nk_button("Edita ID") then
+			if cadzinho.nk_button("Edita Comp") then
 				num_pt = 1
-				cadzinho.start_dynamic("id_dyn")
+				cadzinho.start_dynamic("edita_dyn")
 			end
 			
 			if cadzinho.nk_button("get container") then
