@@ -8,18 +8,26 @@ pelicanu.elems = {} -- lista principal dos elementos
 num_pt = 1 -- numero de pontos
 pts = {} -- lista de pontos de entrada
 lista_comp = {}
+lista_comp_o = {}
+num_term = 0
 
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
-g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
+--g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
+g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
 g_eng_num = {value = 1}
 g_eng_nome = {value = "E1"}
 g_componente = {value = ""}
 g_comp_id = {value = ""}
+g_terminais = { {value = ''},
+	{value = ''},
+	{value = ''},
+	{value = ''},
+	{value = ''}}
 
 -- ============================================
 function nome_arq(url)
@@ -469,6 +477,30 @@ function pega_comp_id (comp)
 	return id
 end
 
+function pega_terminais (comp)
+	local terminais = {}
+	local id = ''
+	local idx = 0
+	attrs = cadzinho.get_attribs(comp)
+	
+	for j = 1, 5 do
+		id = ''
+		idx = 0
+		for i, attr in ipairs(cadzinho.get_attribs(comp)) do
+			if string.find(attr['tag'], string.format("^T%d", j)) then 
+				idx = i
+				id = attr['value']
+				id = string.gsub(id1, '(%%%%%a)', '')
+			end
+		end
+		if idx > 0 then
+			terminais[#terminais+1] = id
+		end
+	end
+	
+	return terminais
+end
+
 function componente_dyn(event)
 	-- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
 
@@ -487,7 +519,12 @@ function componente_dyn(event)
 		cadzinho.nk_layout(150, 1)
 		if cadzinho.nk_group_begin("Biblioteca", true, true, true) then
 			cadzinho.nk_layout(20, 1)
-			for nome, caminho in pairs(lista_comp) do			
+			--[[for nome, caminho in pairs(lista_comp) do			
+				if cadzinho.nk_button(nome) then
+					g_componente.value = nome
+				end
+			end]]--
+			for _, nome in ipairs(lista_comp_o) do			
 				if cadzinho.nk_button(nome) then
 					g_componente.value = nome
 				end
@@ -749,16 +786,18 @@ function pelicanu_win()
 			if cadzinho.nk_button("componente") then
 				num_pt = 1
 				lista_comp = {}
+				lista_comp_o = {}
 				dir = fs.dir(g_biblioteca.value)
 				for i = 1, #dir do
-					local ext = extensao(dir[i])
-					if type(ext) == "string" then
+					local ext = extensao(dir[i].name)
+					if type(ext) == "string" and dir[i].is_dir == false then
 						if ext:upper() == ".DXF" then
-							lista_comp[nome_arq(dir[i])] = g_biblioteca.value .. dir[i]
+							lista_comp[nome_arq(dir[i].name)] = g_biblioteca.value .. dir[i].name
+							lista_comp_o[#lista_comp_o+1] = nome_arq(dir[i].name)
 						end
 					end
 				end
-				
+				table.sort(lista_comp_o)
 				cadzinho.start_dynamic("componente_dyn")
 			end
 			if cadzinho.nk_button("caixa") then
