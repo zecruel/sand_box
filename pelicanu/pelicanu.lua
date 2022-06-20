@@ -14,8 +14,8 @@ lista_comp_o = {}
 component = {value = ''}
 g_caixa_id = {value = ''}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
---g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
-g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
+g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
+--g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
 g_eng_num = {value = 1}
@@ -423,7 +423,7 @@ function muda_comp_id (comp, id)
 	local ocul1 = false
 	local ocul2 = false
 	
-	attrs = cadzinho.get_attribs(comp)
+	local attrs = cadzinho.get_attribs(comp)
 	
 	for i, attr in ipairs(attrs) do
 		if string.find(attr['tag'], "^ID1") then
@@ -451,7 +451,7 @@ function pega_comp_id (comp)
 	local id2 = ''
 	local idx1 = 0
 	local idx2 = 0
-	attrs = cadzinho.get_attribs(comp)
+	local attrs = cadzinho.get_attribs(comp)
 	
 	for i, attr in ipairs(attrs) do
 		if string.find(attr['tag'], "^ID1") then 
@@ -479,9 +479,8 @@ end
 
 function pega_terminais (comp)
 	local terminais = {}
-	attrs = cadzinho.get_attribs(comp)
+	local attrs = cadzinho.get_attribs(comp)
 	for i, attr in ipairs(attrs) do
-		--cadzinho.db_print(string.format("^T%d", j))
 		local t_num = string.match(attr['tag'], "^T(%d)")
 		if t_num then
 			terminais[tonumber(t_num)] = attr['value']
@@ -489,6 +488,22 @@ function pega_terminais (comp)
 	end
 	
 	return terminais
+end
+
+function muda_terminais (comp, terminais)
+	local ocul = false
+	local attrs = cadzinho.get_attribs(comp)
+	
+	for i, attr in ipairs(attrs) do
+		local t_num = string.match(attr['tag'], "^T(%d)")
+		if t_num then
+			local term = terminais[tonumber(t_num)]
+			if term then
+				ocul = attr['hidden']
+				cadzinho.edit_attr(comp, i, 'T' .. t_num, term, ocul)
+			end
+		end
+	end
 end
 
 function componente_dyn(event)
@@ -529,11 +544,15 @@ function componente_dyn(event)
 				local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
 				if comp == nil then
 					if cadzinho.new_block_file(lista_comp[g_componente.value], g_componente.value, "componente PELICAnU ".. g_componente.value, true, '#', '*', '$', '?', 0, 0, 0) then
-						--cadzinho.db_print(lista_comp[g_componente.value])
-						num_pt = 2
+						comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
 					end
-				else
-					--cadzinho.db_print("jah existe")
+				end
+				if comp then
+					local terminais = pega_terminais(comp)
+					g_terminais = {}
+					for i, term in ipairs(terminais) do
+						g_terminais[i] = {value = term}
+					end
 					num_pt = 2
 				end
 			end
@@ -553,8 +572,20 @@ function componente_dyn(event)
 		cadzinho.nk_layout(20, 2)
 		cadzinho.nk_label("ID:")
 		cadzinho.nk_edit(g_comp_id)
+		cadzinho.nk_layout(20, 1)
+		cadzinho.nk_label("Terminais:")
+		cadzinho.nk_layout(20, 2)
+		for i, term in ipairs(g_terminais) do
+			cadzinho.nk_label(tostring(i)..':')
+			cadzinho.nk_edit(term)
+		end
 		if event.type == 'enter' then
 			muda_comp_id (comp, g_comp_id.value)
+			terminais = {}
+			for i, term in ipairs(g_terminais) do
+				terminais[i] = term.value
+			end
+			muda_terminais(comp, terminais)
 			comp:write()
 			cadzinho.clear_sel()
 			cadzinho.stop_dynamic()
@@ -616,6 +647,12 @@ function edita_dyn(event)
 		
 		if event.type == 'enter' then
 			muda_comp_id (sel[1], g_comp_id.value)
+			terminais = {}
+			for i, term in ipairs(g_terminais) do
+				terminais[i] = term.value
+			end
+			muda_terminais(sel[1], terminais)
+			
 			sel[1]:write()
 			cadzinho.clear_sel()
 			--cadzinho.stop_dynamic()
