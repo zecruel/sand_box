@@ -343,13 +343,17 @@ function terminal_dyn(event)
 			if (#sel > 0) and term_id then
 				cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
 				for i = 1, #sel do
-					--verifica se o elemento jah possui marcador
-					ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
-					if #ext > 1 then
-						cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
+					local tipo = cadzinho.get_ent_typ(sel[i])
+					-- soh aceita linha ou circulo como terminal
+					if tipo == 'LINE' or tipo == 'CIRCLE' then
+						--verifica se o elemento jah possui marcador
+						ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
+						if #ext > 1 then
+							cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
+						end
+						cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
+						sel[i]:write()
 					end
-					cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
-					sel[i]:write()
 				end
 				term_id:write()
 			end
@@ -475,6 +479,44 @@ function pega_comp_id (comp)
 	end
 	
 	return id
+end
+
+function pega_conexoes (comp)
+	-- pega os pontos de conexao de um componente
+	local conexoes = {}
+	
+	-- nome do bloco do componente
+	local nome_b = cadzinho.get_blk_name (comp)
+	if not nome_b then return conexoes end -- erro
+	
+	-- dados do componente (ponto de insercao, escalas, rotacao)
+	local dados_comp = cadzinho.get_ins_data (comp)
+	if not dados_comp then return conexoes end -- erro
+	
+	-- varre os elementos internos do bloco, procurando conexoes
+	for _, ent in ipairs(cadzinho.get_blk_ents(nome_b)) do
+		local ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
+		if #ext > 2 then
+			local tipo = ext[2]:upper() -- tipo de elemento PELICAnU (muda p/ maiusculo)
+			if tipo == "TERMINAL" then
+				--identificacao do terminal
+				local t_id = ext[3]:upper() -- dado especifico do tipo (muda p/ maiusculo)
+				--found mark then get points and id
+				local term_pts = {}
+				for i, pt in ipairs(cadzinho.get_points(ent)) do
+					-- offset points with insert point
+					term_pts[i] = pt --{}
+					--term_pts[i].x = ins_pt.x + pt.x
+					--term_pts[i].y = ins_pt.y + pt.y
+					--term_pts[i].z = ins_pt.z + pt.z
+				end
+				-- store terminal points in table, with id as key
+				conexoes[t_id] = term_pts
+			end
+		end
+	end
+	
+	return conexoes
 end
 
 function pega_terminais (comp)
@@ -654,6 +696,13 @@ function edita_dyn(event)
 			muda_terminais(sel[1], terminais)
 			
 			sel[1]:write()
+			-- teste----------------
+			cnxs = pega_conexoes (sel[1])
+			for cnx, pts in pairs(cnxs) do
+				cadzinho.db_print(cnx)
+			end
+			-- teste---------------
+			
 			cadzinho.clear_sel()
 			--cadzinho.stop_dynamic()
 			num_pt = 1
