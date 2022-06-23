@@ -447,6 +447,10 @@ function muda_comp_id (comp, id)
 		
 		cadzinho.edit_attr(comp, idx1, 'ID1', id, ocul1)
 	end
+	
+	if idx2 > 0 and not id2 then
+		cadzinho.edit_attr(comp, idx2, 'ID2', '', ocul2)
+	end
 end
 
 function pega_comp_id (comp)
@@ -481,6 +485,16 @@ function pega_comp_id (comp)
 	return id
 end
 
+function rotacao (pt, ang)
+	local cos = math.cos(ang * math.pi / 180)
+	local sen = math.sin(ang * math.pi / 180)
+	
+	local x = pt.x * cos - pt.y * sen
+	local y = pt.x * sen + pt.y * cos
+	pt.x = x
+	pt.y = y
+end
+
 function pega_conexoes (comp)
 	-- pega os pontos de conexao de um componente
 	local conexoes = {}
@@ -501,17 +515,46 @@ function pega_conexoes (comp)
 			if tipo == "TERMINAL" then
 				--identificacao do terminal
 				local t_id = ext[3]:upper() -- dado especifico do tipo (muda p/ maiusculo)
-				--found mark then get points and id
-				local term_pts = {}
-				for i, pt in ipairs(cadzinho.get_points(ent)) do
-					-- offset points with insert point
-					term_pts[i] = pt --{}
-					--term_pts[i].x = ins_pt.x + pt.x
-					--term_pts[i].y = ins_pt.y + pt.y
-					--term_pts[i].z = ins_pt.z + pt.z
+				
+				local terminal = conexoes[t_id]
+				if not terminal then terminal = {} end
+				local figura = cadzinho.get_ent_typ(ent)
+				-- soh aceita linha ou circulo como terminal
+				if figura == 'LINE' then
+					local dados = {}
+					dados.tipo = 'linha'
+					--pega os pontos da linha
+					local pontos = cadzinho.get_points(ent)
+					for _, pt in pairs(pontos) do
+						-- executa a trasformações geometricas, conforme o componente
+						rotacao(pt, dados_comp.rot)
+						pt.x = pt.x * dados_comp.scale.x
+						pt.y = pt.y * dados_comp.scale.y
+						
+						pt.x = pt.x + dados_comp.pt.x
+						pt.y = pt.y + dados_comp.pt.y
+					end
+					
+					dados.linha = pontos
+					terminal[#terminal + 1] = dados
+				elseif figura == 'CIRCLE' then
+					local dados = {}
+					dados.tipo = 'circulo'
+					-- pega os parametros do circulo
+					local circulo = cadzinho.get_circle_data(ent)
+					-- executa a trasformações geometricas, conforme o componente
+					rotacao(circulo.center, dados_comp.rot)
+					circulo.center.x = circulo.center.x * dados_comp.scale.x
+					circulo.center.y = circulo.center.y * dados_comp.scale.y
+					circulo.radius = math.abs(circulo.radius * dados_comp.scale.x)
+					circulo.center.x = circulo.center.x + dados_comp.pt.x
+					circulo.center.y = circulo.center.y + dados_comp.pt.y
+					
+					dados.circulo = circulo
+					terminal[#terminal + 1] = dados
 				end
-				-- store terminal points in table, with id as key
-				conexoes[t_id] = term_pts
+				
+				conexoes[t_id] = terminal
 			end
 		end
 	end
@@ -698,8 +741,19 @@ function edita_dyn(event)
 			sel[1]:write()
 			-- teste----------------
 			cnxs = pega_conexoes (sel[1])
-			for cnx, pts in pairs(cnxs) do
+			for cnx, dados in pairs(cnxs) do
 				cadzinho.db_print(cnx)
+				for j, pontos in ipairs(dados) do
+					cadzinho.db_print(pontos.tipo)
+					if pontos.linha then
+						for _,pt in ipairs(pontos.linha) do
+							cadzinho.db_print(pt.x, pt.y)
+						end
+					elseif pontos.circulo then
+						cadzinho.db_print(pontos.circulo.center.x, pontos.circulo.center.y, pontos.circulo.radius)
+						--cadzinho.db_print(pontos.circulo)
+					end
+				end
 			end
 			-- teste---------------
 			
