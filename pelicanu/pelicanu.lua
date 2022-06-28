@@ -3,6 +3,7 @@
 -- ============= variáveis globais =====================
 pelicanu ={}  -- tabela principal
 pelicanu.elems = {} -- lista principal dos elementos
+tolerancia = 0.001 -- tolerancia para comparacoes de numeros não inteiros
 
 -- para funcoes dinamicas
 num_pt = 1 -- numero de pontos
@@ -31,6 +32,105 @@ end
 
 function extensao(url)
   return url:match("^.+(%..+)$")
+end
+
+function no_segmento (pt, linha)
+	-- Verifica se um ponto esta num segmento de reta
+	
+	-- confere os parametros passados
+	if type(pt) ~= "table" then return false end
+	if type(linha) ~= "table" then return false end
+	
+	-- primeiro, checa se o ponto pertence a reta
+	if math.abs((pt.x - linha[1].x) / (linha[2].x - linha[1].x) - 
+		(pt.y - linha[1].y) / (linha[2].y - linha[1].y)) > tolerancia then
+		return false
+	end
+	
+	-- agora, verifica se esta dentro do segmento
+	if ( pt.x > linha[1].x and pt.x < linha[2].x or 
+		pt.x < linha[1].x and pt.x > linha[2].x) or 
+		( pt.y > linha[1].y and pt.y < linha[2].y or 
+		pt.y < linha[1].y and pt.y > linha[2].y) then
+		return true
+	end
+	
+	-- nao estah no segmento
+	return false
+end
+
+function linha_conect (a, b)
+	-- Verifica se dois segmentos de linha estão conectados
+	
+	-- Verify if passed argments are valid
+	if type(a) ~= "table" then return false end
+	if type(b) ~= "table" then return false end
+	
+	-- testa pra ver se nao sao o mesmo objeto
+	if a == b then return false end
+	
+	-- trivialmente, testa a coincidencia de vertices
+	for _, pt1 in ipairs(a) do
+		for _, pt2 in ipairs(b) do
+			if math.abs(pt1.x - pt2.x) < tolerancia and math.abs(pt1.y - pt2.y) < tolerancia then
+				return true
+			end
+		end
+	end
+	
+	-- Senão, testa se algum vertice toca a outra linha
+	for _, pt1 in ipairs(a) do
+		if no_segmento(pt1, b) then return true end
+	end
+	for _, pt1 in ipairs(b) do
+		if no_segmento(pt1, a) then return true end
+	end
+	
+	-- nao tem conexao
+	return false
+end
+
+function circulo_conect (linha, circulo)
+	-- Verifica se um circulo e uma linha estão conectados
+	
+	-- Verify if passed argments are valid
+	if type(linha) ~= "table" then return false end
+	if type(circulo) ~= "table" then return false end
+	
+	-- testa pra ver se nao sao o mesmo objeto
+	if linha == circulo then return false end
+	
+	-- trivialmente, testa se algum vertice da linha esta dentro ou toca o circulo
+	local raio = (math.abs(circulo.radius) + tolerancia) ^ 2
+	for _, pt in ipairs(linha) do
+		local dist = (circulo.center.x - pt.x)^2 + (circulo.center.y - pt.y)^2
+		if dist < raio then
+			return true
+		end
+	end
+	
+	-- nao tem conexao
+	return false
+end
+
+function term_conect (terminal, ligacao)
+	-- Verifica a conexao entre um terminal (componente) e uma ligacao (fio)
+	
+	for _, figura in ipairs(terminal) do
+		-- cadzinho.db_print(figura.tipo)
+		if figura.linha then
+			if linha_conect(figura.linha, ligacao) then
+				return true
+			end
+		elseif figura.circulo then
+			if circulo_conect (ligacao, figura.circulo) then
+				return true
+			end
+		end
+	end
+	
+	-- nao tem conexao
+	return false
 end
 
 function dentro_poligono(pt, polig)
@@ -525,7 +625,7 @@ function pega_conexoes (comp)
 					dados.tipo = 'linha'
 					--pega os pontos da linha
 					local pontos = cadzinho.get_points(ent)
-					for _, pt in pairs(pontos) do
+					for _, pt in ipairs(pontos) do
 						-- executa a trasformações geometricas, conforme o componente
 						rotacao(pt, dados_comp.rot)
 						pt.x = pt.x * dados_comp.scale.x
@@ -671,6 +771,8 @@ function componente_dyn(event)
 				terminais[i] = term.value
 			end
 			muda_terminais(comp, terminais)
+			cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+			cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
 			comp:write()
 			cadzinho.clear_sel()
 			cadzinho.stop_dynamic()
@@ -883,6 +985,39 @@ function teste()
 			cadzinho.db_print ("    " .. el.tipo)
 		end
 	end
+	
+	local componentes = {}
+	local fios = {}
+	
+	-- varre os elementos, cadastrando as caixas existentes no desenho
+	for el_id, el in pairs(pelicanu.elems) do
+		if el.tipo == "COMPONENTE" then
+			local componente = {}
+			componente.el = el
+			componente.term =  pega_conexoes (el.ent)
+			componentes[el_id] = componente
+		elseif el.tipo == "LIGACAO" then
+			local fio = {}
+			fio.el = el
+			fio.pontos = cadzinho.get_points(el.ent)
+			fios[el_id] = fio
+		end
+	end
+	
+	for comp_id, componente in pairs(componentes) do
+		local nome_b = cadzinho.get_blk_name (componente.el.ent)
+		cadzinho.db_print (nome_b)
+		for t_id, terminal in pairs(componente.term) do
+			--cadzinho.db_print ("  " .. t_id)
+			for l_id, fio in pairs(fios) do
+				if term_conect (terminal, fio.pontos) then
+					cadzinho.db_print ("    " .. t_id, l_id)
+				end
+			end
+		end
+	end
+	
+	--
 end
 
 
