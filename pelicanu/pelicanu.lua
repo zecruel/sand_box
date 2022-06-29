@@ -595,8 +595,8 @@ function rotacao (pt, ang)
 	pt.y = y
 end
 
-function pega_conexoes (comp)
-	-- pega os pontos de conexao de um componente
+function pega_terminais (comp)
+	-- pega os pontos de conexao de um componente - terminais
 	local conexoes = {}
 	
 	-- nome do bloco do componente
@@ -662,7 +662,7 @@ function pega_conexoes (comp)
 	return conexoes
 end
 
-function pega_terminais (comp)
+function info_terminais (comp)
 	local terminais = {}
 	local attrs = cadzinho.get_attribs(comp)
 	for i, attr in ipairs(attrs) do
@@ -733,7 +733,7 @@ function componente_dyn(event)
 					end
 				end
 				if comp then
-					local terminais = pega_terminais(comp)
+					local terminais = info_terminais(comp)
 					g_terminais = {}
 					for i, term in ipairs(terminais) do
 						g_terminais[i] = {value = term}
@@ -804,7 +804,7 @@ function edita_dyn(event)
 	if #sel > 0 and  num_pt == 1 then
 		num_pt = 2
 		g_comp_id.value = pega_comp_id(sel[1])
-		local terminais = pega_terminais(sel[1])
+		local terminais = info_terminais(sel[1])
 		g_terminais = {}
 		for i, term in ipairs(terminais) do
 			g_terminais[i] = {value = term}
@@ -841,23 +841,6 @@ function edita_dyn(event)
 			muda_terminais(sel[1], terminais)
 			
 			sel[1]:write()
-			-- teste----------------
-			cnxs = pega_conexoes (sel[1])
-			for cnx, dados in pairs(cnxs) do
-				cadzinho.db_print(cnx)
-				for j, pontos in ipairs(dados) do
-					cadzinho.db_print(pontos.tipo)
-					if pontos.linha then
-						for _,pt in ipairs(pontos.linha) do
-							cadzinho.db_print(pt.x, pt.y)
-						end
-					elseif pontos.circulo then
-						cadzinho.db_print(pontos.circulo.center.x, pontos.circulo.center.y, pontos.circulo.radius)
-						--cadzinho.db_print(pontos.circulo)
-					end
-				end
-			end
-			-- teste---------------
 			
 			cadzinho.clear_sel()
 			--cadzinho.stop_dynamic()
@@ -988,13 +971,16 @@ function teste()
 	
 	local componentes = {}
 	local fios = {}
+	local barras = {}
 	
-	-- varre os elementos, cadastrando as caixas existentes no desenho
+	-- varre os elementos, cadastrando os componentes e os fios
 	for el_id, el in pairs(pelicanu.elems) do
 		if el.tipo == "COMPONENTE" then
 			local componente = {}
 			componente.el = el
-			componente.term =  pega_conexoes (el.ent)
+			componente.term =  pega_terminais (el.ent)
+			componente.conexoes = {}
+			componente.bloco = cadzinho.get_blk_name (el.ent)
 			componentes[el_id] = componente
 		elseif el.tipo == "LIGACAO" then
 			local fio = {}
@@ -1004,16 +990,87 @@ function teste()
 		end
 	end
 	
+	-- varre os componentes para cadastrar as conexoes dos terminais e fios
 	for comp_id, componente in pairs(componentes) do
-		local nome_b = cadzinho.get_blk_name (componente.el.ent)
-		cadzinho.db_print (nome_b)
 		for t_id, terminal in pairs(componente.term) do
-			--cadzinho.db_print ("  " .. t_id)
 			for l_id, fio in pairs(fios) do
 				if term_conect (terminal, fio.pontos) then
-					cadzinho.db_print ("    " .. t_id, l_id)
+					local conexoes ={}
+					if componente.conexoes[t_id] then
+						conexoes = componente.conexoes[t_id]
+					end
+					conexoes[#conexoes + 1] = l_id
+					componente.conexoes[t_id] = conexoes
 				end
 			end
+		end
+	end
+	
+	for comp_id, componente in pairs(componentes) do
+		for t_id, cnx in pairs(componente.conexoes) do
+			local fio_ant = false
+			for i, fio_id in ipairs(cnx) do
+				local fio = fios[fio_id]
+				if fio_ant then
+					-- adiciona o fio a barra existente (mesmo terminal)
+					fio.barra = fio_ant.barra
+					fio.barra.fios[#fio.barra.fios+1] = fio
+				else
+					if fio.barra then
+						-- adiciona o terminal a barra existente (fio ligado a outro componente)
+						local terminal = {comp = comp_id, term = t_id}
+						fio.barra.terminais[#fio.barra.terminais+1] = terminal
+					else
+						-- Nova barra
+						fio.barra = {}
+						fio.barra.fios = {fio}
+						fio.barra.terminais = {{comp = comp_id, term = t_id}}
+						barras[fio.barra] = fio.barra
+					end
+				end
+				fio_ant = fio
+			end
+		end
+	end
+	
+	for fio_id1, fio1 in pairs(fios) do
+		for fio_id2, fio2 in pairs(fios) do
+			if fio1 ~= fio2 and linha_conect (fio1.pontos, fio2.pontos) then
+				if fio1.barra and not fio2.barra then
+					fio1.barra.fios[#fio1.barra.fios+1] = fio2
+					fio2.barra = fio1.barra
+				elseif not fio1.barra and fio2.barra then
+					fio2.barra.fios[#fio2.barra.fios+1] = fio1
+					fio1.barra = fio2.barra
+				elseif fio1.barra and fio2.barra and fio1.barra ~= fio2.barra then
+					barras[fio2.barra] = nil
+					-- transfere os fios e terminais
+					for _, fio in pairs(fio2.barra.fios) do
+						fio1.barra.fios[#fio1.barra.fios+1] = fio
+					end
+					for _, fio in pairs(fio2.barra.terminais) do
+						fio1.barra.terminais[#fio1.barra.terminais+1] = fio
+					end
+					for _, fio in pairs(fio1.barra.fios) do
+						fio.barra = fio1.barra
+					end
+				elseif not fio1.barra and not fio2.barra then
+					-- Nova barra
+					fio1.barra = {}
+					fio1.barra.fios = {fio1, fio2}
+					fio2.barra = fio1.barra
+					barras[fio1.barra] = fio1.barra
+				end
+			end
+		end
+	end
+	
+	
+	cadzinho.db_print ("Num barras=", #barras)
+	for i, barra in pairs(barras) do
+		cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
+		for j, term in ipairs(barra.terminais) do
+			cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
 		end
 	end
 	
