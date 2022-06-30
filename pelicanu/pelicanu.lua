@@ -14,6 +14,7 @@ lista_comp_o = {}
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
+g_caixa_tipo = {value = 'COMPONENTE'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
 g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
 --g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
@@ -318,6 +319,8 @@ function caixa_dyn(event)
 	cadzinho.nk_layout(20, 2)
 	cadzinho.nk_label("ID:")
 	cadzinho.nk_edit(g_caixa_id)
+	cadzinho.nk_label("Tipo:")
+	cadzinho.nk_edit(g_caixa_tipo)
 	
 	-- armazena o ponto atual na lista
 	pts[num_pt] = {}
@@ -382,7 +385,7 @@ function caixa_dyn(event)
 			cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
 			
 			if caixa then
-				cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA"})
+				cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo.value})
 				caixa:write()
 			end
 			if caixa_id then
@@ -775,8 +778,8 @@ function componente_dyn(event)
 			cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
 			comp:write()
 			cadzinho.clear_sel()
-			cadzinho.stop_dynamic()
-			num_pt = 1
+			--cadzinho.stop_dynamic()
+			--num_pt = 1
 		elseif event.type == 'cancel' then
 			num_pt = 1
 		end
@@ -908,9 +911,9 @@ function obtem_caixas()
 	local conteudo
 	
 	-- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-	pelicanu.atualiza_unicos()
+	--pelicanu.atualiza_unicos()
 	-- atualiza a lista principal com os elementos
-	pelicanu.atualiza_elems()
+	--pelicanu.atualiza_elems()
 	
 	-- caixa "desenho" para armazenar os elementos órfãos
 	caixa = {}
@@ -958,17 +961,7 @@ function obtem_caixas()
 	return caixas
 end
 
-function teste()
-	cadzinho.db_print ("teste")
-	local caixas = obtem_caixas()
-	for id, caixa in pairs(caixas) do
-		cadzinho.db_print (caixa.nome)
-		for el_id, _ in pairs(caixa.conteudo) do
-			el = pelicanu.elems[el_id]
-			cadzinho.db_print ("    " .. el.tipo)
-		end
-	end
-	
+function obtem_barras ()
 	local componentes = {}
 	local fios = {}
 	local barras = {}
@@ -1065,7 +1058,28 @@ function teste()
 		end
 	end
 	
+	return barras
+end
+
+function teste()
+	cadzinho.db_print ("teste")
 	
+	-- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
+	pelicanu.atualiza_unicos()
+	-- atualiza a lista principal com os elementos
+	pelicanu.atualiza_elems()
+	
+	local caixas = obtem_caixas()
+	for id, caixa in pairs(caixas) do
+		cadzinho.db_print (caixa.nome)
+		for el_id, _ in pairs(caixa.conteudo) do
+			el = pelicanu.elems[el_id]
+			cadzinho.db_print ("    " .. el.tipo)
+		end
+	end
+	
+	
+	local barras = obtem_barras()
 	cadzinho.db_print ("Num barras=", #barras)
 	for i, barra in pairs(barras) do
 		cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
