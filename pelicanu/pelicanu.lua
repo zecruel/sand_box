@@ -738,7 +738,7 @@ function componente_dyn(event)
 				if comp then
 					local terminais = info_terminais(comp)
 					g_terminais = {}
-					for i, term in ipairs(terminais) do
+					for i, term in pairs(terminais) do
 						g_terminais[i] = {value = term}
 					end
 					num_pt = 2
@@ -763,14 +763,14 @@ function componente_dyn(event)
 		cadzinho.nk_layout(20, 1)
 		cadzinho.nk_label("Terminais:")
 		cadzinho.nk_layout(20, 2)
-		for i, term in ipairs(g_terminais) do
+		for i, term in pairs(g_terminais) do
 			cadzinho.nk_label(tostring(i)..':')
 			cadzinho.nk_edit(term)
 		end
 		if event.type == 'enter' then
 			muda_comp_id (comp, g_comp_id.value)
 			terminais = {}
-			for i, term in ipairs(g_terminais) do
+			for i, term in pairs(g_terminais) do
 				terminais[i] = term.value
 			end
 			muda_terminais(comp, terminais)
@@ -809,7 +809,7 @@ function edita_dyn(event)
 		g_comp_id.value = pega_comp_id(sel[1])
 		local terminais = info_terminais(sel[1])
 		g_terminais = {}
-		for i, term in ipairs(terminais) do
+		for i, term in pairs(terminais) do
 			g_terminais[i] = {value = term}
 		end
 	end
@@ -830,7 +830,7 @@ function edita_dyn(event)
 		cadzinho.nk_layout(20, 1)
 		cadzinho.nk_label("Terminais:")
 		cadzinho.nk_layout(20, 2)
-		for i, term in ipairs(g_terminais) do
+		for i, term in pairs(g_terminais) do
 			cadzinho.nk_label(tostring(i)..':')
 			cadzinho.nk_edit(term)
 		end
@@ -838,7 +838,7 @@ function edita_dyn(event)
 		if event.type == 'enter' then
 			muda_comp_id (sel[1], g_comp_id.value)
 			terminais = {}
-			for i, term in ipairs(g_terminais) do
+			for i, term in pairs(g_terminais) do
 				terminais[i] = term.value
 			end
 			muda_terminais(sel[1], terminais)
@@ -921,7 +921,8 @@ function obtem_caixas()
 	caixa['nome'] = ""
 	caixa['conteudo'] = SetLib.new(conteudo)
 	caixa['filhas'] = {}
-	caixas['desenho'] = caixa
+	caixa['tipo'] = 'FOLHA'
+	caixas[0] = caixa
 	
 	-- varre os elementos, cadastrando as caixas existentes no desenho
 	for el_id, el in pairs(pelicanu.elems) do
@@ -931,6 +932,7 @@ function obtem_caixas()
 			caixa['nome'] = ""
 			caixa['conteudo'] = SetLib.new(conteudo)
 			caixa['filhas'] = {}
+			caixa['tipo'] = el.esp
 			caixas[el_id] = caixa
 		end
 	end
@@ -1051,6 +1053,7 @@ function obtem_barras ()
 					-- Nova barra
 					fio1.barra = {}
 					fio1.barra.fios = {fio1, fio2}
+					fio1.barra.terminais = {}
 					fio2.barra = fio1.barra
 					barras[fio1.barra] = fio1.barra
 				end
@@ -1062,33 +1065,110 @@ function obtem_barras ()
 end
 
 function teste()
-	cadzinho.db_print ("teste")
+	cadzinho.db_print ("Teste de criacao de banco de dados")
 	
 	-- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
 	pelicanu.atualiza_unicos()
 	-- atualiza a lista principal com os elementos
 	pelicanu.atualiza_elems()
 	
+	db = sqlite.open('pelicanu.db')
+	db:exec('DROP TABLE IF EXISTS componentes')
+	db:exec('CREATE TABLE componentes('..
+		'unico INTEGER, '..
+		'bloco TEXT, id TEXT, pai INTEGER)')
+	db:exec('DROP TABLE IF EXISTS caixas')
+	db:exec('CREATE TABLE caixas('..
+		'unico INTEGER, '..
+		'id TEXT, tipo TEXT, pai INTEGER)')
+	db:exec('DROP TABLE IF EXISTS terminais')
+	db:exec('CREATE TABLE terminais('..
+		'componente INTEGER, '..
+		'id INTEGER, texto TEXT)')
+		
+	db:exec('DROP TABLE IF EXISTS barras')
+	db:exec('CREATE TABLE barras('..
+		'id TEXT, '..
+		'componente INTEGER, '..
+		'terminal INTEGER)')
+	
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
-		cadzinho.db_print (caixa.nome)
+		--cadzinho.db_print (caixa.nome)
+		local pai = id
+		if type(pai) == 'number' then
+			pai = string.format('%d', pai)
+		else
+			pai = '0'
+		end
+		if not pai then pai = 'NULL' end
 		for el_id, _ in pairs(caixa.conteudo) do
 			el = pelicanu.elems[el_id]
-			cadzinho.db_print ("    " .. el.tipo)
+			--cadzinho.db_print ("    " .. el.tipo)
+			if el.tipo == "COMPONENTE" then
+				local terms = info_terminais (el.ent)
+				local bloco = cadzinho.get_blk_name (el.ent)
+				if not bloco then bloco = 'NULL' end
+				local comp_id = pega_comp_id(el.ent)
+				if not comp_id then comp_id = 'NULL' end
+				--cadzinho.db_print ("    " .. bloco, comp_id)
+				
+				db:exec ("INSERT INTO componentes VALUES("..
+					string.format('%d', el_id) ..", '"..
+					bloco .."', '"..
+					comp_id .."', "..
+					pai..
+					");")
+				for t_id, t in pairs(terms) do
+					db:exec ("INSERT INTO terminais VALUES("..
+						string.format('%d', el_id) ..", "..
+						string.format('%d', t_id) ..", '"..
+						t .."');")
+				end
+			elseif el.tipo == "CAIXA" then
+				local sub_caixa = caixas[el_id]
+				if sub_caixa then
+					local nome = sub_caixa.nome
+					if not nome then nome = 'NULL' end
+					local tipo = sub_caixa.tipo
+					if not tipo then tipo = 'NULL' end
+					--cadzinho.db_print ("    " .. nome, tipo)
+					
+					db:exec ("INSERT INTO caixas VALUES("..
+						string.format('%d', el_id) ..", '"..
+						nome .."', '"..
+						tipo .."', "..
+						pai..
+						");")
+				end
+			end
+			
 		end
 	end
 	
 	
+	
+	
 	local barras = obtem_barras()
-	cadzinho.db_print ("Num barras=", #barras)
+	--cadzinho.db_print ("Num barras=", #barras)
 	for i, barra in pairs(barras) do
-		cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
+		if not barra.id then
+			barra.id = cadzinho.unique_id()
+		end
+		--cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
 		for j, term in ipairs(barra.terminais) do
-			cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
+			--cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
+			db:exec ("INSERT INTO barras VALUES('"..
+				barra.id .."', "..
+				string.format('%d', term.comp) ..", "..
+				string.match(term.term, "^T(%d)")..
+				");")
 		end
 	end
 	
 	--
+	db:close()
+	cadzinho.db_print ("----- Teste concluido  ------")
 end
 
 
