@@ -1084,13 +1084,29 @@ function teste()
 	db:exec('DROP TABLE IF EXISTS terminais')
 	db:exec('CREATE TABLE terminais('..
 		'componente INTEGER, '..
-		'id INTEGER, texto TEXT)')
+		'id INTEGER, terminal TEXT)')
 		
 	db:exec('DROP TABLE IF EXISTS barras')
 	db:exec('CREATE TABLE barras('..
 		'id TEXT, '..
 		'componente INTEGER, '..
 		'terminal INTEGER)')
+	
+	db:exec('DROP VIEW IF EXISTS comp_term')
+	db:exec("CREATE VIEW comp_term AS "..
+		"SELECT unico, CASE WHEN pai > 0 THEN "..
+		"(SELECT CASE WHEN caixas.tipo = 'COMPONENTE' THEN caixas.id "..
+		"ELSE componentes.id END componente "..
+		"FROM caixas WHERE caixas.unico = componentes.pai) "..
+		"ELSE componentes.id END componente, "..
+		"CASE WHEN pai > 0 THEN (select "..
+		"CASE WHEN caixas.tipo = 'COMPONENTE' THEN "..
+		"componentes.id ELSE NULL END componente "..
+		"FROM caixas WHERE caixas.unico = componentes.pai) "..
+		"ELSE NULL END parte, "..
+		"componentes.bloco, terminais.terminal FROM componentes "..
+		"INNER JOIN terminais ON terminais.componente = componentes.unico "..
+		"ORDER BY componente ASC, componentes.unico ASC, terminais.terminal ASC;")
 	
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
