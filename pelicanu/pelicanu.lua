@@ -1092,21 +1092,71 @@ function teste()
 		'componente INTEGER, '..
 		'terminal INTEGER)')
 	
+	db:exec('DROP VIEW IF EXISTS hierarquia')
+	db:exec("CREATE VIEW hierarquia AS\n"..
+		"SELECT componentes.unico componente,\n"..
+		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas WHERE caixas.unico = componentes.pai\n"..
+		"UNION ALL\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas, cte_caixas\n"..
+		"WHERE cte_caixas.pai = caixas.unico)\n"..
+		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'COMPONENTE'\n"..
+		") pai,\n"..
+		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas WHERE caixas.unico = componentes.pai\n"..
+		"UNION ALL\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas, cte_caixas\n"..
+		"WHERE cte_caixas.pai = caixas.unico)\n"..
+		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'MODULO'\n"..
+		") modulo,\n"..
+		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas WHERE caixas.unico = componentes.pai\n"..
+		"UNION ALL\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas, cte_caixas\n"..
+		"WHERE cte_caixas.pai = caixas.unico)\n"..
+		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'PAINEL'\n"..
+		") painel,\n"..
+		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas WHERE caixas.unico = componentes.pai\n"..
+		"UNION ALL\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas, cte_caixas\n"..
+		"WHERE cte_caixas.pai = caixas.unico)\n"..
+		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESENHO'\n"..
+		") desenho,\n"..
+		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas WHERE caixas.unico = componentes.pai\n"..
+		"UNION ALL\n"..
+		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
+		"FROM caixas, cte_caixas\n"..
+		"WHERE cte_caixas.pai = caixas.unico)\n"..
+		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESCRITIVO'\n"..
+		") descritivo\n"..
+		"FROM componentes\n")
 	db:exec('DROP VIEW IF EXISTS comp_term')
-	db:exec("CREATE VIEW comp_term AS "..
-		"SELECT unico, CASE WHEN pai > 0 THEN "..
-		"(SELECT CASE WHEN caixas.tipo = 'COMPONENTE' THEN caixas.id "..
-		"ELSE componentes.id END componente "..
-		"FROM caixas WHERE caixas.unico = componentes.pai) "..
-		"ELSE componentes.id END componente, "..
-		"CASE WHEN pai > 0 THEN (select "..
-		"CASE WHEN caixas.tipo = 'COMPONENTE' THEN "..
-		"componentes.id ELSE NULL END componente "..
-		"FROM caixas WHERE caixas.unico = componentes.pai) "..
-		"ELSE NULL END parte, "..
-		"componentes.bloco, terminais.terminal FROM componentes "..
-		"INNER JOIN terminais ON terminais.componente = componentes.unico "..
-		"ORDER BY componente ASC, componentes.unico ASC, terminais.terminal ASC;")
+	db:exec("CREATE VIEW comp_term AS\n"..
+		"SELECT componentes.unico,\n"..
+		"(SELECT CASE WHEN hierarquia.pai\n"..
+		"THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n"..
+		"ELSE componentes.id\n"..
+		"END) componente,\n"..
+		"(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.modulo) modulo,\n"..
+		"(SELECT CASE WHEN hierarquia.pai\n"..
+		"THEN componentes.id\n"..
+		"END) parte,\n"..
+		"componentes.bloco, terminais.id num, terminais.terminal \n"..
+		"FROM componentes, hierarquia \n"..
+		"INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
+		"WHERE componentes.unico = hierarquia.componente\n"..
+		"ORDER BY componente ASC, modulo ASC, unico ASC, num ASC\n")
 	
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do

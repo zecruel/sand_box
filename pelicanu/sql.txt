@@ -1,0 +1,163 @@
+select id, bloco, terminal
+from componentes inner join terminais on terminais.componente = componentes.unico order by componentes.id asc, terminais.terminal asc;
+
+
+select case when pai > 0 then (select caixas.id from caixas where caixas.unico = componentes.pai) else id end componente from componentes;
+
+select
+    case when pai > 0 then
+        (select 
+            case when caixas.tipo = 'COMPONENTE' THEN
+                caixas.id
+            else
+                componentes.id
+            end componente
+        from caixas
+        where caixas.unico = componentes.pai)
+    else
+        id
+    end componente
+from componentes 
+order by componente;
+
+
+select
+    case when pai > 0 then
+        (select 
+            case when caixas.tipo = 'COMPONENTE' THEN
+                caixas.id
+            else
+                componentes.id
+            end componente
+        from caixas
+        where caixas.unico = componentes.pai)
+    else
+        componentes.id
+    end componente, componentes.bloco, terminais.terminal
+from componentes
+inner join terminais on terminais.componente = componentes.unico
+order by componente asc, componentes.bloco, terminais.terminal asc;
+
+
+select unico,
+    case when pai > 0 then
+        (select 
+            case when caixas.tipo = 'COMPONENTE' THEN
+                caixas.id
+            else
+                componentes.id
+            end componente
+        from caixas
+        where caixas.unico = componentes.pai)
+    else
+        componentes.id
+    end componente,
+    case when pai > 0 then
+        (select 
+            case when caixas.tipo = 'COMPONENTE' THEN
+                componentes.id
+            else
+                NULL
+            end componente
+        from caixas
+        where caixas.unico = componentes.pai)
+    else
+        NULL
+    end parte,
+componentes.bloco, terminais.terminal
+from componentes
+inner join terminais on terminais.componente = componentes.unico
+order by componente asc, componentes.unico asc, terminais.terminal asc;
+
+select componentes.unico, componentes.id, (WITH RECURSIVE cte_caixas (unico, id, tipo, pai, nivel) AS (
+    SELECT caixas.unico, caixas.id, caixas.tipo, caixas.pai, 0
+    from caixas where caixas.unico = componentes.pai
+    UNION ALL
+
+    SELECT caixas.unico, caixas.id, caixas.tipo, caixas.pai, cte_caixas.nivel+1
+    FROM caixas, cte_caixas
+    where cte_caixas.pai = caixas.unico-- and caixas.tipo = 'COMPONENTE'
+)
+SELECT id FROM cte_caixas where cte_caixas.tipo = 'COMPONENTE'
+) as pai
+from componentes
+-- ======================
+SELECT componentes.unico, componentes.id,
+	(WITH RECURSIVE cte_caixas (unico, id, tipo, pai) AS (
+		-- Inicializa a recursao com o pai imediato do componente
+		SELECT caixas.unico, caixas.id, caixas.tipo, caixas.pai
+		FROM caixas WHERE caixas.unico = componentes.pai
+		
+		UNION ALL
+		--Recursao, montando a hierarquia superior das caixas
+		SELECT caixas.unico, caixas.id, caixas.tipo, caixas.pai
+		FROM caixas, cte_caixas
+		WHERE cte_caixas.pai = caixas.unico
+	)
+	--retorna uma coluna, de acordo com o tipo da caixa
+	SELECT id FROM cte_caixas WHERE cte_caixas.tipo = 'COMPONENTE'
+) pai
+FROM componentes
+-- ======================
+CREATE VIEW hierarquia AS
+SELECT componentes.unico componente,
+(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas WHERE caixas.unico = componentes.pai
+UNION ALL
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas, cte_caixas
+WHERE cte_caixas.pai = caixas.unico)
+SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'COMPONENTE'
+) pai,
+(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas WHERE caixas.unico = componentes.pai
+UNION ALL
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas, cte_caixas
+WHERE cte_caixas.pai = caixas.unico)
+SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'MODULO'
+) modulo,
+(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas WHERE caixas.unico = componentes.pai
+UNION ALL
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas, cte_caixas
+WHERE cte_caixas.pai = caixas.unico)
+SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'PAINEL'
+) painel,
+(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas WHERE caixas.unico = componentes.pai
+UNION ALL
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas, cte_caixas
+WHERE cte_caixas.pai = caixas.unico)
+SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESENHO'
+) desenho,
+(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas WHERE caixas.unico = componentes.pai
+UNION ALL
+SELECT caixas.unico, caixas.tipo, caixas.pai
+FROM caixas, cte_caixas
+WHERE cte_caixas.pai = caixas.unico)
+SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESCRITIVO'
+) descritivo
+FROM componentes
+-----------------
+SELECT componentes.unico,
+(SELECT CASE WHEN hierarquia.pai
+THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)
+ELSE componentes.id
+END) componente,
+(SELECT CASE WHEN hierarquia.pai
+THEN componentes.id
+END) parte,
+componentes.bloco, terminais.id num, terminais.terminal 
+FROM componentes, hierarquia 
+INNER JOIN terminais ON terminais.componente = componentes.unico
+WHERE componentes.unico = hierarquia.componente
+ORDER BY componente ASC, componentes.unico ASC, num ASC
