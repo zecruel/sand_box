@@ -26,6 +26,8 @@ g_componente = {value = ""}
 g_comp_id = {value = ""}
 g_terminais = {}
 
+excel = require "xlsxwriter.workbook"
+
 -- ============================================
 function nome_arq(url)
   return url:match("(.+)%..+$")
@@ -1232,11 +1234,82 @@ function teste()
 		end
 	end
 	
+	
 	--
 	db:close()
 	cadzinho.db_print ("----- Teste concluido  ------")
 end
 
+
+function teste_excel()
+	cadzinho.db_print ("Teste de leitura de banco de dados")
+	
+	-- cria o arquivo de planilha
+	local planilha = excel:new("componentes.xlsx")
+	local aba = planilha:add_worksheet("Componentes")
+	local db = sqlite.open('pelicanu.db')
+	
+	local lin = 0
+	local col = 0
+
+	for linha in db:cols('select * from comp_term') do
+		--cadzinho.db_print(string.format('%X', linha.unico), linha.componente, linha.modulo, linha.parte, linha.bloco, linha.num, linha.terminal)
+		aba:write(lin, col, string.format('%X', linha.unico))
+		col = col + 1
+		if linha.componente then aba:write(lin, col, linha.componente) end
+		col = col + 1
+		if linha.modulo then aba:write(lin, col, linha.modulo) end
+		col = col + 1
+		if linha.parte then aba:write(lin, col, linha.parte) end
+		col = col + 1
+		if linha.bloco then aba:write(lin, col, linha.bloco) end
+		col = col + 1
+		if linha.num then aba:write(lin, col, linha.num) end
+		col = col + 1
+		if linha.terminal then aba:write(lin, col, linha.terminal) end
+		
+		col = 0
+		lin = lin + 1
+	end
+	--
+	db:close()
+	
+	planilha:close()
+	
+	local leitor = require 'xlsx_lua'
+	
+	local workbook = leitor.open('componentes.xlsx')
+
+	for key, sheet in pairs(workbook.sheets) do
+		cadzinho.db_print (("Sheet: %s, index = %s"):format(key, sheet.idx))
+		
+		-- sparse scan
+		--[[cadzinho.db_print ("------Sparse data:-------")
+		for r_i, row in ipairs(sheet.data) do
+			if type(row) == "table" then
+				for c_i, cell in pairs (row) do
+					cadzinho.db_print (("%s%d"):format(c_i, r_i), cell)
+				end
+			end
+		end]]--
+		
+		-- tabular scan
+		cadzinho.db_print ("------ Tabular data:-------")
+		for _, r in ipairs(sheet.data.dim.rows) do
+			local str = ""
+			for _, c in ipairs(sheet.data.dim.cols) do
+				str = str .. tostring(sheet.data[r][c]) .. "    "
+			end
+			cadzinho.db_print (str)
+		end
+		
+	end
+	
+	
+
+	--cadzinho.db_print(fs.cwd(), os.tmpname ())
+	cadzinho.db_print ("----- Teste concluido  ------")
+end
 
 --============== Janela Principal =======================
 function pelicanu_win()
@@ -1269,7 +1342,8 @@ function pelicanu_win()
 				--test()
 				--co = coroutine.create(test)
 				--coroutine.resume(co)
-				cadzinho.print_drwg("teste.pdf", 210, 297, "mm", 5, 0,0)
+				--cadzinho.print_drwg("teste.pdf", 210, 297, "mm", 5, 0,0)
+				teste_excel()
 			end
 			
 		else -- padrao - esquematico
