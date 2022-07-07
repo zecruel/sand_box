@@ -1240,42 +1240,137 @@ function teste()
 	cadzinho.db_print ("----- Teste concluido  ------")
 end
 
-
-function teste_excel()
-	cadzinho.db_print ("Teste de leitura de banco de dados")
-	
+function grava_pl_comp ()
+	cadzinho.db_print ("----- Grava componentes  ------")
 	-- cria o arquivo de planilha
+	os.remove("componentes.xlsx") -- deleta o arquivo existente
 	local planilha = excel:new("componentes.xlsx")
 	local aba = planilha:add_worksheet("Componentes")
-	local db = sqlite.open('pelicanu.db')
+	--aba:protect() -- aba protegida
+	local protegido = planilha:add_format({
+		border = 1,
+		locked = true,
+		pattern = 1,
+		bg_color = 'silver',
+		})
+	local desprotegido = planilha:add_format({locked = false, border = 1})
 	
-	local lin = 0
-	local col = 0
-
-	for linha in db:cols('select * from comp_term') do
-		--cadzinho.db_print(string.format('%X', linha.unico), linha.componente, linha.modulo, linha.parte, linha.bloco, linha.num, linha.terminal)
-		aba:write(lin, col, string.format('%X', linha.unico))
-		col = col + 1
-		if linha.componente then aba:write(lin, col, linha.componente) end
-		col = col + 1
-		if linha.modulo then aba:write(lin, col, linha.modulo) end
-		col = col + 1
-		if linha.parte then aba:write(lin, col, linha.parte) end
-		col = col + 1
-		if linha.bloco then aba:write(lin, col, linha.bloco) end
-		col = col + 1
-		if linha.num then aba:write(lin, col, linha.num) end
-		col = col + 1
-		if linha.terminal then aba:write(lin, col, linha.terminal) end
+	local m_p = planilha:add_format({
+		border = 1,
+		locked = true,
+		pattern = 1,
+		bg_color = 'silver',
+		valign = "vcenter",
+		})
+	local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
+	
+	-- tamanho das colunas
+	aba:set_column(0, 1, 20)
+	aba:set_column(2, 4, 11)
+	aba:set_column(5, 5, 4)
+	aba:set_column(6, 6, 11)
+	
+	-- primeira linha de titulo
+	local tit_p = planilha:add_format({
+		border = 6,
+		locked = true,
+		pattern = 1,
+		bg_color = 'silver',
+		bold = true
+		})
+	local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
+	aba:write(0, 0, 'ID Unico', tit_p)
+	aba:write(0, 1, 'Componente', tit_p)
+	aba:write(0, 2, 'Modulo', tit_p)
+	aba:write(0, 3, 'Parte', tit_d)
+	aba:write(0, 4, 'Bloco', tit_p)
+	aba:write(0, 5, 'T id', tit_p)
+	aba:write(0, 6, 'Terminal', tit_d)
+	
+	local lin = 1
+	
+	-- variaveis para agupamento (merge) das celulas repetidas
+	local ini_comp = 1
+	local ini_unico = 1
+	local ini_modulo = 1
+	local comp_ant = false
+	local bloco_ant = false
+	local unico_ant = false
+	local bloco_ant = false
+	local parte_ant = false
+	local modulo_ant = nil
+	
+	-- abre e le o abnco de dados
+	local db = sqlite.open('pelicanu.db')
+	for linha in db:cols('select * from comp_term') do -- para cada linha doBD
+		-- grava na planilha cada celula separada, a principio
+		aba:write(lin, 0, string.format('%X', linha.unico), protegido)
+		aba:write(lin, 1, linha.componente, protegido)
+		aba:write(lin, 2, linha.modulo, protegido)
+		if linha.parte then
+			aba:write(lin, 3, linha.parte, desprotegido)
+		else aba:write(lin, 3, linha.parte, protegido) end
+		aba:write(lin, 4, linha.bloco, protegido)
+		aba:write(lin, 5, linha.num, protegido)
+		aba:write(lin, 6, linha.terminal, desprotegido)
 		
-		col = 0
+		-- agrupa as celulas repetidas
+		if comp_ant ~= linha.componente then
+			if (lin - ini_comp) > 1 then
+				aba:merge_range(ini_comp, 1, lin - 1, 1, comp_ant, m_p)
+			end
+			ini_comp = lin
+		end
+		if modulo_ant ~= linha.modulo or comp_ant and comp_ant ~= linha.componente then
+			if (lin - ini_modulo) > 1 then
+				aba:merge_range(ini_modulo, 2, lin - 1, 2, modulo_ant, m_p)
+			end
+			ini_modulo = lin
+		end
+		if unico_ant ~= linha.unico then -- o ID unico eh o criterio para agrupar blocos e partes
+			if (lin - ini_unico) > 1 then
+				aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
+				aba:merge_range(ini_unico, 4, lin - 1, 4, bloco_ant, m_p)
+				if parte_ant then
+					aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
+				else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
+			end
+			ini_unico = lin
+		end
+		
+		comp_ant = linha.componente
+		unico_ant = linha.unico
+		bloco_ant = linha.bloco
+		parte_ant = linha.parte
+		modulo_ant = linha.modulo
+		
+		-- proxima linha
 		lin = lin + 1
+	end
+	-- finaliza os agrupamentos, se necessario
+	if (lin - ini_comp) > 1 then
+		aba:merge_range(ini_comp, 1, lin - 1, 1, comp_ant, m_p)
+	end
+	
+	if (lin - ini_modulo) > 1 then
+		aba:merge_range(ini_modulo, 2, lin - 1, 2, modulo_ant, m_p)
+	end
+	
+	if (lin - ini_unico) > 1 then
+		aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
+		aba:merge_range(ini_unico, 4, lin - 1, 4, bloco_ant, m_p)
+		if parte_ant then
+			aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
+		else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
 	end
 	--
 	db:close()
 	
 	planilha:close()
-	
+	cadzinho.db_print ("----- Concluido  ------")
+end
+function le_pl_comp()
+	cadzinho.db_print ("----- Atualiza componentes  ------")
 	local leitor = require 'xlsx_lua'
 	
 	local workbook = leitor.open('componentes.xlsx')
@@ -1294,7 +1389,7 @@ function teste_excel()
 		end]]--
 		
 		-- tabular scan
-		cadzinho.db_print ("------ Tabular data:-------")
+		--[[cadzinho.db_print ("------ Tabular data:-------")
 		for _, r in ipairs(sheet.data.dim.rows) do
 			local str = ""
 			for _, c in ipairs(sheet.data.dim.cols) do
@@ -1302,7 +1397,82 @@ function teste_excel()
 			end
 			cadzinho.db_print (str)
 		end
+		]]--
+		--merged cells
+		cadzinho.db_print ("------ merged cells:-------")
+		for _, r in ipairs(sheet.data.merged) do
+			cadzinho.db_print (r)
+		end
+	end
+	
+	cadzinho.db_print ("----- Concluido  ------")
+end
+function teste_excel()
+	cadzinho.db_print ("Teste de leitura de banco de dados")
+	--[[
+	-- cria o arquivo de planilha
+	local planilha = excel:new("componentes.xlsx")
+	local aba = planilha:add_worksheet("Componentes")
+	local db = sqlite.open('pelicanu.db')
+	
+	local lin = 0
+	local col = 0
+
+	for linha in db:cols('select * from comp_term') do
+		--cadzinho.db_print(string.format('%X', linha.unico), linha.componente, linha.modulo, linha.parte, linha.bloco, linha.num, linha.terminal)
+		aba:write(lin, col, string.format('%X', linha.unico))
+		col = col + 1
+		if linha.componente then aba:write(lin, col, linha.componente) end
+		col = col + 1
+		aba:write(lin, col, linha.modulo)
+		col = col + 1
+		aba:write(lin, col, linha.parte)
+		col = col + 1
+		aba:write(lin, col, linha.bloco)
+		col = col + 1
+		aba:write(lin, col, linha.num)
+		col = col + 1
+		aba:write(lin, col, linha.terminal)
 		
+		col = 0
+		lin = lin + 1
+	end
+	--
+	db:close()
+	
+	planilha:close()
+	]]--
+	local leitor = require 'xlsx_lua'
+	
+	local workbook = leitor.open('componentes.xlsx')
+
+	for key, sheet in pairs(workbook.sheets) do
+		cadzinho.db_print (("Sheet: %s, index = %s"):format(key, sheet.idx))
+		
+		-- sparse scan
+		--[[cadzinho.db_print ("------Sparse data:-------")
+		for r_i, row in ipairs(sheet.data) do
+			if type(row) == "table" then
+				for c_i, cell in pairs (row) do
+					cadzinho.db_print (("%s%d"):format(c_i, r_i), cell)
+				end
+			end
+		end]]--
+		
+		-- tabular scan
+		--[[cadzinho.db_print ("------ Tabular data:-------")
+		for _, r in ipairs(sheet.data.dim.rows) do
+			local str = ""
+			for _, c in ipairs(sheet.data.dim.cols) do
+				str = str .. tostring(sheet.data[r][c]) .. "    "
+			end
+			cadzinho.db_print (str)
+		end ]]--
+		--merged cells
+		cadzinho.db_print ("------ merged cells:-------")
+		for _, r in ipairs(sheet.merged) do
+			cadzinho.db_print (r)
+		end
 	end
 	
 	
@@ -1348,11 +1518,11 @@ function pelicanu_win()
 			
 		else -- padrao - esquematico
 			cadzinho.nk_layout(20, 1)
-			if cadzinho.nk_button("ligacao") then
+			if cadzinho.nk_button("Ligacao") then
 				num_pt = 1
 				cadzinho.start_dynamic("ligacao_dyn")
 			end
-			if cadzinho.nk_button("componente") then
+			if cadzinho.nk_button("Componente") then
 				num_pt = 1
 				lista_comp = {}
 				lista_comp_o = {}
@@ -1369,21 +1539,22 @@ function pelicanu_win()
 				table.sort(lista_comp_o)
 				cadzinho.start_dynamic("componente_dyn")
 			end
-			if cadzinho.nk_button("caixa") then
+			if cadzinho.nk_button("Caixa") then
 				num_pt = 1
 				cadzinho.start_dynamic("caixa_dyn")
 			end
-			if cadzinho.nk_button("Edita Comp") then
+			if cadzinho.nk_button("Edita") then
 				num_pt = 1
 				cadzinho.start_dynamic("edita_dyn")
 			end
-			
-			if cadzinho.nk_button("get container") then
-				get_containers()
-			end
-			
-			if cadzinho.nk_button("caixas") then
+			if cadzinho.nk_button("Banco de dados") then
 				teste()
+			end
+			if cadzinho.nk_button("Grava pl") then
+				grava_pl_comp()
+			end
+			if cadzinho.nk_button("Le pl") then
+				le_pl_comp()
 			end
 		end
 		cadzinho.nk_tab_end()

@@ -75,6 +75,16 @@ local function get_sheet (file, parser, ss, idx)
 	-- get rows from sheetdata element
 	local rows = get_elems(data, "row")
 	
+	--get merged cells information
+	local mc_t = get_elem(s_xml, "mergeCells")
+	local merged = {}
+	if type (mc_t) == 'table' then
+		local mc_els = get_elems(mc_t, "mergeCell")
+		for _, elem in ipairs(mc_els) do  --sweep elements in table (only numbered keys)
+			merged[#merged + 1] = elem.attr.ref
+		end
+	end
+	
 	local sheet = {} -- main table
 	
 	-- get sheet matrix dimension
@@ -119,6 +129,8 @@ local function get_sheet (file, parser, ss, idx)
 		-- store row in main table
 		sheet[r_idx] = row
 	end
+	
+	sheet.merged = merged
 	
 	-- return main table
 	return sheet
