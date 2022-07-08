@@ -59,6 +59,20 @@ local function num2letter(num)
 	return str
 end
 
+--Auxiliary function to convert range representation (like "A1:C4") in numeric form
+local function range2num(str)
+	-- parse expression like "A1:C5" to get rows and columns range
+	local c_start, r_start, c_end, r_end = str:match('(%a+)(%d+):(%a+)(%d+)')
+	
+	-- Convert to numbers. Columns are identified by letters.
+	local col_start = letter2num(c_start)
+	local col_end = letter2num(c_end)
+	local row_start = tonumber(r_start)
+	local row_end = tonumber(r_end)
+	
+	return row_start, row_end, col_start, col_end
+end
+
 -- Get XLSX sheet data. Arguments:
 --    - file = xlsx file buffer, to read zipped data
 --    - parser = xml parser object
@@ -85,7 +99,8 @@ local function get_sheet (file, parser, ss, idx)
 		end
 	end
 	
-	local sheet = {} -- main table
+	local s_dim = {rows={}, cols={}} -- table with sheet dimmensions
+	local sheet = {} -- table with sheet data
 	
 	-- get sheet matrix dimension
 	if type(dim) == "table" then
@@ -100,12 +115,13 @@ local function get_sheet (file, parser, ss, idx)
 		
 		-- assemble rows identification array (numeric identification)
 		local row_s = {}
-		for row = row_start, row_end do
+		for row = tonumber(row_start), tonumber(row_end) do
 			row_s[#row_s + 1] = row
 		end
 		
-		-- store dimension information, with 'dim' key
-		sheet.dim = {rows=row_s, cols=columns}
+		-- store dimension information
+		s_dim.rows = row_s
+		s_dim.cols = columns
 	end
 	
 	-- get sheet data -> iterate over rows
@@ -130,10 +146,10 @@ local function get_sheet (file, parser, ss, idx)
 		sheet[r_idx] = row
 	end
 	
-	sheet.merged = merged
+	--sheet.merged = merged
 	
 	-- return main table
-	return sheet
+	return {idx = idx, dim = s_dim, data = sheet, merged = merged}
 end
 
 local function open_xlsx(path)
@@ -175,9 +191,8 @@ local function open_xlsx(path)
 			workbook.sheets[sheet.attr.name] = {} -- sheet's name as key
 			local idx = sheet.attr["r:id"]
 			idx = tonumber(idx:match('rId(%d+)')) -- get id index, by matching string
-			workbook.sheets[sheet.attr.name].idx = idx
 			-- get sheet data
-			workbook.sheets[sheet.attr.name].data = get_sheet (zip, parser, shar_str, idx)
+			workbook.sheets[sheet.attr.name] = get_sheet (zip, parser, shar_str, idx)
 		end
 	end
 	
@@ -188,4 +203,21 @@ local function open_xlsx(path)
 
 end
 
-return {open = open_xlsx, n2l = num2letter, l2n = letter2num}
+function expand_merge (sheet)
+	for _, merge in ipairs(sheet.merged) do
+		-- parse expression like "A1:C5" to get rows and columns range
+		local col_start, row_start, col_end, row_end = merge:match('(%a+)(%d+):(%a+)(%d+)')
+		-- first cell in range ha the value to copy to entire merged region 
+		local value = sheet.data[tonumber(row_start)][col_start]
+		for row = tonumber(row_start), tonumber(row_end) do
+			for col = letter2num(col_start), letter2num(col_end) do -- use auxiliary functions to convert letters to numbers
+				sheet.data[row][num2letter(col)] = value
+				--cadzinho.db_print (("%s%d"):format(row, col), value)
+			end
+		end
+		
+		
+	end
+end
+
+return {open = open_xlsx, n2l = num2letter, l2n = letter2num, range = range2num, expand_merge = expand_merge}

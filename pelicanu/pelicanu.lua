@@ -1378,31 +1378,35 @@ function le_pl_comp()
 	for key, sheet in pairs(workbook.sheets) do
 		cadzinho.db_print (("Sheet: %s, index = %s"):format(key, sheet.idx))
 		
+		leitor.expand_merge (sheet)
+		
+		--[[
 		-- sparse scan
-		--[[cadzinho.db_print ("------Sparse data:-------")
+		cadzinho.db_print ("------Sparse data:-------")
 		for r_i, row in ipairs(sheet.data) do
 			if type(row) == "table" then
 				for c_i, cell in pairs (row) do
 					cadzinho.db_print (("%s%d"):format(c_i, r_i), cell)
 				end
 			end
-		end]]--
-		
+		end
+		]]--
 		-- tabular scan
-		--[[cadzinho.db_print ("------ Tabular data:-------")
-		for _, r in ipairs(sheet.data.dim.rows) do
+		cadzinho.db_print ("------ Tabular data:-------")
+		for _, r in ipairs(sheet.dim.rows) do
 			local str = ""
-			for _, c in ipairs(sheet.data.dim.cols) do
+			for _, c in ipairs(sheet.dim.cols) do
 				str = str .. tostring(sheet.data[r][c]) .. "    "
 			end
 			cadzinho.db_print (str)
 		end
-		]]--
+		--[[
 		--merged cells
 		cadzinho.db_print ("------ merged cells:-------")
-		for _, r in ipairs(sheet.data.merged) do
-			cadzinho.db_print (r)
+		for _, r in ipairs(sheet.merged) do
+			cadzinho.db_print (r, leitor.range(r))
 		end
+		]]--
 	end
 	
 	cadzinho.db_print ("----- Concluido  ------")
