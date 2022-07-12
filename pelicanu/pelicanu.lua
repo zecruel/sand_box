@@ -1074,28 +1074,28 @@ function teste()
 	-- atualiza a lista principal com os elementos
 	pelicanu.atualiza_elems()
 	
-	db = sqlite.open('pelicanu.db')
-	db:exec('DROP TABLE IF EXISTS componentes')
-	db:exec('CREATE TABLE componentes('..
+	bd = sqlite.open('pelicanu.db')
+	bd:exec('DROP TABLE IF EXISTS componentes')
+	bd:exec('CREATE TABLE componentes('..
 		'unico INTEGER, '..
 		'bloco TEXT, id TEXT, pai INTEGER)')
-	db:exec('DROP TABLE IF EXISTS caixas')
-	db:exec('CREATE TABLE caixas('..
+	bd:exec('DROP TABLE IF EXISTS caixas')
+	bd:exec('CREATE TABLE caixas('..
 		'unico INTEGER, '..
 		'id TEXT, tipo TEXT, pai INTEGER)')
-	db:exec('DROP TABLE IF EXISTS terminais')
-	db:exec('CREATE TABLE terminais('..
+	bd:exec('DROP TABLE IF EXISTS terminais')
+	bd:exec('CREATE TABLE terminais('..
 		'componente INTEGER, '..
 		'id INTEGER, terminal TEXT)')
 		
-	db:exec('DROP TABLE IF EXISTS barras')
-	db:exec('CREATE TABLE barras('..
+	bd:exec('DROP TABLE IF EXISTS barras')
+	bd:exec('CREATE TABLE barras('..
 		'id TEXT, '..
 		'componente INTEGER, '..
 		'terminal INTEGER)')
 	
-	db:exec('DROP VIEW IF EXISTS hierarquia')
-	db:exec("CREATE VIEW hierarquia AS\n"..
+	bd:exec('DROP VIEW IF EXISTS hierarquia')
+	bd:exec("CREATE VIEW hierarquia AS\n"..
 		"SELECT componentes.unico componente,\n"..
 		"(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
 		"SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
@@ -1143,8 +1143,8 @@ function teste()
 		"SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESCRITIVO'\n"..
 		") descritivo\n"..
 		"FROM componentes\n")
-	db:exec('DROP VIEW IF EXISTS comp_term')
-	db:exec("CREATE VIEW comp_term AS\n"..
+	bd:exec('DROP VIEW IF EXISTS comp_term')
+	bd:exec("CREATE VIEW comp_term AS\n"..
 		"SELECT componentes.unico,\n"..
 		"(SELECT CASE WHEN hierarquia.pai\n"..
 		"THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n"..
@@ -1181,14 +1181,14 @@ function teste()
 				if not comp_id then comp_id = 'NULL' end
 				--cadzinho.db_print ("    " .. bloco, comp_id)
 				
-				db:exec ("INSERT INTO componentes VALUES("..
+				bd:exec ("INSERT INTO componentes VALUES("..
 					string.format('%d', el_id) ..", '"..
 					bloco .."', '"..
 					comp_id .."', "..
 					pai..
 					");")
 				for t_id, t in pairs(terms) do
-					db:exec ("INSERT INTO terminais VALUES("..
+					bd:exec ("INSERT INTO terminais VALUES("..
 						string.format('%d', el_id) ..", "..
 						string.format('%d', t_id) ..", '"..
 						t .."');")
@@ -1202,7 +1202,7 @@ function teste()
 					if not tipo then tipo = 'NULL' end
 					--cadzinho.db_print ("    " .. nome, tipo)
 					
-					db:exec ("INSERT INTO caixas VALUES("..
+					bd:exec ("INSERT INTO caixas VALUES("..
 						string.format('%d', el_id) ..", '"..
 						nome .."', '"..
 						tipo .."', "..
@@ -1226,7 +1226,7 @@ function teste()
 		--cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
 		for j, term in ipairs(barra.terminais) do
 			--cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
-			db:exec ("INSERT INTO barras VALUES('"..
+			bd:exec ("INSERT INTO barras VALUES('"..
 				barra.id .."', "..
 				string.format('%d', term.comp) ..", "..
 				string.match(term.term, "^T(%d)")..
@@ -1236,7 +1236,7 @@ function teste()
 	
 	
 	--
-	db:close()
+	bd:close()
 	cadzinho.db_print ("----- Teste concluido  ------")
 end
 
@@ -1300,9 +1300,9 @@ function grava_pl_comp ()
 	local parte_ant = false
 	local modulo_ant = nil
 	
-	-- abre e le o abnco de dados
-	local db = sqlite.open('pelicanu.db')
-	for linha in db:cols('select * from comp_term') do -- para cada linha doBD
+	-- abre e le o banco de dados
+	local bd = sqlite.open('pelicanu.db')
+	for linha in bd:cols('select * from comp_term') do -- para cada linha doBD
 		-- grava na planilha cada celula separada, a principio
 		aba:write(lin, 0, string.format('%X', linha.unico), protegido)
 		aba:write(lin, 1, linha.componente, protegido)
@@ -1364,49 +1364,42 @@ function grava_pl_comp ()
 		else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
 	end
 	--
-	db:close()
+	bd:close()
 	
 	planilha:close()
 	cadzinho.db_print ("----- Concluido  ------")
 end
+
 function le_pl_comp()
 	cadzinho.db_print ("----- Atualiza componentes  ------")
 	local leitor = require 'xlsx_lua'
 	
+	local pl_comp = false
+	-- le o arquivo excel
 	local workbook = leitor.open('componentes.xlsx')
-
-	for key, sheet in pairs(workbook.sheets) do
-		cadzinho.db_print (("Sheet: %s, index = %s"):format(key, sheet.idx))
+	-- procura pela aba 'Componentes'
+	if type(workbook) == 'table' then pl_comp = workbook.sheets['Componentes'] end
+	
+	if type(pl_comp) == 'table' then
+		-- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
+		leitor.expand_merge (pl_comp)
 		
-		leitor.expand_merge (sheet)
+		-- abre o banco de dados
+		local bd = sqlite.open('pelicanu.db')
 		
-		--[[
-		-- sparse scan
-		cadzinho.db_print ("------Sparse data:-------")
-		for r_i, row in ipairs(sheet.data) do
-			if type(row) == "table" then
-				for c_i, cell in pairs (row) do
-					cadzinho.db_print (("%s%d"):format(c_i, r_i), cell)
-				end
+		-- varre a planilha
+		for _, lin in ipairs(pl_comp.dim.rows) do
+			if lin ~= 1 then -- ignora a primeira linha com o titulo
+				local unico = tonumber(pl_comp.data[lin]['A'],16) -- coluna A eh o id unico
+				-- atualiza o banco de dados com as informacoes lidas
+				bd:exec("UPDATE terminais SET terminal = '" ..
+					tostring(pl_comp.data[lin]['G']) ..
+					"' WHERE componente = " .. string.format('%d', unico) ..
+					" AND id = " .. tostring(pl_comp.data[lin]['F']) .. ";")
 			end
 		end
-		]]--
-		-- tabular scan
-		cadzinho.db_print ("------ Tabular data:-------")
-		for _, r in ipairs(sheet.dim.rows) do
-			local str = ""
-			for _, c in ipairs(sheet.dim.cols) do
-				str = str .. tostring(sheet.data[r][c]) .. "    "
-			end
-			cadzinho.db_print (str)
-		end
-		--[[
-		--merged cells
-		cadzinho.db_print ("------ merged cells:-------")
-		for _, r in ipairs(sheet.merged) do
-			cadzinho.db_print (r, leitor.range(r))
-		end
-		]]--
+		
+		bd:close()
 	end
 	
 	cadzinho.db_print ("----- Concluido  ------")

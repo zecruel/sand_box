@@ -161,3 +161,23 @@ FROM componentes, hierarquia
 INNER JOIN terminais ON terminais.componente = componentes.unico
 WHERE componentes.unico = hierarquia.componente
 ORDER BY componente ASC, componentes.unico ASC, num ASC
+
+SELECT componentes.unico,
+(SELECT CASE WHEN hierarquia.pai
+THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)
+ELSE componentes.id
+END) componente,
+componentes.bloco
+FROM componentes, hierarquia
+WHERE componentes.unico = hierarquia.componente
+ORDER BY componente ASC, unico ASC
+
+with blocos (componente, bloco) as (SELECT (SELECT CASE WHEN hierarquia.pai
+THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)
+ELSE componentes.id
+END) componente,
+componentes.bloco
+FROM componentes, hierarquia
+WHERE componentes.unico = hierarquia.componente
+ORDER BY componente ASC, bloco ASC)
+select componente, bloco, count(*) quant from blocos group by componente, bloco
