@@ -161,7 +161,7 @@ end
 function dentro_contorno (ent, contorno)
 	-- verifica se um objeto do desenho esta dentro de um contorno
 	
-	limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
+	local limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
 	-- verifica se o retangulo está dentro do contorno
 	return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
 end
@@ -205,8 +205,8 @@ function pelicanu.conteudo(id)
 	end
 	
 	-- contorno da caixa, considerando ser uma polyline
-	contorno = cadzinho.get_points(caixa.ent)
-	conteudo = {}
+	local contorno = cadzinho.get_points(caixa.ent)
+	local conteudo = {}
 	
 	-- varredura em todos elementos
 	for el_id, el in pairs(pelicanu.elems) do
@@ -223,7 +223,7 @@ end
 function pelicanu.conteudo_todo()
 	-- pega o conteúdo (elementos PELICAnU) do desenho inteiro
 	
-	conteudo = {}
+	local conteudo = {}
 	for el_id in pairs(pelicanu.elems) do
 		conteudo[#conteudo+1] = el_id
 	end
@@ -234,7 +234,7 @@ function pelicanu.atualiza_unicos()
 	-- atualiza os identificadores únicos nos elementos do desenho
 	
 	for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
-		ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
+		local ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
 		if #ext > 1 then
 			-- muda o id unico e grava o no desenho
 			cadzinho.edit_ext_i(ent, "PELICANU", 1, cadzinho.unique_id())
@@ -248,7 +248,7 @@ function pelicanu.rotulo_caixa(conteudo)
 	
 	local rotulo = nil
 	for el_id in pairs(conteudo) do -- varredura do conteudo da caixa
-		el = pelicanu.elems[el_id]
+		local el = pelicanu.elems[el_id]
 		if el.tipo == "ROTULO" and el.esp == "CAIXA" then -- se for o tipo procurado
 			--pega seu texto (considerando que é uma entidade tipo TEXT)
 			rotulo = cadzinho.get_text_data(el.ent)
@@ -290,7 +290,7 @@ function ligacao_dyn(event)
 		cadzinho.set_color(1) -- cor vermelha
 		
 		-- o elemento "ligacao" eh uma linha simples
-		ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
+		local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
 		cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
 		
 		if event.type == 'enter' then -- usuario entra o segundo ponto
@@ -347,7 +347,7 @@ function caixa_dyn(event)
 		-- o elemento "caixa" principal -  eh uma polyline no formato retangulo
 		cadzinho.set_ltype("Dashdot") -- linha traco-ponto
 		cadzinho.set_color(3) -- cor verde
-		caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+		local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
 		cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
 		cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
 		cadzinho.pline_close(caixa, true)
@@ -360,17 +360,17 @@ function caixa_dyn(event)
 		
 		-- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
 		-- posicao do texto - canto superior direito
-		tx = pts[2].x
+		local tx = pts[2].x
 		if tx < pts[1].x then tx = pts[1].x end
-		ty = pts[2].y
+		local ty = pts[2].y
 		if ty < pts[1].y then ty = pts[1].y end
-		caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
+		local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
 		
 		-- desenha um retangulo simples em volta do texto do identificador
 		local retan_txt = nil
 		if caixa_id then 
 			cadzinho.ent_draw(caixa_id) 
-			cx_tx = cadzinho.get_bound(caixa_id)
+			local cx_tx = cadzinho.get_bound(caixa_id)
 			cx_tx.low.x = cx_tx.low.x - 0.3
 			cx_tx.low.y = cx_tx.low.y - 0.3
 			cx_tx.up.x = cx_tx.up.x + 0.3
@@ -429,8 +429,8 @@ function terminal_dyn(event)
 	pts[num_pt].x = event.x
 	pts[num_pt].y = event.y
 	
-	texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
-	term_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "left", "middle")
+	local texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
+	local term_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "left", "middle")
 	if term_id then cadzinho.ent_draw(term_id) end
 	
 	cadzinho.nk_layout(20, 1)
@@ -452,7 +452,7 @@ function terminal_dyn(event)
 					-- soh aceita linha ou circulo como terminal
 					if tipo == 'LINE' or tipo == 'CIRCLE' then
 						--verifica se o elemento jah possui marcador
-						ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
+						local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
 						if #ext > 1 then
 							cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
 						end
@@ -486,8 +486,8 @@ function engate_dyn(event)
 	pts[num_pt].x = event.x
 	pts[num_pt].y = event.y
 	
-	texto = '#E' .. string.format('%d', g_eng_num.value) .. '$' .. g_eng_nome.value
-	eng_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "center", "middle")
+	local texto = '#E' .. string.format('%d', g_eng_num.value) .. '$' .. g_eng_nome.value
+	local eng_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "center", "middle")
 	if eng_id then cadzinho.ent_draw(eng_id) end
 	
 	cadzinho.nk_layout(20, 1)
@@ -506,7 +506,7 @@ function engate_dyn(event)
 				cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
 				for i = 1, #sel do
 					--verifica se o elemento jah possui marcador
-					ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
+					local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
 					if #ext > 1 then
 						cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
 					end
@@ -525,6 +525,9 @@ function engate_dyn(event)
 end
 
 function muda_comp_id (comp, id)
+-- altera a identificação de um componente do PELICAnU
+
+	-- decompoe o texto para o formato fracao
 	local id1 = string.match(id, '^([^/]*)/?.*$')
 	local id2 = string.match(id, '/(.*)$')
 	local idx1 = 0
@@ -532,12 +535,14 @@ function muda_comp_id (comp, id)
 	local ocul1 = false
 	local ocul2 = false
 	
+	-- varre os elementos ATTRIB da entidade, buscando as etiquetas "ID*"
 	local attrs = cadzinho.get_attribs(comp)
-	
 	for i, attr in ipairs(attrs) do
+		-- "numerador' ou ID principal
 		if string.find(attr['tag'], "^ID1") then
 			idx1 = i
 			ocul1 = attr['hidden']
+		-- "denominador"
 		elseif string.find(attr['tag'], "^ID2") then
 			idx2 = i
 			ocul2 = attr['hidden']
@@ -545,45 +550,50 @@ function muda_comp_id (comp, id)
 	end
 	
 	if idx1 > 0 and idx2 > 0 and id1 and id2 then
-		id1 = '%%U' .. id1
+		-- formato fracao completa
+		id1 = '%%U' .. id1 -- o texto do "numerador" eh subinhado
 		cadzinho.edit_attr(comp, idx1, 'ID1', id1, ocul1)
 		cadzinho.edit_attr(comp, idx2, 'ID2', id2, ocul2)
-	elseif idx1 > 0 then
 		
+	-- ID somente no "numerador"
+	elseif idx1 > 0 then
 		cadzinho.edit_attr(comp, idx1, 'ID1', id, ocul1)
 	end
-	
-	if idx2 > 0 and not id2 then
+	if idx2 > 0 and not id2 then -- se houver o "denominador", deixa ele vazio
 		cadzinho.edit_attr(comp, idx2, 'ID2', '', ocul2)
 	end
 end
 
 function pega_comp_id (comp)
+-- obtem a identificacao de um componente PELICAnU. O retorno eh um texto unico combinado
 	local id = ''
 	local id1 = ''
 	local id2 = ''
 	local idx1 = 0
 	local idx2 = 0
-	local attrs = cadzinho.get_attribs(comp)
 	
+	-- varre os elementos ATTRIB da entidade, buscando as etiquetas "ID*"
+	local attrs = cadzinho.get_attribs(comp)
 	for i, attr in ipairs(attrs) do
+		-- "numerador' ou ID principal
 		if string.find(attr['tag'], "^ID1") then 
 			idx1 = i
 			id1 = attr['value']
-			id1 = string.gsub(id1, '(%%%%%a)', '')
+			id1 = string.gsub(id1, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
 		end
+		-- "denominador"
 		if string.find(attr['tag'], "^ID2") then
 			idx2 = i
 			id2 = attr['value']
-			id2 = string.gsub(id2, '(%%%%%a)', '')
+			id2 = string.gsub(id2, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
 		end
 	end
 	
 	if idx1 > 0 then
 		if idx2 > 0 and #id2 > 0 then
-			id = id1 .. '/' .. id2
+			id = id1 .. '/' .. id2 -- combina as duas IDs num texto unico
 		else
-			id= id1
+			id = id1 -- so possui a ID principal
 		end
 	end
 	
@@ -591,6 +601,7 @@ function pega_comp_id (comp)
 end
 
 function rotacao (pt, ang)
+--funcao de rotacao de um ponto no plano cartesiano, angulo em graus
 	local cos = math.cos(ang * math.pi / 180)
 	local sen = math.sin(ang * math.pi / 180)
 	
@@ -668,7 +679,11 @@ function pega_terminais (comp)
 end
 
 function info_terminais (comp)
+-- obtem as informacoes textuais dos terminais de um componente
+-- par indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
 	local terminais = {}
+	
+	-- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
 	local attrs = cadzinho.get_attribs(comp)
 	for i, attr in ipairs(attrs) do
 		local t_num = string.match(attr['tag'], "^T(%d)")
@@ -681,15 +696,20 @@ function info_terminais (comp)
 end
 
 function muda_terminais (comp, terminais)
+-- altera as informacoes textuais dos terminais de um componente
+-- entrada: tabela com pares indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
+
 	local ocul = false
+	-- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
 	local attrs = cadzinho.get_attribs(comp)
-	
 	for i, attr in ipairs(attrs) do
 		local t_num = string.match(attr['tag'], "^T(%d)")
 		if t_num then
+			-- confronta o indice encontrado com a tabela
 			local term = terminais[tonumber(t_num)]
 			if term then
-				ocul = attr['hidden']
+				-- modifica o indice encontrado
+				ocul = attr['hidden'] -- mantem a conficuracao de "oculto"
 				cadzinho.edit_attr(comp, i, 'T' .. t_num, term, ocul)
 			end
 		end
@@ -771,7 +791,7 @@ function componente_dyn(event)
 		end
 		if event.type == 'enter' then
 			muda_comp_id (comp, g_comp_id.value)
-			terminais = {}
+			local terminais = {}
 			for i, term in pairs(g_terminais) do
 				terminais[i] = term.value
 			end
@@ -839,7 +859,7 @@ function edita_dyn(event)
 		
 		if event.type == 'enter' then
 			muda_comp_id (sel[1], g_comp_id.value)
-			terminais = {}
+			local terminais = {}
 			for i, term in pairs(g_terminais) do
 				terminais[i] = term.value
 			end
@@ -942,7 +962,7 @@ function obtem_caixas()
 	-- repassa as caixas, cadastrando as caixas aninhadas
 	for _, caixa in pairs(caixas) do
 		for el_id in pairs(caixa.conteudo) do
-			el = pelicanu.elems[el_id]
+			local el = pelicanu.elems[el_id]
 			if el.tipo == "CAIXA" then
 				caixa.filhas[#caixa.filhas+1] = caixas[el_id]
 			end
@@ -1074,7 +1094,7 @@ function teste()
 	-- atualiza a lista principal com os elementos
 	pelicanu.atualiza_elems()
 	
-	bd = sqlite.open('pelicanu.db')
+	local bd = sqlite.open('pelicanu.db')
 	bd:exec('DROP TABLE IF EXISTS componentes')
 	bd:exec('CREATE TABLE componentes('..
 		'unico INTEGER, '..
@@ -1171,7 +1191,7 @@ function teste()
 		end
 		if not pai then pai = 'NULL' end
 		for el_id, _ in pairs(caixa.conteudo) do
-			el = pelicanu.elems[el_id]
+			local el = pelicanu.elems[el_id]
 			--cadzinho.db_print ("    " .. el.tipo)
 			if el.tipo == "COMPONENTE" then
 				local terms = info_terminais (el.ent)
@@ -1387,6 +1407,21 @@ function le_pl_comp()
 		-- abre o banco de dados
 		local bd = sqlite.open('pelicanu.db')
 		
+		-- atualiza a lista principal com os elementos
+		pelicanu.atualiza_elems()
+		
+		-- cria uma lista com os componentes
+		local componentes = {}
+		for el_id, el in pairs(pelicanu.elems) do
+			if el.tipo == "COMPONENTE" then
+				local componente = {}
+				componente.ent = el.ent
+				componente.id = pega_comp_id(el.ent)
+				componente.term =  info_terminais (el.ent)
+				componentes[el_id] = componente
+			end
+		end
+		
 		-- varre a planilha
 		for _, lin in ipairs(pl_comp.dim.rows) do
 			if lin ~= 1 then -- ignora a primeira linha com o titulo
@@ -1396,86 +1431,29 @@ function le_pl_comp()
 					tostring(pl_comp.data[lin]['G']) ..
 					"' WHERE componente = " .. string.format('%d', unico) ..
 					" AND id = " .. tostring(pl_comp.data[lin]['F']) .. ";")
+					
+				-- atualiza na lista de componentes
+				local componente = componentes[unico]
+				if type(componente) == 'table' then
+					if pl_comp.data[lin]['D'] then
+						componente.id = tostring(pl_comp.data[lin]['D'])
+					end
+					componente.term[tonumber(pl_comp.data[lin]['F'])] = tostring(pl_comp.data[lin]['G'])
+				end
 			end
+		end
+		
+		-- atualiza no desenho
+		for _, componente in pairs(componentes) do
+			muda_comp_id (componente.ent, componente.id)
+			muda_terminais(componente.ent, componente.term)
+			componente.ent:write()
 		end
 		
 		bd:close()
 	end
 	
 	cadzinho.db_print ("----- Concluido  ------")
-end
-function teste_excel()
-	cadzinho.db_print ("Teste de leitura de banco de dados")
-	--[[
-	-- cria o arquivo de planilha
-	local planilha = excel:new("componentes.xlsx")
-	local aba = planilha:add_worksheet("Componentes")
-	local db = sqlite.open('pelicanu.db')
-	
-	local lin = 0
-	local col = 0
-
-	for linha in db:cols('select * from comp_term') do
-		--cadzinho.db_print(string.format('%X', linha.unico), linha.componente, linha.modulo, linha.parte, linha.bloco, linha.num, linha.terminal)
-		aba:write(lin, col, string.format('%X', linha.unico))
-		col = col + 1
-		if linha.componente then aba:write(lin, col, linha.componente) end
-		col = col + 1
-		aba:write(lin, col, linha.modulo)
-		col = col + 1
-		aba:write(lin, col, linha.parte)
-		col = col + 1
-		aba:write(lin, col, linha.bloco)
-		col = col + 1
-		aba:write(lin, col, linha.num)
-		col = col + 1
-		aba:write(lin, col, linha.terminal)
-		
-		col = 0
-		lin = lin + 1
-	end
-	--
-	db:close()
-	
-	planilha:close()
-	]]--
-	local leitor = require 'xlsx_lua'
-	
-	local workbook = leitor.open('componentes.xlsx')
-
-	for key, sheet in pairs(workbook.sheets) do
-		cadzinho.db_print (("Sheet: %s, index = %s"):format(key, sheet.idx))
-		
-		-- sparse scan
-		--[[cadzinho.db_print ("------Sparse data:-------")
-		for r_i, row in ipairs(sheet.data) do
-			if type(row) == "table" then
-				for c_i, cell in pairs (row) do
-					cadzinho.db_print (("%s%d"):format(c_i, r_i), cell)
-				end
-			end
-		end]]--
-		
-		-- tabular scan
-		--[[cadzinho.db_print ("------ Tabular data:-------")
-		for _, r in ipairs(sheet.data.dim.rows) do
-			local str = ""
-			for _, c in ipairs(sheet.data.dim.cols) do
-				str = str .. tostring(sheet.data[r][c]) .. "    "
-			end
-			cadzinho.db_print (str)
-		end ]]--
-		--merged cells
-		cadzinho.db_print ("------ merged cells:-------")
-		for _, r in ipairs(sheet.merged) do
-			cadzinho.db_print (r)
-		end
-	end
-	
-	
-
-	--cadzinho.db_print(fs.cwd(), os.tmpname ())
-	cadzinho.db_print ("----- Teste concluido  ------")
 end
 
 --============== Janela Principal =======================
@@ -1523,7 +1501,7 @@ function pelicanu_win()
 				num_pt = 1
 				lista_comp = {}
 				lista_comp_o = {}
-				dir = fs.dir(g_biblioteca.value)
+				local dir = fs.dir(g_biblioteca.value)
 				for i = 1, #dir do
 					local ext = extensao(dir[i].name)
 					if type(ext) == "string" and dir[i].is_dir == false then
