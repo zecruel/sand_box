@@ -16,8 +16,8 @@ component = {value = ''}
 g_caixa_id = {value = ''}
 g_caixa_tipo = {value = 'COMPONENTE'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
-g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
---g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
+--g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
+g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
 g_eng_num = {value = 1}

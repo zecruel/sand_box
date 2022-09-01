@@ -859,7 +859,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -901,9 +901,9 @@ AcDbText
 1
 #REGUA$??
 50
-6.01412e-015
+6.01412e-15
 7
-Standard
+iso
 72
 2
 11

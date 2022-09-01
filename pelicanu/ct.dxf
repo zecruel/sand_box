@@ -847,7 +847,7 @@ ByBlock
 100
 AcDbCircle
 10
-1.83691e-016
+1.83691e-16
 20
 17
 30
@@ -969,7 +969,7 @@ ByBlock
 100
 AcDbCircle
 10
-1.83691e-016
+1.83691e-16
 20
 1
 30
@@ -1015,7 +1015,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -1059,7 +1059,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -1103,7 +1103,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -1147,7 +1147,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -1179,7 +1179,7 @@ ByBlock
 100
 AcDbLine
 10
--4.69266e-023
+-4.69266e-23
 20
 16
 30

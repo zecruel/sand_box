@@ -859,7 +859,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -903,7 +903,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -935,7 +935,7 @@ ByBlock
 100
 AcDbCircle
 10
-1.68383e-016
+1.68383e-16
 20
 10.75
 30
@@ -969,7 +969,7 @@ ByBlock
 100
 AcDbCircle
 10
-2.29614e-016
+2.29614e-16
 20
 1.25
 30
@@ -1129,7 +1129,7 @@ AcDbLine
 30
 0
 11
-3.06152e-016
+3.06152e-16
 21
 2.5
 31
@@ -1165,7 +1165,7 @@ AcDbText
 50
 0
 7
-Standard
+iso
 72
 0
 11
@@ -1207,9 +1207,9 @@ AcDbText
 1
 #REGUA$??
 50
-6.01412e-015
+6.01412e-15
 7
-Standard
+iso
 72
 2
 11
