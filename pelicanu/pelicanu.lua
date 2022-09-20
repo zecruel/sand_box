@@ -1,9 +1,9 @@
--- PELICAnU - Projeto ElÈtrico, LÛgico, InterligaÁ„o, Controle, AutomaÁ„o & Unifilar
+-- PELICAnU - Projeto El√©trico, L√≥gico, Interliga√ß√£o, Controle, Automa√ß√£o & Unifilar
 
--- ============= vari·veis globais =====================
+-- ============= vari√°veis globais =====================
 pelicanu ={}  -- tabela principal
 pelicanu.elems = {} -- lista principal dos elementos
-tolerancia = 0.001 -- tolerancia para comparacoes de numeros n„o inteiros
+tolerancia = 0.001 -- tolerancia para comparacoes de numeros n√£o inteiros
 
 -- para funcoes dinamicas
 num_pt = 1 -- numero de pontos
@@ -16,8 +16,8 @@ component = {value = ''}
 g_caixa_id = {value = ''}
 g_caixa_tipo = {value = 'COMPONENTE'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
---g_biblioteca = {value = 'C:\\util\\pelicanu\\'}
-g_biblioteca = {value = '/home/ezequiel/pelicanu/'}
+g_biblioteca = {value = 'C:\\util\\pelicanu\\biblioteca'}
+--g_biblioteca = {value = '/home/ezequiel/pelicanu/biblioteca/'}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
 g_eng_num = {value = 1}
@@ -35,6 +35,11 @@ end
 
 function extensao(url)
   return url:match("^.+(%..+)$")
+end
+
+function diretorio(url)
+  url = string.gsub(url, "(.[^"..fs.dir_sep.."])$", "%1"..fs.dir_sep)
+  return url
 end
 
 function no_segmento (pt, linha)
@@ -63,7 +68,7 @@ function no_segmento (pt, linha)
 end
 
 function linha_conect (a, b)
-	-- Verifica se dois segmentos de linha est„o conectados
+	-- Verifica se dois segmentos de linha est√£o conectados
 	
 	-- Verify if passed argments are valid
 	if type(a) ~= "table" then return false end
@@ -81,7 +86,7 @@ function linha_conect (a, b)
 		end
 	end
 	
-	-- Sen„o, testa se algum vertice toca a outra linha
+	-- Sen√£o, testa se algum vertice toca a outra linha
 	for _, pt1 in ipairs(a) do
 		if no_segmento(pt1, b) then return true end
 	end
@@ -94,7 +99,7 @@ function linha_conect (a, b)
 end
 
 function circulo_conect (linha, circulo)
-	-- Verifica se um circulo e uma linha est„o conectados
+	-- Verifica se um circulo e uma linha est√£o conectados
 	
 	-- Verify if passed argments are valid
 	if type(linha) ~= "table" then return false end
@@ -162,7 +167,7 @@ function dentro_contorno (ent, contorno)
 	-- verifica se um objeto do desenho esta dentro de um contorno
 	
 	local limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
-	-- verifica se o retangulo est· dentro do contorno
+	-- verifica se o retangulo est√° dentro do contorno
 	return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
 end
 
@@ -203,15 +208,26 @@ function pelicanu.conteudo(id)
 	if caixa == nil then
 		return nil
 	end
+  
+  local limite = cadzinho.get_bound(caixa.ent)
+  local contorno = {{x=limite.low.x, y=limite.low.y, z=limite.low.z},
+    {x=limite.up.x, y=limite.low.y, z=limite.low.z},
+    {x=limite.up.x, y=limite.up.y, z=limite.up.z},
+    {x=limite.low.x, y=limite.up.y, z=limite.low.z}}
+
+  local tipo = cadzinho.get_ent_typ(caixa.ent)
+
+  if tipo == 'LWPOLYLINE' then
+    contorno = cadzinho.get_points(caixa.ent)
+  end
 	
 	-- contorno da caixa, considerando ser uma polyline
-	local contorno = cadzinho.get_points(caixa.ent)
 	local conteudo = {}
 	
 	-- varredura em todos elementos
 	for el_id, el in pairs(pelicanu.elems) do
 		if el ~= caixa then
-			-- verifica se o elemento atual est· dentro da caixa
+			-- verifica se o elemento atual est√° dentro da caixa
 			if dentro_contorno(el.ent, contorno) then
 				conteudo[#conteudo+1] = el_id -- adiciona-o a lista de retorno
 			end
@@ -221,7 +237,7 @@ function pelicanu.conteudo(id)
 end
 
 function pelicanu.conteudo_todo()
-	-- pega o conte˙do (elementos PELICAnU) do desenho inteiro
+	-- pega o conte√∫do (elementos PELICAnU) do desenho inteiro
 	
 	local conteudo = {}
 	for el_id in pairs(pelicanu.elems) do
@@ -231,7 +247,7 @@ function pelicanu.conteudo_todo()
 end
 
 function pelicanu.atualiza_unicos()
-	-- atualiza os identificadores ˙nicos nos elementos do desenho
+	-- atualiza os identificadores √∫nicos nos elementos do desenho
 	
 	for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
 		local ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
@@ -250,7 +266,7 @@ function pelicanu.rotulo_caixa(conteudo)
 	for el_id in pairs(conteudo) do -- varredura do conteudo da caixa
 		local el = pelicanu.elems[el_id]
 		if el.tipo == "ROTULO" and el.esp == "CAIXA" then -- se for o tipo procurado
-			--pega seu texto (considerando que È uma entidade tipo TEXT)
+			--pega seu texto (considerando que √© uma entidade tipo TEXT)
 			rotulo = cadzinho.get_text_data(el.ent)
 			break
 		end
@@ -261,7 +277,7 @@ function pelicanu.rotulo_caixa(conteudo)
 end
 
 function ligacao_dyn(event)
-	-- funcao interativa para criacao de uma ligaÁ„o
+	-- funcao interativa para criacao de uma liga√ß√£o
 	
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Nova ligacao")
@@ -301,7 +317,7 @@ function ligacao_dyn(event)
 				cadzinho.add_ext(ligacao, "PELICANU", {cadzinho.unique_id(), "LIGACAO", "-"})
 				ligacao:write()
 				
-				-- continua - considera o ponto atual como o primeiro da proxima ligaÁ„o
+				-- continua - considera o ponto atual como o primeiro da proxima liga√ß√£o
 				pts[1].x = event.x
 				pts[1].y = event.y
 			end
@@ -415,7 +431,7 @@ function caixa_dyn(event)
 end
 
 function terminal_dyn(event)
-	-- funcao interativa para criacao de um terminal, no modo de ediÁ„o de componente
+	-- funcao interativa para criacao de um terminal, no modo de edi√ß√£o de componente
 
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Adiciona um terminal")
@@ -472,7 +488,7 @@ function terminal_dyn(event)
 end
 
 function engate_dyn(event)
-	-- funcao interativa para criacao de um engate, no modo de ediÁ„o de componente
+	-- funcao interativa para criacao de um engate, no modo de edi√ß√£o de componente
 
 	cadzinho.nk_layout(20, 1)
 	cadzinho.nk_label("Adiciona um engate")
@@ -525,7 +541,7 @@ function engate_dyn(event)
 end
 
 function muda_comp_id (comp, id)
--- altera a identificaÁ„o de um componente do PELICAnU
+-- altera a identifica√ß√£o de um componente do PELICAnU
 
 	-- decompoe o texto para o formato fracao
 	local id1 = string.match(id, '^([^/]*)/?.*$')
@@ -642,7 +658,7 @@ function pega_terminais (comp)
 					--pega os pontos da linha
 					local pontos = cadzinho.get_points(ent)
 					for _, pt in ipairs(pontos) do
-						-- executa a trasformaÁıes geometricas, conforme o componente
+						-- executa a trasforma√ß√µes geometricas, conforme o componente
 						rotacao(pt, dados_comp.rot)
 						pt.x = pt.x * dados_comp.scale.x
 						pt.y = pt.y * dados_comp.scale.y
@@ -658,7 +674,7 @@ function pega_terminais (comp)
 					dados.tipo = 'circulo'
 					-- pega os parametros do circulo
 					local circulo = cadzinho.get_circle_data(ent)
-					-- executa a trasformaÁıes geometricas, conforme o componente
+					-- executa a trasforma√ß√µes geometricas, conforme o componente
 					rotacao(circulo.center, dados_comp.rot)
 					circulo.center.x = circulo.center.x * dados_comp.scale.x
 					circulo.center.y = circulo.center.y * dados_comp.scale.y
@@ -937,13 +953,13 @@ function obtem_caixas()
 	-- atualiza a lista principal com os elementos
 	--pelicanu.atualiza_elems()
 	
-	-- caixa "desenho" para armazenar os elementos Ûrf„os
+	-- caixa "desenho" para armazenar os elementos √≥rf√£os
 	caixa = {}
 	conteudo = pelicanu.conteudo_todo()
 	caixa['nome'] = ""
 	caixa['conteudo'] = SetLib.new(conteudo)
 	caixa['filhas'] = {}
-	caixa['tipo'] = 'FOLHA'
+	caixa['tipo'] = 'ARQUIVO'
 	caixas[0] = caixa
 	
 	-- varre os elementos, cadastrando as caixas existentes no desenho
@@ -969,7 +985,7 @@ function obtem_caixas()
 		end
 	end
 	
-	-- com as caixas cadastradas, os conte˙dos estarao sobrepostos ("repetidos")
+	-- com as caixas cadastradas, os conte√∫dos estarao sobrepostos ("repetidos")
 	-- ajusta os conteudos, ficando cada caixa com seus elementos exclusivos
 	for _, caixa in pairs(caixas) do
 		for _,filha in ipairs(caixa.filhas) do
@@ -1456,6 +1472,23 @@ function le_pl_comp()
 	cadzinho.db_print ("----- Concluido  ------")
 end
 
+function obtem_lista_comp ()
+  lista_comp = {}
+  lista_comp_o = {}
+  local dir = fs.dir(g_biblioteca.value)
+  for i = 1, #dir do
+    local ext = extensao(dir[i].name)
+    if type(ext) == "string" and dir[i].is_dir == false then
+      if ext:upper() == ".DXF" then
+        lista_comp[nome_arq(dir[i].name)] = g_biblioteca.value .. dir[i].name
+        lista_comp_o[#lista_comp_o+1] = nome_arq(dir[i].name)
+      end
+    end
+  end
+  table.sort(lista_comp_o)
+
+end
+
 --============== Janela Principal =======================
 function pelicanu_win()
 	cadzinho.nk_layout(200, 1)
@@ -1493,42 +1526,30 @@ function pelicanu_win()
 			
 		else -- padrao - esquematico
 			cadzinho.nk_layout(20, 1)
-			if cadzinho.nk_button("Ligacao") then
+			if cadzinho.nk_button("ÔÉß Ligacao") then
 				num_pt = 1
 				cadzinho.start_dynamic("ligacao_dyn")
 			end
-			if cadzinho.nk_button("Componente") then
+			if cadzinho.nk_button("Óâ¶ Componente") then
 				num_pt = 1
-				lista_comp = {}
-				lista_comp_o = {}
-				local dir = fs.dir(g_biblioteca.value)
-				for i = 1, #dir do
-					local ext = extensao(dir[i].name)
-					if type(ext) == "string" and dir[i].is_dir == false then
-						if ext:upper() == ".DXF" then
-							lista_comp[nome_arq(dir[i].name)] = g_biblioteca.value .. dir[i].name
-							lista_comp_o[#lista_comp_o+1] = nome_arq(dir[i].name)
-						end
-					end
-				end
-				table.sort(lista_comp_o)
-				cadzinho.start_dynamic("componente_dyn")
+        obtem_lista_comp()
+        cadzinho.start_dynamic("componente_dyn")
 			end
-			if cadzinho.nk_button("Caixa") then
+			if cadzinho.nk_button("Ô¶à Caixa") then
 				num_pt = 1
 				cadzinho.start_dynamic("caixa_dyn")
 			end
-			if cadzinho.nk_button("Edita") then
+			if cadzinho.nk_button("ÔÅÑ Edita") then
 				num_pt = 1
 				cadzinho.start_dynamic("edita_dyn")
 			end
-			if cadzinho.nk_button("Banco de dados") then
+			if cadzinho.nk_button("ÔáÄ Banco de dados") then
 				teste()
 			end
-			if cadzinho.nk_button("Grava pl") then
+			if cadzinho.nk_button("ÔáÉ Grava pl") then
 				grava_pl_comp()
 			end
-			if cadzinho.nk_button("Le pl") then
+			if cadzinho.nk_button("Ôúö Le pl") then
 				le_pl_comp()
 			end
 		end
@@ -1537,4 +1558,6 @@ function pelicanu_win()
 end
 
 -- inicia a janela quando o script eh executado
+g_biblioteca.value = diretorio(g_biblioteca.value)
+cadzinho.db_print(string.gsub(g_biblioteca.value, "(.[^"..fs.dir_sep.."])$", "%1"..fs.dir_sep))
 cadzinho.win_show("pelicanu_win", "Pelicanu", 220,300,200,250)
