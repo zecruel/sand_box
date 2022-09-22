@@ -10,6 +10,9 @@ num_pt = 1 -- numero de pontos
 pts = {} -- lista de pontos de entrada
 lista_comp = {}
 lista_comp_o = {}
+lista_comp_tipo = {}
+lista_formato = {}
+lista_formato_o = {}
 
 -- para a interface grafica
 component = {value = ''}
@@ -23,8 +26,10 @@ g_term_nome = {value = "1"}
 g_eng_num = {value = 1}
 g_eng_nome = {value = "E1"}
 g_componente = {value = ""}
+g_tipo_comp = {value = 1, ""}
 g_comp_id = {value = ""}
 g_terminais = {}
+g_formato = {value = ""}
 
 excel = require "xlsxwriter.workbook"
 
@@ -747,14 +752,16 @@ function componente_dyn(event)
 	cadzinho.nk_layout(20, 1)
 	if num_pt == 1 then
 		cadzinho.nk_label('Escolha o componente')
+    cadzinho.nk_combo(g_tipo_comp)
 		cadzinho.nk_layout(150, 1)
-		if cadzinho.nk_group_begin("Biblioteca", true, true, true) then
+		if cadzinho.nk_group_begin("Biblioteca", false, true, true) then
 			cadzinho.nk_layout(20, 1)
 			--[[for nome, caminho in pairs(lista_comp) do			
 				if cadzinho.nk_button(nome) then
 					g_componente.value = nome
 				end
 			end]]--
+      obtem_lista_comp()
 			for _, nome in ipairs(lista_comp_o) do			
 				if cadzinho.nk_button(nome) then
 					g_componente.value = nome
@@ -782,13 +789,6 @@ function componente_dyn(event)
 					num_pt = 2
 				end
 			end
-		end
-
-		
-		if event.type == 'enter' then
-			num_pt = num_pt + 1
-		elseif event.type == 'cancel' then
-			cadzinho.stop_dynamic()
 		end
 	else
 		local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
@@ -824,6 +824,75 @@ function componente_dyn(event)
 	end
 	
 end
+
+function formato_dyn(event)
+	-- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+	cadzinho.nk_layout(20, 1)
+	cadzinho.nk_label("Adiciona um formato")
+	
+	-- armazena o ponto atual na lista
+	pts[num_pt] = {}
+	pts[num_pt].x = event.x
+	pts[num_pt].y = event.y
+	
+	
+	cadzinho.nk_layout(20, 1)
+	if num_pt == 1 then
+		cadzinho.nk_label('Escolha o formato')
+		cadzinho.nk_layout(150, 1)
+		if cadzinho.nk_group_begin("Formatos", true, true, true) then
+			cadzinho.nk_layout(20, 1)
+			for _, nome in ipairs(lista_formato_o) do			
+				if cadzinho.nk_button(nome) then
+					g_formato.value = nome
+				end
+			end
+			cadzinho.nk_group_end()
+		end
+		cadzinho.nk_layout(20, 2)
+		cadzinho.nk_label("Nome:")
+		cadzinho.nk_edit(g_formato)
+		if cadzinho.nk_button("Insere") then
+			if type(lista_formato[g_formato.value]) == 'string' then
+				local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+				if fmt == nil then
+					if cadzinho.new_block_file(lista_formato[g_formato.value],
+            g_formato.value, "formato PELICAnU ".. g_formato.value,
+            true, '#', '*', '$', '?', 0, 0, 0) then
+
+						fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+					end
+				end
+        if fmt then num_pt = 2 end
+      end
+		end
+
+		
+		if event.type == 'enter' then
+			num_pt = num_pt + 1
+		elseif event.type == 'cancel' then
+			cadzinho.stop_dynamic()
+		end
+	else
+		local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+		if fmt then cadzinho.ent_draw(fmt) end
+		cadzinho.nk_label(g_formato.value)
+		cadzinho.nk_label('Entre o ponto')
+    if event.type == 'enter' then
+      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+			cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "FOLHA"})
+			fmt:write()
+			cadzinho.clear_sel()
+			--cadzinho.stop_dynamic()
+			--num_pt = 1
+		elseif event.type == 'cancel' then
+			num_pt = 1
+		end
+	end
+	
+end
+
 
 function edita_dyn(event)
 	-- funcao interativa para editar o id de um componente
@@ -1472,15 +1541,40 @@ function le_pl_comp()
 	cadzinho.db_print ("----- Concluido  ------")
 end
 
+function obtem_tipo_comp ()
+  lista_comp_tipo = {}
+  g_tipo_comp = {value = g_tipo_comp.value, ""}
+
+  -- diretorio para buscar os componentes na biblioteca (se chama "componentes" :P)
+  local dir_comp = diretorio(g_biblioteca.value) .. "componentes"
+
+  -- lista os subdiretorios como tipo de componentes
+  local dir = fs.dir(dir_comp)
+  for i = 1, #dir do
+    if dir[i].is_dir then
+      lista_comp_tipo[#lista_comp_tipo+1] = dir[i].name
+      g_tipo_comp[#g_tipo_comp+1] = dir[i].name
+    end
+  end
+  if g_tipo_comp.value > #lista_comp_tipo+1 then
+    g_tipo_comp.value = 1
+  end
+end
+
 function obtem_lista_comp ()
   lista_comp = {}
   lista_comp_o = {}
-  local dir = fs.dir(g_biblioteca.value)
+
+  -- diretorio para buscar os componentes na biblioteca (se chama "componentes" :P)
+  local dir_comp = diretorio(g_biblioteca.value) .. "componentes" ..
+        fs.dir_sep .. g_tipo_comp[g_tipo_comp.value]
+
+  local dir = fs.dir(dir_comp)
   for i = 1, #dir do
     local ext = extensao(dir[i].name)
     if type(ext) == "string" and dir[i].is_dir == false then
       if ext:upper() == ".DXF" then
-        lista_comp[nome_arq(dir[i].name)] = g_biblioteca.value .. dir[i].name
+        lista_comp[nome_arq(dir[i].name)] = diretorio(dir_comp) .. dir[i].name
         lista_comp_o[#lista_comp_o+1] = nome_arq(dir[i].name)
       end
     end
@@ -1489,9 +1583,31 @@ function obtem_lista_comp ()
 
 end
 
+function obtem_lista_formato ()
+  lista_formato = {}
+  lista_formato_o = {}
+
+  -- diretorio para buscar os componentes na biblioteca (se chama "componentes" :P)
+  local dir_fmt = diretorio(g_biblioteca.value) .. "formatos"
+
+  local dir = fs.dir(dir_fmt)
+  for i = 1, #dir do
+    local ext = extensao(dir[i].name)
+    if type(ext) == "string" and dir[i].is_dir == false then
+      if ext:upper() == ".DXF" then
+        lista_formato[nome_arq(dir[i].name)] = diretorio(dir_fmt) .. dir[i].name
+        lista_formato_o[#lista_formato_o+1] = nome_arq(dir[i].name)
+      end
+    end
+  end
+  table.sort(lista_formato_o)
+
+end
+
+
 --============== Janela Principal =======================
 function pelicanu_win()
-	cadzinho.nk_layout(200, 1)
+	cadzinho.nk_layout(400, 1)
 	if cadzinho.nk_tab_begin("modo_ed", g_editor_abas) then
 		if g_editor_abas.value == 2 then -- biblioteca
 			cadzinho.nk_layout(20, 1)
@@ -1532,7 +1648,7 @@ function pelicanu_win()
 			end
 			if cadzinho.nk_button(" Componente") then
 				num_pt = 1
-        obtem_lista_comp()
+        obtem_tipo_comp()
         cadzinho.start_dynamic("componente_dyn")
 			end
 			if cadzinho.nk_button("麗 Caixa") then
@@ -1543,6 +1659,12 @@ function pelicanu_win()
 				num_pt = 1
 				cadzinho.start_dynamic("edita_dyn")
 			end
+      if cadzinho.nk_button(" Formato") then
+				num_pt = 1
+        obtem_lista_formato()
+        cadzinho.start_dynamic("formato_dyn")
+			end
+
 			if cadzinho.nk_button(" Banco de dados") then
 				teste()
 			end
@@ -1559,5 +1681,4 @@ end
 
 -- inicia a janela quando o script eh executado
 g_biblioteca.value = diretorio(g_biblioteca.value)
-cadzinho.db_print(string.gsub(g_biblioteca.value, "(.[^"..fs.dir_sep.."])$", "%1"..fs.dir_sep))
-cadzinho.win_show("pelicanu_win", "Pelicanu", 220,300,200,250)
+cadzinho.win_show("pelicanu_win", "Pelicanu", 220,120,200,450)
