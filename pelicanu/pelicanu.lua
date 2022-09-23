@@ -881,7 +881,7 @@ function formato_dyn(event)
 		cadzinho.nk_label('Entre o ponto')
     if event.type == 'enter' then
       cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-			cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "FOLHA"})
+			cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "DESENHO"})
 			fmt:write()
 			cadzinho.clear_sel()
 			--cadzinho.stop_dynamic()
