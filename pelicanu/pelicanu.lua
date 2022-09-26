@@ -621,6 +621,23 @@ function pega_comp_id (comp)
 	return id
 end
 
+function pega_attrib (ent)
+-- obtem os dados de uma entidade tipo INSERT (bloco). Retorna uma tabela
+	local dados = {}
+  local tipo = cadzinho.get_ent_typ(ent)
+  -- soh aceita INSERT
+  if tipo ~= 'INSERT' then
+    return dados
+  end
+  -- varre os elementos ATTRIB da entidade, cadastrando-as na tabela
+	local attrs = cadzinho.get_attribs(ent)
+	for i, attr in ipairs(attrs) do
+    dados[attr.tag] = attr.value
+  end
+	
+	return dados
+end
+
 function rotacao (pt, ang)
 --funcao de rotacao de um ponto no plano cartesiano, angulo em graus
 	local cos = math.cos(ang * math.pi / 180)
@@ -1198,7 +1215,13 @@ function teste()
 		'id TEXT, '..
 		'componente INTEGER, '..
 		'terminal INTEGER)')
-	
+  bd:exec('DROP TABLE IF EXISTS desenhos')
+	bd:exec('CREATE TABLE desenhos('..
+		'unico INTEGER, '..
+		'ident TEXT, titulo TEXT, tipo TEXT, projeto TEXT, '..
+    'rev TEXT, versao TEXT, fl TEXT, data TEXT, ' ..
+    'aplic TEXT, instal TEXT, visto TEXT, aprov TEXT,' ..
+    'class TEXT, pfl TEXT)')
 	bd:exec('DROP VIEW IF EXISTS hierarquia')
 	bd:exec("CREATE VIEW hierarquia AS\n"..
 		"SELECT componentes.unico componente,\n"..
@@ -1312,8 +1335,44 @@ function teste()
 						nome .."', '"..
 						tipo .."', "..
 						pai..
-						");")
-				end
+					");")
+--[[
+          if sub_caixa.tipo == "DESENHO" then
+            local dados = pega_attrib(el.ent)
+            if not dados.ident then dados.ident = 'NULL' end
+            if not dados.titulo then dados.titulo = 'NULL' end
+            if not dados.tipo then dados.tipo = 'NULL' end
+            if not dados.projeto then dados.projeto = 'NULL' end
+            if not dados.rev then dados.rev = 'NULL' end
+            if not dados.versao then dados.versao = 'NULL' end
+            if not dados.fl then dados.fl = 'NULL' end
+            if not dados.data then dados.data = 'NULL' end
+            if not dados.aplic then dados.aplic = 'NULL' end
+            if not dados.instal then dados.instal = 'NULL' end
+            if not dados.visto then dados.visto = 'NULL' end
+            if not dados.aprov then dados.aprov = 'NULL' end
+            if not dados.classif then dados.classif = 'NULL' end
+            if not dados.pfl then dados.pfl = 'NULL' end
+            bd:exec ("INSERT INTO desenhos VALUES("..
+             string.format('%d', el_id) ..", '"..
+             dados.ident .."', '"..
+             dados.titulo .."', '"..
+             dados.tipo .."', '"..
+             dados.projeto .."', '"..
+             dados.rev .."', '"..
+             dados.versao .."', '"..
+             dados.fl .."', '"..
+             dados.data .."', '"..
+             dados.aplic .."', '"..
+             dados.instal .."', '"..
+             dados.visto .."', '"..
+             dados.aprov .."', '"..
+             dados.classif .."', '"..
+             dados.pfl ..
+            "');")
+          end
+          ]]--
+        end
 			end
 			
 		end
