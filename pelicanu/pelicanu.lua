@@ -638,6 +638,11 @@ function pega_attrib (ent)
 	return dados
 end
 
+function pega_comp_tipo(comp)
+  local dados = pega_attrib(comp)
+  return dados.TIPO
+end
+
 function rotacao (pt, ang)
 --funcao de rotacao de um ponto no plano cartesiano, angulo em graus
 	local cos = math.cos(ang * math.pi / 180)
@@ -791,10 +796,15 @@ function componente_dyn(event)
 		cadzinho.nk_edit(g_componente)
 		if cadzinho.nk_button("Insere") then
 			if type(lista_comp[g_componente.value]) == 'string' then
-				local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
+				local comp = cadzinho.new_insert(g_componente.value,
+          pts[num_pt].x, pts[num_pt].y)
 				if comp == nil then
-					if cadzinho.new_block_file(lista_comp[g_componente.value], g_componente.value, "componente PELICAnU ".. g_componente.value, true, '#', '*', '$', '?', 0, 0, 0) then
-						comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
+					if cadzinho.new_block_file(lista_comp[g_componente.value],
+            g_componente.value, "componente PELICAnU ".. g_componente.value,
+            true, '#', '*', '$', '?', 0, 0, 0)
+          then
+						comp = cadzinho.new_insert(g_componente.value,
+              pts[num_pt].x, pts[num_pt].y)
 					end
 				end
 				if comp then
@@ -1199,7 +1209,7 @@ function teste()
 	local bd = sqlite.open('pelicanu.db')
 	bd:exec('DROP TABLE IF EXISTS componentes')
 	bd:exec('CREATE TABLE componentes('..
-		'unico INTEGER, '..
+		'unico INTEGER, tipo TEXT, '..
 		'bloco TEXT, id TEXT, pai INTEGER)')
 	bd:exec('DROP TABLE IF EXISTS caixas')
 	bd:exec('CREATE TABLE caixas('..
@@ -1221,7 +1231,7 @@ function teste()
 		'ident TEXT, titulo TEXT, tipo TEXT, projeto TEXT, '..
     'rev TEXT, versao TEXT, fl TEXT, data TEXT, ' ..
     'aplic TEXT, instal TEXT, visto TEXT, aprov TEXT,' ..
-    'class TEXT, pfl TEXT)')
+    'classif TEXT, pfl TEXT)')
 	bd:exec('DROP VIEW IF EXISTS hierarquia')
 	bd:exec("CREATE VIEW hierarquia AS\n"..
 		"SELECT componentes.unico componente,\n"..
@@ -1307,10 +1317,13 @@ function teste()
 				if not bloco then bloco = 'NULL' end
 				local comp_id = pega_comp_id(el.ent)
 				if not comp_id then comp_id = 'NULL' end
+        local comp_tipo = pega_comp_tipo(el.ent)
+        if not comp_tipo then comp_tipo = 'NULL' end
 				--cadzinho.db_print ("    " .. bloco, comp_id)
 				
 				bd:exec ("INSERT INTO componentes VALUES("..
 					string.format('%d', el_id) ..", '"..
+          comp_tipo .."', '"..
 					bloco .."', '"..
 					comp_id .."', "..
 					pai..
@@ -1336,7 +1349,7 @@ function teste()
 						tipo .."', "..
 						pai..
 					");")
---[[
+
           if sub_caixa.tipo == "DESENHO" then
             local dados = pega_attrib(el.ent)
             if not dados.ident then dados.ident = 'NULL' end
@@ -1371,7 +1384,6 @@ function teste()
              dados.pfl ..
             "');")
           end
-          ]]--
         end
 			end
 			
@@ -1447,7 +1459,7 @@ function grava_pl_comp ()
 	aba:write(0, 1, 'Componente', tit_p)
 	aba:write(0, 2, 'Modulo', tit_p)
 	aba:write(0, 3, 'Parte', tit_d)
-	aba:write(0, 4, 'Bloco', tit_p)
+  aba:write(0, 4, 'Tipo', tit_p)
 	aba:write(0, 5, 'T id', tit_p)
 	aba:write(0, 6, 'Terminal', tit_d)
 	
@@ -1460,7 +1472,6 @@ function grava_pl_comp ()
 	local comp_ant = false
 	local bloco_ant = false
 	local unico_ant = false
-	local bloco_ant = false
 	local parte_ant = false
 	local modulo_ant = nil
 	
@@ -1474,7 +1485,7 @@ function grava_pl_comp ()
 		if linha.parte then
 			aba:write(lin, 3, linha.parte, desprotegido)
 		else aba:write(lin, 3, linha.parte, protegido) end
-		aba:write(lin, 4, linha.bloco, protegido)
+		aba:write(lin, 4, linha.tipo, protegido)
 		aba:write(lin, 5, linha.num, protegido)
 		aba:write(lin, 6, linha.terminal, desprotegido)
 		
