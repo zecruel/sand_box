@@ -25,6 +25,7 @@ g_term_num = {value = 1}
 g_term_nome = {value = "1"}
 g_eng_num = {value = 1}
 g_eng_nome = {value = "E1"}
+g_engate = {value = ""}
 g_componente = {value = ""}
 g_tipo_comp = {value = 1, ""}
 g_comp_id = {value = ""}
@@ -587,7 +588,7 @@ end
 
 function pega_comp_id (comp)
 -- obtem a identificacao de um componente PELICAnU. O retorno eh um texto unico combinado
-	local id = ''
+	local id = false
 	local id1 = ''
 	local id2 = ''
 	local idx1 = 0
@@ -641,6 +642,32 @@ end
 function pega_comp_tipo(comp)
   local dados = pega_attrib(comp)
   return dados.TIPO
+end
+
+function pega_engate(comp)
+  local dados = pega_attrib(comp)
+  return dados.ENGATE
+end
+
+function muda_engate(comp, texto)
+  local ocul = false
+  local idx = 0
+
+	-- varre os elementos ATTRIB da entidade, buscando a etiqueta "ENGATE"
+	local attrs = cadzinho.get_attribs(comp)
+  for i, attr in ipairs(attrs) do
+		-- "numerador' ou ID principal
+		if string.find(attr['tag'], "ENGATE") then
+			idx = i
+			ocul = attr['hidden']
+      break
+		end
+	end
+	
+	if idx > 0 then
+		cadzinho.edit_attr(comp, idx, 'ENGATE', texto, ocul)
+  end	
+
 end
 
 function rotacao (pt, ang)
@@ -937,15 +964,26 @@ function edita_dyn(event)
 		num_pt = 1
 		cadzinho.enable_sel()
 	end
+
+  local tipo = nil
+  if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
 	
 	if #sel > 0 and  num_pt == 1 then
-		num_pt = 2
-		g_comp_id.value = pega_comp_id(sel[1])
-		local terminais = info_terminais(sel[1])
-		g_terminais = {}
-		for i, term in pairs(terminais) do
-			g_terminais[i] = {value = term}
-		end
+    if tipo then
+      num_pt = 2
+      if tipo == 'ENGATE' then
+        g_engate.value = pega_engate(sel[1])
+      else
+        g_comp_id.value = pega_comp_id(sel[1])
+      end
+      local terminais = info_terminais(sel[1])
+      g_terminais = {}
+      for i, term in pairs(terminais) do
+        g_terminais[i] = {value = term}
+      end
+    else
+      cadzinho.clear_sel()
+    end
 	end
 	
 	cadzinho.nk_layout(20, 1)
@@ -958,9 +996,13 @@ function edita_dyn(event)
 	else
 		cadzinho.nk_label('Confirme')
 		cadzinho.nk_layout(20, 2)
-		cadzinho.nk_label("ID:")
-		cadzinho.nk_edit(g_comp_id)
-		
+    cadzinho.nk_label("ID:")
+    if tipo == 'ENGATE' then
+      cadzinho.nk_edit(g_engate)
+    else
+      cadzinho.nk_edit(g_comp_id)
+    end
+
 		cadzinho.nk_layout(20, 1)
 		cadzinho.nk_label("Terminais:")
 		cadzinho.nk_layout(20, 2)
@@ -969,8 +1011,12 @@ function edita_dyn(event)
 			cadzinho.nk_edit(term)
 		end
 		
-		if event.type == 'enter' then
-			muda_comp_id (sel[1], g_comp_id.value)
+    if event.type == 'enter' then
+      if tipo == 'ENGATE' then
+        muda_engate (sel[1], g_engate.value)
+      else
+        muda_comp_id (sel[1], g_comp_id.value)
+      end
 			local terminais = {}
 			for i, term in pairs(g_terminais) do
 				terminais[i] = term.value
@@ -1219,7 +1265,6 @@ function teste()
 	bd:exec('CREATE TABLE terminais('..
 		'componente INTEGER, '..
 		'id INTEGER, terminal TEXT)')
-		
 	bd:exec('DROP TABLE IF EXISTS barras')
 	bd:exec('CREATE TABLE barras('..
 		'id TEXT, '..
@@ -1232,6 +1277,10 @@ function teste()
     'rev TEXT, versao TEXT, fl TEXT, data TEXT, ' ..
     'aplic TEXT, instal TEXT, visto TEXT, aprov TEXT,' ..
     'classif TEXT, pfl TEXT)')
+  bd:exec('DROP TABLE IF EXISTS engates')
+	bd:exec('CREATE TABLE engates('..
+		'unico INTEGER, '..
+		'engate TEXT)')
 	bd:exec('DROP VIEW IF EXISTS hierarquia')
 	bd:exec("CREATE VIEW hierarquia AS\n"..
 		"SELECT componentes.unico componente,\n"..
@@ -1292,12 +1341,20 @@ function teste()
 		"(SELECT CASE WHEN hierarquia.pai\n"..
 		"THEN componentes.id\n"..
 		"END) parte,\n"..
-		"componentes.bloco, terminais.id num, terminais.terminal \n"..
+		"componentes.bloco, componentes.tipo, terminais.id num, terminais.terminal \n"..
 		"FROM componentes, hierarquia \n"..
 		"INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
-		"WHERE componentes.unico = hierarquia.componente\n"..
+		"WHERE componentes.unico = hierarquia.componente "..
+    "AND NOT componentes.tipo = 'ENGATE'\n"..
 		"ORDER BY componente ASC, modulo ASC, unico ASC, num ASC\n")
-	
+	bd:exec('DROP VIEW IF EXISTS eng_term')
+	bd:exec("CREATE VIEW eng_term AS\n"..
+	  "SELECT componentes.unico, barras.id barra, "..
+    "terminais.id num, terminais.terminal\n".. 
+    "FROM componentes, barras\n"..
+    "INNER JOIN terminais ON terminais.componente = componentes.unico"..
+    "WHERE componentes.tipo = 'ENGATE' AND "..
+    "componentes.unico = barras.componente AND terminais.id = barras.terminal\n")
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
@@ -1314,18 +1371,22 @@ function teste()
 			if el.tipo == "COMPONENTE" then
 				local terms = info_terminais (el.ent)
 				local bloco = cadzinho.get_blk_name (el.ent)
-				if not bloco then bloco = 'NULL' end
+				if not bloco then bloco = 'NULL'
+        else bloco = "'"..bloco.."'" end
 				local comp_id = pega_comp_id(el.ent)
-				if not comp_id then comp_id = 'NULL' end
+				if not comp_id then comp_id = 'NULL'
+        elseif string.len(comp_id) == 0 then comp_id = 'NULL'
+        else comp_id = "'"..comp_id.."'" end
         local comp_tipo = pega_comp_tipo(el.ent)
-        if not comp_tipo then comp_tipo = 'NULL' end
+        if not comp_tipo then comp_tipo = 'NULL'
+        else comp_tipo = "'"..comp_tipo.."'" end
 				--cadzinho.db_print ("    " .. bloco, comp_id)
 				
 				bd:exec ("INSERT INTO componentes VALUES("..
-					string.format('%d', el_id) ..", '"..
-          comp_tipo .."', '"..
-					bloco .."', '"..
-					comp_id .."', "..
+					string.format('%d', el_id) ..", "..
+          comp_tipo ..", "..
+					bloco ..", "..
+					comp_id ..", "..
 					pai..
 					");")
 				for t_id, t in pairs(terms) do
@@ -1442,7 +1503,8 @@ function grava_pl_comp ()
 	
 	-- tamanho das colunas
 	aba:set_column(0, 1, 20)
-	aba:set_column(2, 4, 11)
+	aba:set_column(2, 3, 11)
+	aba:set_column(4, 4, 18)
 	aba:set_column(5, 5, 4)
 	aba:set_column(6, 6, 11)
 	
@@ -1470,7 +1532,7 @@ function grava_pl_comp ()
 	local ini_unico = 1
 	local ini_modulo = 1
 	local comp_ant = false
-	local bloco_ant = false
+	local tipo_ant = false
 	local unico_ant = false
 	local parte_ant = false
 	local modulo_ant = nil
@@ -1505,7 +1567,7 @@ function grava_pl_comp ()
 		if unico_ant ~= linha.unico then -- o ID unico eh o criterio para agrupar blocos e partes
 			if (lin - ini_unico) > 1 then
 				aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
-				aba:merge_range(ini_unico, 4, lin - 1, 4, bloco_ant, m_p)
+				aba:merge_range(ini_unico, 4, lin - 1, 4, tipo_ant, m_p)
 				if parte_ant then
 					aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
 				else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
@@ -1515,7 +1577,7 @@ function grava_pl_comp ()
 		
 		comp_ant = linha.componente
 		unico_ant = linha.unico
-		bloco_ant = linha.bloco
+		tipo_ant = linha.tipo
 		parte_ant = linha.parte
 		modulo_ant = linha.modulo
 		
@@ -1533,7 +1595,7 @@ function grava_pl_comp ()
 	
 	if (lin - ini_unico) > 1 then
 		aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
-		aba:merge_range(ini_unico, 4, lin - 1, 4, bloco_ant, m_p)
+		aba:merge_range(ini_unico, 4, lin - 1, 4, tipo_ant, m_p)
 		if parte_ant then
 			aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
 		else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
