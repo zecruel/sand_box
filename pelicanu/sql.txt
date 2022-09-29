@@ -181,3 +181,20 @@ FROM componentes, hierarquia
 WHERE componentes.unico = hierarquia.componente
 ORDER BY componente ASC, bloco ASC)
 select componente, bloco, count(*) quant from blocos group by componente, bloco
+
+SELECT DISTINCT barras.id
+  FROM barras
+ WHERE NOT EXISTS (
+               SELECT eng_term.barra
+                 FROM eng_term
+                WHERE barras.id = eng_term.barra
+           );
+;
+SELECT DISTINCT barras.id
+  FROM barras
+ WHERE barras.id NOT IN (
+           SELECT eng_term.barra
+             FROM eng_term
+       );
+
+;

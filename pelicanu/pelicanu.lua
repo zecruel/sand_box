@@ -1349,12 +1349,12 @@ function teste()
 		"ORDER BY componente ASC, modulo ASC, unico ASC, num ASC\n")
 	bd:exec('DROP VIEW IF EXISTS eng_term')
 	bd:exec("CREATE VIEW eng_term AS\n"..
-	  "SELECT componentes.unico, barras.id barra, "..
-    "terminais.id num, terminais.terminal\n".. 
-    "FROM componentes, barras\n"..
-    "INNER JOIN terminais ON terminais.componente = componentes.unico"..
-    "WHERE componentes.tipo = 'ENGATE' AND "..
-    "componentes.unico = barras.componente AND terminais.id = barras.terminal\n")
+    "SELECT engates.unico, engates.engate, barras.id barra, terminais.terminal\n"..
+    "FROM engates, barras\n"..
+    "INNER JOIN terminais ON terminais.componente = engates.unico\n"..
+    "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal\n"..
+    "ORDER BY engates.engate ASC, terminais.terminal ASC\n")
+
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
@@ -1395,6 +1395,14 @@ function teste()
 						string.format('%d', t_id) ..", '"..
 						t .."');")
 				end
+
+        if comp_tipo == "'ENGATE'" then
+          local engate = pega_engate(el.ent)
+          if not engate then engate = 'NULL'
+          else engate = "'"..engate.."'" end
+          bd:exec ("INSERT INTO engates VALUES("..
+					string.format('%d', el_id) ..", "..engate..")")
+        end
 			elseif el.tipo == "CAIXA" then
 				local sub_caixa = caixas[el_id]
 				if sub_caixa then
