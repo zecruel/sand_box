@@ -1349,12 +1349,39 @@ function teste()
 		"ORDER BY componente ASC, modulo ASC, unico ASC, num ASC\n")
 	bd:exec('DROP VIEW IF EXISTS eng_term')
 	bd:exec("CREATE VIEW eng_term AS\n"..
-    "SELECT engates.unico, engates.engate, barras.id barra, terminais.terminal\n"..
-    "FROM engates, barras\n"..
+    "SELECT engates.unico, engates.engate, barras.id barra, "..
+    "terminais.terminal, hierarquia.desenho\n"..
+    "FROM engates, barras, hierarquia\n"..
     "INNER JOIN terminais ON terminais.componente = engates.unico\n"..
-    "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal\n"..
+    "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal "..
+    "AND engates.unico = hierarquia.componente\n"..
     "ORDER BY engates.engate ASC, terminais.terminal ASC\n")
-
+  bd:exec('DROP VIEW IF EXISTS eng_repetidos')
+	bd:exec("CREATE VIEW eng_repetidos AS\n".. 
+   "WITH cte_barras_rep AS (SELECT eng_term.barra barra,\n"..
+   "count(eng_term.barra) quant FROM eng_term\n"..
+   "GROUP BY eng_term.barra HAVING quant > 1)\n"..
+   "SELECT eng_term.engate || '_' || eng_term.terminal node,\n"..
+   "cte_barras_rep.barra FROM eng_term, cte_barras_rep\n"..
+   "WHERE cte_barras_rep.barra = eng_term.barra\n"..
+   "ORDER BY node ASC;")
+  bd:exec('DROP VIEW IF EXISTS barra_consol')
+  bd:exec("CREATE VIEW barra_consol AS\n".. 
+    "SELECT CASE WHEN EXISTS (SELECT eng_term.barra\n"..
+    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
+    "THEN (SELECT CASE WHEN EXISTS (\n"..
+    "SELECT eng_repetidos.node FROM eng_repetidos\n"..
+    "where eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node)\n"..
+    "THEN (SELECT eng_repetidos.barra FROM eng_repetidos \n"..
+    "WHERE eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node\n"..
+    "LIMIT 1) ELSE eng_term.engate || '_' || eng_term.terminal END\n"..
+    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
+    "ELSE barras.id END\n"..
+    "barra, componentes.unico componente, barras.terminal\n"..
+    "FROM barras, componentes\n"..
+    "WHERE componentes.unico = barras.componente AND \n"..
+    "NOT componentes.tipo = 'ENGATE'\n"..
+    "ORDER BY barra ASC\n")
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
