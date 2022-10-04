@@ -1377,11 +1377,30 @@ function teste()
     "LIMIT 1) ELSE eng_term.engate || '_' || eng_term.terminal END\n"..
     "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
     "ELSE barras.id END\n"..
-    "barra, componentes.unico componente, barras.terminal\n"..
-    "FROM barras, componentes\n"..
+    "barra, componentes.unico componente, barras.terminal, hierarquia.painel, "..
+    "caixas.id nome_painel\n"..
+    "FROM barras, componentes, hierarquia, caixas\n"..
     "WHERE componentes.unico = barras.componente AND \n"..
-    "NOT componentes.tipo = 'ENGATE'\n"..
+    "NOT componentes.tipo = 'ENGATE' AND barras.componente = hierarquia.componente\n"..
+    "AND hierarquia.painel = caixas.unico\n"..
     "ORDER BY barra ASC\n")
+  bd:exec('DROP VIEW IF EXISTS fiacao_interna')
+  bd:exec("CREATE VIEW fiacao_interna AS\n"..
+    "SELECT barra_consol.barra,\n"..
+    "barra_consol.componente elemento,\n"..
+    "barra_consol.terminal term,\n"..
+    "LAG(barra_consol.componente) OVER (PARTITION BY barra_consol.nome_painel,\n"..
+    "barra_consol.barra ORDER BY barra_consol.barra) comp_ant,\n"..
+    "LAG(barra_consol.terminal) OVER (PARTITION BY barra_consol.nome_painel,\n"..
+    "barra_consol.barra ORDER BY barra_consol.barra) term_ant,\n"..
+    "LEAD(barra_consol.componente) OVER (PARTITION BY barra_consol.nome_painel,\n"..
+    "barra_consol.barra ORDER BY barra_consol.barra) comp_pos,\n"..
+    "LEAD(barra_consol.terminal) OVER (PARTITION BY barra_consol.nome_painel,\n"..
+    "barra_consol.barra ORDER BY barra) term_pos,\n"..
+    "barra_consol.nome_painel painel\n"..
+    "FROM barra_consol\n"..
+    "ORDER BY barra_consol.nome_painel,\n"..
+    "barra_consol.barra\n")
 	local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
