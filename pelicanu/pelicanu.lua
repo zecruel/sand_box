@@ -3,7 +3,7 @@
 -- ============= variáveis globais =====================
 pelicanu ={}  -- tabela principal
 pelicanu.elems = {} -- lista principal dos elementos
-tolerancia = 0.001 -- tolerancia para comparacoes de numeros não inteiros
+tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 
 -- para funcoes dinamicas
 num_pt = 1 -- numero de pontos
@@ -1401,7 +1401,103 @@ function teste()
     "FROM barra_consol\n"..
     "ORDER BY barra_consol.nome_painel,\n"..
     "barra_consol.barra\n")
-	local caixas = obtem_caixas()
+	bd:exec('DROP VIEW IF EXISTS fiacao_tabela')
+  bd:exec("CREATE VIEW fiacao_tabela AS\n"..
+    "SELECT ( SELECT comp_term.componente FROM comp_term\n" ..
+    "WHERE comp_term.unico = fiacao_interna.elemento) componente,\n" ..
+    "(SELECT comp_term.terminal FROM comp_term\n" ..
+    "WHERE comp_term.num = fiacao_interna.term AND\n" ..
+    "comp_term.unico = fiacao_interna.elemento) terminal,\n" ..
+    "CASE WHEN fiacao_interna.comp_ant AND fiacao_interna.comp_pos\n" ..
+    "THEN ( SELECT comp_term.componente FROM comp_term\n" ..
+    "WHERE comp_term.unico = fiacao_interna.comp_ant)\n" ..
+    "|| '.' || ( SELECT comp_term.terminal\n" ..
+    "FROM comp_term WHERE comp_term.num = fiacao_interna.term_ant\n" ..
+    "AND comp_term.unico = fiacao_interna.comp_ant )\n" ..
+    "|| '  /  ' || ( SELECT comp_term.componente FROM comp_term\n" ..
+    "WHERE comp_term.unico = fiacao_interna.comp_pos)\n" ..
+    "|| '.' || ( SELECT comp_term.terminal FROM comp_term\n" ..
+    "WHERE comp_term.num = fiacao_interna.term_pos AND\n" ..
+    "comp_term.unico = fiacao_interna.comp_pos)\n" ..
+    "WHEN fiacao_interna.comp_ant THEN (\n" ..
+    "SELECT comp_term.componente FROM comp_term\n" ..
+    "WHERE comp_term.unico = fiacao_interna.comp_ant)\n" ..
+    "|| '.' || (SELECT comp_term.terminal FROM comp_term\n" ..
+    "WHERE comp_term.num = fiacao_interna.term_ant AND\n" ..
+    "comp_term.unico = fiacao_interna.comp_ant)\n" ..
+    "WHEN fiacao_interna.comp_pos THEN (\n" ..
+    "SELECT comp_term.componente FROM comp_term\n" ..
+    "WHERE comp_term.unico = fiacao_interna.comp_pos)\n" ..
+    "|| '.' || ( SELECT comp_term.terminal FROM comp_term\n" ..
+    "WHERE comp_term.num = fiacao_interna.term_pos AND\n" ..
+    "comp_term.unico = fiacao_interna.comp_pos) END ligacao,\n" ..
+    "fiacao_interna.painel FROM fiacao_interna\n" ..
+    "WHERE fiacao_interna.comp_ant OR  fiacao_interna.comp_pos\n" ..
+    "ORDER BY painel ASC, componente ASC, terminal ASC;")
+  bd:exec('DROP VIEW IF EXISTS interlig')
+  bd:exec("CREATE VIEW interlig AS\n"..
+    "WITH cte_interlig AS (\n" ..
+    "SELECT DISTINCT barra_consol.barra,\n" ..
+    "barra_consol.nome_painel painel\n" ..
+    "FROM (SELECT barra_consol.barra barra,\n" ..
+    "count(DISTINCT barra_consol.nome_painel) quant\n" ..
+    "FROM barra_consol GROUP BY barra_consol.barra\n" ..
+    "HAVING quant > 1) passante, barra_consol\n" ..
+    "WHERE barra_consol.barra = passante.barra\n" ..
+    "ORDER BY barra_consol.barra, barra_consol.nome_painel)\n" ..
+    "SELECT interlig1.barra, interlig1.painel p1,\n" ..
+    "(SELECT comp_term.componente\n" ..
+    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "caixas, comp_term\n" ..
+    "WHERE componentes.unico = barra_consol.componente AND\n" ..
+    "componentes.unico = comp_term.unico AND\n" ..
+    "barra_consol.barra = interlig1.barra AND\n" ..
+    "(componentes.tipo = 'BORNE' OR\n" ..
+    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "caixas.id = interlig1.painel AND\n" ..
+    "hierarquia.componente = componentes.unico AND\n" ..
+    "caixas.unico = hierarquia.painel) borne_p1,\n" ..
+    "(SELECT comp_term.terminal\n" ..
+    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "caixas, comp_term\n" ..
+    "WHERE componentes.unico = barra_consol.componente AND\n" ..
+    "componentes.unico = comp_term.unico AND\n" ..
+    "barra_consol.terminal = comp_term.num AND\n" ..
+    "barra_consol.barra = interlig1.barra AND\n" ..
+    "(componentes.tipo = 'BORNE' OR\n" ..
+    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "caixas.id = interlig1.painel AND\n" ..
+    "hierarquia.componente = componentes.unico AND\n" ..
+    "caixas.unico = hierarquia.painel) term_p1,\n" ..
+    "interlig2.painel p2,\n" ..
+    "(SELECT comp_term.componente\n" ..
+    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "caixas, comp_term\n" ..
+    "WHERE componentes.unico = barra_consol.componente AND\n" ..
+    "componentes.unico = comp_term.unico AND\n" ..
+    "barra_consol.barra = interlig2.barra AND\n" ..
+    "(componentes.tipo = 'BORNE' OR\n" ..
+    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "caixas.id = interlig2.painel AND\n" ..
+    "hierarquia.componente = componentes.unico AND\n" ..
+    "caixas.unico = hierarquia.painel) borne_p2,\n" ..
+    "(SELECT comp_term.terminal\n" ..
+    "FROM componentes, hierarquia,\n" ..
+    "barra_consol, caixas, comp_term\n" ..
+    "WHERE componentes.unico = barra_consol.componente AND\n" ..
+    "componentes.unico = comp_term.unico AND\n" ..
+    "barra_consol.terminal = comp_term.num AND\n" ..
+    "barra_consol.barra = interlig2.barra AND\n" ..
+    "(componentes.tipo = 'BORNE' OR\n" ..
+    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "caixas.id = interlig2.painel AND\n" ..
+    "hierarquia.componente = componentes.unico AND\n" ..
+    "caixas.unico = hierarquia.painel)term_p2\n" ..
+    "FROM cte_interlig interlig1\n" ..
+    "JOIN cte_interlig interlig2 ON\n" ..
+    "interlig1.barra = interlig2.barra AND p1 > p2\n"..
+    "ORDER BY p1 ASC, p2 ASC;")
+  local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
 		local pai = id
@@ -1467,37 +1563,51 @@ function teste()
 
           if sub_caixa.tipo == "DESENHO" then
             local dados = pega_attrib(el.ent)
-            if not dados.ident then dados.ident = 'NULL' end
-            if not dados.titulo then dados.titulo = 'NULL' end
-            if not dados.tipo then dados.tipo = 'NULL' end
-            if not dados.projeto then dados.projeto = 'NULL' end
-            if not dados.rev then dados.rev = 'NULL' end
-            if not dados.versao then dados.versao = 'NULL' end
-            if not dados.fl then dados.fl = 'NULL' end
-            if not dados.data then dados.data = 'NULL' end
-            if not dados.aplic then dados.aplic = 'NULL' end
-            if not dados.instal then dados.instal = 'NULL' end
-            if not dados.visto then dados.visto = 'NULL' end
-            if not dados.aprov then dados.aprov = 'NULL' end
-            if not dados.classif then dados.classif = 'NULL' end
-            if not dados.pfl then dados.pfl = 'NULL' end
+            if dados.ident then dados.ident = "'" .. dados.ident .. "'" 
+            else dados.ident = 'NULL' end
+            if dados.titulo then dados.titulo = "'" .. dados.titulo .. "'" 
+            else dados.titulo = 'NULL' end
+            if dados.tipo then dados.tipo = "'" .. dados.tipo .. "'" 
+            else dados.tipo = 'NULL' end
+            if dados.projeto then dados.projeto = "'" .. dados.projeto .. "'" 
+            else dados.projeto = 'NULL' end
+            if dados.rev then dados.rev = "'" .. dados.rev .. "'" 
+            else dados.rev = 'NULL' end
+            if dados.versao then dados.versao = "'" .. dados.versao .. "'" 
+            else dados.versao = 'NULL' end
+            if dados.fl then dados.fl = "'" .. dados.fl .. "'" 
+            else dados.fl = 'NULL' end
+            if dados.data then dados.data = "'" .. dados.data .. "'" 
+            else dados.data = 'NULL' end
+            if dados.aplic then dados.aplic = "'" .. dados.aplic .. "'" 
+            else dados.aplic = 'NULL' end
+            if dados.instal then dados.instal = "'" .. dados.instal .. "'" 
+            else dados.instal = 'NULL' end
+            if dados.visto then dados.visto = "'" .. dados.visto .. "'" 
+            else dados.visto = 'NULL' end
+            if dados.aprov then dados.aprov = "'" .. dados.aprov .. "'" 
+            else dados.aprov = 'NULL' end
+            if dados.classif then dados.classif = "'" .. dados.classif .. "'" 
+            else dados.classif = 'NULL' end
+            if dados.pfl then dados.pfl = "'" .. dados.pfl .. "'" 
+            else dados.pfl = 'NULL' end
             bd:exec ("INSERT INTO desenhos VALUES("..
-             string.format('%d', el_id) ..", '"..
-             dados.ident .."', '"..
-             dados.titulo .."', '"..
-             dados.tipo .."', '"..
-             dados.projeto .."', '"..
-             dados.rev .."', '"..
-             dados.versao .."', '"..
-             dados.fl .."', '"..
-             dados.data .."', '"..
-             dados.aplic .."', '"..
-             dados.instal .."', '"..
-             dados.visto .."', '"..
-             dados.aprov .."', '"..
-             dados.classif .."', '"..
+             string.format('%d', el_id) ..", "..
+             dados.ident ..", "..
+             dados.titulo ..", "..
+             dados.tipo ..", "..
+             dados.projeto ..", "..
+             dados.rev ..", "..
+             dados.versao ..", "..
+             dados.fl ..", "..
+             dados.data ..", "..
+             dados.aplic ..", "..
+             dados.instal ..", "..
+             dados.visto ..", "..
+             dados.aprov ..", "..
+             dados.classif ..", "..
              dados.pfl ..
-            "');")
+            ");")
           end
         end
 			end
