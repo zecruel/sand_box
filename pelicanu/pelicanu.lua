@@ -550,8 +550,12 @@ function muda_comp_id (comp, id)
 -- altera a identificação de um componente do PELICAnU
 
 	-- decompoe o texto para o formato fracao
-	local id1 = string.match(id, '^([^/]*)/?.*$')
-	local id2 = string.match(id, '/(.*)$')
+	local id1 = ""
+  local id2 = ""
+  if id then
+    id1 = string.match(id, '^([^/]*)/?.*$')
+    id2 = string.match(id, '/(.*)$')
+  end
 	local idx1 = 0
 	local idx2 = 0
 	local ocul1 = false
@@ -1256,7 +1260,7 @@ function teste()
 	bd:exec('DROP TABLE IF EXISTS componentes')
 	bd:exec('CREATE TABLE componentes('..
 		'unico INTEGER, tipo TEXT, '..
-		'bloco TEXT, id TEXT, pai INTEGER)')
+		'bloco TEXT, id TEXT, pai INTEGER, x REAL, y REAL)')
 	bd:exec('DROP TABLE IF EXISTS caixas')
 	bd:exec('CREATE TABLE caixas('..
 		'unico INTEGER, '..
@@ -1346,7 +1350,8 @@ function teste()
 		"INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
 		"WHERE componentes.unico = hierarquia.componente "..
     "AND NOT componentes.tipo = 'ENGATE'\n"..
-		"ORDER BY componente ASC, modulo ASC, unico ASC, num ASC\n")
+		"ORDER BY componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, "..
+    "componentes.x ASC, componentes.y ASC, num ASC;\n")
 	bd:exec('DROP VIEW IF EXISTS eng_term')
 	bd:exec("CREATE VIEW eng_term AS\n"..
     "SELECT engates.unico, engates.engate, barras.id barra, "..
@@ -1355,7 +1360,7 @@ function teste()
     "INNER JOIN terminais ON terminais.componente = engates.unico\n"..
     "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal "..
     "AND engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate ASC, terminais.terminal ASC\n")
+    "ORDER BY engates.engate ASC, terminais.terminal ASC;\n")
   bd:exec('DROP VIEW IF EXISTS eng_repetidos')
 	bd:exec("CREATE VIEW eng_repetidos AS\n".. 
    "WITH cte_barras_rep AS (SELECT eng_term.barra barra,\n"..
@@ -1513,6 +1518,7 @@ function teste()
 			if el.tipo == "COMPONENTE" then
 				local terms = info_terminais (el.ent)
 				local bloco = cadzinho.get_blk_name (el.ent)
+        local dados = cadzinho.get_ins_data (el.ent)
 				if not bloco then bloco = 'NULL'
         else bloco = "'"..bloco.."'" end
 				local comp_id = pega_comp_id(el.ent)
@@ -1529,7 +1535,9 @@ function teste()
           comp_tipo ..", "..
 					bloco ..", "..
 					comp_id ..", "..
-					pai..
+					pai..", "..
+          string.format('%f', dados.pt.x) ..", "..
+          string.format('%f', dados.pt.y) ..
 					");")
 				for t_id, t in pairs(terms) do
 					bd:exec ("INSERT INTO terminais VALUES("..
@@ -1812,7 +1820,12 @@ function le_pl_comp()
 					tostring(pl_comp.data[lin]['G']) ..
 					"' WHERE componente = " .. string.format('%d', unico) ..
 					" AND id = " .. tostring(pl_comp.data[lin]['F']) .. ";")
-					
+
+        if pl_comp.data[lin]['D'] then
+          bd:exec("UPDATE componentes SET id = '" ..
+					tostring(pl_comp.data[lin]['D']) ..
+					"' WHERE unico = " .. string.format('%d', unico) .. ";")
+        end
 				-- atualiza na lista de componentes
 				local componente = componentes[unico]
 				if type(componente) == 'table' then
