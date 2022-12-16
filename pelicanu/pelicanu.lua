@@ -1,7 +1,7 @@
 -- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
 
 -- ============= variáveis globais =====================
-pelicanu ={}  -- tabela principal
+pelicanu = {}  -- tabela principal
 pelicanu.elems = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 
@@ -17,7 +17,7 @@ lista_formato_o = {}
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
-g_caixa_tipo = {value = 'COMPONENTE'}
+g_caixa_tipo = {value = 1, 'COMPONENTE', 'MODULO', 'PAINEL', 'GENERICO'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
 g_biblioteca = {value = 'C:\\util\\pelicanu\\biblioteca'}
 --g_biblioteca = {value = '/home/ezequiel/pelicanu/biblioteca/'}
@@ -344,7 +344,7 @@ function caixa_dyn(event)
 	cadzinho.nk_label("ID:")
 	cadzinho.nk_edit(g_caixa_id)
 	cadzinho.nk_label("Tipo:")
-	cadzinho.nk_edit(g_caixa_tipo)
+	cadzinho.nk_combo(g_caixa_tipo)
 	
 	-- armazena o ponto atual na lista
 	pts[num_pt] = {}
@@ -409,7 +409,7 @@ function caixa_dyn(event)
 			cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
 			
 			if caixa then
-				cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo.value})
+				cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo[g_caixa_tipo.value]})
 				caixa:write()
 			end
 			if caixa_id then
@@ -1337,7 +1337,8 @@ function teste()
 	bd:exec('DROP VIEW IF EXISTS comp_term')
 	bd:exec("CREATE VIEW comp_term AS\n"..
 		"SELECT componentes.unico,\n"..
-		"(SELECT CASE WHEN hierarquia.pai\n"..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.painel) painel,\n"..
+    "(SELECT CASE WHEN hierarquia.pai\n"..
 		"THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n"..
 		"ELSE componentes.id\n"..
 		"END) componente,\n"..
@@ -1350,7 +1351,7 @@ function teste()
 		"INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
 		"WHERE componentes.unico = hierarquia.componente "..
     "AND NOT componentes.tipo = 'ENGATE'\n"..
-		"ORDER BY componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, "..
+		"ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, "..
     "componentes.x ASC, componentes.y ASC, num ASC;\n")
 	bd:exec('DROP VIEW IF EXISTS eng_term')
 	bd:exec("CREATE VIEW eng_term AS\n"..
@@ -1502,6 +1503,38 @@ function teste()
     "JOIN cte_interlig interlig2 ON\n" ..
     "interlig1.barra = interlig2.barra AND p1 > p2\n"..
     "ORDER BY p1 ASC, p2 ASC;")
+  bd:exec('DROP VIEW IF EXISTS engate_par')
+  bd:exec("CREATE VIEW engate_par AS\n"..
+    "WITH cte_engate AS (\n"..
+    "SELECT engates.unico unico, engates.engate engate,\n"..
+    "(SELECT desenhos.ident FROM desenhos\n"..
+    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
+    "(SELECT desenhos.fl FROM desenhos\n"..
+    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
+    "FROM engates, hierarquia\n"..
+    "WHERE engates.unico = hierarquia.componente\n"..
+    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
+    "SELECT num, engate, unico, desenho, folha,\n"..
+    "CASE WHEN prox THEN prox ELSE ant END AS par\n"..
+    "FROM (\n"..
+    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
+    "ORDER BY desenho, folha) num,\n"..
+    "engate, unico, desenho, folha,\n"..
+    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
+    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
+    "FROM cte_engate)\n"..
+    "WHERE num % 2 = 1\n"..
+    "UNION\n"..
+    "SELECT num, engate, unico, desenho, folha, ant\n"..
+    "FROM (\n"..
+    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
+    "ORDER BY desenho, folha) num,\n"..
+    "engate, unico, desenho, folha,\n"..
+    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
+    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
+    "FROM cte_engate)\n"..
+    "WHERE num % 2 = 0\n"..
+    "ORDER BY engate, desenho, folha;")
   local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
@@ -1674,11 +1707,13 @@ function grava_pl_comp ()
 	local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
 	
 	-- tamanho das colunas
-	aba:set_column(0, 1, 20)
-	aba:set_column(2, 3, 11)
-	aba:set_column(4, 4, 18)
-	aba:set_column(5, 5, 4)
-	aba:set_column(6, 6, 11)
+	aba:set_column(0, 0, 20)
+  aba:set_column(1, 1, 11)
+  aba:set_column(2, 2, 20)
+	aba:set_column(3, 4, 11)
+	aba:set_column(5, 5, 18)
+	aba:set_column(6, 6, 4)
+	aba:set_column(7, 7, 11)
 	
 	-- primeira linha de titulo
 	local tit_p = planilha:add_format({
@@ -1690,12 +1725,13 @@ function grava_pl_comp ()
 		})
 	local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
 	aba:write(0, 0, 'ID Unico', tit_p)
-	aba:write(0, 1, 'Componente', tit_p)
-	aba:write(0, 2, 'Modulo', tit_p)
-	aba:write(0, 3, 'Parte', tit_d)
-  aba:write(0, 4, 'Tipo', tit_p)
-	aba:write(0, 5, 'T id', tit_p)
-	aba:write(0, 6, 'Terminal', tit_d)
+  aba:write(0, 1, 'Painel', tit_p)
+	aba:write(0, 2, 'Componente', tit_p)
+	aba:write(0, 3, 'Modulo', tit_p)
+	aba:write(0, 4, 'Parte', tit_d)
+  aba:write(0, 5, 'Tipo', tit_p)
+	aba:write(0, 6, 'T id', tit_p)
+	aba:write(0, 7, 'Terminal', tit_d)
 	
 	local lin = 1
 	
@@ -1703,46 +1739,55 @@ function grava_pl_comp ()
 	local ini_comp = 1
 	local ini_unico = 1
 	local ini_modulo = 1
+  local ini_painel = 1
 	local comp_ant = false
 	local tipo_ant = false
 	local unico_ant = false
 	local parte_ant = false
 	local modulo_ant = nil
+  local painel_ant = nil
 	
 	-- abre e le o banco de dados
 	local bd = sqlite.open('pelicanu.db')
-	for linha in bd:cols('select * from comp_term') do -- para cada linha doBD
+	for linha in bd:cols('select * from comp_term') do -- para cada linha do BD
 		-- grava na planilha cada celula separada, a principio
 		aba:write(lin, 0, string.format('%X', linha.unico), protegido)
-		aba:write(lin, 1, linha.componente, protegido)
-		aba:write(lin, 2, linha.modulo, protegido)
+    aba:write(lin, 1, linha. painel, protegido)
+		aba:write(lin, 2, linha.componente, protegido)
+		aba:write(lin, 3, linha.modulo, protegido)
 		if linha.parte then
-			aba:write(lin, 3, linha.parte, desprotegido)
-		else aba:write(lin, 3, linha.parte, protegido) end
-		aba:write(lin, 4, linha.tipo, protegido)
-		aba:write(lin, 5, linha.num, protegido)
-		aba:write(lin, 6, linha.terminal, desprotegido)
+			aba:write(lin, 4, linha.parte, desprotegido)
+		else aba:write(lin, 4, linha.parte, protegido) end
+		aba:write(lin, 5, linha.tipo, protegido)
+		aba:write(lin, 6, linha.num, protegido)
+		aba:write(lin, 7, linha.terminal, desprotegido)
 		
 		-- agrupa as celulas repetidas
-		if comp_ant ~= linha.componente then
+		if painel_ant ~= linha.painel then
+			if (lin - ini_painel) > 1 then
+				aba:merge_range(ini_painel, 1, lin - 1, 1, painel_ant, m_p)
+			end
+			ini_painel = lin
+		end
+    if comp_ant ~= linha.componente then
 			if (lin - ini_comp) > 1 then
-				aba:merge_range(ini_comp, 1, lin - 1, 1, comp_ant, m_p)
+				aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, m_p)
 			end
 			ini_comp = lin
 		end
 		if modulo_ant ~= linha.modulo or comp_ant and comp_ant ~= linha.componente then
 			if (lin - ini_modulo) > 1 then
-				aba:merge_range(ini_modulo, 2, lin - 1, 2, modulo_ant, m_p)
+				aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, m_p)
 			end
 			ini_modulo = lin
 		end
 		if unico_ant ~= linha.unico then -- o ID unico eh o criterio para agrupar blocos e partes
 			if (lin - ini_unico) > 1 then
 				aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
-				aba:merge_range(ini_unico, 4, lin - 1, 4, tipo_ant, m_p)
+				aba:merge_range(ini_unico, 5, lin - 1, 5, tipo_ant, m_p)
 				if parte_ant then
-					aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
-				else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
+					aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_d)
+				else aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_p) end
 			end
 			ini_unico = lin
 		end
@@ -1752,25 +1797,29 @@ function grava_pl_comp ()
 		tipo_ant = linha.tipo
 		parte_ant = linha.parte
 		modulo_ant = linha.modulo
+    painel_ant = linha.painel
 		
 		-- proxima linha
 		lin = lin + 1
 	end
 	-- finaliza os agrupamentos, se necessario
-	if (lin - ini_comp) > 1 then
-		aba:merge_range(ini_comp, 1, lin - 1, 1, comp_ant, m_p)
+	if (lin - ini_painel) > 1 then
+		aba:merge_range(ini_painel, 1, lin - 1, 1, painel_ant, m_p)
 	end
-	
+	if (lin - ini_comp) > 1 then
+		aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, m_p)
+	end
+
 	if (lin - ini_modulo) > 1 then
-		aba:merge_range(ini_modulo, 2, lin - 1, 2, modulo_ant, m_p)
+		aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, m_p)
 	end
 	
 	if (lin - ini_unico) > 1 then
 		aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
-		aba:merge_range(ini_unico, 4, lin - 1, 4, tipo_ant, m_p)
+		aba:merge_range(ini_unico, 5, lin - 1, 5, tipo_ant, m_p)
 		if parte_ant then
-			aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_d)
-		else aba:merge_range(ini_unico, 3, lin - 1, 3, parte_ant, m_p) end
+			aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_d)
+		else aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_p) end
 	end
 	--
 	bd:close()
@@ -1817,22 +1866,22 @@ function le_pl_comp()
 				local unico = tonumber(pl_comp.data[lin]['A'],16) -- coluna A eh o id unico
 				-- atualiza o banco de dados com as informacoes lidas
 				bd:exec("UPDATE terminais SET terminal = '" ..
-					tostring(pl_comp.data[lin]['G']) ..
+					tostring(pl_comp.data[lin]['H']) ..
 					"' WHERE componente = " .. string.format('%d', unico) ..
-					" AND id = " .. tostring(pl_comp.data[lin]['F']) .. ";")
+					" AND id = " .. tostring(pl_comp.data[lin]['G']) .. ";")
 
-        if pl_comp.data[lin]['D'] then
+        if pl_comp.data[lin]['E'] then
           bd:exec("UPDATE componentes SET id = '" ..
-					tostring(pl_comp.data[lin]['D']) ..
+					tostring(pl_comp.data[lin]['E']) ..
 					"' WHERE unico = " .. string.format('%d', unico) .. ";")
         end
 				-- atualiza na lista de componentes
 				local componente = componentes[unico]
 				if type(componente) == 'table' then
-					if pl_comp.data[lin]['D'] then
-						componente.id = tostring(pl_comp.data[lin]['D'])
+					if pl_comp.data[lin]['E'] then
+						componente.id = tostring(pl_comp.data[lin]['E'])
 					end
-					componente.term[tonumber(pl_comp.data[lin]['F'])] = tostring(pl_comp.data[lin]['G'])
+					componente.term[tonumber(pl_comp.data[lin]['G'])] = tostring(pl_comp.data[lin]['H'])
 				end
 			end
 		end
