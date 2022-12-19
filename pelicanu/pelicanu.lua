@@ -1505,7 +1505,9 @@ function teste()
     "ORDER BY p1 ASC, p2 ASC;")
   bd:exec('DROP VIEW IF EXISTS engate_par')
   bd:exec("CREATE VIEW engate_par AS\n"..
-    "WITH cte_engate AS (\n"..
+    "WITH cte_eng AS (select *, ROW_NUMBER() OVER (PARTITION BY desenho\n"..
+    "ORDER BY ini, folha) e_num\n"..
+    "FROM (WITH cte_engate AS (\n"..
     "SELECT engates.unico unico, engates.engate engate,\n"..
     "(SELECT desenhos.ident FROM desenhos\n"..
     "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
@@ -1515,7 +1517,8 @@ function teste()
     "WHERE engates.unico = hierarquia.componente\n"..
     "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
     "SELECT num, engate, unico, desenho, folha,\n"..
-    "CASE WHEN prox THEN prox ELSE ant END AS par\n"..
+    "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
+    "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
     "FROM (\n"..
     "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
     "ORDER BY desenho, folha) num,\n"..
@@ -1525,7 +1528,7 @@ function teste()
     "FROM cte_engate)\n"..
     "WHERE num % 2 = 1\n"..
     "UNION\n"..
-    "SELECT num, engate, unico, desenho, folha, ant\n"..
+    "SELECT num, engate, unico, desenho, folha, ant, 0 ini\n"..
     "FROM (\n"..
     "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
     "ORDER BY desenho, folha) num,\n"..
@@ -1534,7 +1537,57 @@ function teste()
     "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
     "FROM cte_engate)\n"..
     "WHERE num % 2 = 0\n"..
-    "ORDER BY engate, desenho, folha;")
+    "ORDER BY engate, desenho, folha)\n"..
+    "WHERE ini = 1\n"..
+    "UNION\n"..
+    "SELECT *, 0 e_num\n"..
+    "FROM (WITH cte_engate AS (\n"..
+    "SELECT engates.unico unico, engates.engate engate,\n"..
+    "(SELECT desenhos.ident FROM desenhos\n"..
+    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
+    "(SELECT desenhos.fl FROM desenhos\n"..
+    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
+    "FROM engates, hierarquia\n"..
+    "WHERE engates.unico = hierarquia.componente\n"..
+    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
+    "SELECT num, engate, unico, desenho, folha,\n"..
+    "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
+    "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
+    "FROM (\n"..
+    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
+    "ORDER BY desenho, folha) num,\n"..
+    "engate, unico, desenho, folha,\n"..
+    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
+    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
+    "FROM cte_engate)\n"..
+    "WHERE num % 2 = 1\n"..
+    "UNION\n"..
+    "SELECT num, engate, unico, desenho, folha, ant, 0 ini\n"..
+    "FROM (\n"..
+    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
+    "ORDER BY desenho, folha) num,\n"..
+    "engate, unico, desenho, folha,\n"..
+    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
+    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
+    "FROM cte_engate)\n"..
+    "WHERE num % 2 = 0\n"..
+    "ORDER BY engate, desenho, folha)\n"..
+    "WHERE ini = 0\n"..
+    "ORDER BY engate, desenho, folha)\n"..
+    "SELECT eng.unico, eng.desenho, eng.folha, \n"..
+    "CASE WHEN e_num > 0 THEN e_num ELSE \n"..
+    "(SELECT eng2.e_num FROM cte_eng eng2 WHERE eng2.unico = eng.par)\n"..
+    "END e_num, CASE WHEN \n"..
+    "(SELECT par.desenho FROM cte_eng par WHERE par.unico = eng.par) = eng.desenho THEN\n"..
+    "'NESTE' ELSE \n"..
+    "(SELECT par.desenho FROM cte_eng par WHERE par.unico = eng.par)\n"..
+    "END vai_des, CASE WHEN \n"..
+    "(SELECT par.folha FROM cte_eng par WHERE par.unico = eng.par) = eng.folha THEN \n"..
+    "'NESTA FL.' ELSE\n"..
+    "(SELECT par.folha FROM cte_eng par WHERE par.unico = eng.par)\n"..
+    "END vai_fl\n"..
+    "FROM cte_eng eng\n"..
+    "ORDER BY eng.desenho, eng.folha")
   local caixas = obtem_caixas()
 	for id, caixa in pairs(caixas) do
 		--cadzinho.db_print (caixa.nome)
