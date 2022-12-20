@@ -653,24 +653,55 @@ function pega_engate(comp)
   return dados.ENGATE
 end
 
-function muda_engate(comp, texto)
-  local ocul = false
-  local idx = 0
+function muda_engate(comp, engate, num, desenho, folha, descr)
+  local eng_o = false
+  local eng_i = 0
+  local num_o = false
+  local num_i = 0
+  local des_o = false
+  local des_i = 0
+  local fl_o = false
+  local fl_i = 0
+  local descr_o = false
+  local descr_i = 0
 
-	-- varre os elementos ATTRIB da entidade, buscando a etiqueta "ENGATE"
-	local attrs = cadzinho.get_attribs(comp)
+  -- varre os elementos ATTRIB da entidade, buscando a etiqueta "ENGATE"
+  local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
-		-- "numerador' ou ID principal
-		if string.find(attr['tag'], "ENGATE") then
-			idx = i
-			ocul = attr['hidden']
-      break
-		end
+    -- "numerador' ou ID principal
+    if string.find(attr['tag'], "ENGATE") then
+      eng_i = i
+      eng_o = attr['hidden']
+    elseif string.find(attr['tag'], "E1") then
+      num_i = i
+      num_o = attr['hidden']
+    elseif string.find(attr['tag'], "REF1") then
+      des_i = i
+      des_o = attr['hidden']
+    elseif string.find(attr['tag'], "REF2") then
+      fl_i = i
+      fl_o = attr['hidden']
+    elseif string.find(attr['tag'], "DESCR1") then
+      descr_i = i
+      descr_o = attr['hidden']
 	end
+  end
 	
-	if idx > 0 then
-		cadzinho.edit_attr(comp, idx, 'ENGATE', texto, ocul)
-  end	
+  if eng_i > 0 and engate then
+    cadzinho.edit_attr(comp, eng_i, 'ENGATE', engate, eng_o)
+  end
+  if num_i > 0 and num then
+    cadzinho.edit_attr(comp, num_i, 'E1', num, num_o)
+  end
+  if des_i > 0 and desenho then
+    cadzinho.edit_attr(comp, des_i, 'REF1', desenho, des_o)
+  end
+  if fl_i > 0 and folha then
+    cadzinho.edit_attr(comp, fl_i, 'REF2', folha, fl_o)
+  end
+  if descr_i > 0 and descr then
+    cadzinho.edit_attr(comp, descr_i, 'DESCR1', descr, descr_o)
+  end
 
 end
 
@@ -1881,6 +1912,7 @@ function grava_pl_comp ()
 	cadzinho.db_print ("----- Concluido  ------")
 end
 
+
 function le_pl_comp()
 	cadzinho.db_print ("----- Atualiza componentes  ------")
 	local leitor = require 'xlsx_lua'
@@ -1950,6 +1982,35 @@ function le_pl_comp()
 	end
 	
 	cadzinho.db_print ("----- Concluido  ------")
+end
+
+function atualiza_engates()
+  -- atualiza a lista principal com os elementos
+  pelicanu.atualiza_elems()
+  
+  --abre o banco de dados
+  local bd = sqlite.open('pelicanu.db')
+  for linha in bd:cols('select * from engate_par') do -- para cada linha do BD
+    local unico = tonumber(linha.unico)
+	local el = pelicanu.elems[unico]
+	local num = 'E' .. linha.e_num
+	local des = linha.vai_des
+	local fl = linha.vai_fl
+	local descr = nil
+	
+	if des == 'NESTE' then
+	  descr = ''
+	end
+	if fl == 'NESTA FL.' then
+	  des = fl
+	  fl = ''
+	elseif fl then
+	  fl = 'FL. ' .. fl
+	end
+	muda_engate(el.ent, nil, num, des, fl, descr)
+	el.ent:write()
+  end
+  bd:close()
 end
 
 function obtem_tipo_comp ()
@@ -2084,6 +2145,9 @@ function pelicanu_win()
 			end
 			if cadzinho.nk_button(" Le pl") then
 				le_pl_comp()
+			end
+			if cadzinho.nk_button(" Engates") then
+				atualiza_engates()
 			end
 		end
 		cadzinho.nk_tab_end()
