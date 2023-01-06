@@ -13,8 +13,22 @@ dizeres = {
   autor = '-- Autor: Ezequiel Rabelo de Aguiar - 2023',
   lua = '-- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8',
   alerta = '-- ========!! Altere-o com parcimonia !!========',
-  proj = '-- Arquivo de configuracao de um projeto no pelicanu, criado automaticamente',
+  proj = '-- Arquivo de configuracao de um projeto no PELICAnU, criado automaticamente',
+  ini = '-- Arquivo de inicialização do PELICAnU, criado automaticamente',
   config = '-- Arquivo de configuracao geral do PELICAnU'
+}
+
+projeto = { 
+  titulo = '',
+  instalacao = '',
+  aplicacao = '',
+  codigo = '',
+  rev = '',
+  aprovacao = '',
+  visto = '',
+  projetista = '',
+  descr = '',
+  data = ''
 }
 
 -- para funcoes dinamicas
@@ -45,6 +59,26 @@ g_formato = {value = ""}
 excel = require "xlsxwriter.workbook"
 
 -- ============================================
+function exists(name)
+    if type(name)~="string" then return false end
+    return os.rename(name,name) and true or false
+end
+
+function isFile(name)
+    if type(name)~="string" then return false end
+    if not exists(name) then return false end
+    local f = io.open(name)
+    if f then
+      f:close()
+      return true
+    end
+    return false
+end
+
+function isDir(name)
+    return (exists(name) and not isFile(name))
+end
+
 function nome_arq(url)
   return url:match("(.+)%..+$")
 end
@@ -58,6 +92,19 @@ function diretorio(url)
   return url
 end
 
+function format_dir(url)
+  url = string.gsub(url, "(.[^"..fs.dir_sep.."])$", '%1' .. fs.dir_sep)
+  return url
+end
+
+function cria_pasta(caminho)
+   if (os.getenv("oS") or ""):match("^Windows") then
+      os.execute('mkdir "' .. caminho .. '" 1>nul: 2>&1')
+   else
+      os.execute('mkdir -p "' .. caminho .. '" 2>/dev/null')
+   end
+end
+
 function carrega_config(arq)
   local configEnv = {} -- to keep it separate from the global env
   local f,err = loadfile(arq, "t", configEnv)
@@ -68,6 +115,199 @@ function carrega_config(arq)
   else
     return nil, err
   end
+end
+
+function abre_projeto(caminho)
+  if type(caminho) ~= 'string' then return nil end
+  local config = format_dir(caminho) .. '_dados' .. fs.dir_sep .. 'projeto.lua'
+  local bd = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'projeto.db'
+  local log = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'log.txt'
+  local proj, err = carrega_config(config)
+  if not proj then return nil end
+  
+  projeto.caminho = caminho
+  projeto.config = config
+  if exists(bd) then 
+    projeto.bd = bd
+  else
+    projeto.bd = nil
+  end
+  if exists(log) then 
+    projeto.log = log
+  else
+    projeto.log = nil
+  end
+  if type(proj.titulo) == 'string' then
+    projeto.titulo = proj.titulo
+  else
+    projeto.titulo = ''
+  end
+  if type(proj.instalacao) == 'string' then
+    projeto.instalacao = proj.instalacao
+  else
+    projeto.instalacao = ''
+  end
+  if type(proj.aplicacao) == 'string' then
+    projeto.aplicacao = proj.aplicacao
+  else
+    projeto.aplicacao = ''
+  end
+  if type(proj.codigo) == 'string' then
+    projeto.codigo = proj.codigo
+  else
+    projeto.codigo = '' 
+  end
+  if type(proj.rev) == 'string' then
+    projeto.rev = proj.rev
+  else
+    projeto.rev = ''
+  end
+  if type(proj.aprovacao) == 'string' then
+    projeto.aprovacao = proj.aprovacao
+  else
+    projeto.aprovacao = ''
+  end
+  if type(proj.visto) == 'string' then
+    projeto.visto = proj.visto
+  else
+    projeto.visto = ''
+  end
+  if type(proj.projetista) == 'string' then
+    projeto.projetista = proj.projetista
+  else
+    projeto.projetista = ''
+  end
+  if type(proj.descr) == 'string' then
+    projeto.descr = proj.descr
+  else
+    projeto.descr = ''
+  end
+  if type(proj.data) == 'string' then
+    projeto.data = proj.data
+  else
+    projeto.data = ''
+  end
+  
+  local arq_ini = io.open(diretorio(fs.script_path()) .. 'init.lua', 'w+')
+  if arq_ini then
+    arq_ini:write(dizeres.pelicanu..'\n')
+    arq_ini:write(dizeres.autor..'\n')
+    arq_ini:write(dizeres.ini..'\n')
+    arq_ini:write(dizeres.lua..'\n')
+    arq_ini:write(dizeres.alerta..'\n\n')
+    arq_ini:write('projeto = "'.. string.gsub(caminho, '\\', '\\\\') .. '"')
+    
+    arq_ini:close()
+  end
+  
+  fs.chdir(caminho)
+  
+  return true
+end
+
+function novo_projeto(caminho, proj)
+  if type(caminho) ~= 'string' then return nil end
+  if type(proj) ~= 'table' then return nil end
+  local dados = format_dir(caminho) .. '_dados' .. fs.dir_sep
+  local config = dados .. 'projeto.lua'
+  local bd = dados .. 'projeto.db'
+  local log = dados .. 'log.txt'
+  
+  if not exists (caminho) then
+    cria_pasta(caminho)
+  end
+  
+  if not exists (caminho) then return nil end
+  
+  if not exists (dados) then
+    cria_pasta(dados)
+  end
+  
+  local arq_log = io.open(log, 'a+')
+  if arq_log then
+    arq_log:write(os.date()..' => Criacao do projeto\n')
+    
+    arq_log:close()
+  end
+  --[[
+  projeto.caminho = caminho
+  projeto.config = config
+  if exists(bd) then 
+    projeto.bd = bd
+  else
+    projeto.bd = nil
+  end
+  if exists(log) then 
+    projeto.log = log
+  else
+    projeto.log = nil
+  end
+  if type(proj.titulo) == 'string' then
+    projeto.titulo = proj.titulo
+  else
+    projeto.titulo = ''
+  end
+  if type(proj.instalacao) == 'string' then
+    projeto.instalacao = proj.instalacao
+  else
+    projeto.instalacao = ''
+  end
+  if type(proj.aplicacao) == 'string' then
+    projeto.aplicacao = proj.aplicacao
+  else
+    projeto.aplicacao = ''
+  end
+  if type(proj.codigo) == 'string' then
+    projeto.codigo = proj.codigo
+  else
+    projeto.codigo = '' 
+  end
+  if type(proj.rev) == 'string' then
+    projeto.rev = proj.rev
+  else
+    projeto.rev = ''
+  end
+  if type(proj.aprovacao) == 'string' then
+    projeto.aprovacao = proj.aprovacao
+  else
+    projeto.aprovacao = ''
+  end
+  if type(proj.visto) == 'string' then
+    projeto.visto = proj.visto
+  else
+    projeto.visto = ''
+  end
+  if type(proj.projetista) == 'string' then
+    projeto.projetista = proj.projetista
+  else
+    projeto.projetista = ''
+  end
+  if type(proj.descr) == 'string' then
+    projeto.descr = proj.descr
+  else
+    projeto.descr = ''
+  end
+  if type(proj.data) == 'string' then
+    projeto.data = proj.data
+  else
+    projeto.data = ''
+  end
+  
+  local arq_ini = io.open(diretorio(fs.script_path()) .. 'init.lua', 'w+')
+  if arq_ini then
+    arq_ini:write(dizeres.pelicanu..'\n')
+    arq_ini:write(dizeres.autor..'\n')
+    arq_ini:write(dizeres.ini..'\n')
+    arq_ini:write(dizeres.lua..'\n')
+    arq_ini:write(dizeres.alerta..'\n\n')
+    arq_ini:write('projeto = "'.. string.gsub(caminho, '\\', '\\\\') .. '"')
+    
+    arq_ini:close()
+  end
+  
+  fs.chdir(caminho)
+  ]]--
+  return true
 end
 
 function no_segmento (pt, linha)
@@ -2145,20 +2385,7 @@ function pelicanu_win()
       
       
       if cadzinho.nk_button("test") then
-        --test()
-        --co = coroutine.create(test)
-        --coroutine.resume(co)
-        --cadzinho.print_drwg("teste.pdf", 210, 297, "mm", 5, 0,0)
-        --teste_excel()
-        --cadzinho.db_print(fs.script_path()..'\n')
-        local config, err = carrega_config(diretorio(fs.script_path()) .. 'config.lua')
-        if config then
-          cadzinho.db_print(config.base_dir..'\n')
-          cadzinho.db_print(config.biblioteca..'\n')
-          cadzinho.db_print(config.projeto..'\n')
-        else
-          cadzinho.db_print(err)
-        end
+        novo_projeto('C:\\util\\pelicanu\\teste', {})
       end
       
     else -- padrao - esquematico
@@ -2205,7 +2432,14 @@ end
 
 -- inicia a janela quando o script eh executado
 local config, err = carrega_config(diretorio(fs.script_path()) .. 'config.lua')
-  if config then
-    biblioteca = config.biblioteca
-  end
+if config then
+  biblioteca = config.biblioteca
+end
+local init, err = carrega_config(diretorio(fs.script_path()) .. 'init.lua')
+if init then
+  abre_projeto(init.projeto)
+end
+
+cadzinho.db_print(projeto.titulo)
+
 cadzinho.win_show("pelicanu_win", "Pelicanu", 220,120,200,450)
