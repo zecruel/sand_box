@@ -8,6 +8,8 @@ pelicanu.elems = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
+bd_lib = require('pelicanu_bd')
+
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
   autor = '-- Autor: Ezequiel Rabelo de Aguiar - 2023',
@@ -55,6 +57,19 @@ g_tipo_comp = {value = 1, ""}
 g_comp_id = {value = ""}
 g_terminais = {}
 g_formato = {value = ""}
+modal = ''
+g_caminho = {value = ""}
+msg = ''
+g_titulo = {value = ""}
+g_instalacao = {value = ""}
+g_aplicacao = {value = ""}
+g_codigo = {value = ""}
+g_rev = {value = ""}
+g_aprovacao = {value = ""}
+g_visto = {value = ""}
+g_projetista = {value = ""}
+g_descr = {value = ""}
+g_data = {value = ""}
 
 excel = require "xlsxwriter.workbook"
 
@@ -223,91 +238,41 @@ function novo_projeto(caminho, proj)
     cria_pasta(dados)
   end
   
-  local arq_log = io.open(log, 'a+')
-  if arq_log then
-    arq_log:write(os.date()..' => Criacao do projeto\n')
+  local arq_prj, err = io.open(config, 'w+')
+  if arq_prj then
+    arq_prj:write(dizeres.pelicanu..'\n')
+    arq_prj:write(dizeres.autor..'\n')
+    arq_prj:write(dizeres.proj..'\n')
+    arq_prj:write(dizeres.lua..'\n')
+    arq_prj:write(dizeres.alerta..'\n\n')
     
-    arq_log:close()
-  end
-  --[[
-  projeto.caminho = caminho
-  projeto.config = config
-  if exists(bd) then 
-    projeto.bd = bd
+    arq_prj:write('titulo = "'.. string.gsub(proj.titulo, '\\', '\\\\') .. '"\n')
+    arq_prj:write('instalacao = "'.. string.gsub(proj.instalacao, '\\', '\\\\') .. '"\n')
+    arq_prj:write('aplicacao = "'.. string.gsub(proj.aplicacao, '\\', '\\\\') .. '"\n')
+    arq_prj:write('codigo = "'.. string.gsub(proj.codigo, '\\', '\\\\') .. '"\n')
+    arq_prj:write('rev = "'.. string.gsub(proj.rev, '\\', '\\\\') .. '"\n')
+    arq_prj:write('aprovacao = "'.. string.gsub(proj.aprovacao, '\\', '\\\\') .. '"\n')
+    arq_prj:write('visto = "'.. string.gsub(proj.visto, '\\', '\\\\') .. '"\n')
+    arq_prj:write('projetista = "'.. string.gsub(proj.projetista, '\\', '\\\\') .. '"\n')
+    arq_prj:write('descr = "'.. string.gsub(proj.descr, '\\', '\\\\') .. '"\n')
+    arq_prj:write('data = "'.. string.gsub(proj.data, '\\', '\\\\') .. '"\n')
+    
+    arq_prj:close()
+    
+    local arq_log = io.open(log, 'a+')
+    if arq_log then
+      arq_log:write(os.date()..' => Criacao do projeto\n')
+      
+      arq_log:close()
+    end
+    
+    return abre_projeto(caminho)
   else
-    projeto.bd = nil
-  end
-  if exists(log) then 
-    projeto.log = log
-  else
-    projeto.log = nil
-  end
-  if type(proj.titulo) == 'string' then
-    projeto.titulo = proj.titulo
-  else
-    projeto.titulo = ''
-  end
-  if type(proj.instalacao) == 'string' then
-    projeto.instalacao = proj.instalacao
-  else
-    projeto.instalacao = ''
-  end
-  if type(proj.aplicacao) == 'string' then
-    projeto.aplicacao = proj.aplicacao
-  else
-    projeto.aplicacao = ''
-  end
-  if type(proj.codigo) == 'string' then
-    projeto.codigo = proj.codigo
-  else
-    projeto.codigo = '' 
-  end
-  if type(proj.rev) == 'string' then
-    projeto.rev = proj.rev
-  else
-    projeto.rev = ''
-  end
-  if type(proj.aprovacao) == 'string' then
-    projeto.aprovacao = proj.aprovacao
-  else
-    projeto.aprovacao = ''
-  end
-  if type(proj.visto) == 'string' then
-    projeto.visto = proj.visto
-  else
-    projeto.visto = ''
-  end
-  if type(proj.projetista) == 'string' then
-    projeto.projetista = proj.projetista
-  else
-    projeto.projetista = ''
-  end
-  if type(proj.descr) == 'string' then
-    projeto.descr = proj.descr
-  else
-    projeto.descr = ''
-  end
-  if type(proj.data) == 'string' then
-    projeto.data = proj.data
-  else
-    projeto.data = ''
+    return nil
   end
   
-  local arq_ini = io.open(diretorio(fs.script_path()) .. 'init.lua', 'w+')
-  if arq_ini then
-    arq_ini:write(dizeres.pelicanu..'\n')
-    arq_ini:write(dizeres.autor..'\n')
-    arq_ini:write(dizeres.ini..'\n')
-    arq_ini:write(dizeres.lua..'\n')
-    arq_ini:write(dizeres.alerta..'\n\n')
-    arq_ini:write('projeto = "'.. string.gsub(caminho, '\\', '\\\\') .. '"')
-    
-    arq_ini:close()
-  end
   
-  fs.chdir(caminho)
-  ]]--
-  return true
+  
 end
 
 function no_segmento (pt, linha)
@@ -541,270 +506,6 @@ function pelicanu.rotulo_caixa(conteudo)
   end
   if rotulo then return rotulo.text
   else return nil
-  end
-end
-
-function ligacao_dyn(event)
-  -- funcao interativa para criacao de uma ligação
-  
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Nova ligacao")
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Primeiro ponto')
-    if event.type == 'enter' then -- usuario entra o primeiro ponto
-      num_pt = num_pt + 1
-      
-    elseif event.type == 'cancel' then  -- usuario cancela
-      -- sai da funcao
-      cadzinho.set_color("by layer")
-      cadzinho.set_lw("by layer")
-      cadzinho.set_ltype("bylayer")
-      cadzinho.stop_dynamic()
-    end
-  else
-    cadzinho.nk_label('Proximo ponto')
-    cadzinho.set_ltype("Continuous") -- linha continua
-    cadzinho.set_color(1) -- cor vermelha
-    
-    -- o elemento "ligacao" eh uma linha simples
-    local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
-    cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
-    
-    if event.type == 'enter' then -- usuario entra o segundo ponto
-      if ligacao then
-        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-        
-        -- grava o elemento no desenho
-        cadzinho.add_ext(ligacao, "PELICANU", {cadzinho.unique_id(), "LIGACAO", "-"})
-        ligacao:write()
-        
-        -- continua - considera o ponto atual como o primeiro da proxima ligação
-        pts[1].x = event.x
-        pts[1].y = event.y
-      end
-    elseif event.type == 'cancel' then -- usuario cancela
-      -- volta ao primeiro ponto
-      num_pt = 1
-    end
-  
-  end
-end
-
-function caixa_dyn(event)
-  -- funcao interativa para criacao de uma caixa
-  
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Nova caixa")
-  cadzinho.nk_layout(20, 2)
-  cadzinho.nk_label("ID:")
-  cadzinho.nk_edit(g_caixa_id)
-  cadzinho.nk_label("Tipo:")
-  cadzinho.nk_combo(g_caixa_tipo)
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Primeiro ponto')
-    if event.type == 'enter' then
-      num_pt = num_pt + 1
-    elseif event.type == 'cancel' then
-      -- sai da funcao
-      cadzinho.set_color("by layer")
-      cadzinho.set_lw("by layer")
-      cadzinho.set_ltype("bylayer")
-      cadzinho.stop_dynamic()
-    end
-  else
-    cadzinho.nk_label('Proximo ponto')
-    
-    -- o elemento "caixa" principal -  eh uma polyline no formato retangulo
-    cadzinho.set_ltype("Dashdot") -- linha traco-ponto
-    cadzinho.set_color(3) -- cor verde
-    local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
-    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
-    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
-    cadzinho.pline_close(caixa, true)
-    --[[
-    -- outro formato: poligono arbitrario fechado
-    for i = 3, num_pt do
-      cadzinho.pline_append(caixa, pts[i].x, pts[i].y, 0)
-    end]]--
-    if (caixa) then cadzinho.ent_draw(caixa) end
-    
-    -- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
-    -- posicao do texto - canto superior direito
-    local tx = pts[2].x
-    if tx < pts[1].x then tx = pts[1].x end
-    local ty = pts[2].y
-    if ty < pts[1].y then ty = pts[1].y end
-    local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
-    
-    -- desenha um retangulo simples em volta do texto do identificador
-    local retan_txt = nil
-    if caixa_id then 
-      cadzinho.ent_draw(caixa_id) 
-      local cx_tx = cadzinho.get_bound(caixa_id)
-      cx_tx.low.x = cx_tx.low.x - 0.3
-      cx_tx.low.y = cx_tx.low.y - 0.3
-      cx_tx.up.x = cx_tx.up.x + 0.3
-      cx_tx.up.y = cx_tx.up.y + 0.3
-      cadzinho.set_ltype("Continuous") -- linha continua
-      retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0, cx_tx.up.x, cx_tx.low.y, 0)
-      cadzinho.pline_append(retan_txt, cx_tx.up.x, cx_tx.up.y, 0)
-      cadzinho.pline_append(retan_txt, cx_tx.low.x, cx_tx.up.y, 0)
-      cadzinho.pline_close(retan_txt, true)
-    end
-    if retan_txt then cadzinho.ent_draw(retan_txt) end
-    
-    if event.type == 'enter' then
-      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-      
-      if caixa then
-        cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo[g_caixa_tipo.value]})
-        caixa:write()
-      end
-      if caixa_id then
-        cadzinho.add_ext(caixa_id, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
-        caixa_id:write()
-      end
-      if retan_txt then retan_txt:write() end
-      
-      num_pt = 1
-      --[[
-      -- outro formato: poligono arbitrario fechado
-      num_pt = num_pt + 1]]--
-      
-    elseif event.type == 'cancel' then
-      --[[
-      -- outro formato: poligono arbitrario fechado
-      if caixa then
-        cadzinho.add_ext(caixa, "PELICANU", {"CAIXA", g_caixa_id.value})
-        caixa:write()
-      end]]--
-      num_pt = 1
-    end
-  
-  end
-end
-
-function terminal_dyn(event)
-  -- funcao interativa para criacao de um terminal, no modo de edição de componente
-
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Adiciona um terminal")
-  cadzinho.nk_propertyi("Numero", g_term_num, 0, 100)
-  cadzinho.nk_layout(20, 2)
-  cadzinho.nk_label("Nome:")
-  cadzinho.nk_edit(g_term_nome)
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  local texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
-  local term_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "left", "middle")
-  if term_id then cadzinho.ent_draw(term_id) end
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Posicione o texto')
-    if event.type == 'enter' then
-      num_pt = num_pt + 1
-    elseif event.type == 'cancel' then
-      cadzinho.stop_dynamic()
-    end
-  else
-    cadzinho.nk_label('Confirme')
-    if event.type == 'enter' then
-      local sel = cadzinho.get_sel()
-      if (#sel > 0) and term_id then
-        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-        for i = 1, #sel do
-          local tipo = cadzinho.get_ent_typ(sel[i])
-          -- soh aceita linha ou circulo como terminal
-          if tipo == 'LINE' or tipo == 'CIRCLE' then
-            --verifica se o elemento jah possui marcador
-            local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
-            if #ext > 1 then
-              cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
-            end
-            cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
-            sel[i]:write()
-          end
-        end
-        term_id:write()
-      end
-      cadzinho.clear_sel()
-      cadzinho.stop_dynamic()
-      num_pt = 1
-    elseif event.type == 'cancel' then
-      num_pt = 1
-    end
-  end
-end
-
-function engate_dyn(event)
-  -- funcao interativa para criacao de um engate, no modo de edição de componente
-
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Adiciona um engate")
-  cadzinho.nk_propertyi("Numero", g_eng_num, 0, 100)
-  cadzinho.nk_layout(20, 2)
-  cadzinho.nk_label("Nome:")
-  cadzinho.nk_edit(g_eng_nome)
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  local texto = '#E' .. string.format('%d', g_eng_num.value) .. '$' .. g_eng_nome.value
-  local eng_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "center", "middle")
-  if eng_id then cadzinho.ent_draw(eng_id) end
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Posicione o texto')
-    if event.type == 'enter' then
-      num_pt = num_pt + 1
-    elseif event.type == 'cancel' then
-      cadzinho.stop_dynamic()
-    end
-  else
-    cadzinho.nk_label('Confirme')
-    if event.type == 'enter' then
-      local sel = cadzinho.get_sel()
-      if (#sel > 0) and eng_id then
-        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-        for i = 1, #sel do
-          --verifica se o elemento jah possui marcador
-          local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
-          if #ext > 1 then
-            cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
-          end
-          cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "ENGATE", 'E' .. string.format('%d', g_term_num.value)})
-          sel[i]:write()
-        end
-        eng_id:write()
-      end
-      cadzinho.clear_sel()
-      cadzinho.stop_dynamic()
-      num_pt = 1
-    elseif event.type == 'cancel' then
-      num_pt = 1
-    end
   end
 end
 
@@ -1083,304 +784,6 @@ function muda_terminais (comp, terminais)
   end
 end
 
-function componente_dyn(event)
-  -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
-
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Adiciona um componente")
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Escolha o componente')
-    cadzinho.nk_combo(g_tipo_comp)
-    cadzinho.nk_layout(150, 1)
-    if cadzinho.nk_group_begin("Biblioteca", false, true, true) then
-      cadzinho.nk_layout(20, 1)
-      --[[for nome, caminho in pairs(lista_comp) do      
-        if cadzinho.nk_button(nome) then
-          g_componente.value = nome
-        end
-      end]]--
-      obtem_lista_comp()
-      for _, nome in ipairs(lista_comp_o) do      
-        if cadzinho.nk_button(nome) then
-          g_componente.value = nome
-        end
-      end
-      cadzinho.nk_group_end()
-    end
-    cadzinho.nk_layout(20, 2)
-    cadzinho.nk_label("Nome:")
-    cadzinho.nk_edit(g_componente)
-    if cadzinho.nk_button("Insere") then
-      if type(lista_comp[g_componente.value]) == 'string' then
-        local comp = cadzinho.new_insert(g_componente.value,
-          pts[num_pt].x, pts[num_pt].y)
-        if comp == nil then
-          if cadzinho.new_block_file(lista_comp[g_componente.value],
-            g_componente.value, "componente PELICAnU ".. g_componente.value,
-            true, '#', '*', '$', '?', 0, 0, 0)
-          then
-            comp = cadzinho.new_insert(g_componente.value,
-              pts[num_pt].x, pts[num_pt].y)
-          end
-        end
-        if comp then
-          local terminais = info_terminais(comp)
-          g_terminais = {}
-          for i, term in pairs(terminais) do
-            g_terminais[i] = {value = term}
-          end
-          num_pt = 2
-        end
-      end
-    end
-  else
-    local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
-    if comp then cadzinho.ent_draw(comp) end
-    cadzinho.nk_label(g_componente.value)
-    cadzinho.nk_label('Entre o ponto')
-    cadzinho.nk_layout(20, 2)
-    cadzinho.nk_label("ID:")
-    cadzinho.nk_edit(g_comp_id)
-    cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Terminais:")
-    cadzinho.nk_layout(20, 2)
-    for i, term in pairs(g_terminais) do
-      cadzinho.nk_label(tostring(i)..':')
-      cadzinho.nk_edit(term)
-    end
-    if event.type == 'enter' then
-      muda_comp_id (comp, g_comp_id.value)
-      local terminais = {}
-      for i, term in pairs(g_terminais) do
-        terminais[i] = term.value
-      end
-      muda_terminais(comp, terminais)
-      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-      cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
-      comp:write()
-      cadzinho.clear_sel()
-      --cadzinho.stop_dynamic()
-      --num_pt = 1
-    elseif event.type == 'cancel' then
-      num_pt = 1
-    end
-  end
-  
-end
-
-function formato_dyn(event)
-  -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
-
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Adiciona um formato")
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Escolha o formato')
-    cadzinho.nk_layout(150, 1)
-    if cadzinho.nk_group_begin("Formatos", true, true, true) then
-      cadzinho.nk_layout(20, 1)
-      for _, nome in ipairs(lista_formato_o) do      
-        if cadzinho.nk_button(nome) then
-          g_formato.value = nome
-        end
-      end
-      cadzinho.nk_group_end()
-    end
-    cadzinho.nk_layout(20, 2)
-    cadzinho.nk_label("Nome:")
-    cadzinho.nk_edit(g_formato)
-    if cadzinho.nk_button("Insere") then
-      if type(lista_formato[g_formato.value]) == 'string' then
-        local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
-        if fmt == nil then
-          if cadzinho.new_block_file(lista_formato[g_formato.value],
-            g_formato.value, "formato PELICAnU ".. g_formato.value,
-            true, '#', '*', '$', '?', 0, 0, 0) then
-
-            fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
-          end
-        end
-        if fmt then num_pt = 2 end
-      end
-    end
-
-    
-    if event.type == 'enter' then
-      num_pt = num_pt + 1
-    elseif event.type == 'cancel' then
-      cadzinho.stop_dynamic()
-    end
-  else
-    local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
-    if fmt then cadzinho.ent_draw(fmt) end
-    cadzinho.nk_label(g_formato.value)
-    cadzinho.nk_label('Entre o ponto')
-    if event.type == 'enter' then
-      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-      cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "DESENHO"})
-      fmt:write()
-      cadzinho.clear_sel()
-      --cadzinho.stop_dynamic()
-      --num_pt = 1
-    elseif event.type == 'cancel' then
-      num_pt = 1
-    end
-  end
-  
-end
-
-
-function edita_dyn(event)
-  -- funcao interativa para editar o id de um componente
-
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Edita a ID")
-  
-  -- armazena o ponto atual na lista
-  pts[num_pt] = {}
-  pts[num_pt].x = event.x
-  pts[num_pt].y = event.y
-  
-  local sel = cadzinho.get_sel()
-  if #sel < 1 then
-    num_pt = 1
-    cadzinho.enable_sel()
-  end
-
-  local tipo = nil
-  if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
-  
-  if #sel > 0 and  num_pt == 1 then
-    if tipo then
-      num_pt = 2
-      if tipo == 'ENGATE' then
-        g_engate.value = pega_engate(sel[1])
-      else
-        g_comp_id.value = pega_comp_id(sel[1])
-      end
-      local terminais = info_terminais(sel[1])
-      g_terminais = {}
-      for i, term in pairs(terminais) do
-        g_terminais[i] = {value = term}
-      end
-    else
-      cadzinho.clear_sel()
-    end
-  end
-  
-  cadzinho.nk_layout(20, 1)
-  if num_pt == 1 then
-    cadzinho.nk_label('Selecione um componente')
-    
-    if event.type == 'cancel' then
-      cadzinho.stop_dynamic()
-    end
-  else
-    cadzinho.nk_label('Confirme')
-    cadzinho.nk_layout(20, 2)
-    cadzinho.nk_label("ID:")
-    if tipo == 'ENGATE' then
-      cadzinho.nk_edit(g_engate)
-    else
-      cadzinho.nk_edit(g_comp_id)
-    end
-
-    cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Terminais:")
-    cadzinho.nk_layout(20, 2)
-    for i, term in pairs(g_terminais) do
-      cadzinho.nk_label(tostring(i)..':')
-      cadzinho.nk_edit(term)
-    end
-    
-    if event.type == 'enter' then
-      if tipo == 'ENGATE' then
-        muda_engate (sel[1], g_engate.value)
-      else
-        muda_comp_id (sel[1], g_comp_id.value)
-      end
-      local terminais = {}
-      for i, term in pairs(g_terminais) do
-        terminais[i] = term.value
-      end
-      muda_terminais(sel[1], terminais)
-      
-      sel[1]:write()
-      
-      cadzinho.clear_sel()
-      --cadzinho.stop_dynamic()
-      num_pt = 1
-    elseif event.type == 'cancel' then
-      num_pt = 1
-      cadzinho.clear_sel()
-    end
-  end
-  
-end
-
-function component_dyn(event)
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Place component")
-  cadzinho.nk_layout(20, 2)
-  cadzinho.nk_label("Component:")
-  cadzinho.nk_edit(component)
-  
-  
-  cadzinho.nk_layout(100, 1)
-  if cadzinho.nk_group_begin("Grupo", true, true, true) then
-    cadzinho.nk_layout(20, 1)
-    cadzinho.nk_slide_i(inteiro2, 0, 10)
-    cadzinho.nk_slide_f(numero2, -1.5, 20.8)
-    
-    cadzinho.nk_combo(combo, 100, 50)
-    cadzinho.nk_option(option)
-    cadzinho.nk_check("check", check)
-    cadzinho.nk_group_end()
-  end
-  
-  cadzinho.nk_layout(100, 1)
-  if cadzinho.nk_tab_begin("tabdin", tab) then
-    if tab.value == 1 then
-      cadzinho.nk_layout(20, 1)
-      cadzinho.nk_slide_i(inteiro2, 0, 10)
-      cadzinho.nk_slide_f(numero2, -1.5, 20.8)
-    elseif tab.value == 2 then
-      cadzinho.nk_layout(20, 1)
-      cadzinho.nk_combo(combo, 100, 50)
-      cadzinho.nk_option(option)
-      cadzinho.nk_check("check", check)
-      
-      
-    else
-      cadzinho.nk_layout(20, 1)
-      cadzinho.nk_propertyi("inteiro", inteiro, 0, 10, 2)
-      cadzinho.nk_propertyd("numero", numero, -1, 40, 3)
-    end
-    cadzinho.nk_tab_end()
-  end
-  
-  if event.type == 'cancel' then
-    --cadzinho.stop_dynamic()
-  end
-end
-
-
-
 function obtem_caixas()
   local caixas = {}
   local SetLib = require("Set") -- biblioteca para matematica de conjuntos
@@ -1549,355 +952,8 @@ function teste()
   -- atualiza a lista principal com os elementos
   pelicanu.atualiza_elems()
   
+  bd_lib:novo('pelicanu.db')
   local bd = sqlite.open('pelicanu.db')
-  bd:exec('DROP TABLE IF EXISTS componentes')
-  bd:exec('CREATE TABLE componentes('..
-    'unico INTEGER, tipo TEXT, '..
-    'bloco TEXT, id TEXT, pai INTEGER, x REAL, y REAL)')
-  bd:exec('DROP TABLE IF EXISTS caixas')
-  bd:exec('CREATE TABLE caixas('..
-    'unico INTEGER, '..
-    'id TEXT, tipo TEXT, pai INTEGER)')
-  bd:exec('DROP TABLE IF EXISTS terminais')
-  bd:exec('CREATE TABLE terminais('..
-    'componente INTEGER, '..
-    'id INTEGER, terminal TEXT)')
-  bd:exec('DROP TABLE IF EXISTS barras')
-  bd:exec('CREATE TABLE barras('..
-    'id TEXT, '..
-    'componente INTEGER, '..
-    'terminal INTEGER)')
-  bd:exec('DROP TABLE IF EXISTS desenhos')
-  bd:exec('CREATE TABLE desenhos('..
-    'unico INTEGER, '..
-    'ident TEXT, titulo TEXT, tipo TEXT, projeto TEXT, '..
-    'rev TEXT, versao TEXT, fl TEXT, data TEXT, ' ..
-    'aplic TEXT, instal TEXT, visto TEXT, aprov TEXT,' ..
-    'classif TEXT, pfl TEXT)')
-  bd:exec('DROP TABLE IF EXISTS engates')
-  bd:exec('CREATE TABLE engates('..
-    'unico INTEGER, '..
-    'engate TEXT)')
-  bd:exec('DROP VIEW IF EXISTS hierarquia')
-  bd:exec("CREATE VIEW hierarquia AS\n"..
-    "SELECT componentes.unico componente,\n"..
-    "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
-    "UNION ALL\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas, cte_caixas\n"..
-    "WHERE cte_caixas.pai = caixas.unico)\n"..
-    "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'COMPONENTE'\n"..
-    ") pai,\n"..
-    "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
-    "UNION ALL\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas, cte_caixas\n"..
-    "WHERE cte_caixas.pai = caixas.unico)\n"..
-    "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'MODULO'\n"..
-    ") modulo,\n"..
-    "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
-    "UNION ALL\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas, cte_caixas\n"..
-    "WHERE cte_caixas.pai = caixas.unico)\n"..
-    "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'PAINEL'\n"..
-    ") painel,\n"..
-    "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
-    "UNION ALL\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas, cte_caixas\n"..
-    "WHERE cte_caixas.pai = caixas.unico)\n"..
-    "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESENHO'\n"..
-    ") desenho,\n"..
-    "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
-    "UNION ALL\n"..
-    "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas, cte_caixas\n"..
-    "WHERE cte_caixas.pai = caixas.unico)\n"..
-    "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESCRITIVO'\n"..
-    ") descritivo\n"..
-    "FROM componentes\n")
-  bd:exec('DROP VIEW IF EXISTS comp_term')
-  bd:exec("CREATE VIEW comp_term AS\n"..
-    "SELECT componentes.unico,\n"..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.painel) painel,\n"..
-    "(SELECT CASE WHEN hierarquia.pai\n"..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n"..
-    "ELSE componentes.id\n"..
-    "END) componente,\n"..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.modulo) modulo,\n"..
-    "(SELECT CASE WHEN hierarquia.pai\n"..
-    "THEN componentes.id\n"..
-    "END) parte,\n"..
-    "componentes.bloco, componentes.tipo, terminais.id num, terminais.terminal \n"..
-    "FROM componentes, hierarquia \n"..
-    "INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
-    "WHERE componentes.unico = hierarquia.componente "..
-    "AND NOT componentes.tipo = 'ENGATE'\n"..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, "..
-    "componentes.x ASC, componentes.y ASC, num ASC;\n")
-  bd:exec('DROP VIEW IF EXISTS eng_term')
-  bd:exec("CREATE VIEW eng_term AS\n"..
-    "SELECT engates.unico, engates.engate, barras.id barra, "..
-    "terminais.terminal, hierarquia.desenho\n"..
-    "FROM engates, barras, hierarquia\n"..
-    "INNER JOIN terminais ON terminais.componente = engates.unico\n"..
-    "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal "..
-    "AND engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate ASC, terminais.terminal ASC;\n")
-  bd:exec('DROP VIEW IF EXISTS eng_repetidos')
-  bd:exec("CREATE VIEW eng_repetidos AS\n".. 
-   "WITH cte_barras_rep AS (SELECT eng_term.barra barra,\n"..
-   "count(eng_term.barra) quant FROM eng_term\n"..
-   "GROUP BY eng_term.barra HAVING quant > 1)\n"..
-   "SELECT eng_term.engate || '_' || eng_term.terminal node,\n"..
-   "cte_barras_rep.barra FROM eng_term, cte_barras_rep\n"..
-   "WHERE cte_barras_rep.barra = eng_term.barra\n"..
-   "ORDER BY node ASC;")
-  bd:exec('DROP VIEW IF EXISTS barra_consol')
-  bd:exec("CREATE VIEW barra_consol AS\n".. 
-    "SELECT CASE WHEN EXISTS (SELECT eng_term.barra\n"..
-    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
-    "THEN (SELECT CASE WHEN EXISTS (\n"..
-    "SELECT eng_repetidos.node FROM eng_repetidos\n"..
-    "where eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node)\n"..
-    "THEN (SELECT eng_repetidos.barra FROM eng_repetidos \n"..
-    "WHERE eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node\n"..
-    "LIMIT 1) ELSE eng_term.engate || '_' || eng_term.terminal END\n"..
-    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
-    "ELSE barras.id END\n"..
-    "barra, componentes.unico componente, barras.terminal, hierarquia.painel, "..
-    "caixas.id nome_painel\n"..
-    "FROM barras, componentes, hierarquia, caixas\n"..
-    "WHERE componentes.unico = barras.componente AND \n"..
-    "NOT componentes.tipo = 'ENGATE' AND barras.componente = hierarquia.componente\n"..
-    "AND hierarquia.painel = caixas.unico\n"..
-    "ORDER BY barra ASC\n")
-  bd:exec('DROP VIEW IF EXISTS fiacao_interna')
-  bd:exec("CREATE VIEW fiacao_interna AS\n"..
-    "SELECT barra_consol.barra,\n"..
-    "barra_consol.componente elemento,\n"..
-    "barra_consol.terminal term,\n"..
-    "LAG(barra_consol.componente) OVER (PARTITION BY barra_consol.nome_painel,\n"..
-    "barra_consol.barra ORDER BY barra_consol.barra) comp_ant,\n"..
-    "LAG(barra_consol.terminal) OVER (PARTITION BY barra_consol.nome_painel,\n"..
-    "barra_consol.barra ORDER BY barra_consol.barra) term_ant,\n"..
-    "LEAD(barra_consol.componente) OVER (PARTITION BY barra_consol.nome_painel,\n"..
-    "barra_consol.barra ORDER BY barra_consol.barra) comp_pos,\n"..
-    "LEAD(barra_consol.terminal) OVER (PARTITION BY barra_consol.nome_painel,\n"..
-    "barra_consol.barra ORDER BY barra) term_pos,\n"..
-    "barra_consol.nome_painel painel\n"..
-    "FROM barra_consol\n"..
-    "ORDER BY barra_consol.nome_painel,\n"..
-    "barra_consol.barra\n")
-  bd:exec('DROP VIEW IF EXISTS fiacao_tabela')
-  bd:exec("CREATE VIEW fiacao_tabela AS\n"..
-    "SELECT ( SELECT comp_term.componente FROM comp_term\n" ..
-    "WHERE comp_term.unico = fiacao_interna.elemento) componente,\n" ..
-    "(SELECT comp_term.terminal FROM comp_term\n" ..
-    "WHERE comp_term.num = fiacao_interna.term AND\n" ..
-    "comp_term.unico = fiacao_interna.elemento) terminal,\n" ..
-    "CASE WHEN fiacao_interna.comp_ant AND fiacao_interna.comp_pos\n" ..
-    "THEN ( SELECT comp_term.componente FROM comp_term\n" ..
-    "WHERE comp_term.unico = fiacao_interna.comp_ant)\n" ..
-    "|| '.' || ( SELECT comp_term.terminal\n" ..
-    "FROM comp_term WHERE comp_term.num = fiacao_interna.term_ant\n" ..
-    "AND comp_term.unico = fiacao_interna.comp_ant )\n" ..
-    "|| '  /  ' || ( SELECT comp_term.componente FROM comp_term\n" ..
-    "WHERE comp_term.unico = fiacao_interna.comp_pos)\n" ..
-    "|| '.' || ( SELECT comp_term.terminal FROM comp_term\n" ..
-    "WHERE comp_term.num = fiacao_interna.term_pos AND\n" ..
-    "comp_term.unico = fiacao_interna.comp_pos)\n" ..
-    "WHEN fiacao_interna.comp_ant THEN (\n" ..
-    "SELECT comp_term.componente FROM comp_term\n" ..
-    "WHERE comp_term.unico = fiacao_interna.comp_ant)\n" ..
-    "|| '.' || (SELECT comp_term.terminal FROM comp_term\n" ..
-    "WHERE comp_term.num = fiacao_interna.term_ant AND\n" ..
-    "comp_term.unico = fiacao_interna.comp_ant)\n" ..
-    "WHEN fiacao_interna.comp_pos THEN (\n" ..
-    "SELECT comp_term.componente FROM comp_term\n" ..
-    "WHERE comp_term.unico = fiacao_interna.comp_pos)\n" ..
-    "|| '.' || ( SELECT comp_term.terminal FROM comp_term\n" ..
-    "WHERE comp_term.num = fiacao_interna.term_pos AND\n" ..
-    "comp_term.unico = fiacao_interna.comp_pos) END ligacao,\n" ..
-    "fiacao_interna.painel FROM fiacao_interna\n" ..
-    "WHERE fiacao_interna.comp_ant OR  fiacao_interna.comp_pos\n" ..
-    "ORDER BY painel ASC, componente ASC, terminal ASC;")
-  bd:exec('DROP VIEW IF EXISTS interlig')
-  bd:exec("CREATE VIEW interlig AS\n"..
-    "WITH cte_interlig AS (\n" ..
-    "SELECT DISTINCT barra_consol.barra,\n" ..
-    "barra_consol.nome_painel painel\n" ..
-    "FROM (SELECT barra_consol.barra barra,\n" ..
-    "count(DISTINCT barra_consol.nome_painel) quant\n" ..
-    "FROM barra_consol GROUP BY barra_consol.barra\n" ..
-    "HAVING quant > 1) passante, barra_consol\n" ..
-    "WHERE barra_consol.barra = passante.barra\n" ..
-    "ORDER BY barra_consol.barra, barra_consol.nome_painel)\n" ..
-    "SELECT interlig1.barra, interlig1.painel p1,\n" ..
-    "(SELECT comp_term.componente\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
-    "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
-    "barra_consol.barra = interlig1.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
-    "caixas.id = interlig1.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) borne_p1,\n" ..
-    "(SELECT comp_term.terminal\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
-    "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
-    "barra_consol.terminal = comp_term.num AND\n" ..
-    "barra_consol.barra = interlig1.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
-    "caixas.id = interlig1.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) term_p1,\n" ..
-    "interlig2.painel p2,\n" ..
-    "(SELECT comp_term.componente\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
-    "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
-    "barra_consol.barra = interlig2.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
-    "caixas.id = interlig2.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) borne_p2,\n" ..
-    "(SELECT comp_term.terminal\n" ..
-    "FROM componentes, hierarquia,\n" ..
-    "barra_consol, caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
-    "barra_consol.terminal = comp_term.num AND\n" ..
-    "barra_consol.barra = interlig2.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
-    "caixas.id = interlig2.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel)term_p2\n" ..
-    "FROM cte_interlig interlig1\n" ..
-    "JOIN cte_interlig interlig2 ON\n" ..
-    "interlig1.barra = interlig2.barra AND p1 > p2\n"..
-    "ORDER BY p1 ASC, p2 ASC;")
-  bd:exec('DROP VIEW IF EXISTS engate_par')
-  bd:exec("CREATE VIEW engate_par AS\n"..
-    "WITH cte_eng AS (select *, ROW_NUMBER() OVER (PARTITION BY desenho\n"..
-    "ORDER BY ini, folha) e_num\n"..
-    "FROM (WITH cte_engate AS (\n"..
-    "SELECT engates.unico unico, engates.engate engate,\n"..
-    "(SELECT desenhos.ident FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
-    "(SELECT desenhos.fl FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
-    "FROM engates, hierarquia\n"..
-    "WHERE engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
-    "SELECT num, engate, unico, desenho, folha,\n"..
-    "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
-    "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
-    "FROM (\n"..
-    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
-    "ORDER BY desenho, folha) num,\n"..
-    "engate, unico, desenho, folha,\n"..
-    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
-    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
-    "FROM cte_engate)\n"..
-    "WHERE num % 2 = 1\n"..
-    "UNION\n"..
-    "SELECT num, engate, unico, desenho, folha, ant, 0 ini\n"..
-    "FROM (\n"..
-    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
-    "ORDER BY desenho, folha) num,\n"..
-    "engate, unico, desenho, folha,\n"..
-    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
-    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
-    "FROM cte_engate)\n"..
-    "WHERE num % 2 = 0\n"..
-    "ORDER BY engate, desenho, folha)\n"..
-    "WHERE ini = 1\n"..
-    "UNION\n"..
-    "SELECT *, 0 e_num\n"..
-    "FROM (WITH cte_engate AS (\n"..
-    "SELECT engates.unico unico, engates.engate engate,\n"..
-    "(SELECT desenhos.ident FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
-    "(SELECT desenhos.fl FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
-    "FROM engates, hierarquia\n"..
-    "WHERE engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
-    "SELECT num, engate, unico, desenho, folha,\n"..
-    "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
-    "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
-    "FROM (\n"..
-    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
-    "ORDER BY desenho, folha) num,\n"..
-    "engate, unico, desenho, folha,\n"..
-    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
-    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
-    "FROM cte_engate)\n"..
-    "WHERE num % 2 = 1\n"..
-    "UNION\n"..
-    "SELECT num, engate, unico, desenho, folha, ant, 0 ini\n"..
-    "FROM (\n"..
-    "SELECT ROW_NUMBER() OVER (PARTITION BY engate\n"..
-    "ORDER BY desenho, folha) num,\n"..
-    "engate, unico, desenho, folha,\n"..
-    "LAG(unico) OVER (PARTITION BY engate ORDER BY engate ASC) ant,\n"..
-    "LEAD(unico) OVER (PARTITION BY engate ORDER BY engate ASC) prox\n"..
-    "FROM cte_engate)\n"..
-    "WHERE num % 2 = 0\n"..
-    "ORDER BY engate, desenho, folha)\n"..
-    "WHERE ini = 0\n"..
-    "ORDER BY engate, desenho, folha)\n"..
-    "SELECT eng.unico, eng.desenho, eng.folha, \n"..
-    "CASE WHEN e_num > 0 THEN e_num ELSE \n"..
-    "(SELECT eng2.e_num FROM cte_eng eng2 WHERE eng2.unico = eng.par)\n"..
-    "END e_num, CASE WHEN \n"..
-    "(SELECT par.desenho FROM cte_eng par WHERE par.unico = eng.par) = eng.desenho THEN\n"..
-    "'NESTE' ELSE \n"..
-    "(SELECT par.desenho FROM cte_eng par WHERE par.unico = eng.par)\n"..
-    "END vai_des, CASE WHEN \n"..
-    "(SELECT par.folha FROM cte_eng par WHERE par.unico = eng.par) = eng.folha THEN \n"..
-    "'NESTA FL.' ELSE\n"..
-    "(SELECT par.folha FROM cte_eng par WHERE par.unico = eng.par)\n"..
-    "END vai_fl\n"..
-    "FROM cte_eng eng\n"..
-    "ORDER BY eng.desenho, eng.folha")
-  bd:exec('DROP VIEW IF EXISTS descr_comp')
-  bd:exec("CREATE VIEW descr_comp AS\n"..
-    "SELECT componentes.unico,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.painel) painel,\n" ..
-    "(SELECT CASE WHEN hierarquia.pai\n" ..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n" ..
-    "ELSE componentes.id\n" ..
-    "END) componente,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.modulo) modulo,\n" ..
-    "(SELECT CASE WHEN hierarquia.pai\n" ..
-    "THEN componentes.id\n" ..
-    "END) parte, componentes.tipo,\n" ..
-    "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia.desenho) desenho,\n" ..
-    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia.desenho) fl\n" ..
-    "FROM componentes, hierarquia \n" ..
-    "WHERE componentes.unico = hierarquia.componente AND NOT componentes.tipo = 'ENGATE'\n" ..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, componentes.x ASC, componentes.y ASC;")
   local caixas = obtem_caixas()
   for id, caixa in pairs(caixas) do
     --cadzinho.db_print (caixa.nome)
@@ -2359,8 +1415,697 @@ function obtem_lista_formato ()
 end
 
 
+-- ============= Funções dinâmicas GUI ==================
+function ligacao_dyn(event)
+  -- funcao interativa para criacao de uma ligação
+  
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Nova ligacao")
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Primeiro ponto')
+    if event.type == 'enter' then -- usuario entra o primeiro ponto
+      num_pt = num_pt + 1
+      
+    elseif event.type == 'cancel' then  -- usuario cancela
+      -- sai da funcao
+      cadzinho.set_color("by layer")
+      cadzinho.set_lw("by layer")
+      cadzinho.set_ltype("bylayer")
+      cadzinho.stop_dynamic()
+    end
+  else
+    cadzinho.nk_label('Proximo ponto')
+    cadzinho.set_ltype("Continuous") -- linha continua
+    cadzinho.set_color(1) -- cor vermelha
+    
+    -- o elemento "ligacao" eh uma linha simples
+    local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
+    cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
+    
+    if event.type == 'enter' then -- usuario entra o segundo ponto
+      if ligacao then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        
+        -- grava o elemento no desenho
+        cadzinho.add_ext(ligacao, "PELICANU", {cadzinho.unique_id(), "LIGACAO", "-"})
+        ligacao:write()
+        
+        -- continua - considera o ponto atual como o primeiro da proxima ligação
+        pts[1].x = event.x
+        pts[1].y = event.y
+      end
+    elseif event.type == 'cancel' then -- usuario cancela
+      -- volta ao primeiro ponto
+      num_pt = 1
+    end
+  
+  end
+end
+
+function caixa_dyn(event)
+  -- funcao interativa para criacao de uma caixa
+  
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Nova caixa")
+  cadzinho.nk_layout(20, 2)
+  cadzinho.nk_label("ID:")
+  cadzinho.nk_edit(g_caixa_id)
+  cadzinho.nk_label("Tipo:")
+  cadzinho.nk_combo(g_caixa_tipo)
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Primeiro ponto')
+    if event.type == 'enter' then
+      num_pt = num_pt + 1
+    elseif event.type == 'cancel' then
+      -- sai da funcao
+      cadzinho.set_color("by layer")
+      cadzinho.set_lw("by layer")
+      cadzinho.set_ltype("bylayer")
+      cadzinho.stop_dynamic()
+    end
+  else
+    cadzinho.nk_label('Proximo ponto')
+    
+    -- o elemento "caixa" principal -  eh uma polyline no formato retangulo
+    cadzinho.set_ltype("Dashdot") -- linha traco-ponto
+    cadzinho.set_color(3) -- cor verde
+    local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+    cadzinho.pline_close(caixa, true)
+    --[[
+    -- outro formato: poligono arbitrario fechado
+    for i = 3, num_pt do
+      cadzinho.pline_append(caixa, pts[i].x, pts[i].y, 0)
+    end]]--
+    if (caixa) then cadzinho.ent_draw(caixa) end
+    
+    -- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
+    -- posicao do texto - canto superior direito
+    local tx = pts[2].x
+    if tx < pts[1].x then tx = pts[1].x end
+    local ty = pts[2].y
+    if ty < pts[1].y then ty = pts[1].y end
+    local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
+    
+    -- desenha um retangulo simples em volta do texto do identificador
+    local retan_txt = nil
+    if caixa_id then 
+      cadzinho.ent_draw(caixa_id) 
+      local cx_tx = cadzinho.get_bound(caixa_id)
+      cx_tx.low.x = cx_tx.low.x - 0.3
+      cx_tx.low.y = cx_tx.low.y - 0.3
+      cx_tx.up.x = cx_tx.up.x + 0.3
+      cx_tx.up.y = cx_tx.up.y + 0.3
+      cadzinho.set_ltype("Continuous") -- linha continua
+      retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0, cx_tx.up.x, cx_tx.low.y, 0)
+      cadzinho.pline_append(retan_txt, cx_tx.up.x, cx_tx.up.y, 0)
+      cadzinho.pline_append(retan_txt, cx_tx.low.x, cx_tx.up.y, 0)
+      cadzinho.pline_close(retan_txt, true)
+    end
+    if retan_txt then cadzinho.ent_draw(retan_txt) end
+    
+    if event.type == 'enter' then
+      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+      
+      if caixa then
+        cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo[g_caixa_tipo.value]})
+        caixa:write()
+      end
+      if caixa_id then
+        cadzinho.add_ext(caixa_id, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
+        caixa_id:write()
+      end
+      if retan_txt then retan_txt:write() end
+      
+      num_pt = 1
+      --[[
+      -- outro formato: poligono arbitrario fechado
+      num_pt = num_pt + 1]]--
+      
+    elseif event.type == 'cancel' then
+      --[[
+      -- outro formato: poligono arbitrario fechado
+      if caixa then
+        cadzinho.add_ext(caixa, "PELICANU", {"CAIXA", g_caixa_id.value})
+        caixa:write()
+      end]]--
+      num_pt = 1
+    end
+  
+  end
+end
+
+function terminal_dyn(event)
+  -- funcao interativa para criacao de um terminal, no modo de edição de componente
+
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Adiciona um terminal")
+  cadzinho.nk_propertyi("Numero", g_term_num, 0, 100)
+  cadzinho.nk_layout(20, 2)
+  cadzinho.nk_label("Nome:")
+  cadzinho.nk_edit(g_term_nome)
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  local texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
+  local term_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "left", "middle")
+  if term_id then cadzinho.ent_draw(term_id) end
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Posicione o texto')
+    if event.type == 'enter' then
+      num_pt = num_pt + 1
+    elseif event.type == 'cancel' then
+      cadzinho.stop_dynamic()
+    end
+  else
+    cadzinho.nk_label('Confirme')
+    if event.type == 'enter' then
+      local sel = cadzinho.get_sel()
+      if (#sel > 0) and term_id then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        for i = 1, #sel do
+          local tipo = cadzinho.get_ent_typ(sel[i])
+          -- soh aceita linha ou circulo como terminal
+          if tipo == 'LINE' or tipo == 'CIRCLE' then
+            --verifica se o elemento jah possui marcador
+            local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
+            if #ext > 1 then
+              cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
+            end
+            cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
+            sel[i]:write()
+          end
+        end
+        term_id:write()
+      end
+      cadzinho.clear_sel()
+      cadzinho.stop_dynamic()
+      num_pt = 1
+    elseif event.type == 'cancel' then
+      num_pt = 1
+    end
+  end
+end
+
+function engate_dyn(event)
+  -- funcao interativa para criacao de um engate, no modo de edição de componente
+
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Adiciona um engate")
+  cadzinho.nk_propertyi("Numero", g_eng_num, 0, 100)
+  cadzinho.nk_layout(20, 2)
+  cadzinho.nk_label("Nome:")
+  cadzinho.nk_edit(g_eng_nome)
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  local texto = '#E' .. string.format('%d', g_eng_num.value) .. '$' .. g_eng_nome.value
+  local eng_id = cadzinho.new_text(pts[1].x, pts[1].y, texto, 2.0, "center", "middle")
+  if eng_id then cadzinho.ent_draw(eng_id) end
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Posicione o texto')
+    if event.type == 'enter' then
+      num_pt = num_pt + 1
+    elseif event.type == 'cancel' then
+      cadzinho.stop_dynamic()
+    end
+  else
+    cadzinho.nk_label('Confirme')
+    if event.type == 'enter' then
+      local sel = cadzinho.get_sel()
+      if (#sel > 0) and eng_id then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        for i = 1, #sel do
+          --verifica se o elemento jah possui marcador
+          local ext = cadzinho.get_ext (sel[i], "PELICANU") -- procura pelo marcador extendido
+          if #ext > 1 then
+            cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
+          end
+          cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "ENGATE", 'E' .. string.format('%d', g_term_num.value)})
+          sel[i]:write()
+        end
+        eng_id:write()
+      end
+      cadzinho.clear_sel()
+      cadzinho.stop_dynamic()
+      num_pt = 1
+    elseif event.type == 'cancel' then
+      num_pt = 1
+    end
+  end
+end
+
+function componente_dyn(event)
+  -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Adiciona um componente")
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Escolha o componente')
+    cadzinho.nk_combo(g_tipo_comp)
+    cadzinho.nk_layout(150, 1)
+    if cadzinho.nk_group_begin("Biblioteca", false, true, true) then
+      cadzinho.nk_layout(20, 1)
+      --[[for nome, caminho in pairs(lista_comp) do      
+        if cadzinho.nk_button(nome) then
+          g_componente.value = nome
+        end
+      end]]--
+      obtem_lista_comp()
+      for _, nome in ipairs(lista_comp_o) do      
+        if cadzinho.nk_button(nome) then
+          g_componente.value = nome
+        end
+      end
+      cadzinho.nk_group_end()
+    end
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("Nome:")
+    cadzinho.nk_edit(g_componente)
+    if cadzinho.nk_button("Insere") then
+      if type(lista_comp[g_componente.value]) == 'string' then
+        local comp = cadzinho.new_insert(g_componente.value,
+          pts[num_pt].x, pts[num_pt].y)
+        if comp == nil then
+          if cadzinho.new_block_file(lista_comp[g_componente.value],
+            g_componente.value, "componente PELICAnU ".. g_componente.value,
+            true, '#', '*', '$', '?', 0, 0, 0)
+          then
+            comp = cadzinho.new_insert(g_componente.value,
+              pts[num_pt].x, pts[num_pt].y)
+          end
+        end
+        if comp then
+          local terminais = info_terminais(comp)
+          g_terminais = {}
+          for i, term in pairs(terminais) do
+            g_terminais[i] = {value = term}
+          end
+          num_pt = 2
+        end
+      end
+    end
+  else
+    local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
+    if comp then cadzinho.ent_draw(comp) end
+    cadzinho.nk_label(g_componente.value)
+    cadzinho.nk_label('Entre o ponto')
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    cadzinho.nk_edit(g_comp_id)
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Terminais:")
+    cadzinho.nk_layout(20, 2)
+    for i, term in pairs(g_terminais) do
+      cadzinho.nk_label(tostring(i)..':')
+      cadzinho.nk_edit(term)
+    end
+    if event.type == 'enter' then
+      muda_comp_id (comp, g_comp_id.value)
+      local terminais = {}
+      for i, term in pairs(g_terminais) do
+        terminais[i] = term.value
+      end
+      muda_terminais(comp, terminais)
+      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+      cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
+      comp:write()
+      cadzinho.clear_sel()
+      --cadzinho.stop_dynamic()
+      --num_pt = 1
+    elseif event.type == 'cancel' then
+      num_pt = 1
+    end
+  end
+  
+end
+
+function formato_dyn(event)
+  -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Adiciona um formato")
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Escolha o formato')
+    cadzinho.nk_layout(150, 1)
+    if cadzinho.nk_group_begin("Formatos", true, true, true) then
+      cadzinho.nk_layout(20, 1)
+      for _, nome in ipairs(lista_formato_o) do      
+        if cadzinho.nk_button(nome) then
+          g_formato.value = nome
+        end
+      end
+      cadzinho.nk_group_end()
+    end
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("Nome:")
+    cadzinho.nk_edit(g_formato)
+    if cadzinho.nk_button("Insere") then
+      if type(lista_formato[g_formato.value]) == 'string' then
+        local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+        if fmt == nil then
+          if cadzinho.new_block_file(lista_formato[g_formato.value],
+            g_formato.value, "formato PELICAnU ".. g_formato.value,
+            true, '#', '*', '$', '?', 0, 0, 0) then
+
+            fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+          end
+        end
+        if fmt then num_pt = 2 end
+      end
+    end
+
+    
+    if event.type == 'enter' then
+      num_pt = num_pt + 1
+    elseif event.type == 'cancel' then
+      cadzinho.stop_dynamic()
+    end
+  else
+    local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+    if fmt then cadzinho.ent_draw(fmt) end
+    cadzinho.nk_label(g_formato.value)
+    cadzinho.nk_label('Entre o ponto')
+    if event.type == 'enter' then
+      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+      cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "DESENHO"})
+      fmt:write()
+      cadzinho.clear_sel()
+      --cadzinho.stop_dynamic()
+      --num_pt = 1
+    elseif event.type == 'cancel' then
+      num_pt = 1
+    end
+  end
+  
+end
+
+
+function edita_dyn(event)
+  -- funcao interativa para editar o id de um componente
+
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Edita a ID")
+  
+  -- armazena o ponto atual na lista
+  pts[num_pt] = {}
+  pts[num_pt].x = event.x
+  pts[num_pt].y = event.y
+  
+  local sel = cadzinho.get_sel()
+  if #sel < 1 then
+    num_pt = 1
+    cadzinho.enable_sel()
+  end
+
+  local tipo = nil
+  if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
+  
+  if #sel > 0 and  num_pt == 1 then
+    if tipo then
+      num_pt = 2
+      if tipo == 'ENGATE' then
+        g_engate.value = pega_engate(sel[1])
+      else
+        g_comp_id.value = pega_comp_id(sel[1])
+      end
+      local terminais = info_terminais(sel[1])
+      g_terminais = {}
+      for i, term in pairs(terminais) do
+        g_terminais[i] = {value = term}
+      end
+    else
+      cadzinho.clear_sel()
+    end
+  end
+  
+  cadzinho.nk_layout(20, 1)
+  if num_pt == 1 then
+    cadzinho.nk_label('Selecione um componente')
+    
+    if event.type == 'cancel' then
+      cadzinho.stop_dynamic()
+    end
+  else
+    cadzinho.nk_label('Confirme')
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    if tipo == 'ENGATE' then
+      cadzinho.nk_edit(g_engate)
+    else
+      cadzinho.nk_edit(g_comp_id)
+    end
+
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Terminais:")
+    cadzinho.nk_layout(20, 2)
+    for i, term in pairs(g_terminais) do
+      cadzinho.nk_label(tostring(i)..':')
+      cadzinho.nk_edit(term)
+    end
+    
+    if event.type == 'enter' then
+      if tipo == 'ENGATE' then
+        muda_engate (sel[1], g_engate.value)
+      else
+        muda_comp_id (sel[1], g_comp_id.value)
+      end
+      local terminais = {}
+      for i, term in pairs(g_terminais) do
+        terminais[i] = term.value
+      end
+      muda_terminais(sel[1], terminais)
+      
+      sel[1]:write()
+      
+      cadzinho.clear_sel()
+      --cadzinho.stop_dynamic()
+      num_pt = 1
+    elseif event.type == 'cancel' then
+      num_pt = 1
+      cadzinho.clear_sel()
+    end
+  end
+  
+end
+
+function component_dyn(event)
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Place component")
+  cadzinho.nk_layout(20, 2)
+  cadzinho.nk_label("Component:")
+  cadzinho.nk_edit(component)
+  
+  
+  cadzinho.nk_layout(100, 1)
+  if cadzinho.nk_group_begin("Grupo", true, true, true) then
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_slide_i(inteiro2, 0, 10)
+    cadzinho.nk_slide_f(numero2, -1.5, 20.8)
+    
+    cadzinho.nk_combo(combo, 100, 50)
+    cadzinho.nk_option(option)
+    cadzinho.nk_check("check", check)
+    cadzinho.nk_group_end()
+  end
+  
+  cadzinho.nk_layout(100, 1)
+  if cadzinho.nk_tab_begin("tabdin", tab) then
+    if tab.value == 1 then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_slide_i(inteiro2, 0, 10)
+      cadzinho.nk_slide_f(numero2, -1.5, 20.8)
+    elseif tab.value == 2 then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_combo(combo, 100, 50)
+      cadzinho.nk_option(option)
+      cadzinho.nk_check("check", check)
+      
+      
+    else
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_propertyi("inteiro", inteiro, 0, 10, 2)
+      cadzinho.nk_propertyd("numero", numero, -1, 40, 3)
+    end
+    cadzinho.nk_tab_end()
+  end
+  
+  if event.type == 'cancel' then
+    --cadzinho.stop_dynamic()
+  end
+end
+
+function abre_proj_dyn(event)
+  -- funcao interativa para criacao de uma caixa
+  
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Abre um projeto")
+  cadzinho.nk_label("Caminho:")
+  cadzinho.nk_edit(g_caminho)
+  if cadzinho.nk_button("OK") then
+    if abre_projeto(g_caminho.value) then
+      cadzinho.stop_dynamic()
+    else
+      msg = 'Erro'
+    end
+  end
+  cadzinho.nk_label(msg)
+end
+
+function novo_proj_dyn(event)
+  -- funcao interativa para criacao de uma caixa
+  
+  cadzinho.nk_layout(15, 1)
+  cadzinho.nk_label("Novo projeto")
+  cadzinho.nk_label("Caminho:")
+  cadzinho.nk_edit(g_caminho)
+  cadzinho.nk_layout(15, 2)
+  cadzinho.nk_label("Título:")
+  cadzinho.nk_edit(g_titulo)
+  cadzinho.nk_label("Instalação:")
+  cadzinho.nk_edit(g_instalacao)
+  cadzinho.nk_label("Aplicação:")
+  cadzinho.nk_edit(g_aplicacao)
+  cadzinho.nk_label("Código:")
+  cadzinho.nk_edit(g_codigo)
+  cadzinho.nk_label("Revisão:")
+  cadzinho.nk_edit(g_rev)
+  cadzinho.nk_label("Aprovação:")
+  cadzinho.nk_edit(g_aprovacao)
+  cadzinho.nk_label("Visto:")
+  cadzinho.nk_edit(g_visto)
+  cadzinho.nk_label("Projetista:")
+  cadzinho.nk_edit(g_projetista)
+  cadzinho.nk_label("Descrição:")
+  cadzinho.nk_edit(g_descr)
+  cadzinho.nk_label("Data:")
+  cadzinho.nk_edit(g_data)
+  
+  if cadzinho.nk_button("OK") then
+    local proj = {}
+    proj.titulo = g_titulo.value
+    proj.instalacao = g_instalacao.value
+    proj.aplicacao = g_aplicacao.value
+    proj.codigo = g_codigo.value
+    proj.rev = g_rev.value
+    proj.aprovacao = g_aprovacao.value
+    proj.visto = g_visto.value
+    proj.projetista = g_projetista.value
+    proj.descr = g_descr.value
+    proj.data = g_data.value
+    if novo_projeto(g_caminho.value, proj) then
+      g_titulo.value = ""
+      g_instalacao.value = ""
+      g_aplicacao.value = ""
+      g_codigo.value = ""
+      g_rev.value = ""
+      g_aprovacao.value = ""
+      g_visto.value = ""
+      g_projetista.value = ""
+      g_descr.value = ""
+      g_data.value = ""
+      cadzinho.stop_dynamic()
+    else
+      msg = 'Erro'
+    end
+  end
+  cadzinho.nk_label(msg)
+end
+
 --============== Janela Principal =======================
 function pelicanu_win()
+  cadzinho.nk_layout(20, 5)
+  if cadzinho.nk_button("") then
+    g_caminho.value = ""
+    msg = ''
+    cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  if cadzinho.nk_button("") then
+    g_caminho.value = ""
+    msg = ''
+    g_titulo.value = ""
+    g_instalacao.value = ""
+    g_aplicacao.value = ""
+    g_codigo.value = ""
+    g_rev.value = ""
+    g_aprovacao.value = ""
+    g_visto.value = ""
+    g_projetista.value = ""
+    g_descr.value = ""
+    g_data.value = ""
+    cadzinho.start_dynamic("novo_proj_dyn")
+  end
+  if cadzinho.nk_button("罹") then
+    g_caminho.value = ""
+    msg = ''
+    --cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  if cadzinho.nk_button("ﮏ") then
+    g_caminho.value = ""
+    msg = ''
+    --cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  if cadzinho.nk_button("") then
+    g_caminho.value = ""
+    msg = ''
+    --cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  if cadzinho.nk_button("﮻") then
+    g_caminho.value = ""
+    msg = ''
+    --cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  if cadzinho.nk_button("") then
+    g_caminho.value = ""
+    msg = ''
+    --cadzinho.start_dynamic("abre_proj_dyn")
+  end
+  
+  cadzinho.nk_layout(20, 1)
+  cadzinho.nk_label("Projeto:")
+  cadzinho.nk_label(projeto.titulo)
+  
   cadzinho.nk_layout(400, 1)
   if cadzinho.nk_tab_begin("modo_ed", g_editor_abas) then
     if g_editor_abas.value == 2 then -- biblioteca
@@ -2439,7 +2184,4 @@ local init, err = carrega_config(diretorio(fs.script_path()) .. 'init.lua')
 if init then
   abre_projeto(init.projeto)
 end
-
-cadzinho.db_print(projeto.titulo)
-
 cadzinho.win_show("pelicanu_win", "Pelicanu", 220,120,200,450)
