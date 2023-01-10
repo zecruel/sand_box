@@ -1,6 +1,10 @@
-local pelicanu_bd = {}
-function pelicanu_bd:novo(caminho)
+-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
+-- Autor: Ezequiel Rabelo de Aguiar - 2023
+-- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
+
+function bd_novo(caminho)
   local bd = sqlite.open(caminho)
+  if not bd then return nil end
   bd:exec('DROP TABLE IF EXISTS componentes')
   bd:exec('CREATE TABLE componentes('..
     'unico INTEGER, tipo TEXT, '..
@@ -352,4 +356,3 @@ function pelicanu_bd:novo(caminho)
   bd:close()
   return true
 end
-return pelicanu_bd

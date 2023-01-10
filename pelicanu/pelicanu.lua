@@ -8,7 +8,8 @@ pelicanu.elems = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
-bd_lib = require('pelicanu_bd')
+require('pelicanu_bd')
+require('pelicanu_dyn')
 
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
@@ -30,7 +31,8 @@ projeto = {
   visto = '',
   projetista = '',
   descr = '',
-  data = ''
+  data = '',
+  caminho = ''
 }
 
 -- para funcoes dinamicas
@@ -58,6 +60,7 @@ g_comp_id = {value = ""}
 g_terminais = {}
 g_formato = {value = ""}
 modal = ''
+sub_modal = ''
 g_caminho = {value = ""}
 msg = ''
 g_titulo = {value = ""}
@@ -137,20 +140,26 @@ function abre_projeto(caminho)
   local config = format_dir(caminho) .. '_dados' .. fs.dir_sep .. 'projeto.lua'
   local bd = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'projeto.db'
   local log = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'log.txt'
+  local saida = format_dir(caminho) .. '_saida' .. fs.dir_sep
   local proj, err = carrega_config(config)
   if not proj then return nil end
   
   projeto.caminho = caminho
   projeto.config = config
-  if exists(bd) then 
+  --if exists(bd) then 
     projeto.bd = bd
-  else
-    projeto.bd = nil
-  end
-  if exists(log) then 
+  --else
+  --  projeto.bd = nil
+  --end
+  --if exists(log) then 
     projeto.log = log
+  --else
+  --  projeto.log = nil
+  --end
+  if exists(saida) then 
+    projeto.saida = saida
   else
-    projeto.log = nil
+    projeto.saida = nil
   end
   if type(proj.titulo) == 'string' then
     projeto.titulo = proj.titulo
@@ -203,7 +212,7 @@ function abre_projeto(caminho)
     projeto.data = ''
   end
   
-  local arq_ini = io.open(diretorio(fs.script_path()) .. 'init.lua', 'w+')
+  local arq_ini = io.open(diretorio(fs.script_path()) .. 'ini.lua', 'w+')
   if arq_ini then
     arq_ini:write(dizeres.pelicanu..'\n')
     arq_ini:write(dizeres.autor..'\n')
@@ -224,6 +233,7 @@ function novo_projeto(caminho, proj)
   if type(caminho) ~= 'string' then return nil end
   if type(proj) ~= 'table' then return nil end
   local dados = format_dir(caminho) .. '_dados' .. fs.dir_sep
+  local saida = format_dir(caminho) .. '_saida' .. fs.dir_sep
   local config = dados .. 'projeto.lua'
   local bd = dados .. 'projeto.db'
   local log = dados .. 'log.txt'
@@ -237,42 +247,41 @@ function novo_projeto(caminho, proj)
   if not exists (dados) then
     cria_pasta(dados)
   end
-  
-  local arq_prj, err = io.open(config, 'w+')
-  if arq_prj then
-    arq_prj:write(dizeres.pelicanu..'\n')
-    arq_prj:write(dizeres.autor..'\n')
-    arq_prj:write(dizeres.proj..'\n')
-    arq_prj:write(dizeres.lua..'\n')
-    arq_prj:write(dizeres.alerta..'\n\n')
-    
-    arq_prj:write('titulo = "'.. string.gsub(proj.titulo, '\\', '\\\\') .. '"\n')
-    arq_prj:write('instalacao = "'.. string.gsub(proj.instalacao, '\\', '\\\\') .. '"\n')
-    arq_prj:write('aplicacao = "'.. string.gsub(proj.aplicacao, '\\', '\\\\') .. '"\n')
-    arq_prj:write('codigo = "'.. string.gsub(proj.codigo, '\\', '\\\\') .. '"\n')
-    arq_prj:write('rev = "'.. string.gsub(proj.rev, '\\', '\\\\') .. '"\n')
-    arq_prj:write('aprovacao = "'.. string.gsub(proj.aprovacao, '\\', '\\\\') .. '"\n')
-    arq_prj:write('visto = "'.. string.gsub(proj.visto, '\\', '\\\\') .. '"\n')
-    arq_prj:write('projetista = "'.. string.gsub(proj.projetista, '\\', '\\\\') .. '"\n')
-    arq_prj:write('descr = "'.. string.gsub(proj.descr, '\\', '\\\\') .. '"\n')
-    arq_prj:write('data = "'.. string.gsub(proj.data, '\\', '\\\\') .. '"\n')
-    
-    arq_prj:close()
-    
-    local arq_log = io.open(log, 'a+')
-    if arq_log then
-      arq_log:write(os.date()..' => Criacao do projeto\n')
-      
-      arq_log:close()
-    end
-    
-    return abre_projeto(caminho)
-  else
-    return nil
+  if not exists (saida) then
+    cria_pasta(saida)
   end
   
+  local arq_prj, err = io.open(config, 'w+')
+  if not arq_prj then return nil end
+  arq_prj:write(dizeres.pelicanu..'\n')
+  arq_prj:write(dizeres.autor..'\n')
+  arq_prj:write(dizeres.proj..'\n')
+  arq_prj:write(dizeres.lua..'\n')
+  arq_prj:write(dizeres.alerta..'\n\n')
   
+  arq_prj:write('titulo = "'.. string.gsub(proj.titulo, '\\', '\\\\') .. '"\n')
+  arq_prj:write('instalacao = "'.. string.gsub(proj.instalacao, '\\', '\\\\') .. '"\n')
+  arq_prj:write('aplicacao = "'.. string.gsub(proj.aplicacao, '\\', '\\\\') .. '"\n')
+  arq_prj:write('codigo = "'.. string.gsub(proj.codigo, '\\', '\\\\') .. '"\n')
+  arq_prj:write('rev = "'.. string.gsub(proj.rev, '\\', '\\\\') .. '"\n')
+  arq_prj:write('aprovacao = "'.. string.gsub(proj.aprovacao, '\\', '\\\\') .. '"\n')
+  arq_prj:write('visto = "'.. string.gsub(proj.visto, '\\', '\\\\') .. '"\n')
+  arq_prj:write('projetista = "'.. string.gsub(proj.projetista, '\\', '\\\\') .. '"\n')
+  arq_prj:write('descr = "'.. string.gsub(proj.descr, '\\', '\\\\') .. '"\n')
+  arq_prj:write('data = "'.. string.gsub(proj.data, '\\', '\\\\') .. '"\n')
   
+  arq_prj:close()
+  
+  local arq_log = io.open(log, 'a+')
+  if arq_log then
+    arq_log:write(os.date()..' => Criação do projeto\n')
+    
+    arq_log:close()
+  end
+  
+  bd_novo(bd)
+  
+  return abre_projeto(caminho)
 end
 
 function no_segmento (pt, linha)
@@ -952,7 +961,7 @@ function teste()
   -- atualiza a lista principal com os elementos
   pelicanu.atualiza_elems()
   
-  bd_lib:novo('pelicanu.db')
+  bd_novo('pelicanu.db')
   local bd = sqlite.open('pelicanu.db')
   local caixas = obtem_caixas()
   for id, caixa in pairs(caixas) do
@@ -1976,135 +1985,16 @@ function component_dyn(event)
   end
 end
 
-function abre_proj_dyn(event)
-  -- funcao interativa para criacao de uma caixa
-  
-  cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Abre um projeto")
-  cadzinho.nk_label("Caminho:")
-  cadzinho.nk_edit(g_caminho)
-  if cadzinho.nk_button("OK") then
-    if abre_projeto(g_caminho.value) then
-      cadzinho.stop_dynamic()
-    else
-      msg = 'Erro'
-    end
-  end
-  cadzinho.nk_label(msg)
-end
-
-function novo_proj_dyn(event)
-  -- funcao interativa para criacao de uma caixa
-  
-  cadzinho.nk_layout(15, 1)
-  cadzinho.nk_label("Novo projeto")
-  cadzinho.nk_label("Caminho:")
-  cadzinho.nk_edit(g_caminho)
-  cadzinho.nk_layout(15, 2)
-  cadzinho.nk_label("Título:")
-  cadzinho.nk_edit(g_titulo)
-  cadzinho.nk_label("Instalação:")
-  cadzinho.nk_edit(g_instalacao)
-  cadzinho.nk_label("Aplicação:")
-  cadzinho.nk_edit(g_aplicacao)
-  cadzinho.nk_label("Código:")
-  cadzinho.nk_edit(g_codigo)
-  cadzinho.nk_label("Revisão:")
-  cadzinho.nk_edit(g_rev)
-  cadzinho.nk_label("Aprovação:")
-  cadzinho.nk_edit(g_aprovacao)
-  cadzinho.nk_label("Visto:")
-  cadzinho.nk_edit(g_visto)
-  cadzinho.nk_label("Projetista:")
-  cadzinho.nk_edit(g_projetista)
-  cadzinho.nk_label("Descrição:")
-  cadzinho.nk_edit(g_descr)
-  cadzinho.nk_label("Data:")
-  cadzinho.nk_edit(g_data)
-  
-  if cadzinho.nk_button("OK") then
-    local proj = {}
-    proj.titulo = g_titulo.value
-    proj.instalacao = g_instalacao.value
-    proj.aplicacao = g_aplicacao.value
-    proj.codigo = g_codigo.value
-    proj.rev = g_rev.value
-    proj.aprovacao = g_aprovacao.value
-    proj.visto = g_visto.value
-    proj.projetista = g_projetista.value
-    proj.descr = g_descr.value
-    proj.data = g_data.value
-    if novo_projeto(g_caminho.value, proj) then
-      g_titulo.value = ""
-      g_instalacao.value = ""
-      g_aplicacao.value = ""
-      g_codigo.value = ""
-      g_rev.value = ""
-      g_aprovacao.value = ""
-      g_visto.value = ""
-      g_projetista.value = ""
-      g_descr.value = ""
-      g_data.value = ""
-      cadzinho.stop_dynamic()
-    else
-      msg = 'Erro'
-    end
-  end
-  cadzinho.nk_label(msg)
-end
-
 --============== Janela Principal =======================
 function pelicanu_win()
-  cadzinho.nk_layout(20, 5)
-  if cadzinho.nk_button("") then
-    g_caminho.value = ""
-    msg = ''
-    cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  if cadzinho.nk_button("") then
-    g_caminho.value = ""
-    msg = ''
-    g_titulo.value = ""
-    g_instalacao.value = ""
-    g_aplicacao.value = ""
-    g_codigo.value = ""
-    g_rev.value = ""
-    g_aprovacao.value = ""
-    g_visto.value = ""
-    g_projetista.value = ""
-    g_descr.value = ""
-    g_data.value = ""
-    cadzinho.start_dynamic("novo_proj_dyn")
-  end
-  if cadzinho.nk_button("罹") then
-    g_caminho.value = ""
-    msg = ''
-    --cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  if cadzinho.nk_button("ﮏ") then
-    g_caminho.value = ""
-    msg = ''
-    --cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  if cadzinho.nk_button("") then
-    g_caminho.value = ""
-    msg = ''
-    --cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  if cadzinho.nk_button("﮻") then
-    g_caminho.value = ""
-    msg = ''
-    --cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  if cadzinho.nk_button("") then
-    g_caminho.value = ""
-    msg = ''
-    --cadzinho.start_dynamic("abre_proj_dyn")
-  end
-  
   cadzinho.nk_layout(20, 1)
-  cadzinho.nk_label("Projeto:")
+  if cadzinho.nk_button("Projeto:") then
+    modal = ''
+    sub_modal = ''
+    cadzinho.start_dynamic('projeto_dyn')
+  end
   cadzinho.nk_label(projeto.titulo)
+  
   
   cadzinho.nk_layout(400, 1)
   if cadzinho.nk_tab_begin("modo_ed", g_editor_abas) then
@@ -2180,8 +2070,8 @@ local config, err = carrega_config(diretorio(fs.script_path()) .. 'config.lua')
 if config then
   biblioteca = config.biblioteca
 end
-local init, err = carrega_config(diretorio(fs.script_path()) .. 'init.lua')
-if init then
-  abre_projeto(init.projeto)
+local ini, err = carrega_config(diretorio(fs.script_path()) .. 'ini.lua')
+if ini then
+  abre_projeto(ini.projeto)
 end
 cadzinho.win_show("pelicanu_win", "Pelicanu", 220,120,200,450)
