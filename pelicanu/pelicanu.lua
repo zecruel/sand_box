@@ -49,7 +49,7 @@ lista_esq_o = {}
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
-g_caixa_tipo = {value = 1, 'COMPONENTE', 'MODULO', 'PAINEL', 'GENERICO'}
+g_caixa_tipo = {value = 1, 'COMPONENTE', 'MODULO', 'PAINEL', 'DESCRITIVO', 'GENERICO'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
@@ -75,6 +75,8 @@ g_visto = {value = ""}
 g_projetista = {value = ""}
 g_descr = {value = ""}
 g_data = {value = ""}
+
+g_descricoes = {}
 
 excel = require "xlsxwriter.workbook"
 
@@ -759,7 +761,7 @@ end
 
 function info_terminais (comp)
 -- obtem as informacoes textuais dos terminais de um componente
--- par indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
+-- saida: par indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
   local terminais = {}
   
   -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
@@ -790,6 +792,44 @@ function muda_terminais (comp, terminais)
         -- modifica o indice encontrado
         ocul = attr['hidden'] -- mantem a conficuracao de "oculto"
         cadzinho.edit_attr(comp, i, 'T' .. t_num, term, ocul)
+      end
+    end
+  end
+end
+
+function info_descricoes (comp)
+-- obtem as informacoes textuais das descrições de um componente
+-- saida: par indice-texto da descrição, onde o indice eh um numero inteiro comecando em 1
+  local descr = {}
+  
+  -- varre os elementos ATTRIB da entidade, buscando as etiquetas "DESCR*"
+  local attrs = cadzinho.get_attribs(comp)
+  for i, attr in ipairs(attrs) do
+    local d_num = string.match(attr['tag'], "^DESCR(%d)")
+    if d_num then
+      descr[tonumber(d_num)] = attr['value']
+    end
+  end
+  
+  return descr
+end
+
+function muda_descricoes (comp, descricoes)
+-- altera as informacoes textuais dos descricoes de um componente
+-- entrada: tabela com pares indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
+
+  local ocul = false
+  -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
+  local attrs = cadzinho.get_attribs(comp)
+  for i, attr in ipairs(attrs) do
+    local d_num = string.match(attr['tag'], "^DESCR(%d)")
+    if d_num then
+      -- confronta o indice encontrado com a tabela
+      local descr = descricoes[tonumber(d_num)]
+      if descr then
+        -- modifica o indice encontrado
+        ocul = attr['hidden'] -- mantem a configuracao de "oculto"
+        cadzinho.edit_attr(comp, i, 'DESCR' .. d_num, descr, ocul)
       end
     end
   end

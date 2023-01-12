@@ -365,11 +365,20 @@ function esquematico_dyn (event)
             end
           end
           if comp then
+            local tipo = pega_comp_tipo(comp)
             local terminais = info_terminais(comp)
             g_terminais = {}
             for i, term in pairs(terminais) do
               g_terminais[i] = {value = term}
             end
+            if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+              local descricoes = info_descricoes(comp)
+              g_descricoes = {}
+              for i, descr in pairs(descricoes) do
+                g_descricoes[i] = {value = descr}
+              end
+            end
+            
             num_pt = 2
           end
         end
@@ -381,6 +390,7 @@ function esquematico_dyn (event)
     else
       local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
       if comp then cadzinho.ent_draw(comp) end
+      local tipo = pega_comp_tipo(comp)
       cadzinho.nk_label(g_componente.value)
       cadzinho.nk_label('Entre o ponto')
       cadzinho.nk_layout(20, 2)
@@ -393,6 +403,15 @@ function esquematico_dyn (event)
         cadzinho.nk_label(tostring(i)..':')
         cadzinho.nk_edit(term)
       end
+      if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_label("Descrições:")
+        cadzinho.nk_layout(20, 2)
+        for i, descr in pairs(g_descricoes) do
+          cadzinho.nk_label(tostring(i)..':')
+          cadzinho.nk_edit(descr)
+        end
+      end
       if event.type == 'enter' then
         muda_comp_id (comp, g_comp_id.value)
         local terminais = {}
@@ -400,6 +419,13 @@ function esquematico_dyn (event)
           terminais[i] = term.value
         end
         muda_terminais(comp, terminais)
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = {}
+          for i, descr in pairs(g_descricoes) do
+            descricoes[i] = descr.value
+          end
+          muda_descricoes(comp, descricoes)
+        end
         cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
         cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
         comp:write()
@@ -546,6 +572,14 @@ function esquematico_dyn (event)
         for i, term in pairs(terminais) do
           g_terminais[i] = {value = term}
         end
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = info_descricoes(sel[1])
+          g_descricoes = {}
+          for i, descr in pairs(descricoes) do
+            g_descricoes[i] = {value = descr}
+          end
+        end
+        
       else
         cadzinho.clear_sel()
       end
@@ -577,6 +611,16 @@ function esquematico_dyn (event)
         cadzinho.nk_edit(term)
       end
       
+      if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_label("Descrições:")
+        cadzinho.nk_layout(20, 2)
+        for i, descr in pairs(g_descricoes) do
+          cadzinho.nk_label(tostring(i)..':')
+          cadzinho.nk_edit(descr)
+        end
+      end
+      
       if event.type == 'enter' then
         if tipo == 'ENGATE' then
           muda_engate (sel[1], g_engate.value)
@@ -588,6 +632,14 @@ function esquematico_dyn (event)
           terminais[i] = term.value
         end
         muda_terminais(sel[1], terminais)
+        
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = {}
+          for i, descr in pairs(g_descricoes) do
+            descricoes[i] = descr.value
+          end
+          muda_descricoes(sel[1], descricoes)
+        end
         
         sel[1]:write()
         
@@ -703,7 +755,7 @@ end
 
 -- ================= Edição de Biblioteca de componentes ===============
 function biblioteca_dyn (event)
-  -- abre um projeto
+
   if modal == 'terminal' then
     -- funcao interativa para criacao de um terminal, no modo de edição de componente
     cadzinho.nk_layout(20, 1)
@@ -713,31 +765,9 @@ function biblioteca_dyn (event)
     if #sel < 1 then
       num_pt = 1
       cadzinho.enable_sel()
-    else
+    elseif num_pt == 1 then
       num_pt = 2
     end
-    
---[[
-    local tipo = nil
-    if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
-    
-    if #sel > 0 and  num_pt == 1 then
-      if tipo then
-        num_pt = 2
-        if tipo == 'ENGATE' then
-          g_engate.value = pega_engate(sel[1])
-        else
-          g_comp_id.value = pega_comp_id(sel[1])
-        end
-        local terminais = info_terminais(sel[1])
-        g_terminais = {}
-        for i, term in pairs(terminais) do
-          g_terminais[i] = {value = term}
-        end
-      else
-        cadzinho.clear_sel()
-      end
-    end]]--
     
     cadzinho.nk_layout(20, 1)
     if num_pt == 1 then
