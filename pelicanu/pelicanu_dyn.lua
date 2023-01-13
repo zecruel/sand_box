@@ -99,11 +99,23 @@ function projeto_dyn (event)
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
       modal = ''
-      --[[if abre_projeto(g_caminho.value) then
-        modal = ''
-      else
-        msg = 'Erro'
-      end--]]
+      -- ======== teste ==========
+      
+      -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
+      pelicanu.atualiza_unicos()
+      -- atualiza a lista principal com os elementos
+      pelicanu.atualiza_elems()
+      
+      local drwg, dir = cadzinho.get_drwg_path()
+      cadzinho.save_drwg (dir .. drwg, true)
+      cadzinho.db_print(dir .. drwg)
+      
+      local desenhos = obtem_desenhos('ESQUEM')
+      for id, des in pairs(desenhos) do
+        cadzinho.db_print('num des =', string.format('%d', id))
+      end
+      
+      -- ======== teste ==========
     end
     if cadzinho.nk_button("Cancela") then
       modal = ''
@@ -371,6 +383,11 @@ function esquematico_dyn (event)
             for i, term in pairs(terminais) do
               g_terminais[i] = {value = term}
             end
+            if tipo == 'ENGATE' then
+              g_engate.value = pega_engate(comp)
+            else
+              g_comp_id.value = pega_comp_id(comp)
+            end
             if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
               local descricoes = info_descricoes(comp)
               g_descricoes = {}
@@ -394,8 +411,13 @@ function esquematico_dyn (event)
       cadzinho.nk_label(g_componente.value)
       cadzinho.nk_label('Entre o ponto')
       cadzinho.nk_layout(20, 2)
-      cadzinho.nk_label("ID:")
-      cadzinho.nk_edit(g_comp_id)
+      if tipo == 'ENGATE' then
+        cadzinho.nk_label("Engate:")
+        cadzinho.nk_edit(g_engate)
+      else
+        cadzinho.nk_label("ID:")
+        cadzinho.nk_edit(g_comp_id)
+      end
       cadzinho.nk_layout(20, 1)
       cadzinho.nk_label("Terminais:")
       cadzinho.nk_layout(20, 2)
@@ -413,7 +435,11 @@ function esquematico_dyn (event)
         end
       end
       if event.type == 'enter' then
-        muda_comp_id (comp, g_comp_id.value)
+        if tipo == 'ENGATE' then
+          muda_engate (comp, g_engate.value)
+        else
+          muda_comp_id (comp, g_comp_id.value)
+        end
         local terminais = {}
         for i, term in pairs(g_terminais) do
           terminais[i] = term.value
@@ -596,10 +622,11 @@ function esquematico_dyn (event)
     
       cadzinho.nk_label('Confirme')
       cadzinho.nk_layout(20, 2)
-      cadzinho.nk_label("ID:")
       if tipo == 'ENGATE' then
+        cadzinho.nk_label("Engate:")
         cadzinho.nk_edit(g_engate)
       else
+        cadzinho.nk_label("ID:")
         cadzinho.nk_edit(g_comp_id)
       end
 
@@ -706,7 +733,41 @@ function esquematico_dyn (event)
       if fmt then cadzinho.ent_draw(fmt) end
       cadzinho.nk_label(g_formato.value)
       cadzinho.nk_label('Entre o ponto')
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Número:")
+      cadzinho.nk_edit(g_fmt_id)
+      cadzinho.nk_label("Projeto:")
+      cadzinho.nk_edit(g_fmt_prj)
+      cadzinho.nk_label("Título:")
+      cadzinho.nk_edit(g_fmt_tit)
+      cadzinho.nk_label("Revisão:")
+      cadzinho.nk_edit(g_fmt_rev)
+      cadzinho.nk_label("Versão:")
+      cadzinho.nk_edit(g_fmt_ver)
+      cadzinho.nk_label("Folha:")
+      cadzinho.nk_edit(g_fmt_fl)
+      cadzinho.nk_label("Próx. fl.:")
+      cadzinho.nk_edit(g_fmt_pfl)
+      
+      
       if event.type == 'enter' then
+        local dados = {}
+        dados.ident = g_fmt_id.value
+        dados.titulo = g_fmt_tit.value
+        dados.tipo = 'DIAGRAMA ESQUEMÁTICO'
+        dados.projeto = g_fmt_prj.value
+        dados.rev = g_fmt_rev.value
+        dados.versao = g_fmt_ver.value
+        dados.fl = g_fmt_fl.value
+        dados.data = projeto.data
+        dados.aplic = projeto.aplicacao
+        dados.instal = projeto.instalacao
+        dados.visto = projeto.visto
+        dados.aprov = projeto.aprovacao
+        dados.classif = 'RESERVADO'
+        dados.p_fl = g_fmt_pfl.value
+        muda_atrrib (fmt, dados)
+        
         cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
         cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "DESENHO"})
         fmt:write()

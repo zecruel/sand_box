@@ -78,6 +78,14 @@ g_data = {value = ""}
 
 g_descricoes = {}
 
+g_fmt_id = {value = "XXXXXYYYYZZZZ"}
+g_fmt_prj = {value = "Vão XX"}
+g_fmt_tit = {value = "Circuito XX"}
+g_fmt_rev = {value = "a"}
+g_fmt_ver = {value = "1"}
+g_fmt_fl = {value = "1"}
+g_fmt_pfl = {value = "1"}
+
 excel = require "xlsxwriter.workbook"
 
 -- ============================================
@@ -619,6 +627,23 @@ function pega_attrib (ent)
   return dados
 end
 
+function muda_atrrib (ent, dados)
+-- altera as informacoes textuais dos terminais de um componente
+-- entrada: tabela com pares indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
+
+  local ocul = false
+  -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
+  local attrs = cadzinho.get_attribs(ent)
+  for i, attr in ipairs(attrs) do
+    -- confronta o marcador do atributo com a tabela
+    if dados[attr['tag']] then
+      ocul = attr['hidden'] -- mantem a configuração de "oculto"
+      -- modifica o indice encontrado
+      cadzinho.edit_attr(ent, i, attr['tag'], dados[attr['tag']], ocul)
+    end
+  end
+end
+
 function pega_comp_tipo(comp)
   local dados = pega_attrib(comp)
   return dados.TIPO
@@ -790,7 +815,7 @@ function muda_terminais (comp, terminais)
       local term = terminais[tonumber(t_num)]
       if term then
         -- modifica o indice encontrado
-        ocul = attr['hidden'] -- mantem a conficuracao de "oculto"
+        ocul = attr['hidden'] -- mantem a configuração de "oculto"
         cadzinho.edit_attr(comp, i, 'T' .. t_num, term, ocul)
       end
     end
@@ -995,6 +1020,30 @@ function obtem_barras ()
   return barras
 end
 
+function obtem_desenhos (tipo)
+  local desenhos = {}
+  if type(tipo) ~= 'string' then return desenhos end
+  
+  local caixas = obtem_caixas()
+  for id, caixa in pairs(caixas) do
+    for el_id, _ in pairs(caixa.conteudo) do
+      local el = pelicanu.elems[el_id]
+      if el.tipo == "CAIXA" then
+        local sub_caixa = caixas[el_id]
+        if sub_caixa then
+          if sub_caixa.tipo == "DESENHO" then
+            local dados = pega_attrib(el.ent)
+            if string.find(string.upper(dados.tipo), tipo) then
+              desenhos[el_id] = sub_caixa
+            end
+          end
+        end
+      end
+    end
+  end
+  return desenhos
+end
+
 function teste()
   cadzinho.db_print ("Teste de criacao de banco de dados")
   
@@ -1100,8 +1149,8 @@ function teste()
             else dados.aprov = 'NULL' end
             if dados.classif then dados.classif = "'" .. dados.classif .. "'" 
             else dados.classif = 'NULL' end
-            if dados.pfl then dados.pfl = "'" .. dados.pfl .. "'" 
-            else dados.pfl = 'NULL' end
+            if dados.p_fl then dados.p_fl = "'" .. dados.p_fl .. "'" 
+            else dados.p_fl = 'NULL' end
             bd:exec ("INSERT INTO desenhos VALUES("..
              string.format('%d', el_id) ..", "..
              dados.ident ..", "..
@@ -1117,7 +1166,7 @@ function teste()
              dados.visto ..", "..
              dados.aprov ..", "..
              dados.classif ..", "..
-             dados.pfl ..
+             dados.p_fl ..
             ");")
           end
         end
