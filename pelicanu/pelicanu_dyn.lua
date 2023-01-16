@@ -101,6 +101,21 @@ function projeto_dyn (event)
       modal = ''
       -- ======== teste ==========
       
+      local dir_prj = fs.dir(projeto.caminho)
+      
+      if dir_prj then
+        cadzinho.db_print("dir")
+        for i = 1, #dir_prj do
+          cadzinho.db_print(dir_prj[i].name .. ' - ')
+          cadzinho.db_print(os.date('    ' .. '%Y/%m/%d-%H:%M:%S', dir_prj[i].created))
+          cadzinho.db_print(os.date('    ' .. '%Y/%m/%d-%H:%M:%S', dir_prj[i].modified))
+          --if dir_prj[i].is_dir then
+            --lista_comp_tipo[#lista_comp_tipo+1] = dir_prj[i].name
+            --g_tipo_comp[#g_tipo_comp+1] = dir_prj[i].name
+          --end
+        end
+      end
+      
       -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
       pelicanu.atualiza_unicos()
       -- atualiza a lista principal com os elementos
