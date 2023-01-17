@@ -101,33 +101,82 @@ function projeto_dyn (event)
       modal = ''
       -- ======== teste ==========
       
-      local dir_prj = fs.dir(projeto.caminho)
+      local arqs_mod = {} -- arquivos que foram modificados desde a última atualização
+      local arqs_bd = {} -- registro dos arquivos antigos
       
-      if dir_prj then
-        cadzinho.db_print("dir")
-        for i = 1, #dir_prj do
-          cadzinho.db_print(dir_prj[i].name .. ' - ')
-          cadzinho.db_print(os.date('    ' .. '%Y/%m/%d-%H:%M:%S', dir_prj[i].created))
-          cadzinho.db_print(os.date('    ' .. '%Y/%m/%d-%H:%M:%S', dir_prj[i].modified))
-          --if dir_prj[i].is_dir then
-            --lista_comp_tipo[#lista_comp_tipo+1] = dir_prj[i].name
-            --g_tipo_comp[#g_tipo_comp+1] = dir_prj[i].name
-          --end
+      -- lê a estrutura atual da pasta de projeto
+      local lista_arq = lista_proj()
+      
+      -- abre o banco de dados
+      local bd = sqlite.open(projeto.bd)
+      if bd then
+        -- pega as informações antigas dos arquivos (caminho e modificação)
+        for linha in bd:cols('select * from arquivos') do -- para cada linha do BD
+          arqs_bd[linha.caminho] = linha.modificado
+        end
+        bd:close()
+      end
+      
+      for i = 1, #lista_arq do
+        -- verifica se os arquivos da pasta foram modificados
+        if arqs_bd[lista_arq[i].name] ~= lista_arq[i].modified then
+          -- lista dos modificados
+          arqs_mod[#arqs_mod + 1] = lista_arq[i].name
+        else
+          -- os arquivos que não sofreram alteração são retirados da lista
+          -- sobram apenas os arquivos a serem apagados do bd (modificados ou deletados)
+          arqs_bd[lista_arq[i].name] = nil
         end
       end
       
-      -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-      pelicanu.atualiza_unicos()
-      -- atualiza a lista principal com os elementos
-      pelicanu.atualiza_elems()
+      -- processa primeiro as informações a ser apagados do bd
+      --[[
+      cadzinho.db_print('Arquivos a serem apagados:')
+      for arq,_ in pairs(arqs_bd) do
+       cadzinho.db_print(arq)
+      end
+      ]]--
       
-      local drwg, dir = cadzinho.get_drwg_path()
-      cadzinho.save_drwg (dir .. drwg, true)
-      cadzinho.db_print(dir .. drwg)
+      -- Processa os arquivos modificados
+      --cadzinho.db_print('Arquivos modificados:')
+      for i = 1, #arqs_mod do
+        atualiza_db(arqs_mod[i])
+       --cadzinho.db_print(arqs_mod[i])
+       --[[
+        -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
+        pelicanu.atualiza_unicos()
+        -- atualiza a lista principal com os elementos
+        pelicanu.atualiza_elems()
+        
+        local drwg, dir = cadzinho.get_drwg_path()
+        cadzinho.save_drwg (dir .. drwg, true)
+        cadzinho.db_print(dir .. drwg)
+        
+        local desenhos = obtem_desenhos('ESQUEM')
+        for id, des in pairs(desenhos) do
+          cadzinho.db_print('num des =', string.format('%d', id))
+        end
+        ]]--
+       
+      end
       
-      local desenhos = obtem_desenhos('ESQUEM')
-      for id, des in pairs(desenhos) do
-        cadzinho.db_print('num des =', string.format('%d', id))
+      -- grava a estrutura atual do projeto na tabela do bd
+      lista_arq = lista_proj() -- obtem as informações atualizadas
+      -- grava no banco
+      local bd = sqlite.open(projeto.bd)
+      if bd then
+        bd:exec('DROP TABLE IF EXISTS arquivos')
+        bd:exec('CREATE TABLE arquivos('..
+          'caminho TEXT, modificado INTEGER)')
+        for i = 1, #lista_arq do
+          bd:exec ("INSERT INTO arquivos VALUES('"..
+            lista_arq[i].name .."', "..
+            string.format('%d', lista_arq[i].modified) ..");")
+          
+        end
+        bd:close()
+      else
+        msg = 'Erro no banco de dados'
       end
       
       -- ======== teste ==========

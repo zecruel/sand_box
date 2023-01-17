@@ -8,6 +8,7 @@ pelicanu.elems = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
+require('pelicanu_util')
 require('pelicanu_bd')
 require('pelicanu_dyn')
 
@@ -89,63 +90,7 @@ g_fmt_pfl = {value = "1"}
 excel = require "xlsxwriter.workbook"
 
 -- ============================================
-function exists(name)
-    if type(name)~="string" then return false end
-    return os.rename(name,name) and true or false
-end
 
-function isFile(name)
-    if type(name)~="string" then return false end
-    if not exists(name) then return false end
-    local f = io.open(name)
-    if f then
-      f:close()
-      return true
-    end
-    return false
-end
-
-function isDir(name)
-    return (exists(name) and not isFile(name))
-end
-
-function nome_arq(url)
-  return url:match("(.+)%..+$")
-end
-
-function extensao(url)
-  return url:match("^.+(%..+)$")
-end
-
-function diretorio(url)
-  url = string.gsub(url, "(.[^"..fs.dir_sep.."]+)$", "") .. fs.dir_sep
-  return url
-end
-
-function format_dir(url)
-  url = string.gsub(url, "(.[^"..fs.dir_sep.."])$", '%1' .. fs.dir_sep)
-  return url
-end
-
-function cria_pasta(caminho)
-   if (os.getenv("oS") or ""):match("^Windows") then
-      os.execute('mkdir "' .. caminho .. '" 1>nul: 2>&1')
-   else
-      os.execute('mkdir -p "' .. caminho .. '" 2>/dev/null')
-   end
-end
-
-function carrega_config(arq)
-  local configEnv = {} -- to keep it separate from the global env
-  local f,err = loadfile(arq, "t", configEnv)
-  if f then
-    f() -- run the chunk
-    -- now configEnv should contain your data
-    return configEnv
-  else
-    return nil, err
-  end
-end
 
 function abre_projeto(caminho)
   if type(caminho) ~= 'string' then return nil end
@@ -294,6 +239,45 @@ function novo_projeto(caminho, proj)
   bd_novo(bd)
   
   return abre_projeto(caminho)
+end
+
+function lista_proj()
+  local lista_arq = {}
+  local fila = nova_fila()
+  
+  -- insere a pasta do projeto na fila
+  fila.insere(format_dir(projeto.caminho))
+  
+  -- processa a fila de pastas
+  local pasta = fila.remove()
+  while pasta do
+    local dir = fs.dir(pasta)
+    -- varre o conteúdo da pasta corrente
+    for i = 1, #dir do
+      local item = pasta .. dir[i].name
+      if dir[i].is_dir then
+        -- se o item for uma subpasta
+        if not string.find(dir[i].name, '^_') then -- e não for ignorável
+          fila.insere(format_dir(item)) -- coloca na fila
+        end
+      else
+        -- verifica se é um arquivo DXF
+        local ext = extensao(dir[i].name)
+        if type(ext) == "string" then
+          if ext:upper() == ".DXF" then
+            dir[i].name = item -- caminho completo do arquivo
+            -- adiciona na lista de arquivos
+            lista_arq[#lista_arq +1] = dir[i]
+          end
+        end
+      end
+    end
+    
+    -- pega a próxima pasta da fila
+    pasta = fila.remove()
+  end
+  
+  return lista_arq
 end
 
 function no_segmento (pt, linha)
