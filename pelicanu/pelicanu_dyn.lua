@@ -91,7 +91,7 @@ function projeto_dyn (event)
     end
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
   
-  -- Consolida o projeto (todos os desenhos) para não haver IDs conflitantes
+  -- Consolida o projeto (todos os desenhos)
   elseif modal == 'consolida' then
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Consolida o projeto")
@@ -99,87 +99,6 @@ function projeto_dyn (event)
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
       modal = ''
-      -- ======== teste ==========
-      
-      local arqs_mod = {} -- arquivos que foram modificados desde a última atualização
-      local arqs_bd = {} -- registro dos arquivos antigos
-      
-      -- lê a estrutura atual da pasta de projeto
-      local lista_arq = lista_proj()
-      
-      -- abre o banco de dados
-      local bd = sqlite.open(projeto.bd)
-      if bd then
-        -- pega as informações antigas dos arquivos (caminho e modificação)
-        for linha in bd:cols('select * from arquivos') do -- para cada linha do BD
-          arqs_bd[linha.caminho] = linha.modificado
-        end
-        bd:close()
-      end
-      
-      for i = 1, #lista_arq do
-        -- verifica se os arquivos da pasta foram modificados
-        if arqs_bd[lista_arq[i].name] ~= lista_arq[i].modified then
-          -- lista dos modificados
-          arqs_mod[#arqs_mod + 1] = lista_arq[i].name
-        else
-          -- os arquivos que não sofreram alteração são retirados da lista
-          -- sobram apenas os arquivos a serem apagados do bd (modificados ou deletados)
-          arqs_bd[lista_arq[i].name] = nil
-        end
-      end
-      
-      -- processa primeiro as informações a ser apagados do bd
-      --[[
-      cadzinho.db_print('Arquivos a serem apagados:')
-      for arq,_ in pairs(arqs_bd) do
-       cadzinho.db_print(arq)
-      end
-      ]]--
-      
-      -- Processa os arquivos modificados
-      --cadzinho.db_print('Arquivos modificados:')
-      for i = 1, #arqs_mod do
-        atualiza_db(arqs_mod[i])
-       --cadzinho.db_print(arqs_mod[i])
-       --[[
-        -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-        pelicanu.atualiza_unicos()
-        -- atualiza a lista principal com os elementos
-        pelicanu.atualiza_elems()
-        
-        local drwg, dir = cadzinho.get_drwg_path()
-        cadzinho.save_drwg (dir .. drwg, true)
-        cadzinho.db_print(dir .. drwg)
-        
-        local desenhos = obtem_desenhos('ESQUEM')
-        for id, des in pairs(desenhos) do
-          cadzinho.db_print('num des =', string.format('%d', id))
-        end
-        ]]--
-       
-      end
-      
-      -- grava a estrutura atual do projeto na tabela do bd
-      lista_arq = lista_proj() -- obtem as informações atualizadas
-      -- grava no banco
-      local bd = sqlite.open(projeto.bd)
-      if bd then
-        bd:exec('DROP TABLE IF EXISTS arquivos')
-        bd:exec('CREATE TABLE arquivos('..
-          'caminho TEXT, modificado INTEGER)')
-        for i = 1, #lista_arq do
-          bd:exec ("INSERT INTO arquivos VALUES('"..
-            lista_arq[i].name .."', "..
-            string.format('%d', lista_arq[i].modified) ..");")
-          
-        end
-        bd:close()
-      else
-        msg = 'Erro no banco de dados'
-      end
-      
-      -- ======== teste ==========
     end
     if cadzinho.nk_button("Cancela") then
       modal = ''
@@ -190,19 +109,85 @@ function projeto_dyn (event)
   elseif modal == 'atualiza' then
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Atualiza o banco de dados")
-    cadzinho.nk_label("Tem certeza?")
-    cadzinho.nk_layout(15, 2)
-    if cadzinho.nk_button("OK") then
-      modal = ''
-      --[[if abre_projeto(g_caminho.value) then
+    cadzinho.nk_layout(5, 1)
+    if sub_modal == 'executa' then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label("As alterações atuais")
+      cadzinho.nk_label("não poderão ser desfeitas")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Tem certeza?")
+      cadzinho.nk_layout(15, 2)
+      if cadzinho.nk_button("OK") then
+        -- "salva" o documento atual para restaurar depois
+        local drwg, dir = cadzinho.get_drwg_path()
+      
+        local arqs_mod = {} -- arquivos que foram modificados desde a última atualização
+        local arqs_bd = {} -- registro dos arquivos antigos
+        
+        -- lê a estrutura atual da pasta de projeto
+        local lista_arq = lista_proj()
+        
+        -- abre o banco de dados
+        local bd = sqlite.open(projeto.bd)
+        if bd then
+          -- pega as informações antigas dos arquivos (caminho e modificação)
+          for linha in bd:cols('select * from arquivos') do -- para cada linha do BD
+            arqs_bd[linha.caminho] = linha.modificado
+          end
+        
+          for i = 1, #lista_arq do
+            -- verifica se os arquivos da pasta foram modificados
+            if arqs_bd[lista_arq[i].name] ~= lista_arq[i].modified then
+              -- lista dos modificados
+              arqs_mod[#arqs_mod + 1] = lista_arq[i].name
+            else
+              -- os arquivos que não sofreram alteração são retirados da lista
+              -- sobram apenas os arquivos a serem apagados do bd (modificados ou deletados)
+              arqs_bd[lista_arq[i].name] = nil
+            end
+          end
+          
+          -- processa primeiro as informações a ser apagados do bd
+          for arq,_ in pairs(arqs_bd) do
+            --cadzinho.db_print(arq)
+            deleta_arq_db(bd, arq)
+          end
+          
+          -- Processa os arquivos modificados
+          for i = 1, #arqs_mod do
+            atualiza_db(bd, arqs_mod[i])
+          end
+          
+          -- grava a estrutura atual do projeto na tabela do bd
+          lista_arq = lista_proj() -- obtem as informações atualizadas
+          atualiza_lista_arq_bd (bd, lista_arq)
+          
+          bd:close()
+          msg = 'Concluído: ' .. #arqs_mod .. ' desenhos'
+        else
+          msg = 'Erro no banco de dados'
+        end
+        sub_modal = ''
+        
+        -- restaura o documento anterior
+        cadzinho.open_drwg (dir .. drwg, true)
+        
+      end
+      if cadzinho.nk_button("Cancela") then
+        sub_modal = ''
+      end
+    else
+      cadzinho.nk_layout(20, 2)
+      if cadzinho.nk_button("Atualiza") then
+        sub_modal = 'executa'
+      end
+      if cadzinho.nk_button("Volta") then
         modal = ''
-      else
-        msg = 'Erro'
-      end]]--
+      end
     end
-    if cadzinho.nk_button("Cancela") then
-      modal = ''
-    end
+    cadzinho.nk_layout(5, 1)
+    cadzinho.nk_layout(15, 1)
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
     
   -- Gera as planilhas auxiliares
@@ -270,6 +255,7 @@ function projeto_dyn (event)
     
   -- interface inicial
   else
+    sub_modal = ''
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Gerencia o Projeto")
     -- barra de botões
@@ -294,12 +280,12 @@ function projeto_dyn (event)
       g_data.value = ""
       modal = 'novo'
     end
-    if cadzinho.nk_button("") then
-      modal = 'consolida'
-      msg = ''
-    end
     if cadzinho.nk_button("") then
       modal = 'atualiza'
+      msg = ''
+    end
+    if cadzinho.nk_button("") then
+      modal = 'consolida'
       msg = ''
     end
     if cadzinho.nk_button("") then
@@ -319,8 +305,6 @@ function projeto_dyn (event)
     cadzinho.nk_label("Projeto atual:")
     cadzinho.nk_label(projeto.titulo)
     cadzinho.nk_label(projeto.descr)
-    --cadzinho.nk_label("Caminho:")
-    --cadzinho.nk_label(projeto.caminho)
     cadzinho.nk_layout(15, 2)
     cadzinho.nk_label("Instalação:")
     cadzinho.nk_label(projeto.instalacao)
@@ -338,6 +322,9 @@ function projeto_dyn (event)
     cadzinho.nk_label(projeto.projetista)
     cadzinho.nk_label("Data:")
     cadzinho.nk_label(projeto.data)
+    cadzinho.nk_layout(15, 1)
+    cadzinho.nk_label("Caminho:")
+    cadzinho.nk_label(projeto.caminho)
     --outros ícones "罹 ﮏ  ﮻    ﯨ ﯱ "
   end
 end

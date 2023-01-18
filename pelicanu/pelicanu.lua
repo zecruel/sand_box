@@ -231,7 +231,7 @@ function novo_projeto(caminho, proj)
   
   local arq_log = io.open(log, 'a+')
   if arq_log then
-    arq_log:write(os.date()..' => Criação do projeto\n')
+    arq_log:write(os.date('%Y/%m/%d-%H:%M:%S') .. ' => Criação do projeto\n')
     
     arq_log:close()
   end

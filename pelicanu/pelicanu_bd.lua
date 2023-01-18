@@ -360,11 +360,61 @@ function bd_novo(caminho)
   return true
 end
 
-function atualiza_db(arquivo)
-  cadzinho.db_print (arquivo)
+function deleta_arq_db(bd, arquivo)
+  local comando = "DELETE FROM engates\n" ..
+    "WHERE engates.unico IN (\n" ..
+    "SELECT unico\n" ..
+    "FROM componentes\n" ..
+    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+
+  bd:exec(comando)
+    
+  comando = "DELETE FROM barras\n" ..
+    "WHERE barras.componente IN (\n" ..
+    "SELECT unico\n" ..
+    "FROM componentes\n" ..
+    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+
+  bd:exec(comando)
+    
+  comando = "DELETE FROM terminais\n" ..
+    "WHERE terminais.componente IN (\n" ..
+    "SELECT unico\n" ..
+    "FROM componentes\n" ..
+    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+
+  bd:exec(comando)
+    
+  comando =  "DELETE FROM desenhos\n" ..
+    "WHERE desenhos.unico IN (\n" ..
+    "SELECT unico\n" ..
+    "FROM caixas\n" ..
+    "WHERE caixas.arquivo = '" .. arquivo .. "');"
+
+  bd:exec(comando)
+    
+  comando = "DELETE FROM componentes\n" ..
+    "WHERE componentes.arquivo = '" .. arquivo .. "';"
+
+  bd:exec(comando)
+    
+  comando = "DELETE FROM caixas\n" ..
+    "WHERE caixas.arquivo = '" .. arquivo .. "';"
+
+  bd:exec(comando)
+    
+  comando = "DELETE FROM arquivos\n" ..
+    "WHERE arquivos.caminho = '" .. arquivo .. "';"
+    
+
+  bd:exec(comando)
+  
+end
+
+function atualiza_db(bd, arquivo)
+
   
   cadzinho.open_drwg (arquivo, true)
-  
   -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
   pelicanu.atualiza_unicos()
   -- atualiza a lista principal com os elementos
@@ -372,12 +422,9 @@ function atualiza_db(arquivo)
   
   cadzinho.save_drwg (arquivo, true)
   
-  cadzinho.db_print ("salvo")
-  
-  local bd = sqlite.open(projeto.bd)
   local caixas = obtem_caixas()
   for id, caixa in pairs(caixas) do
-    --cadzinho.db_print (caixa.nome)
+
     local pai = id
     if type(pai) == 'number' then
       pai = string.format('%d', pai)
@@ -387,7 +434,7 @@ function atualiza_db(arquivo)
     if not pai then pai = 'NULL' end
     for el_id, _ in pairs(caixa.conteudo) do
       local el = pelicanu.elems[el_id]
-      --cadzinho.db_print ("    " .. el.tipo)
+
       if el.tipo == "COMPONENTE" then
         local terms = info_terminais (el.ent)
         local bloco = cadzinho.get_blk_name (el.ent)
@@ -401,7 +448,7 @@ function atualiza_db(arquivo)
         local comp_tipo = pega_comp_tipo(el.ent)
         if not comp_tipo then comp_tipo = 'NULL'
         else comp_tipo = "'"..comp_tipo.."'" end
-        --cadzinho.db_print ("    " .. bloco, comp_id)
+
         
         bd:exec ("INSERT INTO componentes VALUES("..
           string.format('%d', el_id) ..", "..
@@ -434,7 +481,7 @@ function atualiza_db(arquivo)
           if not nome then nome = 'NULL' end
           local tipo = sub_caixa.tipo
           if not tipo then tipo = 'NULL' end
-          --cadzinho.db_print ("    " .. nome, tipo)
+
           
           bd:exec ("INSERT INTO caixas VALUES("..
             string.format('%d', el_id) ..", '"..
@@ -498,18 +545,15 @@ function atualiza_db(arquivo)
     end
   end
   
-  
-  
-  
   local barras = obtem_barras()
-  --cadzinho.db_print ("Num barras=", #barras)
+
   for i, barra in pairs(barras) do
     if not barra.id then
       barra.id = cadzinho.unique_id()
     end
-    --cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
+
     for j, term in ipairs(barra.terminais) do
-      --cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
+
       bd:exec ("INSERT INTO barras VALUES('"..
         barra.id .."', "..
         string.format('%d', term.comp) ..", "..
@@ -517,9 +561,16 @@ function atualiza_db(arquivo)
         ");")
     end
   end
-  
-  
-  --
-  bd:close()
-  cadzinho.db_print ("ok")
+
+end
+
+function atualiza_lista_arq_bd (bd, lista_arq)
+  bd:exec('DROP TABLE IF EXISTS arquivos')
+  bd:exec('CREATE TABLE arquivos('..
+    'caminho TEXT, modificado INTEGER)')
+  for i = 1, #lista_arq do
+    bd:exec ("INSERT INTO arquivos VALUES('"..
+      lista_arq[i].name .."', "..
+      string.format('%d', lista_arq[i].modified) ..");")
+  end
 end
