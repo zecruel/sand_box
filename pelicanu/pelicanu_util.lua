@@ -1,3 +1,7 @@
+-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
+-- Autor: Ezequiel Rabelo de Aguiar - 2023
+-- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
+
 function exists(name)
     if type(name)~="string" then return false end
     return os.rename(name,name) and true or false
