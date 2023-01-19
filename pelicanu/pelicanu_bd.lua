@@ -8,20 +8,20 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS arquivos')
     bd:exec('CREATE TABLE arquivos('..
     'caminho TEXT, modificado INTEGER)')
-  bd:exec('DROP TABLE IF EXISTS componentes')
-  bd:exec('CREATE TABLE componentes('..
+  bd:exec('DROP TABLE IF EXISTS componentes_esq')
+  bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..
     'bloco TEXT, id TEXT, pai INTEGER, x REAL, y REAL, arquivo TEXT)')
   bd:exec('DROP TABLE IF EXISTS caixas')
   bd:exec('CREATE TABLE caixas('..
     'unico INTEGER, '..
     'id TEXT, tipo TEXT, pai INTEGER, arquivo TEXT)')
-  bd:exec('DROP TABLE IF EXISTS terminais')
-  bd:exec('CREATE TABLE terminais('..
+  bd:exec('DROP TABLE IF EXISTS terminais_esq')
+  bd:exec('CREATE TABLE terminais_esq('..
     'componente INTEGER, '..
     'id INTEGER, terminal TEXT)')
-  bd:exec('DROP TABLE IF EXISTS barras')
-  bd:exec('CREATE TABLE barras('..
+  bd:exec('DROP TABLE IF EXISTS barras_esq')
+  bd:exec('CREATE TABLE barras_esq('..
     'id TEXT, '..
     'componente INTEGER, '..
     'terminal INTEGER)')
@@ -32,16 +32,16 @@ function bd_novo(caminho)
     'rev TEXT, versao TEXT, fl TEXT, data TEXT, ' ..
     'aplic TEXT, instal TEXT, visto TEXT, aprov TEXT,' ..
     'classif TEXT, pfl TEXT)')
-  bd:exec('DROP TABLE IF EXISTS engates')
-  bd:exec('CREATE TABLE engates('..
+  bd:exec('DROP TABLE IF EXISTS engates_esq')
+  bd:exec('CREATE TABLE engates_esq('..
     'unico INTEGER, '..
     'engate TEXT)')
-  bd:exec('DROP VIEW IF EXISTS hierarquia')
-  bd:exec("CREATE VIEW hierarquia AS\n"..
-    "SELECT componentes.unico componente,\n"..
+  bd:exec('DROP VIEW IF EXISTS hierarquia_esq')
+  bd:exec("CREATE VIEW hierarquia_esq AS\n"..
+    "SELECT componentes_esq.unico componente,\n"..
     "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
+    "FROM caixas WHERE caixas.unico = componentes_esq.pai\n"..
     "UNION ALL\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
     "FROM caixas, cte_caixas\n"..
@@ -50,7 +50,7 @@ function bd_novo(caminho)
     ") pai,\n"..
     "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
+    "FROM caixas WHERE caixas.unico = componentes_esq.pai\n"..
     "UNION ALL\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
     "FROM caixas, cte_caixas\n"..
@@ -59,7 +59,7 @@ function bd_novo(caminho)
     ") modulo,\n"..
     "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
+    "FROM caixas WHERE caixas.unico = componentes_esq.pai\n"..
     "UNION ALL\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
     "FROM caixas, cte_caixas\n"..
@@ -68,7 +68,7 @@ function bd_novo(caminho)
     ") painel,\n"..
     "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
+    "FROM caixas WHERE caixas.unico = componentes_esq.pai\n"..
     "UNION ALL\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
     "FROM caixas, cte_caixas\n"..
@@ -77,42 +77,42 @@ function bd_novo(caminho)
     ") desenho,\n"..
     "(WITH RECURSIVE cte_caixas (unico, tipo, pai) AS (\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
-    "FROM caixas WHERE caixas.unico = componentes.pai\n"..
+    "FROM caixas WHERE caixas.unico = componentes_esq.pai\n"..
     "UNION ALL\n"..
     "SELECT caixas.unico, caixas.tipo, caixas.pai\n"..
     "FROM caixas, cte_caixas\n"..
     "WHERE cte_caixas.pai = caixas.unico)\n"..
     "SELECT unico FROM cte_caixas WHERE cte_caixas.tipo = 'DESCRITIVO'\n"..
     ") descritivo\n"..
-    "FROM componentes\n")
+    "FROM componentes_esq\n")
   bd:exec('DROP VIEW IF EXISTS comp_term')
   bd:exec("CREATE VIEW comp_term AS\n"..
-    "SELECT componentes.unico,\n"..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.painel) painel,\n"..
-    "(SELECT CASE WHEN hierarquia.pai\n"..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n"..
-    "ELSE componentes.id\n"..
+    "SELECT componentes_esq.unico,\n"..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.painel) painel,\n"..
+    "(SELECT CASE WHEN hierarquia_esq.pai\n"..
+    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n"..
+    "ELSE componentes_esq.id\n"..
     "END) componente,\n"..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.modulo) modulo,\n"..
-    "(SELECT CASE WHEN hierarquia.pai\n"..
-    "THEN componentes.id\n"..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n"..
+    "(SELECT CASE WHEN hierarquia_esq.pai\n"..
+    "THEN componentes_esq.id\n"..
     "END) parte,\n"..
-    "componentes.bloco, componentes.tipo, terminais.id num, terminais.terminal \n"..
-    "FROM componentes, hierarquia \n"..
-    "INNER JOIN terminais ON terminais.componente = componentes.unico\n"..
-    "WHERE componentes.unico = hierarquia.componente "..
-    "AND NOT componentes.tipo = 'ENGATE'\n"..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, "..
-    "componentes.x ASC, componentes.y ASC, num ASC;\n")
+    "componentes_esq.bloco, componentes_esq.tipo, terminais_esq.id num, terminais_esq.terminal \n"..
+    "FROM componentes_esq, hierarquia_esq \n"..
+    "INNER JOIN terminais_esq ON terminais_esq.componente = componentes_esq.unico\n"..
+    "WHERE componentes_esq.unico = hierarquia_esq.componente "..
+    "AND NOT componentes_esq.tipo = 'ENGATE'\n"..
+    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, "..
+    "componentes_esq.x ASC, componentes_esq.y ASC, num ASC;\n")
   bd:exec('DROP VIEW IF EXISTS eng_term')
   bd:exec("CREATE VIEW eng_term AS\n"..
-    "SELECT engates.unico, engates.engate, barras.id barra, "..
-    "terminais.terminal, hierarquia.desenho\n"..
-    "FROM engates, barras, hierarquia\n"..
-    "INNER JOIN terminais ON terminais.componente = engates.unico\n"..
-    "WHERE engates.unico = barras.componente AND terminais.id = barras.terminal "..
-    "AND engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate ASC, terminais.terminal ASC;\n")
+    "SELECT engates_esq.unico, engates_esq.engate, barras_esq.id barra, "..
+    "terminais_esq.terminal, hierarquia_esq.desenho\n"..
+    "FROM engates_esq, barras_esq, hierarquia_esq\n"..
+    "INNER JOIN terminais_esq ON terminais_esq.componente = engates_esq.unico\n"..
+    "WHERE engates_esq.unico = barras_esq.componente AND terminais_esq.id = barras_esq.terminal "..
+    "AND engates_esq.unico = hierarquia_esq.componente\n"..
+    "ORDER BY engates_esq.engate ASC, terminais_esq.terminal ASC;\n")
   bd:exec('DROP VIEW IF EXISTS eng_repetidos')
   bd:exec("CREATE VIEW eng_repetidos AS\n".. 
    "WITH cte_barras_rep AS (SELECT eng_term.barra barra,\n"..
@@ -125,21 +125,21 @@ function bd_novo(caminho)
   bd:exec('DROP VIEW IF EXISTS barra_consol')
   bd:exec("CREATE VIEW barra_consol AS\n".. 
     "SELECT CASE WHEN EXISTS (SELECT eng_term.barra\n"..
-    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
+    "FROM eng_term WHERE barras_esq.id = eng_term.barra)\n"..
     "THEN (SELECT CASE WHEN EXISTS (\n"..
     "SELECT eng_repetidos.node FROM eng_repetidos\n"..
     "where eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node)\n"..
     "THEN (SELECT eng_repetidos.barra FROM eng_repetidos \n"..
     "WHERE eng_term.engate || '_' || eng_term.terminal = eng_repetidos.node\n"..
     "LIMIT 1) ELSE eng_term.engate || '_' || eng_term.terminal END\n"..
-    "FROM eng_term WHERE barras.id = eng_term.barra)\n"..
-    "ELSE barras.id END\n"..
-    "barra, componentes.unico componente, barras.terminal, hierarquia.painel, "..
+    "FROM eng_term WHERE barras_esq.id = eng_term.barra)\n"..
+    "ELSE barras_esq.id END\n"..
+    "barra, componentes_esq.unico componente, barras_esq.terminal, hierarquia_esq.painel, "..
     "caixas.id nome_painel\n"..
-    "FROM barras, componentes, hierarquia, caixas\n"..
-    "WHERE componentes.unico = barras.componente AND \n"..
-    "NOT componentes.tipo = 'ENGATE' AND barras.componente = hierarquia.componente\n"..
-    "AND hierarquia.painel = caixas.unico\n"..
+    "FROM barras_esq, componentes_esq, hierarquia_esq, caixas\n"..
+    "WHERE componentes_esq.unico = barras_esq.componente AND \n"..
+    "NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente\n"..
+    "AND hierarquia_esq.painel = caixas.unico\n"..
     "ORDER BY barra ASC\n")
   bd:exec('DROP VIEW IF EXISTS fiacao_interna')
   bd:exec("CREATE VIEW fiacao_interna AS\n"..
@@ -204,52 +204,52 @@ function bd_novo(caminho)
     "ORDER BY barra_consol.barra, barra_consol.nome_painel)\n" ..
     "SELECT interlig1.barra, interlig1.painel p1,\n" ..
     "(SELECT comp_term.componente\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "FROM componentes_esq, hierarquia_esq, barra_consol,\n" ..
     "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
+    "WHERE componentes_esq.unico = barra_consol.componente AND\n" ..
+    "componentes_esq.unico = comp_term.unico AND\n" ..
     "barra_consol.barra = interlig1.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "(componentes_esq.tipo = 'BORNE' OR\n" ..
+    "componentes_esq.tipo = 'BORNE_SEC') AND\n" ..
     "caixas.id = interlig1.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) borne_p1,\n" ..
+    "hierarquia_esq.componente = componentes_esq.unico AND\n" ..
+    "caixas.unico = hierarquia_esq.painel) borne_p1,\n" ..
     "(SELECT comp_term.terminal\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "FROM componentes_esq, hierarquia_esq, barra_consol,\n" ..
     "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
+    "WHERE componentes_esq.unico = barra_consol.componente AND\n" ..
+    "componentes_esq.unico = comp_term.unico AND\n" ..
     "barra_consol.terminal = comp_term.num AND\n" ..
     "barra_consol.barra = interlig1.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "(componentes_esq.tipo = 'BORNE' OR\n" ..
+    "componentes_esq.tipo = 'BORNE_SEC') AND\n" ..
     "caixas.id = interlig1.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) term_p1,\n" ..
+    "hierarquia_esq.componente = componentes_esq.unico AND\n" ..
+    "caixas.unico = hierarquia_esq.painel) term_p1,\n" ..
     "interlig2.painel p2,\n" ..
     "(SELECT comp_term.componente\n" ..
-    "FROM componentes, hierarquia, barra_consol,\n" ..
+    "FROM componentes_esq, hierarquia_esq, barra_consol,\n" ..
     "caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
+    "WHERE componentes_esq.unico = barra_consol.componente AND\n" ..
+    "componentes_esq.unico = comp_term.unico AND\n" ..
     "barra_consol.barra = interlig2.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "(componentes_esq.tipo = 'BORNE' OR\n" ..
+    "componentes_esq.tipo = 'BORNE_SEC') AND\n" ..
     "caixas.id = interlig2.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel) borne_p2,\n" ..
+    "hierarquia_esq.componente = componentes_esq.unico AND\n" ..
+    "caixas.unico = hierarquia_esq.painel) borne_p2,\n" ..
     "(SELECT comp_term.terminal\n" ..
-    "FROM componentes, hierarquia,\n" ..
+    "FROM componentes_esq, hierarquia_esq,\n" ..
     "barra_consol, caixas, comp_term\n" ..
-    "WHERE componentes.unico = barra_consol.componente AND\n" ..
-    "componentes.unico = comp_term.unico AND\n" ..
+    "WHERE componentes_esq.unico = barra_consol.componente AND\n" ..
+    "componentes_esq.unico = comp_term.unico AND\n" ..
     "barra_consol.terminal = comp_term.num AND\n" ..
     "barra_consol.barra = interlig2.barra AND\n" ..
-    "(componentes.tipo = 'BORNE' OR\n" ..
-    "componentes.tipo = 'BORNE_SEC') AND\n" ..
+    "(componentes_esq.tipo = 'BORNE' OR\n" ..
+    "componentes_esq.tipo = 'BORNE_SEC') AND\n" ..
     "caixas.id = interlig2.painel AND\n" ..
-    "hierarquia.componente = componentes.unico AND\n" ..
-    "caixas.unico = hierarquia.painel)term_p2\n" ..
+    "hierarquia_esq.componente = componentes_esq.unico AND\n" ..
+    "caixas.unico = hierarquia_esq.painel)term_p2\n" ..
     "FROM cte_interlig interlig1\n" ..
     "JOIN cte_interlig interlig2 ON\n" ..
     "interlig1.barra = interlig2.barra AND p1 > p2\n"..
@@ -259,14 +259,14 @@ function bd_novo(caminho)
     "WITH cte_eng AS (select *, ROW_NUMBER() OVER (PARTITION BY desenho\n"..
     "ORDER BY ini, folha) e_num\n"..
     "FROM (WITH cte_engate AS (\n"..
-    "SELECT engates.unico unico, engates.engate engate,\n"..
+    "SELECT engates_esq.unico unico, engates_esq.engate engate,\n"..
     "(SELECT desenhos.ident FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
+    "WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n"..
     "(SELECT desenhos.fl FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
-    "FROM engates, hierarquia\n"..
-    "WHERE engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
+    "WHERE desenhos.unico = hierarquia_esq.desenho) folha\n"..
+    "FROM engates_esq, hierarquia_esq\n"..
+    "WHERE engates_esq.unico = hierarquia_esq.componente\n"..
+    "ORDER BY engates_esq.engate, desenho ASC, folha ASC)\n"..
     "SELECT num, engate, unico, desenho, folha,\n"..
     "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
     "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
@@ -293,14 +293,14 @@ function bd_novo(caminho)
     "UNION\n"..
     "SELECT *, 0 e_num\n"..
     "FROM (WITH cte_engate AS (\n"..
-    "SELECT engates.unico unico, engates.engate engate,\n"..
+    "SELECT engates_esq.unico unico, engates_esq.engate engate,\n"..
     "(SELECT desenhos.ident FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) desenho,\n"..
+    "WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n"..
     "(SELECT desenhos.fl FROM desenhos\n"..
-    "WHERE desenhos.unico = hierarquia.desenho) folha\n"..
-    "FROM engates, hierarquia\n"..
-    "WHERE engates.unico = hierarquia.componente\n"..
-    "ORDER BY engates.engate, desenho ASC, folha ASC)\n"..
+    "WHERE desenhos.unico = hierarquia_esq.desenho) folha\n"..
+    "FROM engates_esq, hierarquia_esq\n"..
+    "WHERE engates_esq.unico = hierarquia_esq.componente\n"..
+    "ORDER BY engates_esq.engate, desenho ASC, folha ASC)\n"..
     "SELECT num, engate, unico, desenho, folha,\n"..
     "CASE WHEN prox THEN prox ELSE ant END AS par,\n"..
     "CASE WHEN ant IS NULL THEN 1 WHEN prox THEN 1 ELSE 0 END AS ini\n"..
@@ -341,47 +341,47 @@ function bd_novo(caminho)
     "ORDER BY eng.desenho, eng.folha")
   bd:exec('DROP VIEW IF EXISTS descr_comp')
   bd:exec("CREATE VIEW descr_comp AS\n"..
-    "SELECT componentes.unico,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.painel) painel,\n" ..
-    "(SELECT CASE WHEN hierarquia.pai\n" ..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.pai)\n" ..
-    "ELSE componentes.id\n" ..
+    "SELECT componentes_esq.unico,\n" ..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.painel) painel,\n" ..
+    "(SELECT CASE WHEN hierarquia_esq.pai\n" ..
+    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n" ..
+    "ELSE componentes_esq.id\n" ..
     "END) componente,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia.modulo) modulo,\n" ..
-    "(SELECT CASE WHEN hierarquia.pai\n" ..
-    "THEN componentes.id\n" ..
-    "END) parte, componentes.tipo,\n" ..
-    "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia.desenho) desenho,\n" ..
-    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia.desenho) fl\n" ..
-    "FROM componentes, hierarquia \n" ..
-    "WHERE componentes.unico = hierarquia.componente AND NOT componentes.tipo = 'ENGATE'\n" ..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia.desenho ASC, componentes.x ASC, componentes.y ASC;")
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n" ..
+    "(SELECT CASE WHEN hierarquia_esq.pai\n" ..
+    "THEN componentes_esq.id\n" ..
+    "END) parte, componentes_esq.tipo,\n" ..
+    "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n" ..
+    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl\n" ..
+    "FROM componentes_esq, hierarquia_esq \n" ..
+    "WHERE componentes_esq.unico = hierarquia_esq.componente AND NOT componentes_esq.tipo = 'ENGATE'\n" ..
+    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, componentes_esq.x ASC, componentes_esq.y ASC;")
   bd:close()
   return true
 end
 
 function deleta_arq_db(bd, arquivo)
-  local comando = "DELETE FROM engates\n" ..
-    "WHERE engates.unico IN (\n" ..
+  local comando = "DELETE FROM engates_esq\n" ..
+    "WHERE engates_esq.unico IN (\n" ..
     "SELECT unico\n" ..
-    "FROM componentes\n" ..
-    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+    "FROM componentes_esq\n" ..
+    "WHERE componentes_esq.arquivo = '" .. arquivo .. "');"
 
   bd:exec(comando)
     
-  comando = "DELETE FROM barras\n" ..
-    "WHERE barras.componente IN (\n" ..
+  comando = "DELETE FROM barras_esq\n" ..
+    "WHERE barras_esq.componente IN (\n" ..
     "SELECT unico\n" ..
-    "FROM componentes\n" ..
-    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+    "FROM componentes_esq\n" ..
+    "WHERE componentes_esq.arquivo = '" .. arquivo .. "');"
 
   bd:exec(comando)
     
-  comando = "DELETE FROM terminais\n" ..
-    "WHERE terminais.componente IN (\n" ..
+  comando = "DELETE FROM terminais_esq\n" ..
+    "WHERE terminais_esq.componente IN (\n" ..
     "SELECT unico\n" ..
-    "FROM componentes\n" ..
-    "WHERE componentes.arquivo = '" .. arquivo .. "');"
+    "FROM componentes_esq\n" ..
+    "WHERE componentes_esq.arquivo = '" .. arquivo .. "');"
 
   bd:exec(comando)
     
@@ -393,8 +393,8 @@ function deleta_arq_db(bd, arquivo)
 
   bd:exec(comando)
     
-  comando = "DELETE FROM componentes\n" ..
-    "WHERE componentes.arquivo = '" .. arquivo .. "';"
+  comando = "DELETE FROM componentes_esq\n" ..
+    "WHERE componentes_esq.arquivo = '" .. arquivo .. "';"
 
   bd:exec(comando)
     
@@ -413,7 +413,6 @@ end
 
 function atualiza_db(bd, arquivo)
 
-  
   cadzinho.open_drwg (arquivo, true)
   -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
   pelicanu.atualiza_unicos()
@@ -423,8 +422,14 @@ function atualiza_db(bd, arquivo)
   cadzinho.save_drwg (arquivo, true)
   
   local caixas = obtem_caixas()
-  for id, caixa in pairs(caixas) do
+  atualiza_db_caixas(bd, arquivo, caixas)
+  atualiza_db_esq(bd, arquivo, caixas)
+  
+end
 
+function atualiza_db_caixas (bd, arquivo, caixas)
+
+  for id, caixa in pairs(caixas) do
     local pai = id
     if type(pai) == 'number' then
       pai = string.format('%d', pai)
@@ -435,46 +440,7 @@ function atualiza_db(bd, arquivo)
     for el_id, _ in pairs(caixa.conteudo) do
       local el = pelicanu.elems[el_id]
 
-      if el.tipo == "COMPONENTE" then
-        local terms = info_terminais (el.ent)
-        local bloco = cadzinho.get_blk_name (el.ent)
-        local dados = cadzinho.get_ins_data (el.ent)
-        if not bloco then bloco = 'NULL'
-        else bloco = "'"..bloco.."'" end
-        local comp_id = pega_comp_id(el.ent)
-        if not comp_id then comp_id = 'NULL'
-        elseif string.len(comp_id) == 0 then comp_id = 'NULL'
-        else comp_id = "'"..comp_id.."'" end
-        local comp_tipo = pega_comp_tipo(el.ent)
-        if not comp_tipo then comp_tipo = 'NULL'
-        else comp_tipo = "'"..comp_tipo.."'" end
-
-        
-        bd:exec ("INSERT INTO componentes VALUES("..
-          string.format('%d', el_id) ..", "..
-          comp_tipo ..", "..
-          bloco ..", "..
-          comp_id ..", "..
-          pai..", "..
-          string.format('%f', dados.pt.x) .. ", "..
-          string.format('%f', dados.pt.y) ..
-          ", '".. arquivo .. "'" ..
-          ");")
-        for t_id, t in pairs(terms) do
-          bd:exec ("INSERT INTO terminais VALUES("..
-            string.format('%d', el_id) ..", "..
-            string.format('%d', t_id) ..", '"..
-            t .."');")
-        end
-
-        if comp_tipo == "'ENGATE'" then
-          local engate = pega_engate(el.ent)
-          if not engate then engate = 'NULL'
-          else engate = "'"..engate.."'" end
-          bd:exec ("INSERT INTO engates VALUES("..
-          string.format('%d', el_id) ..", "..engate..")")
-        end
-      elseif el.tipo == "CAIXA" then
+      if el.tipo == "CAIXA" then
         local sub_caixa = caixas[el_id]
         if sub_caixa then
           local nome = sub_caixa.nome
@@ -544,8 +510,88 @@ function atualiza_db(bd, arquivo)
       
     end
   end
+end
+
+function atualiza_db_esq(bd, arquivo, caixas)
   
-  local barras = obtem_barras()
+  local fila = nova_fila()
+  local desenhos = obtem_desenhos (caixas, {'ESQUEM', 'FUNCIONA', 'TRIFIL'})
+  
+  for id, desenho in pairs(desenhos) do
+    -- insere a desenho na fila de caixas
+    desenho.id = id
+    fila.insere(desenho)
+  end
+  
+  -- processa a fila de caixas
+  local caixa = fila.remove()
+  while caixa do
+    local pai = caixa.id
+    if type(pai) == 'number' then
+      pai = string.format('%d', pai)
+    else
+      pai = '0'
+    end
+    if not pai then pai = 'NULL' end
+    -- varre o conteúdo do caixa corrente
+    for el_id, _ in pairs(caixa.conteudo) do
+      local el = pelicanu.elems[el_id]
+
+      if el.tipo == "COMPONENTE" then
+        local terms = info_terminais (el.ent)
+        local bloco = cadzinho.get_blk_name (el.ent)
+        local dados = cadzinho.get_ins_data (el.ent)
+        if not bloco then bloco = 'NULL'
+        else bloco = "'"..bloco.."'" end
+        local comp_id = pega_comp_id(el.ent)
+        if not comp_id then comp_id = 'NULL'
+        elseif string.len(comp_id) == 0 then comp_id = 'NULL'
+        else comp_id = "'"..comp_id.."'" end
+        local comp_tipo = pega_comp_tipo(el.ent)
+        if not comp_tipo then comp_tipo = 'NULL'
+        else comp_tipo = "'"..comp_tipo.."'" end
+        
+        bd:exec ("INSERT INTO componentes_esq VALUES("..
+          string.format('%d', el_id) ..", "..
+          comp_tipo ..", "..
+          bloco ..", "..
+          comp_id ..", "..
+          pai..", "..
+          string.format('%f', dados.pt.x) .. ", "..
+          string.format('%f', dados.pt.y) ..
+          ", '".. arquivo .. "'" ..
+          ");")
+        for t_id, t in pairs(terms) do
+          bd:exec ("INSERT INTO terminais_esq VALUES("..
+            string.format('%d', el_id) ..", "..
+            string.format('%d', t_id) ..", '"..
+            t .."');")
+        end
+
+        if comp_tipo == "'ENGATE'" then
+          local engate = pega_engate(el.ent)
+          if not engate then engate = 'NULL'
+          else engate = "'"..engate.."'" end
+          bd:exec ("INSERT INTO engates_esq VALUES("..
+          string.format('%d', el_id) ..", "..engate..")")
+        end
+      elseif el.tipo == "CAIXA" then
+        local sub_caixa = caixas[el_id]
+        if sub_caixa then
+          -- insere a sub_caixa na fila de caixas
+          sub_caixa.id = el_id
+          fila.insere(sub_caixa)
+        end
+      end
+      
+    end
+    
+    -- pega a próxima caixa da fila
+    caixa = fila.remove()
+  end
+  
+  -- obtem as barras (ligações do desenho)
+  local barras = obtem_barras(desenhos, caixas)
 
   for i, barra in pairs(barras) do
     if not barra.id then
@@ -554,14 +600,14 @@ function atualiza_db(bd, arquivo)
 
     for j, term in ipairs(barra.terminais) do
 
-      bd:exec ("INSERT INTO barras VALUES('"..
+      bd:exec ("INSERT INTO barras_esq VALUES('"..
         barra.id .."', "..
         string.format('%d', term.comp) ..", "..
         string.match(term.term, "^T(%d)")..
         ");")
     end
   end
-
+  
 end
 
 function atualiza_lista_arq_bd (bd, lista_arq)

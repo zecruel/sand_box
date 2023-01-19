@@ -855,7 +855,7 @@ function obtem_caixas()
   -- atualiza a lista principal com os elementos
   --pelicanu.atualiza_elems()
   
-  -- caixa "desenho" para armazenar os elementos órfãos
+  -- caixa "ARQUIVO" para armazenar os elementos órfãos
   caixa = {}
   conteudo = pelicanu.conteudo_todo()
   caixa['nome'] = ""
@@ -903,26 +903,50 @@ function obtem_caixas()
   return caixas
 end
 
-function obtem_barras ()
+function obtem_barras (desenhos, caixas)
   local componentes = {}
   local fios = {}
   local barras = {}
+  local fila = nova_fila()
   
-  -- varre os elementos, cadastrando os componentes e os fios
-  for el_id, el in pairs(pelicanu.elems) do
-    if el.tipo == "COMPONENTE" then
-      local componente = {}
-      componente.el = el
-      componente.term =  pega_terminais (el.ent)
-      componente.conexoes = {}
-      componente.bloco = cadzinho.get_blk_name (el.ent)
-      componentes[el_id] = componente
-    elseif el.tipo == "LIGACAO" then
-      local fio = {}
-      fio.el = el
-      fio.pontos = cadzinho.get_points(el.ent)
-      fios[el_id] = fio
+  for id, desenho in pairs(desenhos) do
+    -- insere a desenho na fila de caixas
+    desenho.id = id
+    fila.insere(desenho)
+  end
+  
+  -- processa a fila de caixas
+  local caixa = fila.remove()
+  while caixa do
+    -- varre o conteúdo do caixa corrente
+    for el_id, _ in pairs(caixa.conteudo) do
+      local el = pelicanu.elems[el_id]
+      
+      if el.tipo == "CAIXA" then
+        local sub_caixa = caixas[el_id]
+        if sub_caixa then
+          -- insere a sub_caixa na fila de caixas
+          sub_caixa.id = el_id
+          fila.insere(sub_caixa)
+        end
+      -- cadastra os componentes e os fios
+      elseif el.tipo == "COMPONENTE" then
+        local componente = {}
+        componente.el = el
+        componente.term =  pega_terminais (el.ent)
+        componente.conexoes = {}
+        componente.bloco = cadzinho.get_blk_name (el.ent)
+        componentes[el_id] = componente
+      elseif el.tipo == "LIGACAO" then
+        local fio = {}
+        fio.el = el
+        fio.pontos = cadzinho.get_points(el.ent)
+        fios[el_id] = fio
+      end
+      
     end
+    -- pega a próxima caixa da fila
+    caixa = fila.remove()
   end
   
   -- varre os componentes para cadastrar as conexoes dos terminais e fios
@@ -1004,11 +1028,12 @@ function obtem_barras ()
   return barras
 end
 
-function obtem_desenhos (tipo)
+
+function obtem_desenhos (caixas, tipos)
   local desenhos = {}
-  if type(tipo) ~= 'string' then return desenhos end
+  if type(tipos) ~= 'table' then return desenhos end
   
-  local caixas = obtem_caixas()
+  --local caixas = obtem_caixas()
   for id, caixa in pairs(caixas) do
     for el_id, _ in pairs(caixa.conteudo) do
       local el = pelicanu.elems[el_id]
@@ -1017,8 +1042,11 @@ function obtem_desenhos (tipo)
         if sub_caixa then
           if sub_caixa.tipo == "DESENHO" then
             local dados = pega_attrib(el.ent)
-            if string.find(string.upper(dados.tipo), tipo) then
-              desenhos[el_id] = sub_caixa
+            local des_tipo = string.upper(dados.tipo)
+            for _, tipo in pairs(tipos) do
+              if string.find(des_tipo, tipo) then
+                desenhos[el_id] = sub_caixa
+              end
             end
           end
         end
@@ -1028,162 +1056,6 @@ function obtem_desenhos (tipo)
   return desenhos
 end
 
-function teste()
-  cadzinho.db_print ("Teste de criacao de banco de dados")
-  
-  -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-  pelicanu.atualiza_unicos()
-  -- atualiza a lista principal com os elementos
-  pelicanu.atualiza_elems()
-  
-  bd_novo('pelicanu.db')
-  local bd = sqlite.open('pelicanu.db')
-  local caixas = obtem_caixas()
-  for id, caixa in pairs(caixas) do
-    --cadzinho.db_print (caixa.nome)
-    local pai = id
-    if type(pai) == 'number' then
-      pai = string.format('%d', pai)
-    else
-      pai = '0'
-    end
-    if not pai then pai = 'NULL' end
-    for el_id, _ in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
-      --cadzinho.db_print ("    " .. el.tipo)
-      if el.tipo == "COMPONENTE" then
-        local terms = info_terminais (el.ent)
-        local bloco = cadzinho.get_blk_name (el.ent)
-        local dados = cadzinho.get_ins_data (el.ent)
-        if not bloco then bloco = 'NULL'
-        else bloco = "'"..bloco.."'" end
-        local comp_id = pega_comp_id(el.ent)
-        if not comp_id then comp_id = 'NULL'
-        elseif string.len(comp_id) == 0 then comp_id = 'NULL'
-        else comp_id = "'"..comp_id.."'" end
-        local comp_tipo = pega_comp_tipo(el.ent)
-        if not comp_tipo then comp_tipo = 'NULL'
-        else comp_tipo = "'"..comp_tipo.."'" end
-        --cadzinho.db_print ("    " .. bloco, comp_id)
-        
-        bd:exec ("INSERT INTO componentes VALUES("..
-          string.format('%d', el_id) ..", "..
-          comp_tipo ..", "..
-          bloco ..", "..
-          comp_id ..", "..
-          pai..", "..
-          string.format('%f', dados.pt.x) ..", "..
-          string.format('%f', dados.pt.y) ..
-          ");")
-        for t_id, t in pairs(terms) do
-          bd:exec ("INSERT INTO terminais VALUES("..
-            string.format('%d', el_id) ..", "..
-            string.format('%d', t_id) ..", '"..
-            t .."');")
-        end
-
-        if comp_tipo == "'ENGATE'" then
-          local engate = pega_engate(el.ent)
-          if not engate then engate = 'NULL'
-          else engate = "'"..engate.."'" end
-          bd:exec ("INSERT INTO engates VALUES("..
-          string.format('%d', el_id) ..", "..engate..")")
-        end
-      elseif el.tipo == "CAIXA" then
-        local sub_caixa = caixas[el_id]
-        if sub_caixa then
-          local nome = sub_caixa.nome
-          if not nome then nome = 'NULL' end
-          local tipo = sub_caixa.tipo
-          if not tipo then tipo = 'NULL' end
-          --cadzinho.db_print ("    " .. nome, tipo)
-          
-          bd:exec ("INSERT INTO caixas VALUES("..
-            string.format('%d', el_id) ..", '"..
-            nome .."', '"..
-            tipo .."', "..
-            pai..
-          ");")
-
-          if sub_caixa.tipo == "DESENHO" then
-            local dados = pega_attrib(el.ent)
-            if dados.ident then dados.ident = "'" .. dados.ident .. "'" 
-            else dados.ident = 'NULL' end
-            if dados.titulo then dados.titulo = "'" .. dados.titulo .. "'" 
-            else dados.titulo = 'NULL' end
-            if dados.tipo then dados.tipo = "'" .. dados.tipo .. "'" 
-            else dados.tipo = 'NULL' end
-            if dados.projeto then dados.projeto = "'" .. dados.projeto .. "'" 
-            else dados.projeto = 'NULL' end
-            if dados.rev then dados.rev = "'" .. dados.rev .. "'" 
-            else dados.rev = 'NULL' end
-            if dados.versao then dados.versao = "'" .. dados.versao .. "'" 
-            else dados.versao = 'NULL' end
-            if dados.fl then dados.fl = "'" .. dados.fl .. "'" 
-            else dados.fl = 'NULL' end
-            if dados.data then dados.data = "'" .. dados.data .. "'" 
-            else dados.data = 'NULL' end
-            if dados.aplic then dados.aplic = "'" .. dados.aplic .. "'" 
-            else dados.aplic = 'NULL' end
-            if dados.instal then dados.instal = "'" .. dados.instal .. "'" 
-            else dados.instal = 'NULL' end
-            if dados.visto then dados.visto = "'" .. dados.visto .. "'" 
-            else dados.visto = 'NULL' end
-            if dados.aprov then dados.aprov = "'" .. dados.aprov .. "'" 
-            else dados.aprov = 'NULL' end
-            if dados.classif then dados.classif = "'" .. dados.classif .. "'" 
-            else dados.classif = 'NULL' end
-            if dados.p_fl then dados.p_fl = "'" .. dados.p_fl .. "'" 
-            else dados.p_fl = 'NULL' end
-            bd:exec ("INSERT INTO desenhos VALUES("..
-             string.format('%d', el_id) ..", "..
-             dados.ident ..", "..
-             dados.titulo ..", "..
-             dados.tipo ..", "..
-             dados.projeto ..", "..
-             dados.rev ..", "..
-             dados.versao ..", "..
-             dados.fl ..", "..
-             dados.data ..", "..
-             dados.aplic ..", "..
-             dados.instal ..", "..
-             dados.visto ..", "..
-             dados.aprov ..", "..
-             dados.classif ..", "..
-             dados.p_fl ..
-            ");")
-          end
-        end
-      end
-      
-    end
-  end
-  
-  
-  
-  
-  local barras = obtem_barras()
-  --cadzinho.db_print ("Num barras=", #barras)
-  for i, barra in pairs(barras) do
-    if not barra.id then
-      barra.id = cadzinho.unique_id()
-    end
-    --cadzinho.db_print ("Barra", i, "fios=", #barra.fios)
-    for j, term in ipairs(barra.terminais) do
-      --cadzinho.db_print ("  " .. string.format('%x', term.comp), term.term)
-      bd:exec ("INSERT INTO barras VALUES('"..
-        barra.id .."', "..
-        string.format('%d', term.comp) ..", "..
-        string.match(term.term, "^T(%d)")..
-        ");")
-    end
-  end
-  
-  
-  --
-  bd:close()
-  cadzinho.db_print ("----- Teste concluido  ------")
-end
 
 function grava_pl_comp ()
   cadzinho.db_print ("----- Grava componentes  ------")
@@ -1369,13 +1241,13 @@ function le_pl_comp()
       if lin ~= 1 then -- ignora a primeira linha com o titulo
         local unico = tonumber(pl_comp.data[lin]['A'],16) -- coluna A eh o id unico
         -- atualiza o banco de dados com as informacoes lidas
-        bd:exec("UPDATE terminais SET terminal = '" ..
+        bd:exec("UPDATE terminais_esq SET terminal = '" ..
           tostring(pl_comp.data[lin]['H']) ..
           "' WHERE componente = " .. string.format('%d', unico) ..
           " AND id = " .. tostring(pl_comp.data[lin]['G']) .. ";")
 
         if pl_comp.data[lin]['E'] then
-          bd:exec("UPDATE componentes SET id = '" ..
+          bd:exec("UPDATE componentes_esq SET id = '" ..
           tostring(pl_comp.data[lin]['E']) ..
           "' WHERE unico = " .. string.format('%d', unico) .. ";")
         end

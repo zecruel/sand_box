@@ -124,6 +124,7 @@ function projeto_dyn (event)
       
         local arqs_mod = {} -- arquivos que foram modificados desde a última atualização
         local arqs_bd = {} -- registro dos arquivos antigos
+        local arqs_del = 0
         
         -- lê a estrutura atual da pasta de projeto
         local lista_arq = lista_proj()
@@ -150,8 +151,8 @@ function projeto_dyn (event)
           
           -- processa primeiro as informações a ser apagados do bd
           for arq,_ in pairs(arqs_bd) do
-            --cadzinho.db_print(arq)
             deleta_arq_db(bd, arq)
+            arqs_del = arqs_del + 1
           end
           
           -- Processa os arquivos modificados
@@ -165,13 +166,26 @@ function projeto_dyn (event)
           
           bd:close()
           msg = 'Concluído: ' .. #arqs_mod .. ' desenhos'
+          
+          local arq_log = io.open(projeto.log, 'a+')
+          if arq_log then
+            arq_log:write(os.date('%Y/%m/%d-%H:%M:%S') .. 
+              ' => Atualização do banco de dados- ' .. 
+              #arqs_mod .. ' desenhos modificados e ' ..
+              arqs_del ..' excluídos\n')
+            
+            arq_log:close()
+          end
+          
         else
           msg = 'Erro no banco de dados'
         end
         sub_modal = ''
         
         -- restaura o documento anterior
-        cadzinho.open_drwg (dir .. drwg, true)
+        if drwg ~= '' then
+          cadzinho.open_drwg (dir .. drwg, true)
+        end
         
       end
       if cadzinho.nk_button("Cancela") then
