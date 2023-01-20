@@ -211,12 +211,11 @@ function projeto_dyn (event)
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
-      modal = ''
-      --[[if abre_projeto(g_caminho.value) then
-        modal = ''
+      if not grava_pl_comp () then
+        msg = 'Erro Ger. Planilhas'
       else
-        msg = 'Erro'
-      end]]--
+        modal = ''
+      end
     end
     if cadzinho.nk_button("Cancela") then
       modal = ''
@@ -240,6 +239,8 @@ function projeto_dyn (event)
     if cadzinho.nk_button("Cancela") then
       modal = ''
     end
+    cadzinho.nk_layout(5, 1)
+    cadzinho.nk_layout(15, 1)
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
     
   -- Limpa o banco de dados

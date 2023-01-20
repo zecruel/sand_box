@@ -42,9 +42,9 @@ end
 
 function cria_pasta(caminho)
    if (os.getenv("oS") or ""):match("^Windows") then
-      os.execute('mkdir "' .. caminho .. '" 1>nul: 2>&1')
+      return os.execute('mkdir "' .. caminho .. '" 1>nul: 2>&1')
    else
-      os.execute('mkdir -p "' .. caminho .. '" 2>/dev/null')
+      return os.execute('mkdir -p "' .. caminho .. '" 2>/dev/null')
    end
 end
 

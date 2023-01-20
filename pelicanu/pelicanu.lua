@@ -3,8 +3,7 @@
 -- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
 
 -- ============= variáveis globais =====================
-pelicanu = {}  -- tabela principal
-pelicanu.elems = {} -- lista principal dos elementos
+elems_pelicanu = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
@@ -409,8 +408,8 @@ function dentro_contorno (ent, contorno)
   return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
 end
 
-function pelicanu.atualiza_elems()
-  pelicanu.elems = {}
+function atualiza_elems()
+  elems_pelicanu = {}
   for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
     local ext = cadzinho.get_ext (ent, "PELICANU") -- procura pelo marcador extendido
     if #ext > 0 then
@@ -434,15 +433,15 @@ function pelicanu.atualiza_elems()
       elem.tipo = tipo
       elem.esp = especifico
       
-      pelicanu.elems[unic] = elem -- armazena na lista principal
+      elems_pelicanu[unic] = elem -- armazena na lista principal
     end
   end
 end
 
-function pelicanu.conteudo(id)
+function pega_conteudo(id)
   -- pega o conteudo de uma caixa indicada pelo ID
   
-  local caixa = pelicanu.elems[id] -- busca o elemento da lista principal
+  local caixa = elems_pelicanu[id] -- busca o elemento da lista principal
   if caixa == nil then
     return nil
   end
@@ -463,7 +462,7 @@ function pelicanu.conteudo(id)
   local conteudo = {}
   
   -- varredura em todos elementos
-  for el_id, el in pairs(pelicanu.elems) do
+  for el_id, el in pairs(elems_pelicanu) do
     if el ~= caixa then
       -- verifica se o elemento atual está dentro da caixa
       if dentro_contorno(el.ent, contorno) then
@@ -474,17 +473,17 @@ function pelicanu.conteudo(id)
   return conteudo -- retorna o conteudo da caixa
 end
 
-function pelicanu.conteudo_todo()
+function conteudo_todo()
   -- pega o conteúdo (elementos PELICAnU) do desenho inteiro
   
   local conteudo = {}
-  for el_id in pairs(pelicanu.elems) do
+  for el_id in pairs(elems_pelicanu) do
     conteudo[#conteudo+1] = el_id
   end
   return conteudo
 end
 
-function pelicanu.atualiza_unicos()
+function atualiza_unicos()
   -- atualiza os identificadores únicos nos elementos do desenho
   
   for i, ent in ipairs(cadzinho.get_all()) do -- varre todos os objetos do desenho
@@ -497,12 +496,12 @@ function pelicanu.atualiza_unicos()
   end
 end
 
-function pelicanu.rotulo_caixa(conteudo)
+function rotulo_caixa(conteudo)
   -- busca rotulo da caixa
   
   local rotulo = nil
   for el_id in pairs(conteudo) do -- varredura do conteudo da caixa
-    local el = pelicanu.elems[el_id]
+    local el = elems_pelicanu[el_id]
     if el.tipo == "ROTULO" and el.esp == "CAIXA" then -- se for o tipo procurado
       --pega seu texto (considerando que é uma entidade tipo TEXT)
       rotulo = cadzinho.get_text_data(el.ent)
@@ -851,13 +850,13 @@ function obtem_caixas()
   local conteudo
   
   -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-  --pelicanu.atualiza_unicos()
+  --atualiza_unicos()
   -- atualiza a lista principal com os elementos
-  --pelicanu.atualiza_elems()
+  --atualiza_elems()
   
   -- caixa "ARQUIVO" para armazenar os elementos órfãos
   caixa = {}
-  conteudo = pelicanu.conteudo_todo()
+  conteudo = conteudo_todo()
   caixa['nome'] = ""
   caixa['conteudo'] = SetLib.new(conteudo)
   caixa['filhas'] = {}
@@ -865,10 +864,10 @@ function obtem_caixas()
   caixas[0] = caixa
   
   -- varre os elementos, cadastrando as caixas existentes no desenho
-  for el_id, el in pairs(pelicanu.elems) do
+  for el_id, el in pairs(elems_pelicanu) do
     if el.tipo == "CAIXA" then
       caixa = {}
-      conteudo = pelicanu.conteudo(el_id)
+      conteudo = pega_conteudo(el_id)
       caixa['nome'] = ""
       caixa['conteudo'] = SetLib.new(conteudo)
       caixa['filhas'] = {}
@@ -880,7 +879,7 @@ function obtem_caixas()
   -- repassa as caixas, cadastrando as caixas aninhadas
   for _, caixa in pairs(caixas) do
     for el_id in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
+      local el = elems_pelicanu[el_id]
       if el.tipo == "CAIXA" then
         caixa.filhas[#caixa.filhas+1] = caixas[el_id]
       end
@@ -897,7 +896,7 @@ function obtem_caixas()
   
   -- por fim, pega o nome de cada caixa
   for id, caixa in pairs(caixas) do
-    caixa.nome = pelicanu.rotulo_caixa(caixa.conteudo)
+    caixa.nome = rotulo_caixa(caixa.conteudo)
   end
   
   return caixas
@@ -920,7 +919,7 @@ function obtem_barras (desenhos, caixas)
   while caixa do
     -- varre o conteúdo do caixa corrente
     for el_id, _ in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
+      local el = elems_pelicanu[el_id]
       
       if el.tipo == "CAIXA" then
         local sub_caixa = caixas[el_id]
@@ -1036,7 +1035,7 @@ function obtem_desenhos (caixas, tipos)
   --local caixas = obtem_caixas()
   for id, caixa in pairs(caixas) do
     for el_id, _ in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
+      local el = elems_pelicanu[el_id]
       if el.tipo == "CAIXA" then
         local sub_caixa = caixas[el_id]
         if sub_caixa then
@@ -1056,14 +1055,26 @@ function obtem_desenhos (caixas, tipos)
   return desenhos
 end
 
-
 function grava_pl_comp ()
-  cadzinho.db_print ("----- Grava componentes  ------")
+  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
+  if not exists (saida) then
+    if not cria_pasta(saida) then
+      return false
+    end
+  end
+  
+  local cam_pl = saida .. "componentes.xlsx"
+  
   -- cria o arquivo de planilha
-  os.remove("componentes.xlsx") -- deleta o arquivo existente
-  local planilha = excel:new("componentes.xlsx")
+  if exists (cam_pl) then
+    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
+      return false
+    end
+  end
+  
+  local planilha = excel:new(cam_pl)
   local aba = planilha:add_worksheet("Componentes")
-  --aba:protect() -- aba protegida
+  aba:protect("", {["objects"] = true, ["scenarios"] = true}) -- aba protegida
   local protegido = planilha:add_format({
     border = 1,
     locked = true,
@@ -1123,7 +1134,9 @@ function grava_pl_comp ()
   local painel_ant = nil
   
   -- abre e le o banco de dados
-  local bd = sqlite.open('pelicanu.db')
+  local bd = sqlite.open(projeto.bd)
+  if not bd then return false end
+  
   for linha in bd:cols('select * from comp_term') do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba:write(lin, 0, string.format('%X', linha.unico), protegido)
@@ -1200,9 +1213,123 @@ function grava_pl_comp ()
   bd:close()
   
   planilha:close()
-  cadzinho.db_print ("----- Concluido  ------")
+  return true
 end
 
+function grava_pl_analitica ()
+  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
+  if not exists (saida) then
+    if not cria_pasta(saida) then
+      return false
+    end
+  end
+  
+  local cam_pl = saida .. "analitica.xlsx"
+  
+  -- cria o arquivo de planilha
+  if exists (cam_pl) then
+    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
+      return false
+    end
+  end
+  
+  local planilha = excel:new(cam_pl)
+  local aba_paineis = planilha:add_worksheet("Painéis")
+  --aba_paineis:protect("", {["objects"] = true, ["scenarios"] = true}) -- aba protegida
+  local protegido = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = 'silver',
+    })
+  local desprotegido = planilha:add_format({locked = false, border = 1})
+  
+  local m_p = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = 'silver',
+    valign = "vcenter",
+    })
+  local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
+  
+  -- tamanho das colunas
+  aba_paineis:set_column(0, 0, 20)
+  aba_paineis:set_column(1, 1, 40)
+  aba_paineis:set_column(2, 2, 60)
+  aba_paineis:set_column(3, 3, 11)
+  aba_paineis:set_column(4, 5, 18)
+  
+  -- primeira linha de titulo
+  local tit_p = planilha:add_format({
+    border = 6,
+    locked = true,
+    pattern = 1,
+    bg_color = 'silver',
+    bold = true
+    })
+  local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
+  aba_paineis:write(0, 0, 'Painel', tit_p)
+  aba_paineis:write(0, 1, 'Título', tit_p)
+  aba_paineis:write(0, 2, 'Descr.', tit_p)
+  aba_paineis:write(0, 3, 'Fiação', tit_p)
+  aba_paineis:write(0, 4, 'X', tit_p)
+  aba_paineis:write(0, 5, 'Y', tit_p)
+  
+  local lin = 1
+  
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then return false end
+  
+  local paineis = {}
+  
+  for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
+    -- grava na planilha cada celula separada, a principio
+    aba_paineis:write(lin, 0, linha.painel, protegido)
+    aba_paineis:write(lin, 1, '', desprotegido)
+    aba_paineis:write(lin, 2, '', desprotegido)
+    aba_paineis:write(lin, 3, 'X', desprotegido)
+    aba_paineis:write(lin, 4, '', desprotegido)
+    aba_paineis:write(lin, 5, '', desprotegido)
+    
+    local painel = {}
+    
+    painel.aba = planilha:add_worksheet(linha.painel)
+    painel.aba:set_column(0, 0, 20)
+    painel.aba:set_column(1, 1, 11)
+    painel.aba:set_column(2, 2, 40)
+    painel.aba:write(0, 0, 'Componente', tit_p)
+    painel.aba:write(0, 1, 'Num el', tit_p)
+    painel.aba:write(0, 2, 'Tipos', tit_p)
+    painel.lin = 1
+    
+    paineis[linha.painel] = painel
+    -- proxima linha
+    lin = lin + 1
+  end
+  
+  for linha in bd:cols(
+    'SELECT painel, componente, sum(num) elementos, ' ..
+    'GROUP_CONCAT(tipo, ";") tipos ' ..
+    'FROM ( SELECT painel, componente, tipo, COUNT(tipo) num ' ..
+    'FROM descr_comp GROUP BY painel, componente, tipo) ' ..
+    'GROUP BY painel, componente;'
+  ) do
+    local painel = paineis[linha.painel]
+    painel.aba:write(painel.lin, 0, linha.componente, protegido)
+    painel.aba:write(painel.lin, 1, linha.elementos, protegido)
+    painel.aba:write(painel.lin, 2, linha.tipos, protegido)
+    -- proxima linha
+    paineis[linha.painel].lin = paineis[linha.painel].lin + 1
+  end
+  
+  --
+  bd:close()
+  
+  planilha:close()
+  return true
+end
 
 function le_pl_comp()
   cadzinho.db_print ("----- Atualiza componentes  ------")
@@ -1222,11 +1349,11 @@ function le_pl_comp()
     local bd = sqlite.open('pelicanu.db')
     
     -- atualiza a lista principal com os elementos
-    pelicanu.atualiza_elems()
+    atualiza_elems()
     
     -- cria uma lista com os componentes
     local componentes = {}
-    for el_id, el in pairs(pelicanu.elems) do
+    for el_id, el in pairs(elems_pelicanu) do
       if el.tipo == "COMPONENTE" then
         local componente = {}
         componente.ent = el.ent
@@ -1277,13 +1404,13 @@ end
 
 function atualiza_engates()
   -- atualiza a lista principal com os elementos
-  pelicanu.atualiza_elems()
+  atualiza_elems()
   
   --abre o banco de dados
   local bd = sqlite.open('pelicanu.db')
   for linha in bd:cols('select * from engate_par') do -- para cada linha do BD
     local unico = tonumber(linha.unico)
-  local el = pelicanu.elems[unico]
+  local el = elems_pelicanu[unico]
   local num = 'E' .. linha.e_num
   local des = linha.vai_des
   local fl = linha.vai_fl
@@ -1423,7 +1550,7 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button(" Análise") then
-    
+    grava_pl_analitica ()
   end
   if cadzinho.nk_button(" Biblioteca") then
     modal = ''

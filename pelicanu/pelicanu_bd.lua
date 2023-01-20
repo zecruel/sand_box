@@ -415,9 +415,9 @@ function atualiza_db(bd, arquivo)
 
   cadzinho.open_drwg (arquivo, true)
   -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-  pelicanu.atualiza_unicos()
+  atualiza_unicos()
   -- atualiza a lista principal com os elementos
-  pelicanu.atualiza_elems()
+  atualiza_elems()
   
   cadzinho.save_drwg (arquivo, true)
   
@@ -438,7 +438,7 @@ function atualiza_db_caixas (bd, arquivo, caixas)
     end
     if not pai then pai = 'NULL' end
     for el_id, _ in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
+      local el = elems_pelicanu[el_id]
 
       if el.tipo == "CAIXA" then
         local sub_caixa = caixas[el_id]
@@ -535,7 +535,7 @@ function atualiza_db_esq(bd, arquivo, caixas)
     if not pai then pai = 'NULL' end
     -- varre o conteúdo do caixa corrente
     for el_id, _ in pairs(caixa.conteudo) do
-      local el = pelicanu.elems[el_id]
+      local el = elems_pelicanu[el_id]
 
       if el.tipo == "COMPONENTE" then
         local terms = info_terminais (el.ent)
