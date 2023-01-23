@@ -8,6 +8,9 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS arquivos')
     bd:exec('CREATE TABLE arquivos('..
     'caminho TEXT, modificado INTEGER)')
+  bd:exec('DROP TABLE IF EXISTS paineis')
+  bd:exec('CREATE TABLE paineis('..
+    'id TEXT, titulo TEXT, descr TEXT, fiacao INTEGER, x REAL, y REAL)')
   bd:exec('DROP TABLE IF EXISTS componentes_esq')
   bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..

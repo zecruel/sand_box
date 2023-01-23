@@ -1216,6 +1216,57 @@ function grava_pl_comp ()
   return true
 end
 
+function estima_tipo_comp (elementos)
+  local tipo = 0
+  
+  for el in string.gmatch(elementos, "[^;]+") do
+    if el == 'DIODO' then
+      tipo = tipo | 1
+    elseif el == 'BORNE_SEC' or el == 'BORNE' then
+      tipo = tipo | 2
+    elseif el == 'MINI_DISJ' then
+      tipo = tipo | 4
+    elseif el == 'CT_TENSAO' or el == 'CT_CORR' then
+      tipo = tipo | 8
+    
+    elseif el == 'CONTATO_NA' or el == 'CONTATO_NF' then
+      tipo = tipo | 16
+      
+    elseif el == 'BOBINA' then
+      tipo = tipo | 32
+    
+    elseif el == 'ALIM_CC' then
+      tipo = tipo | 64
+    
+    elseif el == 'ENT_DIG' or el == 'SAIDA_DIG' then
+      tipo = tipo | 128
+    end
+  end
+  
+  local ret = 'DESCONHECIDO'
+  if tipo == 0 then
+    ret = 'DESCONHECIDO'
+  elseif tipo == 1 then
+    ret = 'DIODO'
+  elseif tipo == 2 then
+    ret = 'RÉGUA'
+  elseif tipo == 4 or tipo == 20 then
+    ret = 'MINI DJ'
+  elseif tipo == 8 then
+    ret = 'CHAVE TESTE'
+  elseif tipo == 16 then
+    ret = 'CONTATO EXTERNO'
+  elseif tipo > 16 and tipo < 64 then
+    ret = 'RELÉ AUX'
+  elseif tipo >= 64 and tipo < 226 then
+    ret = 'IED'
+  else
+    ret = 'ERRO'
+  end
+  
+  return ret
+end
+
 function grava_pl_analitica ()
   local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
   if not exists (saida) then
@@ -1276,7 +1327,7 @@ function grava_pl_analitica ()
   aba_paineis:write(0, 4, 'X', tit_p)
   aba_paineis:write(0, 5, 'Y', tit_p)
   
-  local lin = 1
+  
   
   -- abre e le o banco de dados
   local bd = sqlite.open(projeto.bd)
@@ -1284,27 +1335,46 @@ function grava_pl_analitica ()
   
   local paineis = {}
   
+  
   for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
+    paineis[linha.painel] = 1
+  end
+  
+  for painel, _ in pairs(paineis) do
+    bd:exec (
+    "INSERT INTO paineis(id, titulo, descr, fiacao, x, y)" .. 
+    "SELECT '"..painel.."', NULL, NULL, 1, 0, 0 WHERE NOT EXISTS"..
+    "(SELECT 1 FROM paineis WHERE id = '"..painel.."');")
+  
+  end
+  
+  local lin = 1
+  
+  for linha in bd:cols('SELECT * FROM paineis ORDER BY id') do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
-    aba_paineis:write(lin, 0, linha.painel, protegido)
-    aba_paineis:write(lin, 1, '', desprotegido)
-    aba_paineis:write(lin, 2, '', desprotegido)
-    aba_paineis:write(lin, 3, 'X', desprotegido)
-    aba_paineis:write(lin, 4, '', desprotegido)
-    aba_paineis:write(lin, 5, '', desprotegido)
+    aba_paineis:write(lin, 0, linha.id, protegido)
+    aba_paineis:write(lin, 1, linha.titulo, desprotegido)
+    aba_paineis:write(lin, 2, linha.descr, desprotegido)
+    if linha.fiacao > 0 then
+      aba_paineis:write(lin, 3, 'X', desprotegido)
+    else
+      aba_paineis:write(lin, 3, '', desprotegido)
+    end
+    aba_paineis:write(lin, 4, linha.x, desprotegido)
+    aba_paineis:write(lin, 5, linha.y, desprotegido)
     
     local painel = {}
     
-    painel.aba = planilha:add_worksheet(linha.painel)
+    painel.aba = planilha:add_worksheet(linha.id)
     painel.aba:set_column(0, 0, 20)
-    painel.aba:set_column(1, 1, 11)
-    painel.aba:set_column(2, 2, 40)
+    painel.aba:set_column(1, 1, 40)
+    --painel.aba:set_column(2, 2, 11)
     painel.aba:write(0, 0, 'Componente', tit_p)
-    painel.aba:write(0, 1, 'Num el', tit_p)
-    painel.aba:write(0, 2, 'Tipos', tit_p)
+    painel.aba:write(0, 1, 'Tipo', tit_p)
+    --painel.aba:write(0, 2, 'Num el', tit_p)
     painel.lin = 1
     
-    paineis[linha.painel] = painel
+    paineis[linha.id] = painel
     -- proxima linha
     lin = lin + 1
   end
@@ -1317,9 +1387,13 @@ function grava_pl_analitica ()
     'GROUP BY painel, componente;'
   ) do
     local painel = paineis[linha.painel]
+    
+    local tipo = estima_tipo_comp (linha.tipos)
+    
     painel.aba:write(painel.lin, 0, linha.componente, protegido)
-    painel.aba:write(painel.lin, 1, linha.elementos, protegido)
-    painel.aba:write(painel.lin, 2, linha.tipos, protegido)
+    painel.aba:write(painel.lin, 1, tipo, desprotegido)
+    --painel.aba:write(painel.lin, 2, linha.elementos, protegido)
+    
     -- proxima linha
     paineis[linha.painel].lin = paineis[linha.painel].lin + 1
   end
