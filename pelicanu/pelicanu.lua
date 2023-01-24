@@ -88,6 +88,17 @@ g_fmt_pfl = {value = "1"}
 
 excel = require "xlsxwriter.workbook"
 
+cores_claras = {
+  [1] = '#FFBC37', -- laranja
+  [2] = '#66FF66', -- verde
+  [3] = '#FF7C80', -- vermelho
+  [4] = '#66CCFF', -- azul
+  [5] = '#CC66FF', -- roxo
+  [6] = '#FFFF66', -- amarelo
+  [7] = '#C68C52', -- marrom
+  [8] = '#DDDDDD' -- cinza
+}
+
 -- ============================================
 
 
@@ -1079,7 +1090,7 @@ function grava_pl_comp ()
     border = 1,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     })
   local desprotegido = planilha:add_format({locked = false, border = 1})
   
@@ -1087,7 +1098,7 @@ function grava_pl_comp ()
     border = 1,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     valign = "vcenter",
     })
   local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
@@ -1106,7 +1117,7 @@ function grava_pl_comp ()
     border = 6,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     bold = true
     })
   local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
@@ -1268,30 +1279,41 @@ function estima_tipo_comp (elementos)
 end
 
 function grava_pl_analitica ()
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+  
+  local cor = 1
+  
+  -- verifica se há necessidade de criar a pasta de saída
   local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
   if not exists (saida) then
     if not cria_pasta(saida) then
-      return false
+      return false -- erro com a pasta de saída
     end
   end
   
-  local cam_pl = saida .. "analitica.xlsx"
-  
   -- cria o arquivo de planilha
-  if exists (cam_pl) then
+  local cam_pl = saida .. "analitica.xlsx"
+  if exists (cam_pl) then -- se há um arquivo antigo
     if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
-      return false
+      return false -- erro ao apagar o arquivo antigo
     end
   end
   
   local planilha = excel:new(cam_pl)
+  if not planilha then return false end -- erro na criacao da planilha
+  
+  -- cria a primeira aba, listando os painéis
   local aba_paineis = planilha:add_worksheet("Painéis")
   --aba_paineis:protect("", {["objects"] = true, ["scenarios"] = true}) -- aba protegida
   local protegido = planilha:add_format({
     border = 1,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     })
   local desprotegido = planilha:add_format({locked = false, border = 1})
   
@@ -1299,7 +1321,7 @@ function grava_pl_analitica ()
     border = 1,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     valign = "vcenter",
     })
   local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
@@ -1311,12 +1333,12 @@ function grava_pl_analitica ()
   aba_paineis:set_column(3, 3, 11)
   aba_paineis:set_column(4, 5, 18)
   
-  -- primeira linha de titulo
+  -- primeira linha como titulo
   local tit_p = planilha:add_format({
     border = 6,
     locked = true,
     pattern = 1,
-    bg_color = 'silver',
+    bg_color = '#D8E4BC',
     bold = true
     })
   local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
@@ -1326,20 +1348,15 @@ function grava_pl_analitica ()
   aba_paineis:write(0, 3, 'Fiação', tit_p)
   aba_paineis:write(0, 4, 'X', tit_p)
   aba_paineis:write(0, 5, 'Y', tit_p)
+  aba_paineis:set_tab_color('red')
   
-  
-  
-  -- abre e le o banco de dados
-  local bd = sqlite.open(projeto.bd)
-  if not bd then return false end
-  
+  -- obtém a lista de painéis efetivamente utilizados no banco de dados
   local paineis = {}
-  
-  
   for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
     paineis[linha.painel] = 1
   end
   
+  -- atualiza a tabela do bd com o descritivo dos painéis (acrescenta os novos)
   for painel, _ in pairs(paineis) do
     bd:exec (
     "INSERT INTO paineis(id, titulo, descr, fiacao, x, y)" .. 
@@ -1348,8 +1365,9 @@ function grava_pl_analitica ()
   
   end
   
+  -- grava na planilha a lista atualizada de painéis
   local lin = 1
-  
+  paineis = {}
   for linha in bd:cols('SELECT * FROM paineis ORDER BY id') do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba_paineis:write(lin, 0, linha.id, protegido)
@@ -1364,21 +1382,40 @@ function grava_pl_analitica ()
     aba_paineis:write(lin, 5, linha.y, desprotegido)
     
     local painel = {}
-    
+    -- adiciona uma aba para cada painel
     painel.aba = planilha:add_worksheet(linha.id)
+    painel.aba:set_tab_color(cores_claras[cor])
     painel.aba:set_column(0, 0, 20)
     painel.aba:set_column(1, 1, 40)
-    --painel.aba:set_column(2, 2, 11)
-    painel.aba:write(0, 0, 'Componente', tit_p)
-    painel.aba:write(0, 1, 'Tipo', tit_p)
+    local p_fmt = planilha:add_format({
+      border = 6,
+      locked = true,
+      pattern = 1,
+      bg_color = cores_claras[cor],
+      bold = true
+      })
+    
+    -- linha de identificação do painel
+    painel.aba:write(0, 0, 'PAINEL:', p_fmt)
+    painel.aba:write(0, 1, linha.id, p_fmt)
+    -- linha de título da aba
+    painel.aba:write(1, 0, 'Componente', tit_p)
+    painel.aba:write(1, 1, 'Tipo', tit_p)
     --painel.aba:write(0, 2, 'Num el', tit_p)
-    painel.lin = 1
+    painel.lin = 2
     
     paineis[linha.id] = painel
     -- proxima linha
     lin = lin + 1
+    if cor >= 8 then
+      cor = 1
+    else
+      cor = cor + 1
+    end
   end
   
+  
+  -- grava a lista de componentes
   for linha in bd:cols(
     'SELECT painel, componente, sum(num) elementos, ' ..
     'GROUP_CONCAT(tipo, ";") tipos ' ..
@@ -1386,8 +1423,10 @@ function grava_pl_analitica ()
     'FROM descr_comp GROUP BY painel, componente, tipo) ' ..
     'GROUP BY painel, componente;'
   ) do
+    -- grava na planilha correspondente ao painel
     local painel = paineis[linha.painel]
     
+    -- estima qual o tipo do componente
     local tipo = estima_tipo_comp (linha.tipos)
     
     painel.aba:write(painel.lin, 0, linha.componente, protegido)
@@ -1403,6 +1442,29 @@ function grava_pl_analitica ()
   
   planilha:close()
   return true
+end
+
+function le_mestra()
+  local leitor = require 'xlsx_lua'
+  
+  local arq = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'le_mestra.xlsx'
+  
+  local pl_term = false
+  -- le o arquivo excel
+  local workbook = leitor.open(arq)
+  -- procura pela aba 'Componentes'
+  if type(workbook) == 'table' then 
+    pl_term = workbook.sheets['Terminais'] 
+  else
+    return nil
+  end
+  
+  
+  if type(pl_term) ~= 'table' then return nil end
+  -- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
+  leitor.expand_merge (pl_term)
+  
+  return pl_term
 end
 
 function le_pl_comp()
@@ -1624,7 +1686,7 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button(" Análise") then
-    grava_pl_analitica ()
+    -- grava_pl_analitica ()
   end
   if cadzinho.nk_button(" Biblioteca") then
     modal = ''

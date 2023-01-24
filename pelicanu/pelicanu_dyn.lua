@@ -207,19 +207,59 @@ function projeto_dyn (event)
   -- Gera as planilhas auxiliares
   elseif modal == 'planilha' then
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Gera as planilhas auxiliares")
-    cadzinho.nk_label("Tem certeza?")
-    cadzinho.nk_layout(15, 2)
-    if cadzinho.nk_button("OK") then
-      if not grava_pl_comp () then
-        msg = 'Erro Ger. Planilhas'
-      else
+    cadzinho.nk_label("Planilhas auxiliares")
+    cadzinho.nk_layout(5, 1)
+    if sub_modal == 'pl_p_bd' then
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("O banco de dados")
+      cadzinho.nk_label("central será atualizado")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Tem certeza?")
+      cadzinho.nk_layout(15, 2)
+      if cadzinho.nk_button("OK") then
+      
+      end
+      if cadzinho.nk_button("Cancela") then
+        sub_modal = ''
+      end
+    elseif sub_modal == 'bd_p_pl' then
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("As planilhas existentes")
+      cadzinho.nk_label("serão apagadas")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Tem certeza?")
+      cadzinho.nk_layout(15, 2)
+      if cadzinho.nk_button("OK") then
+        if not grava_pl_comp () then
+          msg = 'Erro Ger. Planilhas'
+        else
+          sub_modal = ''
+        end
+        
+        if not grava_pl_analitica () then
+          msg = 'Erro Ger. Planilhas'
+        else
+          sub_modal = ''
+        end
+      end
+      if cadzinho.nk_button("Cancela") then
+        sub_modal = ''
+      end
+    else
+      cadzinho.nk_layout(20, 1)
+      if cadzinho.nk_button("BD  Planilhas ") then
+        sub_modal = 'bd_p_pl'
+      end
+      if cadzinho.nk_button(" BD  Planilhas") then
+        sub_modal = 'pl_p_bd'
+      end
+      if cadzinho.nk_button("Volta") then
         modal = ''
       end
     end
-    if cadzinho.nk_button("Cancela") then
-      modal = ''
-    end
+      
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
     
   -- Carrega os dados das planilhas auxiliares
@@ -340,7 +380,7 @@ function projeto_dyn (event)
     cadzinho.nk_layout(15, 1)
     cadzinho.nk_label("Caminho:")
     cadzinho.nk_label(projeto.caminho)
-    --outros ícones "罹 ﮏ  ﮻    ﯨ ﯱ "
+    --outros ícones "罹 ﮏ  ﮻    ﯨ ﯱ    "
   end
 end
 

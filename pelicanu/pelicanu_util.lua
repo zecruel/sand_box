@@ -97,3 +97,15 @@ function nova_fila()
   }
   
 end
+
+--[[
+<dataValidations count="1">
+<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="C3" xr:uid="{D84B114C-348A-49C0-B93D-922C2EAD8ABA}">
+<formula1>"1,3,5,7,11,13,17"</formula1>
+</dataValidation>
+</dataValidations>
+
+<formula1>$A$1:$A$5</formula1>
+
+
+]]--
