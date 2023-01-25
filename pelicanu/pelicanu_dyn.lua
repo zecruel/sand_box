@@ -269,12 +269,11 @@ function projeto_dyn (event)
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
-      modal = ''
-      --[[if abre_projeto(g_caminho.value) then
-        modal = ''
+      if le_mestra() then
+        msg = 'Sucesso'
       else
-        msg = 'Erro'
-      end]]--
+        msg = 'Erro Leit. Plan.'
+      end
     end
     if cadzinho.nk_button("Cancela") then
       modal = ''

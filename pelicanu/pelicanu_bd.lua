@@ -11,6 +11,12 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS paineis')
   bd:exec('CREATE TABLE paineis('..
     'id TEXT, titulo TEXT, descr TEXT, fiacao INTEGER, x REAL, y REAL)')
+  bd:exec('DROP TABLE IF EXISTS lista_equip')
+  bd:exec('CREATE TABLE lista_equip('..
+    'item TEXT, descr TEXT, modelo TEXT, fabr TEXT)')
+  bd:exec('DROP TABLE IF EXISTS tipico_term')
+  bd:exec('CREATE TABLE tipico_term('..
+    'item TEXT, el_id INTEGER, elemento TEXT, t_id INTEGER, term TEXT)')
   bd:exec('DROP TABLE IF EXISTS componentes_esq')
   bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..

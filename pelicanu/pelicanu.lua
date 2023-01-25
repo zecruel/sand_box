@@ -1447,24 +1447,111 @@ end
 function le_mestra()
   local leitor = require 'xlsx_lua'
   
-  local arq = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'le_mestra.xlsx'
-  
-  local pl_term = false
-  -- le o arquivo excel
-  local workbook = leitor.open(arq)
-  -- procura pela aba 'Componentes'
-  if type(workbook) == 'table' then 
-    pl_term = workbook.sheets['Terminais'] 
-  else
-    return nil
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
   end
   
+  -- caminho da planilha
+  local arq = format_dir(projeto.caminho) .. '_dados'.. fs.dir_sep .. 'le_mestra.xlsx'
   
-  if type(pl_term) ~= 'table' then return nil end
-  -- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
-  leitor.expand_merge (pl_term)
+  local pl_term = false
+  local pl_equip = false
+  -- le o arquivo excel
+  local workbook = leitor.open(arq)
+  -- procura pelas abas 'Equipamentos' e 'Terminais'
+  if type(workbook) == 'table' then 
+    pl_equip = workbook.sheets['Equipamentos']
+    pl_term = workbook.sheets['Terminais']
+  else
+    return nil -- erro na abertura do arquivo excel
+  end
   
-  return pl_term
+  -- verifica a existência das abas
+  if type(pl_equip) ~= 'table' or type(pl_term) ~= 'table' then return nil end
+  
+  -- limpa o banco de dados
+  bd:exec('DROP TABLE IF EXISTS lista_equip')
+  bd:exec('CREATE TABLE lista_equip('..
+    'item TEXT, descr TEXT, modelo TEXT, fabr TEXT)')
+  bd:exec('DROP TABLE IF EXISTS tipico_term')
+  bd:exec('CREATE TABLE tipico_term('..
+    'item TEXT, el_id INTEGER, elemento TEXT, t_id INTEGER, term TEXT)')
+  
+  -- insere os dados da aba 'Equipamentos' no banco de dados
+  for lin = 2, #pl_equip.dim.rows do
+    if pl_equip.data[lin]['A'] then
+      if tostring(pl_equip.data[lin]['A']) ~= '' then
+        bd:exec ("INSERT INTO lista_equip VALUES('"..
+            tostring(pl_equip.data[lin]['A']) .."', '"..
+            tostring(pl_equip.data[lin]['B']) .."', '"..
+            tostring(pl_equip.data[lin]['C']) .."', '"..
+            tostring(pl_equip.data[lin]['D']) .."');")
+      end
+    end
+  end
+  
+  -- para a aba 'Terminais' é necessário processar as células mescladas
+  local items = {}
+  local elems = {}
+  -- varre os conjuntos mesclados
+  for _, merge in ipairs(pl_term.merged) do
+		-- pega o 'range' do conjunto mesclado
+		local col_start, row_start, col_end, row_end = merge:match('(%a+)(%d+):(%a+)(%d+)')
+		-- a primeira célula do conjunto é a que contém o valor das demais 
+		local value = pl_term.data[tonumber(row_start)][col_start]
+		if tonumber(row_start) > 1 then -- ignora a primeira linha, como título
+      -- geras as tabelas de itens e elementos
+      if col_start == 'A' and col_end == 'A' then -- itens na coluna 'A'
+        local item = {}
+        item.valor = value
+        item.ini = tonumber(row_start)
+        item.final = tonumber(row_end)
+        items[#items + 1] = item
+      elseif col_start == 'B' and col_end == 'B' then -- elementos na coluna 'B'
+        local elem = {}
+        elem.valor = value
+        elem.ini = tonumber(row_start)
+        elem.final = tonumber(row_end)
+        elems[#elems + 1] = elem
+      end
+    end
+	end
+  
+  -- ordena as tabelas de acordo com a posição na planilha (linha)
+  local comp = function(a, b)
+    return a.ini < b.ini
+  end
+  table.sort(items, comp)
+  table.sort(elems, comp)
+  
+  -- grava o dados de terminais no BD
+  -- varre as tabelas
+  for i = 1, #items do
+    local item = items[i]
+    local el_id = 1 -- identificação sequencial do elemento dentro do item
+    for j = 1, #elems do
+      local elem = elems[j]
+      -- verifica se o elemento pertence ao item atual
+      if elem.ini >= item.ini and elem.final <= item.final then
+        local t_id = 1 -- identificação sequencial do terminal dentro do elemento
+        -- pega na planilha a identificacão de cada terminal na ordem
+        for k = elem.ini, elem.final do
+          -- finalmente, grava no BD
+          bd:exec ("INSERT INTO tipico_term VALUES('"..
+            item.valor .. "', " .. el_id .. ",'" .. elem.valor .. "', " ..
+            t_id .. ", '".. pl_term.data[k]['C'] .. "');")
+          t_id = t_id + 1
+        end
+        el_id = el_id + 1
+      end
+    end
+  end
+  
+  bd:close()
+  
+  return true
 end
 
 function le_pl_comp()
