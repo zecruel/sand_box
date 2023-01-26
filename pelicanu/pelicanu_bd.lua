@@ -17,6 +17,9 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS tipico_term')
   bd:exec('CREATE TABLE tipico_term('..
     'item TEXT, el_id INTEGER, elemento TEXT, t_id INTEGER, term TEXT)')
+  bd:exec('DROP TABLE IF EXISTS componentes')
+  bd:exec('CREATE TABLE componentes('..
+    'painel TEXT, id TEXT, tipo TEXT, item TEXT, modulo TEXT)')
   bd:exec('DROP TABLE IF EXISTS componentes_esq')
   bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..
@@ -627,5 +630,76 @@ function atualiza_lista_arq_bd (bd, lista_arq)
     bd:exec ("INSERT INTO arquivos VALUES('"..
       lista_arq[i].name .."', "..
       string.format('%d', lista_arq[i].modified) ..");")
+  end
+end
+
+function atualiza_db_paineis(bd)
+  -- obtém a lista de painéis efetivamente utilizados no banco de dados
+  local paineis = {}
+  for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
+    paineis[linha.painel] = 1
+  end
+  
+  -- atualiza a tabela do bd com o descritivo dos painéis (acrescenta os novos)
+  for painel, _ in pairs(paineis) do
+    bd:exec (
+    "INSERT INTO paineis(id, titulo, descr, fiacao, x, y)" .. 
+    "SELECT '"..painel.."', NULL, NULL, 1, 0, 0 WHERE NOT EXISTS"..
+    "(SELECT 1 FROM paineis WHERE id = '"..painel.."');")
+  
+  end
+end
+
+function atualiza_db_componentes(bd)
+  
+  -- obtém a lista de componentes efetivamente utilizados no banco de dados
+  local comps = {}
+  for linha in bd:cols(
+    'SELECT painel, componente, sum(num) elementos, ' ..
+    'GROUP_CONCAT(tipo, ";") tipos ' ..
+    'FROM ( SELECT painel, componente, tipo, COUNT(tipo) num ' ..
+    'FROM descr_comp GROUP BY painel, componente, tipo) ' ..
+    'GROUP BY painel, componente;'
+  ) do
+    -- estima qual o tipo do componente
+    local tipo = estima_tipo_comp (linha.componente, linha.tipos)
+    
+    local item_le = nil
+    if tipo == 'RELÉ AUX' then
+      item_le = '1'
+    elseif tipo == 'RELÉ TRIP' then
+      item_le = '2'
+    elseif tipo == 'RELÉ BIEST CTRL' then
+      item_le = '3'
+    elseif tipo == 'RELÉ BIEST BLOQ' then
+      item_le = '3'
+    elseif tipo == 'CT TENSÃO' then
+      item_le = '4'
+    elseif tipo == 'CT CORRENTE' then
+      item_le = '5'
+    elseif tipo == 'CT TENSÃO+CORRENTE' then
+      item_le = '6'
+    end
+    
+    comps[#comps + 1] = {
+      painel = linha.painel,
+      comp = linha.componente,
+      tipo = tipo,
+      item = item_le
+    }
+  end
+  
+  -- atualiza a tabela do bd com o descritivo dos componentes (acrescenta os novos)
+  for _, comp in ipairs(comps) do
+    local item_le = 'NULL'
+    if comp.item then item_le = "'" .. comp.item .. "'" end
+    bd:exec (
+    "INSERT INTO componentes(painel, id, tipo, item, modulo)" .. 
+    "SELECT '".. comp.painel .."', '"..
+    comp.comp .."', '".. comp.tipo .."', ".. item_le ..
+    ", NULL  WHERE NOT EXISTS"..
+    "(SELECT 1 FROM componentes WHERE painel = '".. comp.painel .."' AND id = '"..
+    comp.comp .."');")
+  
   end
 end

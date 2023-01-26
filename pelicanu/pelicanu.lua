@@ -1227,7 +1227,7 @@ function grava_pl_comp ()
   return true
 end
 
-function estima_tipo_comp (elementos)
+function estima_tipo_comp (nome, elementos)
   local tipo = 0
   
   for el in string.gmatch(elementos, "[^;]+") do
@@ -1237,20 +1237,21 @@ function estima_tipo_comp (elementos)
       tipo = tipo | 2
     elseif el == 'MINI_DISJ' then
       tipo = tipo | 4
-    elseif el == 'CT_TENSAO' or el == 'CT_CORR' then
+    elseif el == 'CT_TENSAO' then
       tipo = tipo | 8
-    
-    elseif el == 'CONTATO_NA' or el == 'CONTATO_NF' then
+    elseif el == 'CT_CORR' then
       tipo = tipo | 16
+    elseif el == 'CONTATO_NA' or el == 'CONTATO_NF' then
+      tipo = tipo | 32
       
     elseif el == 'BOBINA' then
-      tipo = tipo | 32
-    
-    elseif el == 'ALIM_CC' then
       tipo = tipo | 64
     
-    elseif el == 'ENT_DIG' or el == 'SAIDA_DIG' then
+    elseif el == 'ALIM_CC' then
       tipo = tipo | 128
+    
+    elseif el == 'ENT_DIG' or el == 'SAIDA_DIG' then
+      tipo = tipo | 256
     end
   end
   
@@ -1264,13 +1265,39 @@ function estima_tipo_comp (elementos)
   elseif tipo == 4 or tipo == 20 then
     ret = 'MINI DJ'
   elseif tipo == 8 then
-    ret = 'CHAVE TESTE'
+    ret = 'CT TENSÃO'
   elseif tipo == 16 then
+    ret = 'CT CORRENTE'
+  elseif tipo == 24 then
+    ret = 'CT TENSÃO+CORRENTE'
+  elseif tipo == 32 then
     ret = 'CONTATO EXTERNO'
-  elseif tipo > 16 and tipo < 64 then
+  elseif tipo >= 64 and tipo < 128 then
     ret = 'RELÉ AUX'
-  elseif tipo >= 64 and tipo < 226 then
+    if string.find(nome, '94') then
+      ret = 'RELÉ TRIP'
+    elseif string.find(nome, '83') then
+      ret = 'RELÉ BIEST CTRL'
+    elseif string.find(nome, '86') then
+      ret = 'RELÉ BIEST BLOQ'
+    end
+  elseif tipo >= 128 and tipo <= 417 then
     ret = 'IED'
+    if string.find(nome, '21') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '87') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '51') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '67') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '50') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '59') then
+      ret = 'IED RELÉ PROT'
+    elseif string.find(nome, '61') then
+      ret = 'IED RELÉ PROT'
+    end
   else
     ret = 'ERRO'
   end
@@ -1350,24 +1377,11 @@ function grava_pl_analitica ()
   aba_paineis:write(0, 5, 'Y', tit_p)
   aba_paineis:set_tab_color('red')
   
-  -- obtém a lista de painéis efetivamente utilizados no banco de dados
-  local paineis = {}
-  for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
-    paineis[linha.painel] = 1
-  end
-  
-  -- atualiza a tabela do bd com o descritivo dos painéis (acrescenta os novos)
-  for painel, _ in pairs(paineis) do
-    bd:exec (
-    "INSERT INTO paineis(id, titulo, descr, fiacao, x, y)" .. 
-    "SELECT '"..painel.."', NULL, NULL, 1, 0, 0 WHERE NOT EXISTS"..
-    "(SELECT 1 FROM paineis WHERE id = '"..painel.."');")
-  
-  end
+  atualiza_db_paineis(bd)
   
   -- grava na planilha a lista atualizada de painéis
   local lin = 1
-  paineis = {}
+  local paineis = {}
   for linha in bd:cols('SELECT * FROM paineis ORDER BY id') do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba_paineis:write(lin, 0, linha.id, protegido)
@@ -1386,7 +1400,7 @@ function grava_pl_analitica ()
     painel.aba = planilha:add_worksheet(linha.id)
     painel.aba:set_tab_color(cores_claras[cor])
     painel.aba:set_column(0, 0, 20)
-    painel.aba:set_column(1, 1, 40)
+    painel.aba:set_column(1, 1, 25)
     local p_fmt = planilha:add_format({
       border = 6,
       locked = true,
@@ -1400,8 +1414,9 @@ function grava_pl_analitica ()
     painel.aba:write(0, 1, linha.id, p_fmt)
     -- linha de título da aba
     painel.aba:write(1, 0, 'Componente', tit_p)
-    painel.aba:write(1, 1, 'Tipo', tit_p)
-    --painel.aba:write(0, 2, 'Num el', tit_p)
+    painel.aba:write(1, 1, 'Tipo (estimado)', tit_p)
+    painel.aba:write(1, 2, 'Item LE', tit_p)
+    painel.aba:write(1, 3, 'Módulos', tit_p)
     painel.lin = 2
     
     paineis[linha.id] = painel
@@ -1414,24 +1429,55 @@ function grava_pl_analitica ()
     end
   end
   
+  atualiza_db_componentes(bd)
   
-  -- grava a lista de componentes
+  local alerta_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'yellow'})
+
+  local erro_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'red'})
+
+  -- grava a lista de componentes na planilha
   for linha in bd:cols(
-    'SELECT painel, componente, sum(num) elementos, ' ..
-    'GROUP_CONCAT(tipo, ";") tipos ' ..
-    'FROM ( SELECT painel, componente, tipo, COUNT(tipo) num ' ..
-    'FROM descr_comp GROUP BY painel, componente, tipo) ' ..
-    'GROUP BY painel, componente;'
-  ) do
+    'SELECT * FROM componentes ORDER BY painel, id, tipo') do
     -- grava na planilha correspondente ao painel
     local painel = paineis[linha.painel]
     
-    -- estima qual o tipo do componente
-    local tipo = estima_tipo_comp (linha.tipos)
+    painel.aba:write(painel.lin, 0, linha.id, protegido)
     
-    painel.aba:write(painel.lin, 0, linha.componente, protegido)
-    painel.aba:write(painel.lin, 1, tipo, desprotegido)
-    --painel.aba:write(painel.lin, 2, linha.elementos, protegido)
+    local fmt = desprotegido
+    if linha.tipo == 'ERRO' then
+      fmt = erro_fmt
+    elseif linha.tipo == 'CONTATO EXTERNO' then
+      fmt = alerta_fmt
+    end
+    painel.aba:write(painel.lin, 1, linha.tipo, fmt)
+    
+    fmt = desprotegido
+    local item_le = ''
+    if linha.tipo == 'RELÉ AUX' then
+      item_le = '1'
+    elseif linha.tipo == 'RELÉ TRIP' then
+      item_le = '2'
+    elseif linha.tipo == 'RELÉ BIEST CTRL' then
+      item_le = '3'
+    elseif linha.tipo == 'RELÉ BIEST BLOQ' then
+      item_le = '3'
+    elseif linha.tipo == 'CT TENSÃO' then
+      item_le = '4'
+    elseif linha.tipo == 'CT CORRENTE' then
+      item_le = '5'
+    elseif linha.tipo == 'CT TENSÃO+CORRENTE' then
+      item_le = '6'
+    end
+    
+    painel.aba:write(painel.lin, 2, item_le, fmt)
+    
+    fmt = desprotegido
+    if linha.tipo == 'IED' then 
+      fmt = alerta_fmt
+    elseif linha.tipo == 'IED RELÉ PROT' then
+      fmt = alerta_fmt
+    end
+    painel.aba:write(painel.lin, 3, '', fmt)
     
     -- proxima linha
     paineis[linha.painel].lin = paineis[linha.painel].lin + 1
