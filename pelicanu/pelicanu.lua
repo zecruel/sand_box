@@ -1372,7 +1372,7 @@ function grava_pl_analitica ()
   aba_paineis:write(0, 0, 'Painel', tit_p)
   aba_paineis:write(0, 1, 'Título', tit_p)
   aba_paineis:write(0, 2, 'Descr.', tit_p)
-  aba_paineis:write(0, 3, 'Fiação', tit_p)
+  aba_paineis:write(0, 3, 'Interno', tit_p)
   aba_paineis:write(0, 4, 'X', tit_p)
   aba_paineis:write(0, 5, 'Y', tit_p)
   aba_paineis:set_tab_color('red')
@@ -1416,7 +1416,7 @@ function grava_pl_analitica ()
     painel.aba:write(1, 0, 'Componente', tit_p)
     painel.aba:write(1, 1, 'Tipo (estimado)', tit_p)
     painel.aba:write(1, 2, 'Item LE', tit_p)
-    painel.aba:write(1, 3, 'Módulos', tit_p)
+    painel.aba:write(1, 3, 'Id Fiação', tit_p)
     painel.lin = 2
     
     paineis[linha.id] = painel
@@ -1434,7 +1434,7 @@ function grava_pl_analitica ()
   local alerta_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'yellow'})
 
   local erro_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'red'})
-
+  
   -- grava a lista de componentes na planilha
   for linha in bd:cols(
     'SELECT * FROM componentes ORDER BY painel, id, tipo') do
@@ -1452,37 +1452,255 @@ function grava_pl_analitica ()
     painel.aba:write(painel.lin, 1, linha.tipo, fmt)
     
     fmt = desprotegido
-    local item_le = ''
-    if linha.tipo == 'RELÉ AUX' then
-      item_le = '1'
-    elseif linha.tipo == 'RELÉ TRIP' then
-      item_le = '2'
-    elseif linha.tipo == 'RELÉ BIEST CTRL' then
-      item_le = '3'
-    elseif linha.tipo == 'RELÉ BIEST BLOQ' then
-      item_le = '3'
-    elseif linha.tipo == 'CT TENSÃO' then
-      item_le = '4'
-    elseif linha.tipo == 'CT CORRENTE' then
-      item_le = '5'
-    elseif linha.tipo == 'CT TENSÃO+CORRENTE' then
-      item_le = '6'
-    end
-    
-    painel.aba:write(painel.lin, 2, item_le, fmt)
+    painel.aba:write(painel.lin, 2, linha.item, fmt)
     
     fmt = desprotegido
+    --[[
     if linha.tipo == 'IED' then 
       fmt = alerta_fmt
     elseif linha.tipo == 'IED RELÉ PROT' then
       fmt = alerta_fmt
-    end
+    end]]--
     painel.aba:write(painel.lin, 3, '', fmt)
     
     -- proxima linha
     paineis[linha.painel].lin = paineis[linha.painel].lin + 1
   end
   
+  --
+  bd:close()
+  
+  planilha:close()
+  return true
+end
+
+function grava_pl_base ()
+  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
+  if not exists (saida) then
+    if not cria_pasta(saida) then
+      return false
+    end
+  end
+  
+  local cam_pl = saida .. "base.xlsx"
+  
+  -- cria o arquivo de planilha
+  if exists (cam_pl) then
+    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
+      return false
+    end
+  end
+  
+  local planilha = excel:new(cam_pl)
+  
+  local protegido = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    })
+  local desprotegido = planilha:add_format({locked = false, border = 1})
+  local tit_p = planilha:add_format({
+    border = 6,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    bold = true
+    })
+    
+  local aba_equip = planilha:add_worksheet("Equipamentos")
+  -- aba protegida
+  aba_equip:protect("", {["objects"] = true, ["scenarios"] = true})
+  
+  -- tamanho das colunas
+  aba_equip:set_column(0, 0, 9)
+  aba_equip:set_column(1, 1, 120)
+  aba_equip:set_column(2, 3, 25)
+  
+  -- primeira linha de titulo
+  aba_equip:write(0, 0, 'ID Unico', tit_p)
+  aba_equip:write(0, 1, 'Painel', tit_p)
+  aba_equip:write(0, 2, 'Componente', tit_p)
+  aba_equip:write(0, 3, 'Modulo', tit_p)
+  aba_equip:write(0, 4, 'Parte', tit_d)
+  aba_equip:write(0, 5, 'Tipo', tit_p)
+  aba_equip:write(0, 6, 'T id', tit_p)
+  aba_equip:write(0, 7, 'Terminal', tit_d)
+  
+  local lin = 1
+end
+
+function grava_pl_term ()
+  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
+  if not exists (saida) then
+    if not cria_pasta(saida) then
+      return false
+    end
+  end
+  
+  local cam_pl = saida .. "terminais.xlsx"
+  
+  -- cria o arquivo de planilha
+  if exists (cam_pl) then
+    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
+      return false
+    end
+  end
+  
+  local planilha = excel:new(cam_pl)
+  local aba = planilha:add_worksheet("Terminais")
+  aba:protect("", {["objects"] = true, ["scenarios"] = true}) -- aba protegida
+  local protegido = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    })
+  local desprotegido = planilha:add_format({locked = false, border = 1})
+  
+  local m_p = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    valign = "vcenter",
+    })
+  local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
+  
+  -- tamanho das colunas
+  aba:set_column(0, 0, 20)
+  aba:set_column(1, 1, 11)
+  aba:set_column(2, 2, 20)
+  aba:set_column(3, 4, 11)
+  aba:set_column(5, 5, 18)
+  aba:set_column(6, 6, 4)
+  aba:set_column(7, 8, 11)
+  
+  -- primeira linha de titulo
+  local tit_p = planilha:add_format({
+    border = 6,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    bold = true
+    })
+  local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
+  aba:write(0, 0, 'ID Unico', tit_p)
+  aba:write(0, 1, 'Painel', tit_p)
+  aba:write(0, 2, 'Componente', tit_p)
+  aba:write(0, 3, 'Modulo', tit_p)
+  aba:write(0, 4, 'Parte', tit_d)
+  aba:write(0, 5, 'Tipo', tit_p)
+  aba:write(0, 6, 'T id', tit_p)
+  aba:write(0, 7, 'Terminal', tit_d)
+  
+  local lin = 1
+  
+  -- variaveis para agupamento (merge) das celulas repetidas
+  local ini_comp = 1
+  local ini_unico = 1
+  local ini_modulo = 1
+  local ini_painel = 1
+  local comp_ant = false
+  local tipo_ant = false
+  local unico_ant = false
+  local parte_ant = false
+  local modulo_ant = nil
+  local painel_ant = nil
+  
+  local alerta_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'yellow'})
+  local erro_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'red'})
+  local fmt = desprotegido
+  
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then return false end
+  
+  for linha in bd:cols("select unico, painel, componente, modulo,  \n" ..
+    "parte, tipo, item, t_id num,  \n" ..
+    "case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else   \n" ..
+    "(case when not tipo = 'BORNE' then num||t_id else num end) end terminal,  \n" ..
+    "case when item is not null and tipico_aplic.term IS NULL and not tipo = 'BORNE' then 'Incompleto' else  \n" ..
+    "(case when not tipo = 'BORNE' and tipico_aplic.term IS NULL then 'Sem tipico' end) end alerta  \n" ..
+    "from tipico_aplic") do -- para cada linha do BD
+    -- grava na planilha cada celula separada, a principio
+    aba:write(lin, 0, string.format('%X', linha.unico), protegido)
+    aba:write(lin, 1, linha. painel, protegido)
+    aba:write(lin, 2, linha.componente, protegido)
+    aba:write(lin, 3, linha.modulo, protegido)
+    if linha.parte then
+      aba:write(lin, 4, linha.parte, desprotegido)
+    else aba:write(lin, 4, linha.parte, protegido) end
+    aba:write(lin, 5, linha.tipo, protegido)
+    aba:write(lin, 6, linha.num, protegido)
+    aba:write(lin, 7, linha.terminal, desprotegido)
+    
+    if linha.alerta == 'Incompleto' then
+      aba:write(lin, 8, linha.alerta, erro_fmt)
+    elseif linha.alerta then
+      aba:write(lin, 8, linha.alerta, alerta_fmt)
+    end
+    
+    
+    -- agrupa as celulas repetidas
+    if painel_ant ~= linha.painel then
+      if (lin - ini_painel) > 1 then
+        aba:merge_range(ini_painel, 1, lin - 1, 1, painel_ant, m_p)
+      end
+      ini_painel = lin
+    end
+    if comp_ant ~= linha.componente then
+      if (lin - ini_comp) > 1 then
+        aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, m_p)
+      end
+      ini_comp = lin
+    end
+    if modulo_ant ~= linha.modulo or comp_ant and comp_ant ~= linha.componente then
+      if (lin - ini_modulo) > 1 then
+        aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, m_p)
+      end
+      ini_modulo = lin
+    end
+    if unico_ant ~= linha.unico then -- o ID unico eh o criterio para agrupar blocos e partes
+      if (lin - ini_unico) > 1 then
+        aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
+        aba:merge_range(ini_unico, 5, lin - 1, 5, tipo_ant, m_p)
+        if parte_ant then
+          aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_d)
+        else aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_p) end
+      end
+      ini_unico = lin
+    end
+    
+    comp_ant = linha.componente
+    unico_ant = linha.unico
+    tipo_ant = linha.tipo
+    parte_ant = linha.parte
+    modulo_ant = linha.modulo
+    painel_ant = linha.painel
+    
+    -- proxima linha
+    lin = lin + 1
+  end
+  -- finaliza os agrupamentos, se necessario
+  if (lin - ini_painel) > 1 then
+    aba:merge_range(ini_painel, 1, lin - 1, 1, painel_ant, m_p)
+  end
+  if (lin - ini_comp) > 1 then
+    aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, m_p)
+  end
+
+  if (lin - ini_modulo) > 1 then
+    aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, m_p)
+  end
+  
+  if (lin - ini_unico) > 1 then
+    aba:merge_range(ini_unico, 0, lin - 1, 0, string.format('%X', unico_ant), m_p)
+    aba:merge_range(ini_unico, 5, lin - 1, 5, tipo_ant, m_p)
+    if parte_ant then
+      aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_d)
+    else aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_p) end
+  end
   --
   bd:close()
   
@@ -1504,12 +1722,14 @@ function le_mestra()
   
   local pl_term = false
   local pl_equip = false
+  local pl_regras = false
   -- le o arquivo excel
   local workbook = leitor.open(arq)
   -- procura pelas abas 'Equipamentos' e 'Terminais'
   if type(workbook) == 'table' then 
     pl_equip = workbook.sheets['Equipamentos']
     pl_term = workbook.sheets['Terminais']
+    pl_regras = workbook.sheets['Regras']
   else
     return nil -- erro na abertura do arquivo excel
   end
@@ -1523,7 +1743,11 @@ function le_mestra()
     'item TEXT, descr TEXT, modelo TEXT, fabr TEXT)')
   bd:exec('DROP TABLE IF EXISTS tipico_term')
   bd:exec('CREATE TABLE tipico_term('..
-    'item TEXT, el_id INTEGER, elemento TEXT, t_id INTEGER, term TEXT)')
+    'item TEXT, el_id INTEGER, elemento TEXT, ' ..
+    't_id INTEGER, term TEXT, modulo TEXT, fiacao INTEGER)')
+  bd:exec('DROP TABLE IF EXISTS regras_equip')
+  bd:exec('CREATE TABLE regras_equip('..
+    'tipo TEXT, item TEXT)')
   
   -- insere os dados da aba 'Equipamentos' no banco de dados
   for lin = 2, #pl_equip.dim.rows do
@@ -1539,8 +1763,8 @@ function le_mestra()
   end
   
   -- para a aba 'Terminais' é necessário processar as células mescladas
-  local items = {}
   local elems = {}
+  
   -- varre os conjuntos mesclados
   for _, merge in ipairs(pl_term.merged) do
 		-- pega o 'range' do conjunto mesclado
@@ -1548,52 +1772,86 @@ function le_mestra()
 		-- a primeira célula do conjunto é a que contém o valor das demais 
 		local value = pl_term.data[tonumber(row_start)][col_start]
 		if tonumber(row_start) > 1 then -- ignora a primeira linha, como título
-      -- geras as tabelas de itens e elementos
-      if col_start == 'A' and col_end == 'A' then -- itens na coluna 'A'
-        local item = {}
-        item.valor = value
-        item.ini = tonumber(row_start)
-        item.final = tonumber(row_end)
-        items[#items + 1] = item
-      elseif col_start == 'B' and col_end == 'B' then -- elementos na coluna 'B'
-        local elem = {}
-        elem.valor = value
-        elem.ini = tonumber(row_start)
-        elem.final = tonumber(row_end)
-        elems[#elems + 1] = elem
+      -- gera a tabela de elementos
+      if col_start == 'B' and col_end == 'B' then -- elementos na coluna 'B'
+        elems[tonumber(row_start)] = 1
       end
     end
 	end
   
-  -- ordena as tabelas de acordo com a posição na planilha (linha)
-  local comp = function(a, b)
-    return a.ini < b.ini
-  end
-  table.sort(items, comp)
-  table.sort(elems, comp)
+  -- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
+  leitor.expand_merge (pl_term)
   
   -- grava o dados de terminais no BD
-  -- varre as tabelas
-  for i = 1, #items do
-    local item = items[i]
-    local el_id = 1 -- identificação sequencial do elemento dentro do item
-    for j = 1, #elems do
-      local elem = elems[j]
-      -- verifica se o elemento pertence ao item atual
-      if elem.ini >= item.ini and elem.final <= item.final then
-        local t_id = 1 -- identificação sequencial do terminal dentro do elemento
-        -- pega na planilha a identificacão de cada terminal na ordem
-        for k = elem.ini, elem.final do
-          -- finalmente, grava no BD
-          bd:exec ("INSERT INTO tipico_term VALUES('"..
-            item.valor .. "', " .. el_id .. ",'" .. elem.valor .. "', " ..
-            t_id .. ", '".. pl_term.data[k]['C'] .. "');")
-          t_id = t_id + 1
-        end
-        el_id = el_id + 1
-      end
+  local t_id = 1 -- identificação sequencial do terminal dentro do elemento
+  local el_id = 0
+  local item_ant = nil
+  local mod_ant = nil
+  -- varre a planilha
+  local final = tonumber(pl_term.dim.rows[#pl_term.dim.rows])
+  for i = 2, final do
+    local item = pl_term.data[i]['A']
+    local elem = pl_term.data[i]['B']
+    local term = pl_term.data[i]['C']
+    local mod = pl_term.data[i]['D']
+    if mod then
+      mod = "'" .. mod .. "'"
+    else
+      mod = 'NULL'
+    end
+    local mod_fia = pl_term.data[i]['E']
+    if mod_fia then
+      mod_fia = '1'
+    else
+      mod_fia = 'NULL'
+    end
+    
+    if elems[i] then
+      el_id = el_id + 1
+      t_id = 1
+    end
+    
+    if mod_ant ~= mod then
+      el_id = 1
+      t_id = 1
+    end
+    
+    if item_ant ~= item then
+      el_id = 1
+      t_id = 1
+    end
+    
+    if item then
+      -- finalmente, grava no BD
+      bd:exec ("INSERT INTO tipico_term VALUES('"..
+        item .. "', " .. el_id .. ", '" .. elem .. "', " ..
+        t_id .. ", '".. term .. "', ".. mod ..", ".. mod_fia .. ");")
+    end
+    
+    mod_ant = mod
+    item_ant = item
+    t_id = t_id + 1
+  end
+  
+  final = tonumber(pl_regras.dim.rows[#pl_regras.dim.rows])
+  for i = 2, final do
+    local tipo = pl_regras.data[i]['A']
+    local item = pl_regras.data[i]['B']
+    
+    if item then
+      item = "'" .. item .. "'"
+    else
+      item = 'NULL'
+    end
+    
+    if tipo then
+      bd:exec ("INSERT INTO regras_equip VALUES('"..
+        tipo .. "', " .. item ..  ");")
     end
   end
+  
+  
+  
   
   bd:close()
   

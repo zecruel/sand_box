@@ -243,6 +243,8 @@ function projeto_dyn (event)
         else
           sub_modal = ''
         end
+        
+        grava_pl_term ()
       end
       if cadzinho.nk_button("Cancela") then
         sub_modal = ''

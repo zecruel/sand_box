@@ -16,10 +16,14 @@ function bd_novo(caminho)
     'item TEXT, descr TEXT, modelo TEXT, fabr TEXT)')
   bd:exec('DROP TABLE IF EXISTS tipico_term')
   bd:exec('CREATE TABLE tipico_term('..
-    'item TEXT, el_id INTEGER, elemento TEXT, t_id INTEGER, term TEXT)')
+    'item TEXT, el_id INTEGER, elemento TEXT, ' ..
+    't_id INTEGER, term TEXT, modulo TEXT, fiacao INTEGER)')
+  bd:exec('DROP TABLE IF EXISTS regras_equip')
+  bd:exec('CREATE TABLE regras_equip('..
+    'tipo TEXT, item TEXT)')
   bd:exec('DROP TABLE IF EXISTS componentes')
   bd:exec('CREATE TABLE componentes('..
-    'painel TEXT, id TEXT, tipo TEXT, item TEXT, modulo TEXT)')
+    'painel TEXT, id TEXT, tipo TEXT, item TEXT, id_fiacao TEXT)')
   bd:exec('DROP TABLE IF EXISTS componentes_esq')
   bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..
@@ -370,36 +374,44 @@ function bd_novo(caminho)
     "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, componentes_esq.x ASC, componentes_esq.y ASC;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
-    "SELECT efetivo.unico, efetivo.painel, efetivo.componente, \n" ..
-    "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num, \n" ..
-    "componentes.item, comp_term.num t_id, tip.term FROM \n" ..
-    "(SELECT unico, painel, componente, modulo, parte, tipo, \n" ..
-    "ROW_NUMBER() OVER \n" ..
-    "(PARTITION BY painel, componente, modulo, tipo) num \n" ..
-    "FROM descr_comp) efetivo \n" ..
-    "LEFT JOIN comp_term \n" ..
-    "ON efetivo.unico = comp_term.unico \n" ..
-    "LEFT JOIN componentes \n" ..
-    "ON efetivo.painel = componentes.painel AND \n" ..
-    "efetivo.componente = componentes.id AND \n" ..
-    "NOT efetivo.tipo = 'BORNE' AND \n" ..
-    "NOT efetivo.tipo = 'BORNE_SEC' \n" ..
-    "LEFT JOIN (SELECT tipico.item, tipico.elemento, \n" ..
-    "tipico.num, tipico_term.t_id, tipico_term.term \n" ..
-    "FROM (SELECT item, el_id, elemento, \n" ..
-    "ROW_NUMBER() OVER \n" ..
-    "(PARTITION BY item, elemento) num \n" ..
-    "FROM tipico_term \n" ..
-    "GROUP BY item, elemento, el_id) tipico \n" ..
-    "INNER JOIN tipico_term \n" ..
-    "ON tipico.item = tipico_term.item AND \n" ..
-    "tipico.el_id = tipico_term.el_id) tip \n" ..
-    "ON efetivo.tipo = tip.elemento AND \n" ..
-    "efetivo.num = tip.num AND \n" ..
-    "componentes.item = tip.item AND \n" ..
-    "NOT efetivo.tipo = 'BORNE' AND \n" ..
-    "NOT efetivo.tipo = 'BORNE_SEC' AND \n" ..
-    "comp_term.num = tip.t_id;")
+    "SELECT efetivo.unico, efetivo.painel, efetivo.componente,  \n" ..
+    "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num,  \n" ..
+    "componentes.item, comp_term.num t_id, tip.term FROM  \n" ..
+    "(SELECT unico, painel, componente, modulo, parte, tipo,  \n" ..
+    "ROW_NUMBER() OVER  \n" ..
+    "(PARTITION BY painel, componente, modulo, tipo) num  \n" ..
+    "FROM descr_comp) efetivo  \n" ..
+    "LEFT JOIN comp_term  \n" ..
+    "ON efetivo.unico = comp_term.unico  \n" ..
+    "LEFT JOIN componentes  \n" ..
+    "ON efetivo.painel = componentes.painel AND  \n" ..
+    "efetivo.componente = componentes.id AND  \n" ..
+    "NOT efetivo.tipo = 'BORNE' AND  \n" ..
+    "NOT efetivo.tipo = 'BORNE_SEC'  \n" ..
+    "LEFT JOIN (SELECT tipico.item,  \n" ..
+    "tipico.modulo, tipico.elemento,  \n" ..
+    "tipico.num, tipico_term.t_id, tipico_term.term  \n" ..
+    "FROM (SELECT item, modulo, el_id, elemento,  \n" ..
+    "ROW_NUMBER() OVER  \n" ..
+    "(PARTITION BY item, modulo, elemento) num  \n" ..
+    "FROM tipico_term  \n" ..
+    "GROUP BY item, modulo, elemento, el_id) tipico  \n" ..
+    "INNER JOIN tipico_term  \n" ..
+    "ON tipico.item = tipico_term.item AND  \n" ..
+    "tipico.el_id = tipico_term.el_id AND (  \n" ..
+    "tipico.modulo = tipico_term.modulo   \n" ..
+    "OR tipico.modulo IS NULL)  \n" ..
+    "ORDER BY tipico.item, tipico.modulo,  \n" ..
+    "tipico.elemento, tipico.num,   \n" ..
+    "tipico_term.t_id) tip  \n" ..
+    "ON efetivo.tipo = tip.elemento AND  \n" ..
+    "efetivo.num = tip.num AND  \n" ..
+    "componentes.item = tip.item AND  \n" ..
+    "NOT efetivo.tipo = 'BORNE' AND  \n" ..
+    "NOT efetivo.tipo = 'BORNE_SEC' AND  \n" ..
+    "comp_term.num = tip.t_id AND (  \n" ..
+    "efetivo.modulo IS NULL OR  \n" ..
+    "efetivo.modulo = tip.modulo);")
   
   bd:close()
   return true
@@ -687,6 +699,10 @@ function atualiza_db_componentes(bd)
   
   -- obtém a lista de componentes efetivamente utilizados no banco de dados
   local comps = {}
+  local regras = {}
+  for linha in bd:cols('SELECT * FROM regras_equip') do
+    regras[linha.tipo] = linha.item
+  end
   for linha in bd:cols(
     'SELECT painel, componente, sum(num) elementos, ' ..
     'GROUP_CONCAT(tipo, ";") tipos ' ..
@@ -697,22 +713,7 @@ function atualiza_db_componentes(bd)
     -- estima qual o tipo do componente
     local tipo = estima_tipo_comp (linha.componente, linha.tipos)
     
-    local item_le = nil
-    if tipo == 'RELÉ AUX' then
-      item_le = '1'
-    elseif tipo == 'RELÉ TRIP' then
-      item_le = '2'
-    elseif tipo == 'RELÉ BIEST CTRL' then
-      item_le = '3'
-    elseif tipo == 'RELÉ BIEST BLOQ' then
-      item_le = '3'
-    elseif tipo == 'CT TENSÃO' then
-      item_le = '4'
-    elseif tipo == 'CT CORRENTE' then
-      item_le = '5'
-    elseif tipo == 'CT TENSÃO+CORRENTE' then
-      item_le = '6'
-    end
+    local item_le = regras[tipo]
     
     comps[#comps + 1] = {
       painel = linha.painel,
@@ -727,7 +728,7 @@ function atualiza_db_componentes(bd)
     local item_le = 'NULL'
     if comp.item then item_le = "'" .. comp.item .. "'" end
     bd:exec (
-    "INSERT INTO componentes(painel, id, tipo, item, modulo)" .. 
+    "INSERT INTO componentes(painel, id, tipo, item, id_fiacao)" .. 
     "SELECT '".. comp.painel .."', '"..
     comp.comp .."', '".. comp.tipo .."', ".. item_le ..
     ", NULL  WHERE NOT EXISTS"..
@@ -751,4 +752,12 @@ parte, tipo, num, item, t_id,
 case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else 
 (case when not tipo = 'BORNE' then num||t_id else num end) end terminal
 from tipico_aplic;
+
+select unico, painel, componente, modulo,
+parte, tipo, num, item, t_id,
+case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else 
+(case when not tipo = 'BORNE' then num||t_id else num end) end terminal,
+case when item is not null and tipico_aplic.term IS NULL and not tipo = 'BORNE' then 'incompleto' else
+(case when not tipo = 'BORNE' and tipico_aplic.term IS NULL then 'sem tip' end) end alerta
+from tipico_aplic
 ]]--
