@@ -108,6 +108,7 @@ function abre_projeto(caminho)
   local bd = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'projeto.db'
   local log = format_dir(caminho) .. '_dados'.. fs.dir_sep .. 'log.txt'
   local saida = format_dir(caminho) .. '_saida' .. fs.dir_sep
+  local aux = format_dir(caminho) .. '_aux' .. fs.dir_sep
   local proj, err = carrega_config(config)
   if not proj then return nil end
   
@@ -201,6 +202,7 @@ function novo_projeto(caminho, proj)
   if type(proj) ~= 'table' then return nil end
   local dados = format_dir(caminho) .. '_dados' .. fs.dir_sep
   local saida = format_dir(caminho) .. '_saida' .. fs.dir_sep
+  local aux = format_dir(caminho) .. '_aux' .. fs.dir_sep
   local config = dados .. 'projeto.lua'
   local bd = dados .. 'projeto.db'
   local log = dados .. 'log.txt'
@@ -216,6 +218,15 @@ function novo_projeto(caminho, proj)
   end
   if not exists (saida) then
     cria_pasta(saida)
+  end
+  
+  if not exists (aux) then
+    cria_pasta(aux)
+  end
+  
+  local pl_base = aux .. 'base.xlsm'
+  if not exists(pl_base) then
+    copia_arq(diretorio(fs.script_path()) .. 'base.xlsm', pl_base)
   end
   
   local arq_prj, err = io.open(config, 'w+')
@@ -1067,14 +1078,14 @@ function obtem_desenhos (caixas, tipos)
 end
 
 function grava_pl_comp ()
-  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
-  if not exists (saida) then
-    if not cria_pasta(saida) then
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  if not exists (aux) then
+    if not cria_pasta(aux) then
       return false
     end
   end
   
-  local cam_pl = saida .. "componentes.xlsx"
+  local cam_pl = aux .. "componentes.xlsx"
   
   -- cria o arquivo de planilha
   if exists (cam_pl) then
@@ -1315,15 +1326,15 @@ function grava_pl_analitica ()
   local cor = 1
   
   -- verifica se há necessidade de criar a pasta de saída
-  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
-  if not exists (saida) then
-    if not cria_pasta(saida) then
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  if not exists (aux) then
+    if not cria_pasta(aux) then
       return false -- erro com a pasta de saída
     end
   end
   
   -- cria o arquivo de planilha
-  local cam_pl = saida .. "analitica.xlsx"
+  local cam_pl = aux .. "analitica.xlsx"
   if exists (cam_pl) then -- se há um arquivo antigo
     if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
       return false -- erro ao apagar o arquivo antigo
@@ -1474,71 +1485,17 @@ function grava_pl_analitica ()
   return true
 end
 
-function grava_pl_base ()
-  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
-  if not exists (saida) then
-    if not cria_pasta(saida) then
-      return false
-    end
-  end
-  
-  local cam_pl = saida .. "base.xlsx"
-  
-  -- cria o arquivo de planilha
-  if exists (cam_pl) then
-    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
-      return false
-    end
-  end
-  
-  local planilha = excel:new(cam_pl)
-  
-  local protegido = planilha:add_format({
-    border = 1,
-    locked = true,
-    pattern = 1,
-    bg_color = '#D8E4BC',
-    })
-  local desprotegido = planilha:add_format({locked = false, border = 1})
-  local tit_p = planilha:add_format({
-    border = 6,
-    locked = true,
-    pattern = 1,
-    bg_color = '#D8E4BC',
-    bold = true
-    })
-    
-  local aba_equip = planilha:add_worksheet("Equipamentos")
-  -- aba protegida
-  aba_equip:protect("", {["objects"] = true, ["scenarios"] = true})
-  
-  -- tamanho das colunas
-  aba_equip:set_column(0, 0, 9)
-  aba_equip:set_column(1, 1, 120)
-  aba_equip:set_column(2, 3, 25)
-  
-  -- primeira linha de titulo
-  aba_equip:write(0, 0, 'ID Unico', tit_p)
-  aba_equip:write(0, 1, 'Painel', tit_p)
-  aba_equip:write(0, 2, 'Componente', tit_p)
-  aba_equip:write(0, 3, 'Modulo', tit_p)
-  aba_equip:write(0, 4, 'Parte', tit_d)
-  aba_equip:write(0, 5, 'Tipo', tit_p)
-  aba_equip:write(0, 6, 'T id', tit_p)
-  aba_equip:write(0, 7, 'Terminal', tit_d)
-  
-  local lin = 1
-end
+
 
 function grava_pl_term ()
-  local saida = format_dir(projeto.caminho) .. '_saida' .. fs.dir_sep
-  if not exists (saida) then
-    if not cria_pasta(saida) then
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  if not exists (aux) then
+    if not cria_pasta(aux) then
       return false
     end
   end
   
-  local cam_pl = saida .. "terminais.xlsx"
+  local cam_pl = aux .. "terminais.xlsx"
   
   -- cria o arquivo de planilha
   if exists (cam_pl) then
@@ -1708,7 +1665,7 @@ function grava_pl_term ()
   return true
 end
 
-function le_mestra()
+function le_pl_base()
   local leitor = require 'xlsx_lua'
   
   -- abre e le o banco de dados
@@ -1718,7 +1675,7 @@ function le_mestra()
   end
   
   -- caminho da planilha
-  local arq = format_dir(projeto.caminho) .. '_dados'.. fs.dir_sep .. 'le_mestra.xlsx'
+  local arq = format_dir(projeto.caminho) .. '_aux'.. fs.dir_sep .. 'base.xlsm'
   
   local pl_term = false
   local pl_equip = false
@@ -1794,6 +1751,7 @@ function le_mestra()
     local elem = pl_term.data[i]['B']
     local term = pl_term.data[i]['C']
     local mod = pl_term.data[i]['D']
+    
     if mod then
       mod = "'" .. mod .. "'"
     else
@@ -1821,7 +1779,7 @@ function le_mestra()
       t_id = 1
     end
     
-    if item then
+    if item and term then
       -- finalmente, grava no BD
       bd:exec ("INSERT INTO tipico_term VALUES('"..
         item .. "', " .. el_id .. ", '" .. elem .. "', " ..
@@ -2077,7 +2035,15 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button(" Análise") then
-    -- grava_pl_analitica ()
+    local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  
+    if not exists (aux) then
+      cria_pasta(aux)
+    end
+    local pl_base = aux .. 'base.xlsm'
+    if not exists(pl_base) then
+      copia_arq(diretorio(fs.script_path()) .. 'base.xlsm', pl_base)
+    end
   end
   if cadzinho.nk_button(" Biblioteca") then
     modal = ''

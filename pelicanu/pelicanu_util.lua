@@ -48,6 +48,15 @@ function cria_pasta(caminho)
    end
 end
 
+function copia_arq(origem, destino)
+   if (os.getenv("oS") or ""):match("^Windows") then
+      return os.execute('copy "' .. origem .. '" "' .. destino .. '"')
+   else
+      return os.execute('cp "' .. origem .. '" "' .. destino .. '"')
+   end
+   return exists(destino)
+end
+
 function carrega_config(arq)
   local configEnv = {} -- to keep it separate from the global env
   local f,err = loadfile(arq, "t", configEnv)

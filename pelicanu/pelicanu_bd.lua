@@ -374,44 +374,45 @@ function bd_novo(caminho)
     "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, componentes_esq.x ASC, componentes_esq.y ASC;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
-    "SELECT efetivo.unico, efetivo.painel, efetivo.componente,  \n" ..
-    "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num,  \n" ..
-    "componentes.item, comp_term.num t_id, tip.term FROM  \n" ..
-    "(SELECT unico, painel, componente, modulo, parte, tipo,  \n" ..
-    "ROW_NUMBER() OVER  \n" ..
-    "(PARTITION BY painel, componente, modulo, tipo) num  \n" ..
-    "FROM descr_comp) efetivo  \n" ..
-    "LEFT JOIN comp_term  \n" ..
-    "ON efetivo.unico = comp_term.unico  \n" ..
-    "LEFT JOIN componentes  \n" ..
-    "ON efetivo.painel = componentes.painel AND  \n" ..
-    "efetivo.componente = componentes.id AND  \n" ..
-    "NOT efetivo.tipo = 'BORNE' AND  \n" ..
-    "NOT efetivo.tipo = 'BORNE_SEC'  \n" ..
-    "LEFT JOIN (SELECT tipico.item,  \n" ..
-    "tipico.modulo, tipico.elemento,  \n" ..
-    "tipico.num, tipico_term.t_id, tipico_term.term  \n" ..
-    "FROM (SELECT item, modulo, el_id, elemento,  \n" ..
-    "ROW_NUMBER() OVER  \n" ..
-    "(PARTITION BY item, modulo, elemento) num  \n" ..
-    "FROM tipico_term  \n" ..
-    "GROUP BY item, modulo, elemento, el_id) tipico  \n" ..
-    "INNER JOIN tipico_term  \n" ..
-    "ON tipico.item = tipico_term.item AND  \n" ..
-    "tipico.el_id = tipico_term.el_id AND (  \n" ..
-    "tipico.modulo = tipico_term.modulo   \n" ..
-    "OR tipico.modulo IS NULL)  \n" ..
-    "ORDER BY tipico.item, tipico.modulo,  \n" ..
-    "tipico.elemento, tipico.num,   \n" ..
-    "tipico_term.t_id) tip  \n" ..
-    "ON efetivo.tipo = tip.elemento AND  \n" ..
-    "efetivo.num = tip.num AND  \n" ..
-    "componentes.item = tip.item AND  \n" ..
-    "NOT efetivo.tipo = 'BORNE' AND  \n" ..
-    "NOT efetivo.tipo = 'BORNE_SEC' AND  \n" ..
-    "comp_term.num = tip.t_id AND (  \n" ..
-    "efetivo.modulo IS NULL OR  \n" ..
-    "efetivo.modulo = tip.modulo);")
+    "SELECT efetivo.unico, efetivo.painel, efetivo.componente,\n" ..
+    "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num,\n" ..
+    "componentes.item, comp_term.num t_id, tip.term FROM\n" ..
+    "(SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
+    "ROW_NUMBER() OVER\n" ..
+    "(PARTITION BY painel, componente, modulo, tipo) num\n" ..
+    "FROM descr_comp) efetivo\n" ..
+    "LEFT JOIN comp_term\n" ..
+    "ON efetivo.unico = comp_term.unico\n" ..
+    "LEFT JOIN componentes\n" ..
+    "ON efetivo.painel = componentes.painel AND\n" ..
+    "efetivo.componente = componentes.id AND\n" ..
+    "NOT efetivo.tipo = 'BORNE' AND\n" ..
+    "NOT efetivo.tipo = 'BORNE_SEC'\n" ..
+    "LEFT JOIN (SELECT tipico.item,\n" ..
+    "tipico.modulo, tipico.elemento,\n" ..
+    "tipico.num, tipico_term.t_id, tipico_term.term\n" ..
+    "FROM (SELECT item, modulo, el_id, elemento,\n" ..
+    "ROW_NUMBER() OVER\n" ..
+    "(PARTITION BY item, modulo, elemento) num\n" ..
+    "FROM tipico_term\n" ..
+    "GROUP BY item, modulo, elemento, el_id) tipico\n" ..
+    "INNER JOIN tipico_term\n" ..
+    "ON tipico.item = tipico_term.item AND\n" ..
+    "tipico.el_id = tipico_term.el_id AND (\n" ..
+    "tipico.modulo = tipico_term.modulo \n" ..
+    "OR (tipico.modulo IS NULL AND  \n" ..
+    "tipico_term.modulo IS NULL))\n" ..
+    "ORDER BY tipico.item, tipico.modulo,\n" ..
+    "tipico.elemento, tipico.num, \n" ..
+    "tipico_term.t_id) tip\n" ..
+    "ON efetivo.tipo = tip.elemento AND\n" ..
+    "efetivo.num = tip.num AND\n" ..
+    "componentes.item = tip.item AND\n" ..
+    "NOT efetivo.tipo = 'BORNE' AND\n" ..
+    "NOT efetivo.tipo = 'BORNE_SEC' AND\n" ..
+    "comp_term.num = tip.t_id AND ( \n" ..
+    "(tip.modulo IS NULL AND efetivo.modulo IS NULL) \n" ..
+    "OR efetivo.modulo = tip.modulo);")
   
   bd:close()
   return true

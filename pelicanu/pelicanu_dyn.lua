@@ -271,7 +271,7 @@ function projeto_dyn (event)
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
-      if le_mestra() then
+      if le_pl_base() then
         msg = 'Sucesso'
       else
         msg = 'Erro Leit. Plan.'
