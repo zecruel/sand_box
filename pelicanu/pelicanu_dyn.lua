@@ -218,15 +218,18 @@ function projeto_dyn (event)
       cadzinho.nk_label("Tem certeza?")
       cadzinho.nk_layout(15, 2)
       if cadzinho.nk_button("OK") then
-      
+        sub_modal = ''
       end
       if cadzinho.nk_button("Cancela") then
         sub_modal = ''
       end
-    elseif sub_modal == 'bd_p_pl' then
+    elseif sub_modal == 'bd_p_pl_comp' then
       cadzinho.nk_layout(15, 1)
-      cadzinho.nk_label("As planilhas existentes")
-      cadzinho.nk_label("serão apagadas")
+      cadzinho.nk_label("Grava componentes")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("A planilha existente")
+      cadzinho.nk_label("será apagada")
       cadzinho.nk_layout(5, 1)
       cadzinho.nk_layout(15, 1)
       cadzinho.nk_label("Tem certeza?")
@@ -237,27 +240,62 @@ function projeto_dyn (event)
         else
           sub_modal = ''
         end
-        
-        if not grava_pl_analitica () then
+      end
+      if cadzinho.nk_button("Cancela") then
+        sub_modal = ''
+      end
+    elseif sub_modal == 'bd_p_pl_term' then
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Grava Terminais")
+     
+      cadzinho.nk_check("Numera Auto.", g_num_auto)
+       cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("A planilha existente")
+      cadzinho.nk_label("será apagada")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Tem certeza?")
+      cadzinho.nk_layout(15, 2)
+      if cadzinho.nk_button("OK") then
+        if not grava_pl_term (g_num_auto.value) then
           msg = 'Erro Ger. Planilhas'
         else
           sub_modal = ''
         end
-        
-        grava_pl_term ()
       end
       if cadzinho.nk_button("Cancela") then
         sub_modal = ''
       end
     else
       cadzinho.nk_layout(20, 1)
-      if cadzinho.nk_button("BD  Planilhas ") then
-        sub_modal = 'bd_p_pl'
+      if cadzinho.nk_button("BD  Pl. Base") then
+        msg = ''
+        if le_pl_base() then
+          msg = 'Sucesso'
+        else
+          msg = 'Erro Leit. Plan.'
+        end
       end
-      if cadzinho.nk_button(" BD  Planilhas") then
+      if cadzinho.nk_button("BD  Componentes ") then
+        msg = ''
+        sub_modal = 'bd_p_pl_comp'
+      end
+      if cadzinho.nk_button(" BD  Componentes") then
+        msg = ''
         sub_modal = 'pl_p_bd'
       end
+      if cadzinho.nk_button("BD  Terminais ") then
+        msg = ''
+        sub_modal = 'bd_p_pl_term'
+      end
+      if cadzinho.nk_button(" BD  Terminais") then
+        msg = ''
+        sub_modal = 'pl_p_bd'
+      end
+      
       if cadzinho.nk_button("Volta") then
+        msg = ''
         modal = ''
       end
     end
@@ -271,11 +309,7 @@ function projeto_dyn (event)
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
-      if le_pl_base() then
-        msg = 'Sucesso'
-      else
-        msg = 'Erro Leit. Plan.'
-      end
+      modal = ''
     end
     if cadzinho.nk_button("Cancela") then
       modal = ''

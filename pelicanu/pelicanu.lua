@@ -86,6 +86,8 @@ g_fmt_ver = {value = "1"}
 g_fmt_fl = {value = "1"}
 g_fmt_pfl = {value = "1"}
 
+g_num_auto = {value = false}
+
 excel = require "xlsxwriter.workbook"
 
 cores_claras = {
@@ -1077,7 +1079,7 @@ function obtem_desenhos (caixas, tipos)
   return desenhos
 end
 
-function grava_pl_comp ()
+function grava_pl_comp_ant ()
   local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
   if not exists (aux) then
     if not cria_pasta(aux) then
@@ -1316,7 +1318,7 @@ function estima_tipo_comp (nome, elementos)
   return ret
 end
 
-function grava_pl_analitica ()
+function grava_pl_comp ()
   -- abre e le o banco de dados
   local bd = sqlite.open(projeto.bd)
   if not bd then -- erro na abertura do bd
@@ -1334,7 +1336,7 @@ function grava_pl_analitica ()
   end
   
   -- cria o arquivo de planilha
-  local cam_pl = aux .. "analitica.xlsx"
+  local cam_pl = aux .. "componentes.xlsx"
   if exists (cam_pl) then -- se há um arquivo antigo
     if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
       return false -- erro ao apagar o arquivo antigo
@@ -1487,7 +1489,7 @@ end
 
 
 
-function grava_pl_term ()
+function grava_pl_term (num_autom)
   local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
   if not exists (aux) then
     if not cria_pasta(aux) then
@@ -1573,13 +1575,19 @@ function grava_pl_term ()
   local bd = sqlite.open(projeto.bd)
   if not bd then return false end
   
-  for linha in bd:cols("select unico, painel, componente, modulo,  \n" ..
-    "parte, tipo, item, t_id num,  \n" ..
-    "case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else   \n" ..
-    "(case when not tipo = 'BORNE' then num||t_id else num end) end terminal,  \n" ..
-    "case when item is not null and tipico_aplic.term IS NULL and not tipo = 'BORNE' then 'Incompleto' else  \n" ..
-    "(case when not tipo = 'BORNE' and tipico_aplic.term IS NULL then 'Sem tipico' end) end alerta  \n" ..
-    "from tipico_aplic") do -- para cada linha do BD
+  
+  
+  local cmd = 'select * from comp_term'
+  if num_autom then
+    cmd = "select unico, painel, componente, modulo,  \n" ..
+      "parte, tipo, item, t_id num,  \n" ..
+      "case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else   \n" ..
+      "(case when not tipo = 'BORNE' then num||t_id else num end) end terminal,  \n" ..
+      "case when item is not null and tipico_aplic.term IS NULL and not tipo = 'BORNE' then 'Incompleto' else  \n" ..
+      "(case when not tipo = 'BORNE' and tipico_aplic.term IS NULL then 'Sem tipico' end) end alerta  \n" ..
+      "from tipico_aplic"
+  end
+  for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba:write(lin, 0, string.format('%X', linha.unico), protegido)
     aba:write(lin, 1, linha. painel, protegido)
@@ -1805,10 +1813,15 @@ function le_pl_base()
     if tipo then
       bd:exec ("INSERT INTO regras_equip VALUES('"..
         tipo .. "', " .. item ..  ");")
+      
+      -- forca a atualização das regras nos componenetes
+      bd:exec ("UPDATE componentes SET item = "..
+        item .. " WHERE tipo = '" .. tipo ..  "';")
     end
   end
   
   
+  atualiza_db_componentes(bd)
   
   
   bd:close()
