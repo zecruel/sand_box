@@ -52,6 +52,10 @@ function bd_novo(caminho)
   bd:exec('CREATE TABLE engates_esq('..
     'unico INTEGER, '..
     'engate TEXT)')
+  bd:exec('DROP TABLE IF EXISTS referencias_esq')
+  bd:exec('CREATE TABLE referencias_esq('..
+    'unico INTEGER, '..
+    'terminal TEXT)')
   bd:exec('DROP VIEW IF EXISTS hierarquia_esq')
   bd:exec("CREATE VIEW hierarquia_esq AS\n"..
     "SELECT componentes_esq.unico componente,\n"..
@@ -114,10 +118,11 @@ function bd_novo(caminho)
     "THEN componentes_esq.id\n"..
     "END) parte,\n"..
     "componentes_esq.bloco, componentes_esq.tipo, terminais_esq.id num, terminais_esq.terminal \n"..
-    "FROM componentes_esq, hierarquia_esq \n"..
+    "FROM componentes_esq, hierarquia_esq\n"..
     "INNER JOIN terminais_esq ON terminais_esq.componente = componentes_esq.unico\n"..
-    "WHERE componentes_esq.unico = hierarquia_esq.componente "..
+    "WHERE componentes_esq.unico = hierarquia_esq.componente\n"..
     "AND NOT componentes_esq.tipo = 'ENGATE'\n"..
+    "AND NOT componentes_esq.tipo = 'REFERENCIA'\n"..
     "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, "..
     "componentes_esq.x ASC, componentes_esq.y ASC, num ASC;\n")
   bd:exec('DROP VIEW IF EXISTS eng_term')
@@ -155,6 +160,7 @@ function bd_novo(caminho)
     "FROM barras_esq, componentes_esq, hierarquia_esq, caixas\n"..
     "WHERE componentes_esq.unico = barras_esq.componente AND \n"..
     "NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente\n"..
+    "AND NOT componentes_esq.tipo = 'REFERENCIA'\n"..
     "AND hierarquia_esq.painel = caixas.unico\n"..
     "ORDER BY barra ASC\n")
   bd:exec('DROP VIEW IF EXISTS fiacao_interna')
@@ -380,7 +386,7 @@ function bd_novo(caminho)
     "(SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
     "ROW_NUMBER() OVER\n" ..
     "(PARTITION BY painel, componente, modulo, tipo) num\n" ..
-    "FROM descr_comp) efetivo\n" ..
+    "FROM descr_comp WHERE NOT tipo = 'REFERENCIA') efetivo\n" ..
     "LEFT JOIN comp_term\n" ..
     "ON efetivo.unico = comp_term.unico\n" ..
     "LEFT JOIN componentes\n" ..
@@ -421,6 +427,14 @@ end
 function deleta_arq_db(bd, arquivo)
   local comando = "DELETE FROM engates_esq\n" ..
     "WHERE engates_esq.unico IN (\n" ..
+    "SELECT unico\n" ..
+    "FROM componentes_esq\n" ..
+    "WHERE componentes_esq.arquivo = '" .. arquivo .. "');"
+
+  bd:exec(comando)
+  
+  local comando = "DELETE FROM referencias_esq\n" ..
+    "WHERE referencias_esq.unico IN (\n" ..
     "SELECT unico\n" ..
     "FROM componentes_esq\n" ..
     "WHERE componentes_esq.arquivo = '" .. arquivo .. "');"
@@ -633,6 +647,13 @@ function atualiza_db_esq(bd, arquivo, caixas)
           bd:exec ("INSERT INTO engates_esq VALUES("..
           string.format('%d', el_id) ..", "..engate..")")
         end
+        if comp_tipo == "'REFERENCIA'" then
+          local dados = pega_attrib(el.ent)
+          if dados.terminal then
+            bd:exec ("INSERT INTO referencias_esq VALUES("..
+            string.format('%d', el_id) ..", '".. dados.terminal .."')")
+          end
+        end
       elseif el.tipo == "CAIXA" then
         local sub_caixa = caixas[el_id]
         if sub_caixa then
@@ -683,7 +704,7 @@ function atualiza_db_paineis(bd)
   -- obtém a lista de painéis efetivamente utilizados no banco de dados
   local paineis = {}
   for linha in bd:cols('SELECT DISTINCT painel FROM descr_comp ORDER BY painel') do -- para cada linha do BD
-    paineis[linha.painel] = 1
+    if linha.painel then paineis[linha.painel] = 1 end
   end
   
   -- atualiza a tabela do bd com o descritivo dos painéis (acrescenta os novos)
@@ -708,7 +729,8 @@ function atualiza_db_componentes(bd)
     'SELECT painel, componente, sum(num) elementos, ' ..
     'GROUP_CONCAT(tipo, ";") tipos ' ..
     'FROM ( SELECT painel, componente, tipo, COUNT(tipo) num ' ..
-    'FROM descr_comp GROUP BY painel, componente, tipo) ' ..
+    "FROM descr_comp WHERE NOT tipo = 'REFERENCIA' " ..
+    'GROUP BY painel, componente, tipo) ' ..
     'GROUP BY painel, componente;'
   ) do
     -- estima qual o tipo do componente

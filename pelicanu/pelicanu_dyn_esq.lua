@@ -1,0 +1,667 @@
+-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
+-- Autor: Ezequiel Rabelo de Aguiar - 2023
+-- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
+
+
+-- Maquina de estados para funções dinâmicas (GUI - CadZinho) do PELICANU
+-- Estado principal - variável global 'modal'
+-- Estado secundário - variável global 'sub_modal'
+
+-- ================= Esquemático ===============
+function esquematico_dyn (event)
+  if modal == 'ligacao' then
+    -- funcao interativa para criacao de uma ligação
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Nova ligacao")
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Primeiro ponto')
+      if event.type == 'enter' then -- usuario entra o primeiro ponto
+        num_pt = num_pt + 1
+        
+      elseif event.type == 'cancel' then  -- usuario cancela
+        -- sai da funcao
+        cadzinho.set_color("by layer")
+        cadzinho.set_lw("by layer")
+        cadzinho.set_ltype("bylayer")
+        modal = ''
+      end
+    else
+      cadzinho.nk_label('Proximo ponto')
+      cadzinho.set_ltype("Continuous") -- linha continua
+      cadzinho.set_color(1) -- cor vermelha
+      
+      -- o elemento "ligacao" eh uma linha simples
+      local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
+      cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
+      
+      if event.type == 'enter' then -- usuario entra o segundo ponto
+        if ligacao then
+          cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+          
+          -- grava o elemento no desenho
+          cadzinho.add_ext(ligacao, "PELICANU", {cadzinho.unique_id(), "LIGACAO", "-"})
+          ligacao:write()
+          
+          -- continua - considera o ponto atual como o primeiro da proxima ligação
+          pts[1].x = event.x
+          pts[1].y = event.y
+        end
+      elseif event.type == 'cancel' then -- usuario cancela
+        -- volta ao primeiro ponto
+        num_pt = 1
+      end
+    
+    end
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+    
+  elseif modal == 'componente' then
+    -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Adiciona um componente")
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Escolha:')
+      --cadzinho.nk_combo(g_tipo_comp)
+      cadzinho.nk_layout(180, 1)
+      if cadzinho.nk_group_begin("Biblioteca", false, true, true) then
+        cadzinho.nk_layout(15, 1)
+        obtem_lista_esq()
+        for _, nome in ipairs(lista_esq_o) do      
+          if cadzinho.nk_button(nome) then
+            g_componente.value = nome
+          end
+        end
+        cadzinho.nk_group_end()
+      end
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Nome:")
+      cadzinho.nk_edit(g_componente)
+      if cadzinho.nk_button("Insere") then
+        if type(lista_esq[g_componente.value]) == 'string' then
+          local comp = cadzinho.new_insert(g_componente.value,
+            pts[num_pt].x, pts[num_pt].y)
+          if comp == nil then
+            if cadzinho.new_block_file(lista_esq[g_componente.value],
+              g_componente.value, "componente PELICAnU ".. g_componente.value,
+              true, '#', '*', '$', '?', 0, 0, 0)
+            then
+              comp = cadzinho.new_insert(g_componente.value,
+                pts[num_pt].x, pts[num_pt].y)
+            end
+          end
+          if comp then
+            local tipo = pega_comp_tipo(comp)
+            local terminais = info_terminais(comp)
+            g_terminais = {}
+            for i, term in pairs(terminais) do
+              g_terminais[i] = {value = term}
+            end
+            if tipo == 'ENGATE' then
+              g_engate.value = pega_engate(comp)
+            else
+              g_comp_id.value = pega_comp_id(comp)
+            end
+            if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+              local descricoes = info_descricoes(comp)
+              g_descricoes = {}
+              for i, descr in pairs(descricoes) do
+                g_descricoes[i] = {value = descr}
+              end
+            end
+            
+            num_pt = 2
+          end
+        end
+      end
+      if cadzinho.nk_button("Cancela") then
+        modal = ''
+      end
+      
+    else
+      local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
+      if comp then cadzinho.ent_draw(comp) end
+      local tipo = pega_comp_tipo(comp)
+      cadzinho.nk_label(g_componente.value)
+      cadzinho.nk_label('Entre o ponto')
+      cadzinho.nk_layout(20, 2)
+      if tipo == 'ENGATE' then
+        cadzinho.nk_label("Engate:")
+        cadzinho.nk_edit(g_engate)
+      else
+        cadzinho.nk_label("ID:")
+        cadzinho.nk_edit(g_comp_id)
+      end
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label("Terminais:")
+      cadzinho.nk_layout(20, 2)
+      for i, term in pairs(g_terminais) do
+        cadzinho.nk_label(tostring(i)..':')
+        cadzinho.nk_edit(term)
+      end
+      if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_label("Descrições:")
+        cadzinho.nk_layout(20, 2)
+        for i, descr in pairs(g_descricoes) do
+          cadzinho.nk_label(tostring(i)..':')
+          cadzinho.nk_edit(descr)
+        end
+      end
+      if event.type == 'enter' then
+        if tipo == 'ENGATE' then
+          muda_engate (comp, g_engate.value)
+        else
+          muda_comp_id (comp, g_comp_id.value)
+        end
+        local terminais = {}
+        for i, term in pairs(g_terminais) do
+          terminais[i] = term.value
+        end
+        muda_terminais(comp, terminais)
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = {}
+          for i, descr in pairs(g_descricoes) do
+            descricoes[i] = descr.value
+          end
+          muda_descricoes(comp, descricoes)
+        end
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        cadzinho.add_ext(comp, "PELICANU", {cadzinho.unique_id(), "COMPONENTE"})
+        comp:write()
+        cadzinho.clear_sel()
+        --modal = ''
+        --num_pt = 1
+      elseif event.type == 'cancel' then
+        num_pt = 1
+      end
+    end
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+    
+  elseif modal == 'caixa' then
+    -- funcao interativa para criacao de uma caixa
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Nova caixa")
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    cadzinho.nk_edit(g_caixa_id)
+    cadzinho.nk_label("Tipo:")
+    cadzinho.nk_combo(g_caixa_tipo)
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Primeiro ponto')
+      if event.type == 'enter' then
+        num_pt = num_pt + 1
+      elseif event.type == 'cancel' then
+        -- sai da funcao
+        cadzinho.set_color("by layer")
+        cadzinho.set_lw("by layer")
+        cadzinho.set_ltype("bylayer")
+        modal = ''
+      end
+    else
+      cadzinho.nk_label('Proximo ponto')
+      
+      -- o elemento "caixa" principal -  eh uma polyline no formato retangulo
+      cadzinho.set_ltype("Dashdot") -- linha traco-ponto
+      cadzinho.set_color(3) -- cor verde
+      local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+      cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+      cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+      cadzinho.pline_close(caixa, true)
+      --[[
+      -- outro formato: poligono arbitrario fechado
+      for i = 3, num_pt do
+        cadzinho.pline_append(caixa, pts[i].x, pts[i].y, 0)
+      end]]--
+      if (caixa) then cadzinho.ent_draw(caixa) end
+      
+      -- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
+      -- posicao do texto - canto superior direito
+      local tx = pts[2].x
+      if tx < pts[1].x then tx = pts[1].x end
+      local ty = pts[2].y
+      if ty < pts[1].y then ty = pts[1].y end
+      local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
+      
+      -- desenha um retangulo simples em volta do texto do identificador
+      local retan_txt = nil
+      if caixa_id then 
+        cadzinho.ent_draw(caixa_id) 
+        local cx_tx = cadzinho.get_bound(caixa_id)
+        cx_tx.low.x = cx_tx.low.x - 0.3
+        cx_tx.low.y = cx_tx.low.y - 0.3
+        cx_tx.up.x = cx_tx.up.x + 0.3
+        cx_tx.up.y = cx_tx.up.y + 0.3
+        cadzinho.set_ltype("Continuous") -- linha continua
+        retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0, cx_tx.up.x, cx_tx.low.y, 0)
+        cadzinho.pline_append(retan_txt, cx_tx.up.x, cx_tx.up.y, 0)
+        cadzinho.pline_append(retan_txt, cx_tx.low.x, cx_tx.up.y, 0)
+        cadzinho.pline_close(retan_txt, true)
+      end
+      if retan_txt then cadzinho.ent_draw(retan_txt) end
+      
+      if event.type == 'enter' then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        
+        if caixa then
+          cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "CAIXA", g_caixa_tipo[g_caixa_tipo.value]})
+          caixa:write()
+        end
+        if caixa_id then
+          cadzinho.add_ext(caixa_id, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
+          caixa_id:write()
+        end
+        if retan_txt then retan_txt:write() end
+        
+        num_pt = 1
+        --[[
+        -- outro formato: poligono arbitrario fechado
+        num_pt = num_pt + 1]]--
+        
+      elseif event.type == 'cancel' then
+        --[[
+        -- outro formato: poligono arbitrario fechado
+        if caixa then
+          cadzinho.add_ext(caixa, "PELICANU", {"CAIXA", g_caixa_id.value})
+          caixa:write()
+        end]]--
+        num_pt = 1
+      end
+    
+    end
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+    
+  elseif modal == 'edita' then
+    -- funcao interativa para editar o id de um componente
+
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Edita a ID")
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+ 
+    local sel = cadzinho.get_sel()
+    if #sel < 1 then
+      num_pt = 1
+      cadzinho.enable_sel()
+    end
+
+    local tipo = nil
+    if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
+    
+    if #sel > 0 and  num_pt == 1 then
+      if tipo then
+        num_pt = 2
+        if tipo == 'ENGATE' then
+          g_engate.value = pega_engate(sel[1])
+        else
+          g_comp_id.value = pega_comp_id(sel[1])
+        end
+        local terminais = info_terminais(sel[1])
+        g_terminais = {}
+        for i, term in pairs(terminais) do
+          g_terminais[i] = {value = term}
+        end
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = info_descricoes(sel[1])
+          g_descricoes = {}
+          for i, descr in pairs(descricoes) do
+            g_descricoes[i] = {value = descr}
+          end
+        end
+        
+      else
+        cadzinho.clear_sel()
+      end
+    end
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Selecione um componente')
+      
+      if event.type == 'cancel' then
+        modal = ''
+      end
+    else
+    
+      cadzinho.nk_label('Confirme')
+      cadzinho.nk_layout(20, 2)
+      if tipo == 'ENGATE' then
+        cadzinho.nk_label("Engate:")
+        cadzinho.nk_edit(g_engate)
+      else
+        cadzinho.nk_label("ID:")
+        cadzinho.nk_edit(g_comp_id)
+      end
+
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label("Terminais:")
+      cadzinho.nk_layout(20, 2)
+      for i, term in pairs(g_terminais) do
+        cadzinho.nk_label(tostring(i)..':')
+        cadzinho.nk_edit(term)
+      end
+      
+      if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_label("Descrições:")
+        cadzinho.nk_layout(20, 2)
+        for i, descr in pairs(g_descricoes) do
+          cadzinho.nk_label(tostring(i)..':')
+          cadzinho.nk_edit(descr)
+        end
+      end
+      
+      if event.type == 'enter' then
+        if tipo == 'ENGATE' then
+          muda_engate (sel[1], g_engate.value)
+        else
+          muda_comp_id (sel[1], g_comp_id.value)
+        end
+        local terminais = {}
+        for i, term in pairs(g_terminais) do
+          terminais[i] = term.value
+        end
+        muda_terminais(sel[1], terminais)
+        
+        if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+          local descricoes = {}
+          for i, descr in pairs(g_descricoes) do
+            descricoes[i] = descr.value
+          end
+          muda_descricoes(sel[1], descricoes)
+        end
+        
+        sel[1]:write()
+        
+        cadzinho.clear_sel()
+        --modal = ''
+        num_pt = 1
+      elseif event.type == 'cancel' then
+        num_pt = 1
+        cadzinho.clear_sel()
+      end
+    end
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+    
+  elseif modal == 'formato' then
+    -- funcao interativa para acrescentar um componente ao desenho, de uma biblioteca
+
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Adiciona um formato")
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Escolha o formato')
+      cadzinho.nk_layout(150, 1)
+      if cadzinho.nk_group_begin("Formatos", true, true, true) then
+        cadzinho.nk_layout(20, 1)
+        for _, nome in ipairs(lista_formato_o) do      
+          if cadzinho.nk_button(nome) then
+            g_formato.value = nome
+          end
+        end
+        cadzinho.nk_group_end()
+      end
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Nome:")
+      cadzinho.nk_edit(g_formato)
+      if cadzinho.nk_button("Insere") then
+        if type(lista_formato[g_formato.value]) == 'string' then
+          local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+          if fmt == nil then
+            if cadzinho.new_block_file(lista_formato[g_formato.value],
+              g_formato.value, "formato PELICAnU ".. g_formato.value,
+              true, '#', '*', '$', '?', 0, 0, 0) then
+
+              fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+            end
+          end
+          if fmt then num_pt = 2 end
+        end
+      end
+      
+      if event.type == 'enter' then
+        num_pt = num_pt + 1
+      elseif event.type == 'cancel' then
+        modal = ''
+      end
+    else
+      local fmt = cadzinho.new_insert(g_formato.value, pts[num_pt].x, pts[num_pt].y)
+      if fmt then cadzinho.ent_draw(fmt) end
+      cadzinho.nk_label(g_formato.value)
+      cadzinho.nk_label('Entre o ponto')
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Número:")
+      cadzinho.nk_edit(g_fmt_id)
+      cadzinho.nk_label("Projeto:")
+      cadzinho.nk_edit(g_fmt_prj)
+      cadzinho.nk_label("Título:")
+      cadzinho.nk_edit(g_fmt_tit)
+      cadzinho.nk_label("Revisão:")
+      cadzinho.nk_edit(g_fmt_rev)
+      cadzinho.nk_label("Versão:")
+      cadzinho.nk_edit(g_fmt_ver)
+      cadzinho.nk_label("Folha:")
+      cadzinho.nk_edit(g_fmt_fl)
+      cadzinho.nk_label("Próx. fl.:")
+      cadzinho.nk_edit(g_fmt_pfl)
+      
+      
+      if event.type == 'enter' then
+        local dados = {}
+        dados.ident = g_fmt_id.value
+        dados.titulo = g_fmt_tit.value
+        dados.tipo = 'DIAGRAMA ESQUEMÁTICO'
+        dados.projeto = g_fmt_prj.value
+        dados.rev = g_fmt_rev.value
+        dados.versao = g_fmt_ver.value
+        dados.fl = g_fmt_fl.value
+        dados.data = projeto.data
+        dados.aplic = projeto.aplicacao
+        dados.instal = projeto.instalacao
+        dados.visto = projeto.visto
+        dados.aprov = projeto.aprovacao
+        dados.classif = 'RESERVADO'
+        dados.p_fl = g_fmt_pfl.value
+        muda_atrib (fmt, dados)
+        
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        cadzinho.add_ext(fmt, "PELICANU", {cadzinho.unique_id(), "CAIXA", "DESENHO"})
+        fmt:write()
+        cadzinho.clear_sel()
+        --modal = ''
+        --num_pt = 1
+      elseif event.type == 'cancel' then
+        num_pt = 1
+      end
+    end
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+  elseif modal == 'refer' then
+    -- funcao interativa para criacao de uma ligação
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Nova referência")
+    
+    cadzinho.nk_propertyi("Altura", g_ref_alt, 3, 10)
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("Terminal:")
+    cadzinho.nk_edit(g_ref_term)
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_check("Oculta terminal", g_ref_term_ocul)
+    cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
+    cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
+    cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
+    
+    -- armazena o ponto atual na lista
+    pts[1] = {}
+    pts[1].x = event.x
+    pts[1].y = event.y
+    pts[2] = {}
+    pts[2].x = event.x + g_ref_descr.value
+    pts[2].y = event.y - g_ref_alt.value
+    
+    local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+    cadzinho.pline_close(caixa, true)
+    if (caixa) then cadzinho.ent_draw(caixa) end
+    
+    pts[1].x = event.x + g_ref_descr.value
+    pts[2].x = pts[2].x + g_ref_desenho.value
+    
+    caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+    cadzinho.pline_close(caixa, true)
+    if (caixa) then cadzinho.ent_draw(caixa) end
+    
+    pts[1].x = event.x - 1
+    pts[1].y = event.y - g_ref_alt.value/2
+    local txt = cadzinho.new_text(pts[1].x, pts[1].y, g_ref_term.value, 2.0, "right", "middle")
+    if (txt) then cadzinho.ent_draw(txt) end
+    
+    pts[1].x = event.x + 1
+    txt = cadzinho.new_text(pts[1].x, pts[1].y, 'APLIC ??', 2.0, "left", "middle")
+    if (txt) then cadzinho.ent_draw(txt) end
+    
+    pts[1].x = event.x + g_ref_descr.value + 1
+    txt = cadzinho.new_text(pts[1].x, pts[1].y, 'DESENHO ??', 2.0, "left", "middle")
+    if (txt) then cadzinho.ent_draw(txt) end
+    
+    if event.type == 'enter' then -- usuario entra o segundo ponto
+      local nome_bloco = 'referencia_' .. g_ref_alt.value .. '_' ..
+        g_ref_descr.value ..  '_' .. g_ref_desenho.value
+        
+      cadzinho.set_color("by block")
+      cadzinho.set_lw("by block")
+      cadzinho.set_ltype("byblock")
+      
+      local elems = {}
+      local caixa = cadzinho.new_pline(0, 0, 0, g_ref_descr.value, 0, 0)
+      cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
+      cadzinho.pline_append(caixa, 0, -g_ref_alt.value, 0)
+      cadzinho.pline_close(caixa, true)
+      elems[#elems + 1] = caixa
+      
+      caixa = cadzinho.new_pline(g_ref_descr.value, 0, 0, g_ref_descr.value + g_ref_desenho.value, 0, 0)
+      cadzinho.pline_append(caixa, g_ref_descr.value + g_ref_desenho.value, -g_ref_alt.value, 0)
+      cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
+      cadzinho.pline_close(caixa, true)
+      elems[#elems + 1] = caixa
+      
+      local txt = cadzinho.new_text(-1, -g_ref_alt.value/2, 
+        '#terminal$t??', 2.0, "right", "middle")
+      elems[#elems + 1] = txt
+      
+      local txt = cadzinho.new_text(-1, -g_ref_alt.value, 
+        '#*TIPO$REFERENCIA', 1.0, "right", "middle")
+      elems[#elems + 1] = txt
+      
+      txt = cadzinho.new_text(1, -g_ref_alt.value/2, '#aplicacao$??', 2.0, 
+        "left", "middle")
+      elems[#elems + 1] = txt
+      
+      txt = cadzinho.new_text(g_ref_descr.value + 1, -g_ref_alt.value/2,
+        '#desenho$?? fl. ??', 2.0, "left", "middle")
+      elems[#elems + 1] = txt
+    
+      cadzinho.set_color("by layer")
+      cadzinho.set_lw("by layer")
+      cadzinho.set_ltype("bylayer")
+    
+      local ref_blc = cadzinho.new_insert(nome_bloco, event.x, event.y)
+      if ref_blc == nil then
+        if cadzinho.new_block(elems, nome_bloco,
+          "referencia esquematico PELICAnU ".. nome_bloco,
+          true, '#', '*', '$', '?', 0, 0, 0) then
+
+          ref_blc = cadzinho.new_insert(nome_bloco, event.x, event.y)
+        end
+      end
+      if ref_blc then
+        muda_atrib (ref_blc, {terminal = g_ref_term.value})
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        cadzinho.add_ext(ref_blc, "PELICANU", 
+          {cadzinho.unique_id(), "COMPONENTE"})
+        ref_blc:write()
+      end
+    elseif event.type == 'cancel' then  -- usuario cancela
+      -- sai da funcao
+      cadzinho.set_color("by layer")
+      cadzinho.set_lw("by layer")
+      cadzinho.set_ltype("bylayer")
+      modal = ''
+    end
+    
+    
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+  -- interface inicial
+  else
+    cadzinho.nk_layout(20, 1)
+    if cadzinho.nk_button(" Ligacao") then
+      num_pt = 1
+      modal = 'ligacao'
+      msg = ''
+    end
+    if cadzinho.nk_button(" Componente") then
+      num_pt = 1
+      obtem_tipo_comp()
+      num_pt = 1
+      modal = 'componente'
+      msg = ''
+    end
+    if cadzinho.nk_button("麗 Caixa") then
+      num_pt = 1
+      modal = 'caixa'
+      msg = ''
+    end
+    if cadzinho.nk_button(" Edita") then
+      num_pt = 1
+      modal = 'edita'
+      msg = ''
+    end
+    if cadzinho.nk_button(" Formato") then
+      num_pt = 1
+      obtem_lista_formato()
+      modal = 'formato'
+      msg = ''
+    end
+    if cadzinho.nk_button(" Referência") then
+      num_pt = 1
+      modal = 'refer'
+      msg = ''
+    end
+  end
+end

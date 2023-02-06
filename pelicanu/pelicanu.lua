@@ -10,6 +10,8 @@ biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc
 require('pelicanu_util')
 require('pelicanu_bd')
 require('pelicanu_dyn')
+require('pelicanu_dyn_prj')
+require('pelicanu_dyn_esq')
 
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
@@ -49,7 +51,7 @@ lista_esq_o = {}
 -- para a interface grafica
 component = {value = ''}
 g_caixa_id = {value = ''}
-g_caixa_tipo = {value = 1, 'COMPONENTE', 'MODULO', 'PAINEL', 'DESCRITIVO', 'GENERICO'}
+g_caixa_tipo = {value = 1, 'COMPONENTE', 'MODULO', 'PAINEL', 'DESCRITIVO', 'REFERENCIA', 'GENERICO'}
 g_editor_abas = {value = 1, "Esquematico", "Biblioteca"}
 g_term_num = {value = 1}
 g_term_nome = {value = "1"}
@@ -87,6 +89,13 @@ g_fmt_fl = {value = "1"}
 g_fmt_pfl = {value = "1"}
 
 g_num_auto = {value = false}
+
+g_ref_alt = {value = 5}
+g_ref_descr = {value = 32}
+g_ref_desenho = {value = 32}
+g_ref_term = {value = ""}
+g_ref_term_ocul = {value = false}
+g_ref_descr_ocul = {value = false}
 
 excel = require "xlsxwriter.workbook"
 
@@ -415,7 +424,8 @@ function dentro_poligono(pt, polig)
   -- metodo de escaneamento por linha horizontal
   for i = 1, #polig do
     if ((polig[i].y > pt.y) ~= (polig[ant].y > pt.y)) and 
-    (pt.x < (polig[ant].x - polig[i].x) * (pt.y - polig[i].y) / (polig[ant].y - polig[i].y) + polig[i].x) then
+    (pt.x < (polig[ant].x - polig[i].x) * (pt.y - polig[i].y) /
+    (polig[ant].y - polig[i].y) + polig[i].x) then
       dentro = not dentro
     end
     ant = i
@@ -426,9 +436,13 @@ end
 
 function dentro_contorno (ent, contorno)
   -- verifica se um objeto do desenho esta dentro de um contorno
-  
+  local tol = 0.1 -- tolerância
   local limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
   -- verifica se o retangulo está dentro do contorno
+  limite.low.x = limite.low.x + tol
+  limite.low.y = limite.low.y + tol
+  limite.up.x = limite.up.x - tol
+  limite.up.y = limite.up.y - tol
   return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
 end
 
@@ -634,7 +648,7 @@ function pega_attrib (ent)
   return dados
 end
 
-function muda_atrrib (ent, dados)
+function muda_atrib (ent, dados)
 -- altera as informacoes textuais dos terminais de um componente
 -- entrada: tabela com pares indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
 
@@ -1900,6 +1914,109 @@ function le_pl_comp()
   cadzinho.db_print ("----- Concluido  ------")
 end
 
+function terminais_pl_bd()
+  local leitor = require 'xlsx_lua'
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  local cam_pl = aux .. "terminais.xlsx"
+  
+  local pl_term = false
+  -- le o arquivo excel
+  local workbook = leitor.open(cam_pl)
+  -- procura pela aba 'Componentes'
+  if type(workbook) == 'table' then pl_term = workbook.sheets['Terminais']
+  else return false end
+  
+  if type(pl_term) ~= 'table' then return false end
+  
+  -- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
+  leitor.expand_merge (pl_term)
+  
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+    
+  -- varre a planilha
+  for _, lin in ipairs(pl_term.dim.rows) do
+    if lin ~= 1 then -- ignora a primeira linha com o titulo
+      local unico = tonumber(pl_term.data[lin]['A'],16) -- coluna A eh o id unico
+      -- atualiza o banco de dados com as informacoes lidas
+      bd:exec("UPDATE terminais_esq SET terminal = '" ..
+        tostring(pl_term.data[lin]['H']) ..
+        "' WHERE componente = " .. string.format('%d', unico) ..
+        " AND id = " .. tostring(pl_term.data[lin]['G']) .. ";")
+
+      if pl_term.data[lin]['E'] then
+        bd:exec("UPDATE componentes_esq SET id = '" ..
+        tostring(pl_term.data[lin]['E']) ..
+        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+      end
+    end
+  end
+  
+  bd:close()
+  
+  return true
+ 
+end
+
+function atualiza_ref_desenho()
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+  
+  -- atualiza a lista principal com os elementos
+  atualiza_elems()
+  
+  -- cria uma lista com os componentes
+  local componentes = {}
+  for el_id, el in pairs(elems_pelicanu) do
+    if el.tipo == "COMPONENTE" then
+      local componente = {}
+      componente.ent = el.ent
+      componente.id = pega_comp_id(el.ent)
+      componente.term =  info_terminais (el.ent)
+      componentes[el_id] = componente
+    end
+  end
+  
+  -- atualiza na lista de componentes
+  local cmd = "SELECT r.unico, dc.desenho, dc.fl, des.projeto, des.titulo FROM " ..
+    "(SELECT rf.unico, comp.painel, comp.componente, comp.modulo, " ..
+    "rf.terminal FROM referencias_esq rf " ..
+    "INNER JOIN descr_comp comp ON rf.unico = comp.unico " ..
+    "ORDER BY painel, componente, modulo, terminal) r " ..
+    "INNER JOIN comp_term c ON r.painel = c.painel AND " ..
+    "r.componente = c.componente AND (r.modulo = c.modulo " ..
+    "OR (r.modulo IS NULL AND c.modulo IS NULL)) " ..
+    "AND r.terminal = c.terminal " ..
+    "INNER JOIN descr_comp dc ON c.unico = dc.unico " ..
+    "INNER JOIN desenhos des ON dc.desenho = des.ident  " ..
+    "AND dc.fl = des.fl;"
+  
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+      local componente = componentes[linha.unico]
+      if type(componente) == 'table' then
+        if pl_comp.data[lin]['E'] then
+          componente.id = tostring(pl_comp.data[lin]['E'])
+        end
+        componente.term[tonumber(pl_comp.data[lin]['G'])] = tostring(pl_comp.data[lin]['H'])
+      end
+      
+    end
+    
+    -- atualiza no desenho
+    for _, componente in pairs(componentes) do
+      muda_comp_id (componente.ent, componente.id)
+      muda_terminais(componente.ent, componente.term)
+      componente.ent:write()
+    end
+  
+end
+
 function atualiza_engates()
   -- atualiza a lista principal com os elementos
   atualiza_elems()
@@ -1908,23 +2025,23 @@ function atualiza_engates()
   local bd = sqlite.open('pelicanu.db')
   for linha in bd:cols('select * from engate_par') do -- para cada linha do BD
     local unico = tonumber(linha.unico)
-  local el = elems_pelicanu[unico]
-  local num = 'E' .. linha.e_num
-  local des = linha.vai_des
-  local fl = linha.vai_fl
-  local descr = nil
-  
-  if des == 'NESTE' then
-    descr = ''
-  end
-  if fl == 'NESTA FL.' then
-    des = fl
-    fl = ''
-  elseif fl then
-    fl = 'FL. ' .. fl
-  end
-  muda_engate(el.ent, nil, num, des, fl, descr)
-  el.ent:write()
+    local el = elems_pelicanu[unico]
+    local num = 'E' .. linha.e_num
+    local des = linha.vai_des
+    local fl = linha.vai_fl
+    local descr = nil
+    
+    if des == 'NESTE' then
+      descr = ''
+    end
+    if fl == 'NESTA FL.' then
+      des = fl
+      fl = ''
+    elseif fl then
+      fl = 'FL. ' .. fl
+    end
+    muda_engate(el.ent, nil, num, des, fl, descr)
+    el.ent:write()
   end
   bd:close()
 end
