@@ -315,6 +315,7 @@ function projeto_dyn (event)
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
+      atualiza_ref_desenho()
       modal = ''
     end
     if cadzinho.nk_button("Cancela") then

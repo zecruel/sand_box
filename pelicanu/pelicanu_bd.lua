@@ -374,8 +374,8 @@ function bd_novo(caminho)
     "THEN componentes_esq.id\n" ..
     "END) parte, componentes_esq.tipo,\n" ..
     "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n" ..
-    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl\n" ..
-    "FROM componentes_esq, hierarquia_esq \n" ..
+    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl,\n" ..
+    "componentes_esq.arquivo FROM componentes_esq, hierarquia_esq \n" ..
     "WHERE componentes_esq.unico = hierarquia_esq.componente AND NOT componentes_esq.tipo = 'ENGATE'\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, componentes_esq.x ASC, componentes_esq.y ASC;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')

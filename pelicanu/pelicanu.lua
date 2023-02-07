@@ -653,7 +653,7 @@ function muda_atrib (ent, dados)
 -- entrada: tabela com pares indice-texto do terminal, onde o indice eh um numero inteiro comecando em 1
 
   local ocul = false
-  -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
+  -- varre os elementos ATTRIB da entidade
   local attrs = cadzinho.get_attribs(ent)
   for i, attr in ipairs(attrs) do
     -- confronta o marcador do atributo com a tabela
@@ -1093,6 +1093,7 @@ function obtem_desenhos (caixas, tipos)
   return desenhos
 end
 
+--[[
 function grava_pl_comp_ant ()
   local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
   if not exists (aux) then
@@ -1253,6 +1254,7 @@ function grava_pl_comp_ant ()
   planilha:close()
   return true
 end
+]]--
 
 function estima_tipo_comp (nome, elementos)
   local tipo = 0
@@ -1968,25 +1970,24 @@ function atualiza_ref_desenho()
     return false
   end
   
+  -- pega o caminho do documento atual
+  local drwg, dir = cadzinho.get_drwg_path()
+  
+  if drwg == '' then
+    return false
+  end
+  
   -- atualiza a lista principal com os elementos
   atualiza_elems()
   
-  -- cria uma lista com os componentes
-  local componentes = {}
-  for el_id, el in pairs(elems_pelicanu) do
-    if el.tipo == "COMPONENTE" then
-      local componente = {}
-      componente.ent = el.ent
-      componente.id = pega_comp_id(el.ent)
-      componente.term =  info_terminais (el.ent)
-      componentes[el_id] = componente
-    end
-  end
-  
-  -- atualiza na lista de componentes
-  local cmd = "SELECT r.unico, dc.desenho, dc.fl, des.projeto, des.titulo FROM " ..
-    "(SELECT rf.unico, comp.painel, comp.componente, comp.modulo, " ..
-    "rf.terminal FROM referencias_esq rf " ..
+  -- cria uma lista com as referencias, provenientes do banco de dados
+  local referencias = {}
+  local cmd = "SELECT r.unico, des.projeto, des.titulo, " ..
+    "CASE WHEN r.des_ref = dc.desenho THEN 'NESTE' ELSE dc.desenho END desenho, " ..
+    "CASE WHEN r.des_ref = dc.desenho AND r.fl_ref = dc.fl THEN 'NESTA FL.' ELSE dc.fl END fl " ..
+    "FROM (SELECT rf.unico, comp.painel, comp.componente, comp.modulo, " ..
+    "comp.arquivo, rf.terminal, comp.desenho des_ref, comp.fl fl_ref " ..
+    "FROM referencias_esq rf " ..
     "INNER JOIN descr_comp comp ON rf.unico = comp.unico " ..
     "ORDER BY painel, componente, modulo, terminal) r " ..
     "INNER JOIN comp_term c ON r.painel = c.painel AND " ..
@@ -1995,25 +1996,45 @@ function atualiza_ref_desenho()
     "AND r.terminal = c.terminal " ..
     "INNER JOIN descr_comp dc ON c.unico = dc.unico " ..
     "INNER JOIN desenhos des ON dc.desenho = des.ident  " ..
-    "AND dc.fl = des.fl;"
+    "AND dc.fl = des.fl " ..
+    "WHERE r.arquivo = '" .. dir .. drwg .. "';"
   
   for linha in bd:cols(cmd) do -- para cada linha do BD
-      local componente = componentes[linha.unico]
-      if type(componente) == 'table' then
-        if pl_comp.data[lin]['E'] then
-          componente.id = tostring(pl_comp.data[lin]['E'])
+    local referencia = {}
+    referencia.projeto = linha.projeto
+    referencia.titulo = linha.titulo
+    referencia.desenho = linha.desenho
+    referencia.fl = linha.fl
+    referencias[linha.unico] = referencia
+  end
+  
+  
+  for el_id, el in pairs(elems_pelicanu) do
+    if el.tipo == "COMPONENTE" then
+      local comp_tipo = pega_comp_tipo(el.ent)
+      if comp_tipo == "REFERENCIA" then
+        -- atualiza no desenho
+        local dados = {aplicacao = '-', desenho = '-'}
+        if type(referencias[el_id]) == 'table' then
+          dados.aplicacao = referencias[el_id].projeto .. ' ' .. referencias[el_id].titulo
+          dados.desenho = referencias[el_id].desenho .. ' FL.' .. referencias[el_id].fl
+          if referencias[el_id].fl == 'NESTA FL.' then
+            dados.desenho = 'NESTA FL.'
+          end
         end
-        componente.term[tonumber(pl_comp.data[lin]['G'])] = tostring(pl_comp.data[lin]['H'])
+        muda_atrib (el.ent, dados)
+        el.ent:write()
       end
-      
     end
-    
-    -- atualiza no desenho
-    for _, componente in pairs(componentes) do
-      muda_comp_id (componente.ent, componente.id)
-      muda_terminais(componente.ent, componente.term)
-      componente.ent:write()
-    end
+  end
+  
+  
+  --[[
+  cadzinho.save_drwg (arquivo, true)
+-- grava a estrutura atual do projeto na tabela do bd
+local lista_arq = lista_proj() -- obtem as informações atualizadas
+atualiza_lista_arq_bd (bd, lista_arq)
+  ]]--
   
 end
 
