@@ -1980,6 +1980,43 @@ function atualiza_ref_desenho()
   -- atualiza a lista principal com os elementos
   atualiza_elems()
   
+  local cmd = "SELECT rf.unico, des.projeto, des.titulo, " ..
+    "CASE WHEN rf.desenho = comp.desenho THEN 'NESTE' ELSE comp.desenho END desenho, " ..
+    "CASE WHEN rf.desenho = comp.desenho AND rf.fl = comp.fl THEN 'NESTA FL.' ELSE comp.fl END fl " ..
+    "FROM (SELECT unico, painel, componente, modulo, elemento, " ..
+    "ROW_NUMBER() OVER " ..
+    "(PARTITION BY painel, componente, modulo, elemento) num, " ..
+    "desenho, fl, arquivo " ..
+    "FROM (SELECT c.unico, dc.painel, dc.componente, dc.modulo, r.elemento, " ..
+    "dc.desenho, dc.fl, dc.arquivo " ..
+    "FROM componentes_esq c, descr_comp dc, referencias_esq r " ..
+    "WHERE c.tipo = 'REFERENCIA' AND c.unico = dc.unico AND c.unico = r.unico " ..
+    "ORDER BY dc.painel, dc.componente, dc.modulo, c.x, c.y DESC)) rf " ..
+    "LEFT JOIN (SELECT unico, painel, componente, modulo, tipo, desenho, fl, " ..
+    "ROW_NUMBER() OVER (PARTITION BY painel, componente, modulo, tipo) num   " ..
+    "FROM descr_comp) comp ON rf.painel = comp.painel AND " ..
+    "rf.componente = comp.componente AND " ..
+    "(rf.modulo = comp.modulo OR (rf.modulo IS NULL AND comp.modulo IS NULL)) " ..
+    "AND rf.elemento = comp.tipo AND rf.num = comp.num " ..
+    "LEFT JOIN desenhos des ON comp.desenho = des.ident  " ..
+    "AND comp.fl = des.fl " ..
+    "WHERE rf.arquivo = '" .. dir .. drwg .. "';"
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+    local unico = tonumber(linha.unico)
+    local el = elems_pelicanu[unico]
+    local dados = {aplicacao = '-', desenho = '-'}
+    if linha.desenho and linha.fl then
+      dados.desenho = linha.desenho .. ' FL.' .. linha.fl
+    end
+    if linha.projeto and linha.titulo then
+      dados.aplicacao = linha.projeto .. ' ' .. linha.titulo
+    end
+    
+    muda_atrib (el.ent, dados)
+    el.ent:write()
+  end
+  
+  --[[
   -- cria uma lista com as referencias, provenientes do banco de dados
   local referencias = {}
   local cmd = "SELECT r.unico, des.projeto, des.titulo, " ..
@@ -2027,7 +2064,7 @@ function atualiza_ref_desenho()
       end
     end
   end
-  
+  ]]--
   
   --[[
   cadzinho.save_drwg (arquivo, true)
@@ -2035,6 +2072,9 @@ function atualiza_ref_desenho()
 local lista_arq = lista_proj() -- obtem as informações atualizadas
 atualiza_lista_arq_bd (bd, lista_arq)
   ]]--
+  
+  
+  bd:close()
   
 end
 

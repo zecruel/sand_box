@@ -55,7 +55,7 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS referencias_esq')
   bd:exec('CREATE TABLE referencias_esq('..
     'unico INTEGER, '..
-    'terminal TEXT)')
+    'terminal TEXT, elemento TEXT, T1 TEXT, T2 TEXT)')
   bd:exec('DROP VIEW IF EXISTS hierarquia_esq')
   bd:exec("CREATE VIEW hierarquia_esq AS\n"..
     "SELECT componentes_esq.unico componente,\n"..
@@ -651,7 +651,10 @@ function atualiza_db_esq(bd, arquivo, caixas)
           local dados = pega_attrib(el.ent)
           if dados.terminal then
             bd:exec ("INSERT INTO referencias_esq VALUES("..
-            string.format('%d', el_id) ..", '".. dados.terminal .."')")
+            string.format('%d', el_id) .. ", '".. dados.terminal  .. "', '".. 
+              dados.ELEMENTO  .. "', '".. dados.T1 .. "', '"..
+              dados.T2 .."')"
+            )
           end
         end
       elseif el.tipo == "CAIXA" then
