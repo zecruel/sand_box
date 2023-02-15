@@ -514,118 +514,75 @@ function esquematico_dyn (event)
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Nova referência")
     
-    cadzinho.nk_propertyi("Altura", g_ref_alt, 3, 10)
-    cadzinho.nk_layout(20, 2)
-    cadzinho.nk_label("Terminal:")
-    cadzinho.nk_edit(g_ref_term)
-    cadzinho.nk_layout(20, 1)
-    cadzinho.nk_check("Oculta terminal", g_ref_term_ocul)
-    cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
-    cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
-    cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
-    
-    -- armazena o ponto atual na lista
-    pts[1] = {}
-    pts[1].x = event.x
-    pts[1].y = event.y
-    pts[2] = {}
-    pts[2].x = event.x + g_ref_descr.value
-    pts[2].y = event.y - g_ref_alt.value
-    
-    local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
-    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
-    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
-    cadzinho.pline_close(caixa, true)
-    if (caixa) then cadzinho.ent_draw(caixa) end
-    
-    pts[1].x = event.x + g_ref_descr.value
-    pts[2].x = pts[2].x + g_ref_desenho.value
-    
-    caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
-    cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
-    cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
-    cadzinho.pline_close(caixa, true)
-    if (caixa) then cadzinho.ent_draw(caixa) end
-    
-    pts[1].x = event.x - 1
-    pts[1].y = event.y - g_ref_alt.value/2
-    local txt = cadzinho.new_text(pts[1].x, pts[1].y, g_ref_term.value, 2.0, "right", "middle")
-    if (txt) then cadzinho.ent_draw(txt) end
-    
-    pts[1].x = event.x + 1
-    txt = cadzinho.new_text(pts[1].x, pts[1].y, 'APLIC ??', 2.0, "left", "middle")
-    if (txt) then cadzinho.ent_draw(txt) end
-    
-    pts[1].x = event.x + g_ref_descr.value + 1
-    txt = cadzinho.new_text(pts[1].x, pts[1].y, 'DESENHO ??', 2.0, "left", "middle")
-    if (txt) then cadzinho.ent_draw(txt) end
-    
-    if event.type == 'enter' then -- usuario entra o segundo ponto
-      local nome_bloco = 'referencia_' .. g_ref_alt.value .. '_' ..
-        g_ref_descr.value ..  '_' .. g_ref_desenho.value
+    cadzinho.nk_layout(250, 1)
+    if cadzinho.nk_tab_begin('ref_modo', g_ref_modo) then
+      if g_ref_modo.value == 2 then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_propertyi("Altura", g_ref_alt, 3, 10)
+        cadzinho.nk_layout(20, 2)
+        cadzinho.nk_label("Terminal:")
+        cadzinho.nk_edit(g_ref_term)
+        cadzinho.nk_label("Elemento:")
+        cadzinho.nk_combo(g_ref_elem)
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_check("Oculta terminal", g_ref_term_ocul)
+        cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
+        cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
+        cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
         
-      cadzinho.set_color("by block")
-      cadzinho.set_lw("by block")
-      cadzinho.set_ltype("byblock")
-      
-      local elems = {}
-      local caixa = cadzinho.new_pline(0, 0, 0, g_ref_descr.value, 0, 0)
-      cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
-      cadzinho.pline_append(caixa, 0, -g_ref_alt.value, 0)
-      cadzinho.pline_close(caixa, true)
-      elems[#elems + 1] = caixa
-      
-      caixa = cadzinho.new_pline(g_ref_descr.value, 0, 0, g_ref_descr.value + g_ref_desenho.value, 0, 0)
-      cadzinho.pline_append(caixa, g_ref_descr.value + g_ref_desenho.value, -g_ref_alt.value, 0)
-      cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
-      cadzinho.pline_close(caixa, true)
-      elems[#elems + 1] = caixa
-      
-      local txt = cadzinho.new_text(-1, -g_ref_alt.value/2, 
-        '#terminal$t??', 2.0, "right", "middle")
-      elems[#elems + 1] = txt
-      
-      local txt = cadzinho.new_text(-1, -g_ref_alt.value, 
-        '#*TIPO$REFERENCIA', 1.0, "right", "middle")
-      elems[#elems + 1] = txt
-      
-      txt = cadzinho.new_text(1, -g_ref_alt.value/2, '#aplicacao$??', 2.0, 
-        "left", "middle")
-      elems[#elems + 1] = txt
-      
-      txt = cadzinho.new_text(g_ref_descr.value + 1, -g_ref_alt.value/2,
-        '#desenho$?? fl. ??', 2.0, "left", "middle")
-      elems[#elems + 1] = txt
-    
-      cadzinho.set_color("by layer")
-      cadzinho.set_lw("by layer")
-      cadzinho.set_ltype("bylayer")
-    
-      local ref_blc = cadzinho.new_insert(nome_bloco, event.x, event.y)
-      if ref_blc == nil then
-        if cadzinho.new_block(elems, nome_bloco,
-          "referencia esquematico PELICAnU ".. nome_bloco,
-          true, '#', '*', '$', '?', 0, 0, 0) then
-
-          ref_blc = cadzinho.new_insert(nome_bloco, event.x, event.y)
+        local ref_blc = nova_ref(event.x, event.y)
+        if (ref_blc) then cadzinho.ent_draw(ref_blc) end
+        
+        if event.type == 'enter' then -- usuario entra o segundo ponto
+          if ref_blc then
+            muda_atrib (ref_blc, {TERMINAL = g_ref_term.value, ELEMENTO = g_ref_elem[g_ref_elem.value]})
+            ref_blc:write()
+          end
+        elseif event.type == 'cancel' then  -- usuario cancela
+          -- sai da funcao
+          cadzinho.set_color("by layer")
+          cadzinho.set_lw("by layer")
+          cadzinho.set_ltype("bylayer")
+          modal = ''
+        end
+      else
+        if num_pt == 1 then
+         cadzinho.nk_layout(20, 1)
+          cadzinho.nk_label('Escolha:')
+          cadzinho.nk_layout(90, 1)
+          if cadzinho.nk_group_begin("Típicos", false, true, true) then
+            cadzinho.nk_layout(15, 1)
+            
+            for item, _ in pairs(g_ref_le) do      
+              if cadzinho.nk_button(item) then
+                g_ref_item.value = item
+              end
+            end
+            cadzinho.nk_group_end()
+          end
+          cadzinho.nk_layout(20, 2)
+          cadzinho.nk_label("Item:")
+          cadzinho.nk_edit(g_ref_item)
+          
+          
+          cadzinho.nk_layout(15, 1)
+          if g_ref_le[g_ref_item.value] then
+            if g_ref_le[g_ref_item.value].descr then
+              cadzinho.nk_label(g_ref_le[g_ref_item.value].descr) end
+            cadzinho.nk_layout(15, 2)
+            if g_ref_le[g_ref_item.value].modelo then
+              cadzinho.nk_label(g_ref_le[g_ref_item.value].modelo) end
+            if g_ref_le[g_ref_item.value].fabr then
+              cadzinho.nk_label(g_ref_le[g_ref_item.value].fabr) end
+            cadzinho.nk_layout(20, 2)
+            if cadzinho.nk_button("Insere") then
+            
+            end
+          end
         end
       end
-      if ref_blc then
-        muda_atrib (ref_blc, {terminal = g_ref_term.value})
-        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
-        cadzinho.add_ext(ref_blc, "PELICANU", 
-          {cadzinho.unique_id(), "COMPONENTE"})
-        ref_blc:write()
-      end
-    elseif event.type == 'cancel' then  -- usuario cancela
-      -- sai da funcao
-      cadzinho.set_color("by layer")
-      cadzinho.set_lw("by layer")
-      cadzinho.set_ltype("bylayer")
-      modal = ''
-    end
-    
-    
+      cadzinho.nk_tab_end()
+    end  
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
   -- interface inicial
   else
@@ -661,6 +618,7 @@ function esquematico_dyn (event)
     if cadzinho.nk_button(" Referência") then
       num_pt = 1
       modal = 'refer'
+      g_ref_le = tipico_itens()
       msg = ''
     end
   end

@@ -96,6 +96,10 @@ g_ref_desenho = {value = 32}
 g_ref_term = {value = ""}
 g_ref_term_ocul = {value = false}
 g_ref_descr_ocul = {value = false}
+g_ref_modo = {value = 1, "LE", "Manual"}
+g_ref_le = {"1", "2", "3"}
+g_ref_item = {value = ""}
+g_ref_elem = {value = 1, 'CONTATO_NA', 'CONTATO_NF', 'BOBINA'}
 
 excel = require "xlsxwriter.workbook"
 
@@ -2004,12 +2008,12 @@ function atualiza_ref_desenho()
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local unico = tonumber(linha.unico)
     local el = elems_pelicanu[unico]
-    local dados = {aplicacao = '-', desenho = '-'}
+    local dados = {APLIC = '-', DESENHO = '-'}
     if linha.desenho and linha.fl then
-      dados.desenho = linha.desenho .. ' FL.' .. linha.fl
+      dados.DESENHO = linha.desenho .. ' FL.' .. linha.fl
     end
     if linha.projeto and linha.titulo then
-      dados.aplicacao = linha.projeto .. ' ' .. linha.titulo
+      dados.APLIC = linha.projeto .. ' ' .. linha.titulo
     end
     
     muda_atrib (el.ent, dados)
@@ -2196,6 +2200,93 @@ function obtem_lista_esq ()
   table.sort(lista_esq_o)
 
 end
+
+
+function tipico_itens()
+  local itens = {}
+  local bd = sqlite.open(projeto.bd)
+  if not bd then return itens end
+  
+  local cmd = 'select distinct t.item, l.descr, l.modelo, l.fabr ' ..
+    'from tipico_term t ' ..
+    'left join lista_equip l '..
+    'on t.item = l.item'
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+    itens[linha.item] = linha
+  end
+  
+  bd:close()
+  return itens
+end
+
+function nova_ref (x, y)
+  local nome_bloco = 'referencia_' .. g_ref_alt.value .. '_' ..
+    g_ref_descr.value ..  '_' .. g_ref_desenho.value
+    
+  local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+  if ref_blc == nil then
+  
+    cadzinho.set_color("by block")
+    cadzinho.set_lw("by block")
+    cadzinho.set_ltype("byblock")
+    
+    local elems = {}
+    local caixa = cadzinho.new_pline(0, 0, 0, g_ref_descr.value, 0, 0)
+    cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
+    cadzinho.pline_append(caixa, 0, -g_ref_alt.value, 0)
+    cadzinho.pline_close(caixa, true)
+    elems[#elems + 1] = caixa
+    
+    caixa = cadzinho.new_pline(g_ref_descr.value, 0, 0, g_ref_descr.value + g_ref_desenho.value, 0, 0)
+    cadzinho.pline_append(caixa, g_ref_descr.value + g_ref_desenho.value, -g_ref_alt.value, 0)
+    cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
+    cadzinho.pline_close(caixa, true)
+    elems[#elems + 1] = caixa
+    
+    local txt = cadzinho.new_text(0, 0, 
+      '#*TERMINAL$??', 0.5, "left", "top")
+    elems[#elems + 1] = txt
+    
+    local txt = cadzinho.new_text(0, -g_ref_alt.value/2, 
+      '#*ELEMENTO$CONTATO_NA', 0.5, "left", "middle")
+    elems[#elems + 1] = txt
+    
+    local txt = cadzinho.new_text(0, -g_ref_alt.value, 
+      '#*TIPO$REFERENCIA', 0.5, "left", "bottom")
+    elems[#elems + 1] = txt
+    
+    txt = cadzinho.new_text(1, -g_ref_alt.value/2, '#APLIC$APLIC??', 2.0, 
+      "left", "middle")
+    elems[#elems + 1] = txt
+    
+    txt = cadzinho.new_text(g_ref_descr.value + 1, -g_ref_alt.value/2,
+      '#DESENHO$DES?? fl. ??', 2.0, "left", "middle")
+    elems[#elems + 1] = txt
+
+    cadzinho.set_color("by layer")
+    cadzinho.set_lw("by layer")
+    cadzinho.set_ltype("bylayer")
+  
+  
+    if cadzinho.new_block(elems, nome_bloco,
+      "referencia esquematico PELICAnU ".. nome_bloco,
+      true, '#', '*', '$', '?', 0, 0, 0) then
+
+      ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+    end
+  end
+  
+  if ref_blc then
+    muda_atrib (ref_blc, {terminal = g_ref_term.value})
+    cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+    cadzinho.add_ext(ref_blc, "PELICANU", 
+      {cadzinho.unique_id(), "COMPONENTE"})
+    return ref_blc
+  end
+  
+  return nil
+end
+
 
 --============== Janela Principal =======================
 function pelicanu_win()
