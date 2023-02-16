@@ -2287,6 +2287,110 @@ function nova_ref (x, y)
   return nil
 end
 
+function retangulo (x, y, largura, altura)
+  local retan = cadzinho.new_pline(x, y, 0, x + largura, y, 0)
+  cadzinho.pline_append(retan, x + largura, y - altura, 0)
+  cadzinho.pline_append(retan, x, y - altura, 0)
+  cadzinho.pline_close(retan, true)
+  return retan
+end
+
+function quadro_ref (item, x, y, so_contatos)
+  local elems = {}
+  
+  if type(item) ~= 'string' then return elems end
+  local bd = sqlite.open(projeto.bd)
+  if not bd then return elems end
+  
+  local pos_x = x + 2 + g_ref_descr.value
+  local pos_y = y - 3 * g_ref_alt.value
+  
+  local cmd = "SELECT DISTINCT el_id, elemento, modulo, terms " ..
+    "FROM (SELECT el_id, elemento, modulo, " ..
+    "group_concat(term, '-') OVER " ..
+    "(PARTITION BY el_id, modulo) terms " ..
+    "FROM tipico_term " ..
+    "WHERE item = '".. item .."' ORDER BY modulo, el_id);"
+  
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+    local ref = nova_ref(pos_x, pos_y)
+    if ref then
+      muda_atrib (ref, {TERMINAL = linha.terms, ELEMENTO = linha.elemento})
+    end
+    elems[#elems + 1] = ref
+    
+    
+    local retan = retangulo (x, pos_y,
+      g_ref_descr.value, g_ref_alt.value)
+    elems[#elems + 1] = retan
+    
+    local txt = cadzinho.new_text(x + 2,
+      pos_y - 0.5 * g_ref_alt.value,
+      linha.elemento, 2.0, "left", "middle")
+    elems[#elems + 1] = txt
+    
+    txt = cadzinho.new_text(x + g_ref_descr.value - 2,
+      pos_y - 0.5 * g_ref_alt.value,
+      linha.terms, 2.0, "right", "middle")
+    elems[#elems + 1] = txt
+    
+    pos_y = pos_y - g_ref_alt.value
+  end
+  
+  if #elems == 0 then return elems end
+  
+  local retan = retangulo (pos_x, y - 2 * g_ref_alt.value,
+    g_ref_descr.value, g_ref_alt.value)
+  elems[#elems + 1] = retan
+  
+  local txt = cadzinho.new_text(pos_x + g_ref_descr.value/2,
+    y - 2.5 * g_ref_alt.value, 'APLICAÇÃO', 2.0, "center", "middle")
+  elems[#elems + 1] = txt
+  
+  retan = retangulo (pos_x + g_ref_descr.value, y - 2 * g_ref_alt.value,
+    g_ref_desenho.value, g_ref_alt.value)
+  elems[#elems + 1] = retan
+  
+  txt = cadzinho.new_text(pos_x + g_ref_descr.value + g_ref_desenho.value/2,
+    y - 2.5 * g_ref_alt.value, 'DESENHO', 2.0, "center", "middle")
+  elems[#elems + 1] = txt
+  
+  retan = retangulo (pos_x, y,
+    g_ref_descr.value + g_ref_desenho.value, math.abs(pos_y - y))
+  cadzinho.add_ext(retan, "PELICANU", {cadzinho.unique_id(),
+    "CAIXA", "COMPONENTE"})
+  elems[#elems + 1] = retan
+  
+  
+  txt = cadzinho.new_text(pos_x + (g_ref_descr.value + g_ref_desenho.value)/2,
+    y - g_ref_alt.value, 'ID ??', 2.5, "center", "middle")
+  cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
+  elems[#elems + 1] = txt
+  
+  txt = cadzinho.new_text(pos_x + g_ref_descr.value + g_ref_desenho.value - 2,
+    y - 0.7 * g_ref_alt.value, '(' .. item .. ')', 2.0, "right", "middle")
+  cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "ITEM_LE"})
+  elems[#elems + 1] = txt
+  
+  
+  --[[
+  local caixa = cadzinho.new_pline(x, y - g_ref_alt.value, 0, x + g_ref_descr.value, y - g_ref_alt.value, 0)
+  cadzinho.pline_append(caixa, x + g_ref_descr.value, y - 2 * g_ref_alt.value, 0)
+  cadzinho.pline_append(caixa, x, y - 2 * g_ref_alt.value, 0)
+  cadzinho.pline_close(caixa, true)
+  elems[#elems + 1] = caixa
+  
+  caixa = cadzinho.new_pline(x + g_ref_descr.value, y - g_ref_alt.value, 0, x + g_ref_descr.value + g_ref_desenho.value, y - g_ref_alt.value, 0)
+  cadzinho.pline_append(caixa, x + g_ref_descr.value + g_ref_desenho.value, y - 2 * g_ref_alt.value, 0)
+  cadzinho.pline_append(caixa, x + g_ref_descr.value, y - 2 * g_ref_alt.value, 0)
+  cadzinho.pline_close(caixa, true)
+  elems[#elems + 1] = caixa]]--
+  
+  bd:close()
+  
+  return elems
+end
+
 
 --============== Janela Principal =======================
 function pelicanu_win()

@@ -547,7 +547,7 @@ function esquematico_dyn (event)
         end
       else
         if num_pt == 1 then
-         cadzinho.nk_layout(20, 1)
+          cadzinho.nk_layout(20, 1)
           cadzinho.nk_label('Escolha:')
           cadzinho.nk_layout(90, 1)
           if cadzinho.nk_group_begin("Típicos", false, true, true) then
@@ -576,9 +576,26 @@ function esquematico_dyn (event)
               cadzinho.nk_label(g_ref_le[g_ref_item.value].fabr) end
             cadzinho.nk_layout(20, 2)
             if cadzinho.nk_button("Insere") then
-            
+              num_pt = 2
             end
           end
+        else
+          cadzinho.nk_layout(20, 1)
+          cadzinho.nk_label('Posicione o quadro')
+          local quadro = quadro_ref (g_ref_item.value, event.x, event.y, true)
+          for _, elem in ipairs(quadro) do
+            cadzinho.ent_draw(elem)
+          end
+          if event.type == 'enter' then -- usuario entra o segundo ponto
+            for _, elem in ipairs(quadro) do
+              elem:write()
+            end
+          elseif event.type == 'cancel' then  -- usuario cancela
+            num_pt = 1
+          end
+          
+          
+          
         end
       end
       cadzinho.nk_tab_end()
