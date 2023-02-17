@@ -1984,27 +1984,34 @@ function atualiza_ref_desenho()
   -- atualiza a lista principal com os elementos
   atualiza_elems()
   
-  local cmd = "SELECT rf.unico, des.projeto, des.titulo, " ..
-    "CASE WHEN rf.desenho = comp.desenho THEN 'NESTE' ELSE comp.desenho END desenho, " ..
-    "CASE WHEN rf.desenho = comp.desenho AND rf.fl = comp.fl THEN 'NESTA FL.' ELSE comp.fl END fl " ..
-    "FROM (SELECT unico, painel, componente, modulo, elemento, " ..
-    "ROW_NUMBER() OVER " ..
-    "(PARTITION BY painel, componente, modulo, elemento) num, " ..
-    "desenho, fl, arquivo " ..
-    "FROM (SELECT c.unico, dc.painel, dc.componente, dc.modulo, r.elemento, " ..
-    "dc.desenho, dc.fl, dc.arquivo " ..
-    "FROM componentes_esq c, descr_comp dc, referencias_esq r " ..
-    "WHERE c.tipo = 'REFERENCIA' AND c.unico = dc.unico AND c.unico = r.unico " ..
-    "ORDER BY dc.painel, dc.componente, dc.modulo, c.x, c.y DESC)) rf " ..
-    "LEFT JOIN (SELECT unico, painel, componente, modulo, tipo, desenho, fl, " ..
-    "ROW_NUMBER() OVER (PARTITION BY painel, componente, modulo, tipo) num   " ..
-    "FROM descr_comp) comp ON rf.painel = comp.painel AND " ..
-    "rf.componente = comp.componente AND " ..
-    "(rf.modulo = comp.modulo OR (rf.modulo IS NULL AND comp.modulo IS NULL)) " ..
-    "AND rf.elemento = comp.tipo AND rf.num = comp.num " ..
-    "LEFT JOIN desenhos des ON comp.desenho = des.ident  " ..
-    "AND comp.fl = des.fl " ..
-    "WHERE rf.arquivo = '" .. dir .. drwg .. "';"
+  local cmd = "SELECT r.unico, des.projeto, des.titulo, " ..
+    "CASE WHEN r.des_ref = c.desenho THEN 'NESTE' " ..
+    "ELSE c.desenho END desenho, " ..
+    "CASE WHEN r.des_ref = c.desenho AND " ..
+    "r.fl_ref = c.fl THEN 'NESTA FL.' ELSE c.fl END fl " ..
+    "FROM (SELECT rf.unico, comp.painel, comp.componente, " ..
+    "comp.modulo, comp.arquivo, rf.elemento, rf.terminal, " ..
+    "comp.desenho des_ref, comp.fl fl_ref " ..
+    "FROM referencias_esq rf " ..
+    "LEFT JOIN descr_comp comp ON rf.unico = comp.unico " ..
+    "ORDER BY painel, componente, modulo, terminal) r " ..
+    "LEFT JOIN (SELECT DISTINCT dc.unico, dc.painel, " ..
+    "dc.componente, dc.modulo, dc.tipo, dc.desenho, " ..
+    "dc.fl, group_concat(t.terminal, '-') OVER " ..
+    "(PARTITION BY t.componente) terms " ..
+    "FROM descr_comp dc " ..
+    "INNER JOIN (SELECT componente, terminal  " ..
+    "FROM terminais_esq " ..
+    "ORDER BY componente, terminal) t " ..
+    "ON dc.unico = t.componente) c " ..
+    "ON r.painel = c.painel AND r.elemento = c.tipo " ..
+    "AND r.componente = c.componente " ..
+    "AND (r.modulo = c.modulo " ..
+    "OR (r.modulo IS NULL AND c.modulo IS NULL)) " ..
+    "AND r.terminal LIKE '%' || c.terms || '%' " ..
+    "LEFT JOIN desenhos des " ..
+    "ON c.desenho = des.ident AND c.fl = des.fl " ..
+    "WHERE r.arquivo = '" .. dir .. drwg .. "';"
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local unico = tonumber(linha.unico)
     local el = elems_pelicanu[unico]
@@ -2305,12 +2312,11 @@ function quadro_ref (item, x, y, so_contatos)
   local pos_x = x + 2 + g_ref_descr.value
   local pos_y = y - 3 * g_ref_alt.value
   
-  local cmd = "SELECT DISTINCT el_id, elemento, modulo, terms " ..
-    "FROM (SELECT el_id, elemento, modulo, " ..
+  local cmd = "SELECT distinct el_id, elemento, modulo, " ..
     "group_concat(term, '-') OVER " ..
     "(PARTITION BY el_id, modulo) terms " ..
-    "FROM tipico_term " ..
-    "WHERE item = '".. item .."' ORDER BY modulo, el_id);"
+    "FROM (SELECT el_id, elemento, modulo, term from tipico_term " ..
+    "WHERE item = '".. item .."' ORDER BY el_id, modulo, term);"
   
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local ref = nova_ref(pos_x, pos_y)
