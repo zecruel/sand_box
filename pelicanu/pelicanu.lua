@@ -2312,13 +2312,45 @@ function quadro_ref (item, x, y, so_contatos)
   local pos_x = x + 2 + g_ref_descr.value
   local pos_y = y - 3 * g_ref_alt.value
   
-  local cmd = "SELECT distinct el_id, elemento, modulo, " ..
+  local cmd_cmpl = ''
+  if so_contatos then
+    cmd_cmpl = " AND elemento LIKE 'CONTATO%' AND modulo IS NULL"
+  end
+  
+  local cmd = "SELECT modulo, COUNT(*) elems FROM " ..
+    "(SELECT DISTINCT el_id, elemento, modulo FROM tipico_term " ..
+    "WHERE item = '".. item .."'" .. cmd_cmpl ..
+    ") GROUP BY modulo ORDER BY modulo;"
+  
+  -- planeja o tamanho do quadro, por módulo
+  local modulos = {}
+  local total = 1
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+    local modulo = {}
+    local id = linha.modulo
+    if not id then id = 1 end
+    modulo.elems = linha.elems
+    modulo.ini = total
+    total = total + 2
+    modulo.pos = total
+    total = total + linha.elems
+    modulos[id] = modulo
+  end
+  
+  cmd = "SELECT distinct el_id, elemento, modulo, " ..
     "group_concat(term, '-') OVER " ..
     "(PARTITION BY el_id, modulo) terms " ..
     "FROM (SELECT el_id, elemento, modulo, term from tipico_term " ..
-    "WHERE item = '".. item .."' ORDER BY el_id, modulo, term);"
+    "WHERE item = '".. item .."' " .. cmd_cmpl ..
+    "ORDER BY el_id, modulo, term);"
   
   for linha in bd:cols(cmd) do -- para cada linha do BD
+    local id = linha.modulo
+    if not id then id = 1 end
+    
+    pos_y = y - modulos[id].pos * g_ref_alt.value
+    modulos[id].pos = modulos[id].pos + 1
+  
     local ref = nova_ref(pos_x, pos_y)
     if ref then
       muda_atrib (ref, {TERMINAL = linha.terms, ELEMENTO = linha.elemento})
@@ -2340,7 +2372,7 @@ function quadro_ref (item, x, y, so_contatos)
       linha.terms, 2.0, "right", "middle")
     elems[#elems + 1] = txt
     
-    pos_y = pos_y - g_ref_alt.value
+    --pos_y = pos_y - g_ref_alt.value
   end
   
   if #elems == 0 then return elems end
@@ -2362,11 +2394,10 @@ function quadro_ref (item, x, y, so_contatos)
   elems[#elems + 1] = txt
   
   retan = retangulo (pos_x, y,
-    g_ref_descr.value + g_ref_desenho.value, math.abs(pos_y - y))
+    g_ref_descr.value + g_ref_desenho.value, total * g_ref_alt.value)
   cadzinho.add_ext(retan, "PELICANU", {cadzinho.unique_id(),
     "CAIXA", "COMPONENTE"})
   elems[#elems + 1] = retan
-  
   
   txt = cadzinho.new_text(pos_x + (g_ref_descr.value + g_ref_desenho.value)/2,
     y - g_ref_alt.value, 'ID ??', 2.5, "center", "middle")
@@ -2378,6 +2409,22 @@ function quadro_ref (item, x, y, so_contatos)
   cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "ITEM_LE"})
   elems[#elems + 1] = txt
   
+  
+  for id, modulo in pairs(modulos) do
+    if id ~= 1 then
+      retan = retangulo (pos_x, y - modulo.ini * g_ref_alt.value,
+        g_ref_descr.value + g_ref_desenho.value, (modulo.elems + 2) * g_ref_alt.value)
+      cadzinho.add_ext(retan, "PELICANU", {cadzinho.unique_id(),
+        "CAIXA", "MODULO"})
+      elems[#elems + 1] = retan
+    
+      txt = cadzinho.new_text(pos_x + (g_ref_descr.value + 0.0 * g_ref_desenho.value)/2,
+        y - modulo.ini * g_ref_alt.value - 1.5 * g_ref_alt.value, id, 2.5, "center", "middle")
+      cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
+      elems[#elems + 1] = txt
+    
+    end
+  end
   
   --[[
   local caixa = cadzinho.new_pline(x, y - g_ref_alt.value, 0, x + g_ref_descr.value, y - g_ref_alt.value, 0)

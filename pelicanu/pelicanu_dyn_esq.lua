@@ -582,7 +582,7 @@ function esquematico_dyn (event)
         else
           cadzinho.nk_layout(20, 1)
           cadzinho.nk_label('Posicione o quadro')
-          local quadro = quadro_ref (g_ref_item.value, event.x, event.y, true)
+          local quadro = quadro_ref (g_ref_item.value, event.x, event.y, false)
           for _, elem in ipairs(quadro) do
             cadzinho.ent_draw(elem)
           end
