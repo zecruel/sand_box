@@ -97,9 +97,11 @@ g_ref_term = {value = ""}
 g_ref_term_ocul = {value = false}
 g_ref_descr_ocul = {value = false}
 g_ref_modo = {value = 1, "LE", "Manual"}
-g_ref_le = {"1", "2", "3"}
+g_ref_le = {}
+g_ref_le_num = {}
 g_ref_item = {value = ""}
 g_ref_elem = {value = 1, 'CONTATO_NA', 'CONTATO_NF', 'BOBINA'}
+g_ref_contat = {value = false}
 
 excel = require "xlsxwriter.workbook"
 
@@ -2211,6 +2213,7 @@ end
 
 function tipico_itens()
   local itens = {}
+  local itens_num = {}
   local bd = sqlite.open(projeto.bd)
   if not bd then return itens end
   
@@ -2220,10 +2223,12 @@ function tipico_itens()
     'on t.item = l.item'
   for linha in bd:cols(cmd) do -- para cada linha do BD
     itens[linha.item] = linha
+    itens_num[#itens_num + 1] = linha.item
   end
   
   bd:close()
-  return itens
+  table.sort(itens_num)
+  return itens_num, itens
 end
 
 function nova_ref (x, y)
@@ -2233,53 +2238,61 @@ function nova_ref (x, y)
   local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
   if ref_blc == nil then
   
-    cadzinho.set_color("by block")
-    cadzinho.set_lw("by block")
-    cadzinho.set_ltype("byblock")
+    --cadzinho.set_color("by block")
+    --cadzinho.set_lw("by block")
+    --cadzinho.set_ltype("byblock")
+    
+    local param = {color = "by block", lw = "by block",
+      ltype = "byblock", style = "ISO"}
     
     local elems = {}
-    local caixa = cadzinho.new_pline(0, 0, 0, g_ref_descr.value, 0, 0)
+    local caixa = cadzinho.new_pline(0, 0, 0, g_ref_descr.value, 0, 0, param)
     cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
     cadzinho.pline_append(caixa, 0, -g_ref_alt.value, 0)
     cadzinho.pline_close(caixa, true)
     elems[#elems + 1] = caixa
     
-    caixa = cadzinho.new_pline(g_ref_descr.value, 0, 0, g_ref_descr.value + g_ref_desenho.value, 0, 0)
+    caixa = cadzinho.new_pline(g_ref_descr.value, 0, 0,
+      g_ref_descr.value + g_ref_desenho.value, 0, 0, param)
     cadzinho.pline_append(caixa, g_ref_descr.value + g_ref_desenho.value, -g_ref_alt.value, 0)
     cadzinho.pline_append(caixa, g_ref_descr.value, -g_ref_alt.value, 0)
     cadzinho.pline_close(caixa, true)
     elems[#elems + 1] = caixa
     
     local txt = cadzinho.new_text(0, 0, 
-      '#*TERMINAL$??', 0.5, "left", "top")
+      '#*TERMINAL$??', 0.5, "left", "top", param)
     elems[#elems + 1] = txt
     
     local txt = cadzinho.new_text(0, -g_ref_alt.value/2, 
-      '#*ELEMENTO$CONTATO_NA', 0.5, "left", "middle")
+      '#*ELEMENTO$CONTATO_NA', 0.5, "left", "middle", param)
     elems[#elems + 1] = txt
     
     local txt = cadzinho.new_text(0, -g_ref_alt.value, 
-      '#*TIPO$REFERENCIA', 0.5, "left", "bottom")
+      '#*TIPO$REFERENCIA', 0.5, "left", "bottom", param)
     elems[#elems + 1] = txt
     
     txt = cadzinho.new_text(1, -g_ref_alt.value/2, '#APLIC$APLIC??', 2.0, 
-      "left", "middle")
+      "left", "middle", param)
     elems[#elems + 1] = txt
     
     txt = cadzinho.new_text(g_ref_descr.value + 1, -g_ref_alt.value/2,
-      '#DESENHO$DES?? fl. ??', 2.0, "left", "middle")
+      '#DESENHO$DES?? fl. ??', 2.0, "left", "middle", param)
     elems[#elems + 1] = txt
 
-    cadzinho.set_color("by layer")
-    cadzinho.set_lw("by layer")
-    cadzinho.set_ltype("bylayer")
+    --cadzinho.set_color("by layer")
+    --cadzinho.set_lw("by layer")
+    --cadzinho.set_ltype("bylayer")
+    
+    param.color = "by layer"
+    param.lw = "by layer"
+    param.ltype = "bylayer"
   
   
     if cadzinho.new_block(elems, nome_bloco,
       "referencia esquematico PELICAnU ".. nome_bloco,
       true, '#', '*', '$', '?', 0, 0, 0) then
 
-      ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+      ref_blc = cadzinho.new_insert(nome_bloco, x, y, 1, 1, 0, param)
     end
   end
   
@@ -2341,8 +2354,8 @@ function quadro_ref (item, x, y, so_contatos)
     "group_concat(term, '-') OVER " ..
     "(PARTITION BY el_id, modulo) terms " ..
     "FROM (SELECT el_id, elemento, modulo, term from tipico_term " ..
-    "WHERE item = '".. item .."' " .. cmd_cmpl ..
-    "ORDER BY el_id, modulo, term);"
+    "WHERE item = '".. item .."'" .. cmd_cmpl ..
+    " ORDER BY el_id, modulo, term);"
   
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local id = linha.modulo
@@ -2474,7 +2487,7 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button(" Análise") then
-    local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+    --[[local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
   
     if not exists (aux) then
       cria_pasta(aux)
@@ -2482,7 +2495,8 @@ function pelicanu_win()
     local pl_base = aux .. 'base.xlsm'
     if not exists(pl_base) then
       copia_arq(diretorio(fs.script_path()) .. 'base.xlsm', pl_base)
-    end
+    end]]--
+    cadzinho.set_param({layer = 0, color = 'by layer', ltype = 'bylayer', lw = 'by layer'})
   end
   if cadzinho.nk_button(" Biblioteca") then
     modal = ''

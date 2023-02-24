@@ -28,18 +28,20 @@ function esquematico_dyn (event)
         
       elseif event.type == 'cancel' then  -- usuario cancela
         -- sai da funcao
-        cadzinho.set_color("by layer")
-        cadzinho.set_lw("by layer")
-        cadzinho.set_ltype("bylayer")
+        --cadzinho.set_color("by layer")
+        --cadzinho.set_lw("by layer")
+        --cadzinho.set_ltype("bylayer")
         modal = ''
       end
     else
       cadzinho.nk_label('Proximo ponto')
-      cadzinho.set_ltype("Continuous") -- linha continua
-      cadzinho.set_color(1) -- cor vermelha
+      --cadzinho.set_ltype("Continuous") -- linha continua
+      --cadzinho.set_color(1) -- cor vermelha
       
       -- o elemento "ligacao" eh uma linha simples
-      local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[2].y, 0)
+      local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0,
+        pts[2].x, pts[2].y, 0,
+        {color = 1, ltype = "Continuous", lw = 0})
       cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
       
       if event.type == 'enter' then -- usuario entra o segundo ponto
@@ -216,18 +218,21 @@ function esquematico_dyn (event)
         num_pt = num_pt + 1
       elseif event.type == 'cancel' then
         -- sai da funcao
-        cadzinho.set_color("by layer")
-        cadzinho.set_lw("by layer")
-        cadzinho.set_ltype("bylayer")
+        --cadzinho.set_color("by layer")
+        --cadzinho.set_lw("by layer")
+        --cadzinho.set_ltype("bylayer")
         modal = ''
       end
     else
       cadzinho.nk_label('Proximo ponto')
       
       -- o elemento "caixa" principal -  eh uma polyline no formato retangulo
-      cadzinho.set_ltype("Dashdot") -- linha traco-ponto
-      cadzinho.set_color(3) -- cor verde
-      local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0)
+      --cadzinho.set_ltype("Dashdot") -- linha traco-ponto
+      --cadzinho.set_color(3) -- cor verde
+      local cor = g_caixa_tipo.value + 2
+      local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0,
+        pts[2].x, pts[1].y, 0,
+        {color = cor, ltype = "Dashdot"})
       cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
       cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
       cadzinho.pline_close(caixa, true)
@@ -244,7 +249,8 @@ function esquematico_dyn (event)
       if tx < pts[1].x then tx = pts[1].x end
       local ty = pts[2].y
       if ty < pts[1].y then ty = pts[1].y end
-      local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value, 2.0, "right", "top")
+      local caixa_id = cadzinho.new_text(tx-0.6, ty-0.6, g_caixa_id.value,
+        2.0, "right", "top", {color = cor, style = "ISO"})
       
       -- desenha um retangulo simples em volta do texto do identificador
       local retan_txt = nil
@@ -255,8 +261,10 @@ function esquematico_dyn (event)
         cx_tx.low.y = cx_tx.low.y - 0.3
         cx_tx.up.x = cx_tx.up.x + 0.3
         cx_tx.up.y = cx_tx.up.y + 0.3
-        cadzinho.set_ltype("Continuous") -- linha continua
-        retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0, cx_tx.up.x, cx_tx.low.y, 0)
+        --cadzinho.set_ltype("Continuous") -- linha continua
+        retan_txt = cadzinho.new_pline(cx_tx.low.x, cx_tx.low.y, 0,
+        cx_tx.up.x, cx_tx.low.y, 0,
+        {color = cor, ltype = "Continuous"})
         cadzinho.pline_append(retan_txt, cx_tx.up.x, cx_tx.up.y, 0)
         cadzinho.pline_append(retan_txt, cx_tx.low.x, cx_tx.up.y, 0)
         cadzinho.pline_close(retan_txt, true)
@@ -512,94 +520,64 @@ function esquematico_dyn (event)
     -- funcao interativa para criacao de uma ligação
   
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Nova referência")
+    cadzinho.nk_label("Novo Quadro Ref.")
     
-    cadzinho.nk_layout(250, 1)
-    if cadzinho.nk_tab_begin('ref_modo', g_ref_modo) then
-      if g_ref_modo.value == 2 then
-        cadzinho.nk_layout(20, 1)
-        cadzinho.nk_propertyi("Altura", g_ref_alt, 3, 10)
-        cadzinho.nk_layout(20, 2)
-        cadzinho.nk_label("Terminal:")
-        cadzinho.nk_edit(g_ref_term)
-        cadzinho.nk_label("Elemento:")
-        cadzinho.nk_combo(g_ref_elem)
-        cadzinho.nk_layout(20, 1)
-        cadzinho.nk_check("Oculta terminal", g_ref_term_ocul)
-        cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
-        cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
-        cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
+    if num_pt == 1 then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label('Escolha o item:')
+      cadzinho.nk_layout(100, 1)
+      if cadzinho.nk_group_begin("Típicos", false, true, true) then
+        cadzinho.nk_layout(15, 2)
         
-        local ref_blc = nova_ref(event.x, event.y)
-        if (ref_blc) then cadzinho.ent_draw(ref_blc) end
-        
-        if event.type == 'enter' then -- usuario entra o segundo ponto
-          if ref_blc then
-            muda_atrib (ref_blc, {TERMINAL = g_ref_term.value, ELEMENTO = g_ref_elem[g_ref_elem.value]})
-            ref_blc:write()
+        for i = 1, #g_ref_le_num do      
+          if cadzinho.nk_button(g_ref_le_num[i]) then
+            g_ref_item.value = g_ref_le_num[i]
           end
-        elseif event.type == 'cancel' then  -- usuario cancela
-          -- sai da funcao
-          cadzinho.set_color("by layer")
-          cadzinho.set_lw("by layer")
-          cadzinho.set_ltype("bylayer")
-          modal = ''
         end
-      else
-        if num_pt == 1 then
-          cadzinho.nk_layout(20, 1)
-          cadzinho.nk_label('Escolha:')
-          cadzinho.nk_layout(90, 1)
-          if cadzinho.nk_group_begin("Típicos", false, true, true) then
-            cadzinho.nk_layout(15, 1)
-            
-            for item, _ in pairs(g_ref_le) do      
-              if cadzinho.nk_button(item) then
-                g_ref_item.value = item
-              end
-            end
-            cadzinho.nk_group_end()
-          end
-          cadzinho.nk_layout(20, 2)
-          cadzinho.nk_label("Item:")
-          cadzinho.nk_edit(g_ref_item)
-          
-          
-          cadzinho.nk_layout(15, 1)
-          if g_ref_le[g_ref_item.value] then
-            if g_ref_le[g_ref_item.value].descr then
-              cadzinho.nk_label(g_ref_le[g_ref_item.value].descr) end
-            cadzinho.nk_layout(15, 2)
-            if g_ref_le[g_ref_item.value].modelo then
-              cadzinho.nk_label(g_ref_le[g_ref_item.value].modelo) end
-            if g_ref_le[g_ref_item.value].fabr then
-              cadzinho.nk_label(g_ref_le[g_ref_item.value].fabr) end
-            cadzinho.nk_layout(20, 2)
-            if cadzinho.nk_button("Insere") then
-              num_pt = 2
-            end
-          end
-        else
-          cadzinho.nk_layout(20, 1)
-          cadzinho.nk_label('Posicione o quadro')
-          local quadro = quadro_ref (g_ref_item.value, event.x, event.y, false)
-          for _, elem in ipairs(quadro) do
-            cadzinho.ent_draw(elem)
-          end
-          if event.type == 'enter' then -- usuario entra o segundo ponto
-            for _, elem in ipairs(quadro) do
-              elem:write()
-            end
-          elseif event.type == 'cancel' then  -- usuario cancela
-            num_pt = 1
-          end
-          
-          
-          
+        cadzinho.nk_group_end()
+      end
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Item:")
+      cadzinho.nk_edit(g_ref_item)
+      
+      
+      cadzinho.nk_layout(15, 1)
+      if g_ref_le[g_ref_item.value] then
+        if g_ref_le[g_ref_item.value].descr then
+          cadzinho.nk_label(g_ref_le[g_ref_item.value].descr) end
+        cadzinho.nk_layout(15, 2)
+        if g_ref_le[g_ref_item.value].modelo then
+          cadzinho.nk_label(g_ref_le[g_ref_item.value].modelo) end
+        if g_ref_le[g_ref_item.value].fabr then
+          cadzinho.nk_label(g_ref_le[g_ref_item.value].fabr) end
+        cadzinho.nk_layout(20, 2)
+        if cadzinho.nk_button("Insere") then
+          num_pt = 2
         end
       end
-      cadzinho.nk_tab_end()
-    end  
+    else
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label('Posicione o quadro')
+      cadzinho.nk_propertyi("Altura", g_ref_alt, 3, 10)
+      --cadzinho.nk_check("Oculta terminal", g_ref_term_ocul)
+      cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
+      --cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
+      cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
+      cadzinho.nk_check("Só Contatos", g_ref_contat)
+      
+      local quadro = quadro_ref (g_ref_item.value, event.x, event.y, g_ref_contat.value)
+      for _, elem in ipairs(quadro) do
+        cadzinho.ent_draw(elem)
+      end
+      if event.type == 'enter' then -- usuario entra o segundo ponto
+        for _, elem in ipairs(quadro) do
+          elem:write()
+        end
+      elseif event.type == 'cancel' then  -- usuario cancela
+        num_pt = 1
+      end
+      
+    end
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
   -- interface inicial
   else
@@ -635,7 +613,7 @@ function esquematico_dyn (event)
     if cadzinho.nk_button(" Referência") then
       num_pt = 1
       modal = 'refer'
-      g_ref_le = tipico_itens()
+      g_ref_le_num, g_ref_le = tipico_itens()
       msg = ''
     end
   end
