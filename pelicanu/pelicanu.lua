@@ -23,6 +23,30 @@ dizeres = {
   config = '-- Arquivo de configuracao geral do PELICAnU'
 }
 
+abreviacoes = {}
+abreviacoes['DISJUNTOR'] = 'DISJ'
+abreviacoes['ABERTURA'] = 'AB'
+abreviacoes['PROTEÇÃO'] = 'PROT'
+abreviacoes['PROTEçãO'] = 'PROT'
+abreviacoes['PROTEçAO'] = 'PROT'
+abreviacoes['PROTECãO'] = 'PROT'
+abreviacoes['PROTECAO'] = 'PROT'
+abreviacoes['PRINCIPAL'] = 'P'
+abreviacoes['SUPLEMENTAR'] = 'S'
+abreviacoes['TRANSFORMADOR'] = 'TRAFO'
+
+function abrevia (texto)
+  local t = string.upper (texto)
+  
+  for chave, subst in pairs (abreviacoes) do
+    t = string.gsub(t, chave, subst)
+  end
+  
+  return t
+end
+
+
+
 icone = "<svg width=\"80.0000\" height=\"80.0000\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">" ..
 "<path stroke=\"rgb(254, 254, 254)\" fill=\"none\" d=\"M2.863 41.8 L36.42 41.96 L26.32 31.86 L25.22 30.52 L24.28 29.06 L23.52 27.51 L22.95 25.87 L22.58 24.18 L22.41 22.45 L22.45 20.72 L22.69 19 L23.14 17.33 L23.78 15.72 L24.6 14.19 L25.6 12.78 L26.76 11.49 L28.07 10.35 L29.5 9.377 L31.04 8.577 L32.66 7.964 L34.34 7.549 L36.06 7.335 L37.8 7.327 L39.52 7.525 L41.2 7.925 L42.83 8.522 L44.37 9.308 L45.82 10.27 L47.13 11.4 L48.3 12.67 L49.32 14.08 L50.16 15.6 L50.81 17.2 L51.27 18.87 L51.53 20.59 L39.37 20.59 L39.12 20.57 L38.87 20.58 L38.63 20.59 L38.38 20.63 L38.13 20.67 L37.89 20.73 L37.65 20.81 L37.42 20.89 L37.19 21 L36.97 21.11 L36.76 21.24 L36.55 21.38 L36.35 21.53 L36.16 21.69 L35.98 21.86 L35.81 22.04 L35.66 22.24 L35.51 22.44 L35.37 22.65 L35.25 22.86 L35.14 23.09 L35.04 23.32 L34.96 23.55 L34.89 23.79 L34.83 24.03 L34.79 24.28 L34.77 24.53 L34.75 24.78 L34.75 25.02 L34.77 25.27 L34.8 25.52 L34.85 25.77 L51.56 42.67 L51.77 42.86 L51.97 43.04 L52.18 43.22 L52.4 43.39 L52.61 43.57 L52.84 43.73 L53.06 43.9 L53.29 44.05 L53.51 44.21 L53.75 44.36 L53.98 44.51 L54.22 44.65 L54.46 44.78 L54.7 44.92 L54.95 45.05 L55.19 45.17 L55.44 45.29 L55.7 45.4 L55.95 45.51 L56.21 45.62 L56.46 45.72 L56.72 45.81 L56.99 45.9 L57.25 45.99 L57.51 46.07 L57.78 46.14 L58.05 46.21 L58.32 46.28 L58.59 46.34 L58.86 46.4 L59.13 46.45 L59.4 46.49 L60.1 47.28 L60.75 48.11 L61.34 48.98 L61.87 49.9 L62.34 50.84 L62.74 51.82 L63.08 52.82 L63.35 53.84 L63.55 54.87 L63.67 55.92 L63.73 56.97 L63.72 58.03 L63.63 59.08 L63.48 60.12 L63.25 61.15 L62.95 62.16 L62.59 63.15 L62.16 64.12 L61.67 65.05 L61.11 65.95 L60.5 66.8 L59.83 67.62 L59.11 68.39 L58.33 69.1 L57.51 69.76 L56.65 70.37 L55.75 70.92 L54.81 71.4 L53.84 71.82 L52.85 72.17 L51.83 72.46 L50.8 72.67 L24.67 72.67 L23.39 72.39 L22.14 72.05 L20.9 71.64 L19.68 71.18 L18.48 70.67 L17.31 70.09 L16.17 69.46 L15.06 68.78 L13.98 68.04 L12.94 67.26 L11.94 66.43 L10.98 65.54 L10.06 64.62 L9.192 63.65 L8.367 62.64 L7.59 61.6 L6.863 60.51 L6.189 59.4 L5.569 58.25 L5.004 57.08 L4.496 55.88 L4.045 54.66 L3.653 53.41 L3.32 52.15 L3.048 50.88 L2.836 49.59 L2.686 48.3 L2.598 47 L2.571 45.7 L2.607 44.39 L2.704 43.09 L2.863 41.8 \"/>" ..
 "<path stroke=\"rgb(255, 128, 0)\" fill=\"none\" d=\"M34.85 25.77 L34.8 25.52 L34.77 25.27 L34.75 25.02 L34.75 24.78 L34.77 24.53 L34.79 24.28 L34.83 24.03 L34.89 23.79 L34.96 23.55 L35.04 23.32 L35.14 23.09 L35.25 22.86 L35.37 22.65 L35.51 22.44 L35.66 22.24 L35.81 22.04 L35.98 21.86 L36.16 21.69 L36.35 21.53 L36.55 21.38 L36.76 21.24 L36.97 21.11 L37.19 21 L37.42 20.89 L37.65 20.81 L37.89 20.73 L38.13 20.67 L38.38 20.63 L38.63 20.59 L38.87 20.58 L39.12 20.57 L39.37 20.59 L72.91 20.59 L73.15 20.61 L73.38 20.65 L73.61 20.7 L73.83 20.75 L74.06 20.82 L74.28 20.9 L74.5 20.99 L74.71 21.09 L74.92 21.2 L75.12 21.33 L75.31 21.45 L75.5 21.59 L75.69 21.74 L75.86 21.9 L76.03 22.06 L76.19 22.23 L76.34 22.41 L76.48 22.6 L76.62 22.79 L76.74 22.99 L76.86 23.2 L76.96 23.41 L77.06 23.62 L77.14 23.84 L77.21 24.07 L77.28 24.29 L77.33 24.52 L77.37 24.75 L77.4 24.98 L77.42 25.22 L77.43 25.45 L77.43 25.69 L77.43 31.77 L77.35 32.87 L77.2 33.96 L76.97 35.03 L76.66 36.09 L76.28 37.12 L75.83 38.12 L75.3 39.09 L74.71 40.02 L74.06 40.9 L73.34 41.73 L72.57 42.52 L71.74 43.24 L70.86 43.9 L69.94 44.5 L68.98 45.04 L67.98 45.5 L66.95 45.89 L65.9 46.2 L64.83 46.45 L63.74 46.61 L62.64 46.7 L61.54 46.7 L60.45 46.63 L59.36 46.49 L58.28 46.26 L57.22 45.96 L56.19 45.58 L55.19 45.14 L54.22 44.62 L53.29 44.03 L52.4 43.38 L51.56 42.67 L34.85 25.77 \"/>" ..
@@ -1983,22 +2007,40 @@ function terminais_pl_bd()
  
 end
 
-function atualiza_ref_desenho()
-  -- abre e le o banco de dados
-  local bd = sqlite.open(projeto.bd)
-  if not bd then -- erro na abertura do bd
-    return false
+function atualiza_comp (bd, cam)
+  local cmd =  "SELECT t.unico, t.parte, t.num, t.terminal " ..
+    "FROM comp_term t INNER JOIN " ..
+    "componentes_esq c ON t.unico = c.unico " ..
+    "WHERE c.arquivo = '" .. cam .. "';"
+  
+  local comps = {}
+  
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+  
+    local unico = tonumber(linha.unico)
+    if not comps[unico] then
+      comps[unico] = {}
+      comps[unico].terms = {}
+    end
+    local terms = comps[unico].terms
+    terms['T' .. linha.num] = linha.terminal
+    comps[unico].parte = linha.parte
+    
   end
   
-  -- pega o caminho do documento atual
-  local drwg, dir = cadzinho.get_drwg_path()
-  
-  if drwg == '' then
-    return false
+  for unico, comp in pairs(comps) do
+    local el = elems_pelicanu[unico]
+    if comp.parte then
+      muda_comp_id (el.ent, comp.parte)
+    end
+    
+    muda_atrib (el.ent, comp.terms)
+    el.ent:write()
   end
   
-  -- atualiza a lista principal com os elementos
-  atualiza_elems()
+end
+
+function atualiza_ref(bd, cam)
   
   local cmd = "SELECT r.unico, des.projeto, des.titulo, " ..
     "CASE WHEN r.des_ref = c.desenho THEN 'NESTE' " ..
@@ -2027,21 +2069,84 @@ function atualiza_ref_desenho()
     "AND r.terminal LIKE '%' || c.terms || '%' " ..
     "LEFT JOIN desenhos des " ..
     "ON c.desenho = des.ident AND c.fl = des.fl " ..
-    "WHERE r.arquivo = '" .. dir .. drwg .. "';"
+    "WHERE r.arquivo = '" .. cam .. "';"
+    
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local unico = tonumber(linha.unico)
     local el = elems_pelicanu[unico]
     local dados = {APLIC = '-', DESENHO = '-'}
     if linha.desenho and linha.fl then
-      dados.DESENHO = linha.desenho .. ' FL.' .. linha.fl
+      if linha.fl == 'NESTA FL.' then
+        dados.DESENHO = linha.fl
+      else
+        dados.DESENHO = linha.desenho .. ' FL.' .. linha.fl
+      end
     end
     if linha.projeto and linha.titulo then
       dados.APLIC = linha.projeto .. ' ' .. linha.titulo
     end
     
+    dados.APLIC = abrevia(dados.APLIC)
+    
     muda_atrib (el.ent, dados)
     el.ent:write()
   end
+
+end
+
+
+function atualiza_engates(bd, cam)
+    
+  local cmd =  "SELECT e.unico, e.e_num, e.vai_des, e.vai_fl " ..
+    "FROM engate_par e INNER JOIN " ..
+    "componentes_esq c ON e.unico = c.unico " ..
+    "WHERE c.arquivo = '" .. cam .. "';"
+  
+  for linha in bd:cols(cmd) do -- para cada linha do BD
+    local unico = tonumber(linha.unico)
+    local el = elems_pelicanu[unico]
+    local num = 'E' .. linha.e_num
+    local des = linha.vai_des
+    local fl = linha.vai_fl
+    local descr = nil
+    
+    if des == 'NESTE' then
+      descr = ''
+    end
+    if fl == 'NESTA FL.' then
+      des = fl
+      fl = ''
+    elseif fl then
+      fl = 'FL. ' .. fl
+    end
+    muda_engate(el.ent, nil, num, des, fl, descr)
+    el.ent:write()
+  end
+  
+end
+
+
+function atualiza_ref_desenho()
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+  
+  -- pega o caminho do documento atual
+  local drwg, dir = cadzinho.get_drwg_path()
+  
+  if drwg == '' then
+    return false
+  end
+  
+  -- atualiza a lista principal com os elementos
+  atualiza_elems()
+  
+  atualiza_comp (bd, dir .. drwg)
+  atualiza_engates (bd, dir .. drwg)
+  atualiza_ref (bd, dir .. drwg)
+  
   
   --[[
   -- cria uma lista com as referencias, provenientes do banco de dados
@@ -2105,7 +2210,7 @@ atualiza_lista_arq_bd (bd, lista_arq)
   
 end
 
-function atualiza_engates()
+--[[function atualiza_engates()
   -- atualiza a lista principal com os elementos
   atualiza_elems()
   
@@ -2132,7 +2237,7 @@ function atualiza_engates()
     el.ent:write()
   end
   bd:close()
-end
+end]]--
 
 function obtem_tipo_comp ()
   lista_comp_tipo = {}

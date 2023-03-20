@@ -311,7 +311,7 @@ function projeto_dyn (event)
   -- Carrega os dados das planilhas auxiliares
   elseif modal == 'carrega' then
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Carrega planilhas aux")
+    cadzinho.nk_label("Atualiza desenho atual")
     cadzinho.nk_label("Tem certeza?")
     cadzinho.nk_layout(15, 2)
     if cadzinho.nk_button("OK") then
