@@ -27,7 +27,7 @@ function bd_novo(caminho)
   bd:exec('DROP TABLE IF EXISTS componentes_esq')
   bd:exec('CREATE TABLE componentes_esq('..
     'unico INTEGER, tipo TEXT, '..
-    'bloco TEXT, id TEXT, pai INTEGER, x REAL, y REAL, arquivo TEXT)')
+    'bloco TEXT, id TEXT, sub TEXT, pai INTEGER, x REAL, y REAL, arquivo TEXT)')
   bd:exec('DROP TABLE IF EXISTS caixas')
   bd:exec('CREATE TABLE caixas('..
     'unico INTEGER, '..
@@ -114,8 +114,8 @@ function bd_novo(caminho)
     "ELSE componentes_esq.id\n"..
     "END) componente,\n"..
     "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n"..
-    "(SELECT CASE WHEN hierarquia_esq.pai\n"..
-    "THEN componentes_esq.id\n"..
+    "(CASE WHEN hierarquia_esq.pai THEN componentes_esq.id\n"..
+    "WHEN componentes_esq.sub THEN componentes_esq.sub\n"..
     "END) parte,\n"..
     "componentes_esq.bloco, componentes_esq.tipo, terminais_esq.id num, terminais_esq.terminal \n"..
     "FROM componentes_esq, hierarquia_esq\n"..
@@ -370,8 +370,8 @@ function bd_novo(caminho)
     "ELSE componentes_esq.id\n" ..
     "END) componente,\n" ..
     "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n" ..
-    "(SELECT CASE WHEN hierarquia_esq.pai\n" ..
-    "THEN componentes_esq.id\n" ..
+    "(CASE WHEN hierarquia_esq.pai THEN componentes_esq.id\n" ..
+    "WHEN componentes_esq.sub THEN componentes_esq.sub\n"..
     "END) parte, componentes_esq.tipo,\n" ..
     "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n" ..
     "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl,\n" ..
@@ -622,12 +622,16 @@ function atualiza_db_esq(bd, arquivo, caixas)
         local comp_tipo = pega_comp_tipo(el.ent)
         if not comp_tipo then comp_tipo = 'NULL'
         else comp_tipo = "'"..comp_tipo.."'" end
+        local comp_sub = pega_comp_sub(el.ent)
+        if not comp_sub then comp_sub = 'NULL'
+        else comp_sub = "'"..comp_sub.."'" end
         
         bd:exec ("INSERT INTO componentes_esq VALUES("..
           string.format('%d', el_id) ..", "..
           comp_tipo ..", "..
           bloco ..", "..
           comp_id ..", "..
+          comp_sub ..", "..
           pai..", "..
           string.format('%f', dados.pt.x) .. ", "..
           string.format('%f', dados.pt.y) ..

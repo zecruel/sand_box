@@ -108,14 +108,18 @@ function esquematico_dyn (event)
             end
           end
           if comp then
-            local tipo = pega_comp_tipo(comp)
+            local dados = pega_attrib(comp)
+            local tipo = dados.TIPO
+            if dados.SUB then
+              g_sub.value = dados.SUB
+            end
             local terminais = info_terminais(comp)
             g_terminais = {}
             for i, term in pairs(terminais) do
               g_terminais[i] = {value = term}
             end
             if tipo == 'ENGATE' then
-              g_engate.value = pega_engate(comp)
+              g_engate.value = dados.ENGATE
             else
               g_comp_id.value = pega_comp_id(comp)
             end
@@ -138,7 +142,8 @@ function esquematico_dyn (event)
     else
       local comp = cadzinho.new_insert(g_componente.value, pts[num_pt].x, pts[num_pt].y)
       if comp then cadzinho.ent_draw(comp) end
-      local tipo = pega_comp_tipo(comp)
+      local dados = pega_attrib(comp)
+      local tipo = dados.TIPO
       cadzinho.nk_label(g_componente.value)
       cadzinho.nk_label('Entre o ponto')
       cadzinho.nk_layout(20, 2)
@@ -149,12 +154,18 @@ function esquematico_dyn (event)
         cadzinho.nk_label("ID:")
         cadzinho.nk_edit(g_comp_id)
       end
-      cadzinho.nk_layout(20, 1)
-      cadzinho.nk_label("Terminais:")
-      cadzinho.nk_layout(20, 2)
-      for i, term in pairs(g_terminais) do
-        cadzinho.nk_label(tostring(i)..':')
-        cadzinho.nk_edit(term)
+      if dados.SUB then
+        cadzinho.nk_label("Num:")
+        cadzinho.nk_edit(g_sub)
+      end
+      if tipo ~= 'BORNE_SEC' then
+        cadzinho.nk_layout(20, 1)
+        cadzinho.nk_label("Terminais:")
+        cadzinho.nk_layout(20, 2)
+        for i, term in pairs(g_terminais) do
+          cadzinho.nk_label(tostring(i)..':')
+          cadzinho.nk_edit(term)
+        end
       end
       if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
         cadzinho.nk_layout(20, 1)
@@ -176,6 +187,7 @@ function esquematico_dyn (event)
           terminais[i] = term.value
         end
         muda_terminais(comp, terminais)
+        if dados.SUB then muda_atrib(comp, {SUB = g_sub.value}) end
         if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
           local descricoes = {}
           for i, descr in pairs(g_descricoes) do

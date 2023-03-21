@@ -115,6 +115,8 @@ g_visto = {value = ""}
 g_projetista = {value = ""}
 g_descr = {value = ""}
 g_data = {value = ""}
+g_sub = {value = ""}
+
 
 g_descricoes = {}
 
@@ -712,6 +714,11 @@ end
 function pega_comp_tipo(comp)
   local dados = pega_attrib(comp)
   return dados.TIPO
+end
+
+function pega_comp_sub(comp)
+  local dados = pega_attrib(comp)
+  return dados.SUB
 end
 
 function pega_engate(comp)
@@ -1511,6 +1518,7 @@ function grava_pl_comp ()
   -- grava a lista de componentes na planilha
   for linha in bd:cols(
     'SELECT * FROM componentes ORDER BY painel, id, tipo') do
+    
     -- grava na planilha correspondente ao painel
     local painel = paineis[linha.painel]
     
@@ -1639,13 +1647,17 @@ function grava_pl_term (num_autom)
   
   local cmd = 'select * from comp_term'
   if num_autom then
-    cmd = "select unico, painel, componente, modulo,  \n" ..
-      "parte, tipo, item, t_id num,  \n" ..
-      "case when tipico_aplic.term IS NOT NULL then tipico_aplic.term else   \n" ..
-      "(case when not tipo = 'BORNE' then num||t_id else num end) end terminal,  \n" ..
-      "case when item is not null and tipico_aplic.term IS NULL and not tipo = 'BORNE' then 'Incompleto' else  \n" ..
-      "(case when not tipo = 'BORNE' and tipico_aplic.term IS NULL then 'Sem tipico' end) end alerta  \n" ..
-      "from tipico_aplic"
+    cmd = "select tip.unico, tip.painel, tip.componente, tip.modulo, " ..
+      "case when tip.tipo = 'BORNE_SEC' then tip.num else tip.parte end parte,  " ..
+      "tip.tipo, tip.item, tip.t_id num, " ..
+      "case when tip.term IS NOT NULL then tip.term else  " ..
+      "(case when tipo = 'BORNE' then num  " ..
+      "when tipo = 'BORNE_SEC' then (case when tip.t_id = 1 then 'E' else 'S' end) " ..
+      "else num||t_id end) end terminal, " ..
+      "case when item is not null and tip.term IS NULL and not tipo = 'BORNE' then  " ..
+      "'Incompleto' else (case when not tipo = 'BORNE' and not tipo = 'BORNE_SEC' " ..
+      "and tip.term IS NULL then 'Sem tipico' end) end alerta " ..
+      "from tipico_aplic tip;"
   end
   for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
@@ -1994,9 +2006,15 @@ function terminais_pl_bd()
         " AND id = " .. tostring(pl_term.data[lin]['G']) .. ";")
 
       if pl_term.data[lin]['E'] then
-        bd:exec("UPDATE componentes_esq SET id = '" ..
-        tostring(pl_term.data[lin]['E']) ..
-        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+        if pl_term.data[lin]['F'] == 'BORNE_SEC' then
+          bd:exec("UPDATE componentes_esq SET sub = '" ..
+          tostring(pl_term.data[lin]['E']) ..
+          "' WHERE unico = " .. string.format('%d', unico) .. ";")
+        else
+          bd:exec("UPDATE componentes_esq SET id = '" ..
+          tostring(pl_term.data[lin]['E']) ..
+          "' WHERE unico = " .. string.format('%d', unico) .. ";")
+        end
       end
     end
   end
@@ -2008,7 +2026,7 @@ function terminais_pl_bd()
 end
 
 function atualiza_comp (bd, cam)
-  local cmd =  "SELECT t.unico, t.parte, t.num, t.terminal " ..
+  local cmd =  "SELECT t.unico, t.parte, t.tipo, t.num, t.terminal " ..
     "FROM comp_term t INNER JOIN " ..
     "componentes_esq c ON t.unico = c.unico " ..
     "WHERE c.arquivo = '" .. cam .. "';"
@@ -2024,7 +2042,12 @@ function atualiza_comp (bd, cam)
     end
     local terms = comps[unico].terms
     terms['T' .. linha.num] = linha.terminal
-    comps[unico].parte = linha.parte
+    if linha.tipo == 'BORNE_SEC' and linha.parte then
+      comps[unico].parte = nil
+      terms['SUB'] = linha.parte
+    else
+      comps[unico].parte = linha.parte
+    end
     
   end
   
