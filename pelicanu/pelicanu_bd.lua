@@ -109,22 +109,21 @@ function bd_novo(caminho)
   bd:exec("CREATE VIEW comp_term AS\n"..
     "SELECT componentes_esq.unico,\n"..
     "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.painel) painel,\n"..
-    "(SELECT CASE WHEN hierarquia_esq.pai\n"..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n"..
-    "ELSE componentes_esq.id\n"..
-    "END) componente,\n"..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n"..
-    "(CASE WHEN hierarquia_esq.pai THEN componentes_esq.id\n"..
-    "WHEN componentes_esq.sub THEN componentes_esq.sub\n"..
-    "END) parte,\n"..
+    "(SELECT CASE WHEN hierarquia_esq.pai THEN \n"..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n"..
+    "ELSE componentes_esq.id END) componente,\n"..
+    "CASE WHEN hierarquia_esq.modulo THEN \n"..
+    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo)\n"..
+    "WHEN componentes_esq.sub THEN componentes_esq.sub end  modulo,\n"..
+    "CASE WHEN hierarquia_esq.pai THEN componentes_esq.id END parte,\n"..
     "componentes_esq.bloco, componentes_esq.tipo, terminais_esq.id num, terminais_esq.terminal \n"..
     "FROM componentes_esq, hierarquia_esq\n"..
     "INNER JOIN terminais_esq ON terminais_esq.componente = componentes_esq.unico\n"..
     "WHERE componentes_esq.unico = hierarquia_esq.componente\n"..
     "AND NOT componentes_esq.tipo = 'ENGATE'\n"..
     "AND NOT componentes_esq.tipo = 'REFERENCIA'\n"..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, "..
-    "componentes_esq.x ASC, componentes_esq.y ASC, num ASC;\n")
+    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC,\n"..
+    "componentes_esq.x ASC, componentes_esq.y ASC, num ASC;")
   bd:exec('DROP VIEW IF EXISTS eng_term')
   bd:exec("CREATE VIEW eng_term AS\n"..
     "SELECT engates_esq.unico, engates_esq.engate, barras_esq.id barra, "..
@@ -363,21 +362,21 @@ function bd_novo(caminho)
     "ORDER BY eng.desenho, eng.folha")
   bd:exec('DROP VIEW IF EXISTS descr_comp')
   bd:exec("CREATE VIEW descr_comp AS\n"..
-    "SELECT componentes_esq.unico,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.painel) painel,\n" ..
-    "(SELECT CASE WHEN hierarquia_esq.pai\n" ..
-    "THEN (SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n" ..
-    "ELSE componentes_esq.id\n" ..
-    "END) componente,\n" ..
-    "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo) modulo,\n" ..
-    "(CASE WHEN hierarquia_esq.pai THEN componentes_esq.id\n" ..
-    "WHEN componentes_esq.sub THEN componentes_esq.sub\n"..
-    "END) parte, componentes_esq.tipo,\n" ..
-    "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n" ..
-    "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl,\n" ..
-    "componentes_esq.arquivo FROM componentes_esq, hierarquia_esq \n" ..
-    "WHERE componentes_esq.unico = hierarquia_esq.componente AND NOT componentes_esq.tipo = 'ENGATE'\n" ..
-    "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC, componentes_esq.x ASC, componentes_esq.y ASC;")
+    "SELECT componentes_esq.unico,\n"..
+  "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.painel) painel,\n"..
+  "(SELECT CASE WHEN hierarquia_esq.pai THEN \n"..
+  "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.pai)\n"..
+  "ELSE componentes_esq.id END) componente,\n"..
+  "CASE WHEN hierarquia_esq.modulo THEN \n"..
+  "(SELECT caixas.id FROM caixas WHERE caixas.unico = hierarquia_esq.modulo)\n"..
+  "WHEN componentes_esq.sub THEN componentes_esq.sub end  modulo,\n"..
+  "CASE WHEN hierarquia_esq.pai THEN componentes_esq.id END parte, componentes_esq.tipo,\n"..
+  "(SELECT desenhos.ident FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) desenho,\n"..
+  "(SELECT desenhos.fl FROM desenhos WHERE desenhos.unico = hierarquia_esq.desenho) fl,\n"..
+  "componentes_esq.arquivo FROM componentes_esq, hierarquia_esq \n"..
+  "WHERE componentes_esq.unico = hierarquia_esq.componente AND NOT componentes_esq.tipo = 'ENGATE'\n"..
+  "ORDER BY painel ASC, componente ASC, modulo ASC, tipo ASC, hierarquia_esq.desenho ASC,\n"..
+  "componentes_esq.x ASC, componentes_esq.y ASC;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
     "SELECT efetivo.unico, efetivo.painel, efetivo.componente,\n" ..

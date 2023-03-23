@@ -1615,7 +1615,7 @@ function grava_pl_term (num_autom)
   aba:write(0, 0, 'ID Unico', tit_p)
   aba:write(0, 1, 'Painel', tit_p)
   aba:write(0, 2, 'Componente', tit_p)
-  aba:write(0, 3, 'Modulo', tit_p)
+  aba:write(0, 3, 'Modulo', tit_d)
   aba:write(0, 4, 'Parte', tit_d)
   aba:write(0, 5, 'Tipo', tit_p)
   aba:write(0, 6, 'T id', tit_p)
@@ -1647,24 +1647,28 @@ function grava_pl_term (num_autom)
   
   local cmd = 'select * from comp_term'
   if num_autom then
-    cmd = "select tip.unico, tip.painel, tip.componente, tip.modulo, " ..
-      "case when tip.tipo = 'BORNE_SEC' then tip.num else tip.parte end parte,  " ..
-      "tip.tipo, tip.item, tip.t_id num, " ..
-      "case when tip.term IS NOT NULL then tip.term else  " ..
-      "(case when tipo = 'BORNE' then num  " ..
-      "when tipo = 'BORNE_SEC' then (case when tip.t_id = 1 then 'E' else 'S' end) " ..
-      "else num||t_id end) end terminal, " ..
-      "case when item is not null and tip.term IS NULL and not tipo = 'BORNE' then  " ..
-      "'Incompleto' else (case when not tipo = 'BORNE' and not tipo = 'BORNE_SEC' " ..
-      "and tip.term IS NULL then 'Sem tipico' end) end alerta " ..
-      "from tipico_aplic tip;"
+    cmd = "SELECT tip.unico, tip.painel, tip.componente,\n"..
+      "CASE WHEN tip.tipo = 'BORNE_SEC' THEN tip.num ELSE tip.modulo END modulo,\n"..
+      "tip.parte, tip.tipo, tip.item, tip.t_id num,\n"..
+      "CASE WHEN tip.term IS NOT NULL THEN tip.term ELSE \n"..
+      "(CASE WHEN tipo = 'BORNE' THEN num \n"..
+      "WHEN tipo = 'BORNE_SEC' THEN  (CASE WHEN tip.t_id = 1 THEN 'E' ELSE 'S' END)\n"..
+      "ELSE num || t_id END) END terminal,\n"..
+      "CASE WHEN item IS NOT NULL AND tip.term IS NULL AND \n"..
+      "NOT tipo = 'BORNE' THEN 'Incompleto' ELSE (CASE WHEN NOT tipo = 'BORNE' AND \n"..
+      "NOT tipo = 'BORNE_SEC' AND tip.term IS NULL THEN 'Sem tipico' END) END alerta\n"..
+      "FROM tipico_aplic tip;"
   end
   for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba:write(lin, 0, string.format('%X', linha.unico), protegido)
     aba:write(lin, 1, linha. painel, protegido)
     aba:write(lin, 2, linha.componente, protegido)
-    aba:write(lin, 3, linha.modulo, protegido)
+    if linha.tipo == 'BORNE_SEC' then
+      aba:write(lin, 3, linha.modulo, desprotegido)
+    else
+      aba:write(lin, 3, linha.modulo, protegido)
+    end
     if linha.parte then
       aba:write(lin, 4, linha.parte, desprotegido)
     else aba:write(lin, 4, linha.parte, protegido) end
@@ -1901,7 +1905,7 @@ function le_pl_base()
   return true
 end
 
-function le_pl_comp()
+--[[function le_pl_comp()
   cadzinho.db_print ("----- Atualiza componentes  ------")
   local leitor = require 'xlsx_lua'
   
@@ -1970,7 +1974,7 @@ function le_pl_comp()
   end
   
   cadzinho.db_print ("----- Concluido  ------")
-end
+end]]--
 
 function terminais_pl_bd()
   local leitor = require 'xlsx_lua'
@@ -2006,15 +2010,15 @@ function terminais_pl_bd()
         " AND id = " .. tostring(pl_term.data[lin]['G']) .. ";")
 
       if pl_term.data[lin]['E'] then
-        if pl_term.data[lin]['F'] == 'BORNE_SEC' then
-          bd:exec("UPDATE componentes_esq SET sub = '" ..
-          tostring(pl_term.data[lin]['E']) ..
-          "' WHERE unico = " .. string.format('%d', unico) .. ";")
-        else
-          bd:exec("UPDATE componentes_esq SET id = '" ..
-          tostring(pl_term.data[lin]['E']) ..
-          "' WHERE unico = " .. string.format('%d', unico) .. ";")
-        end
+        bd:exec("UPDATE componentes_esq SET id = '" ..
+        tostring(pl_term.data[lin]['E']) ..
+        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+      end
+      
+      if pl_term.data[lin]['F'] == 'BORNE_SEC' then
+        bd:exec("UPDATE componentes_esq SET sub = '" ..
+        tostring(pl_term.data[lin]['D']) ..
+        "' WHERE unico = " .. string.format('%d', unico) .. ";")
       end
     end
   end
@@ -2026,8 +2030,8 @@ function terminais_pl_bd()
 end
 
 function atualiza_comp (bd, cam)
-  local cmd =  "SELECT t.unico, t.parte, t.tipo, t.num, t.terminal " ..
-    "FROM comp_term t INNER JOIN " ..
+  local cmd =  "SELECT t.unico, t.parte, t.tipo, t.num, t.terminal, " ..
+    "t.modulo FROM comp_term t INNER JOIN " ..
     "componentes_esq c ON t.unico = c.unico " ..
     "WHERE c.arquivo = '" .. cam .. "';"
   
@@ -2042,9 +2046,9 @@ function atualiza_comp (bd, cam)
     end
     local terms = comps[unico].terms
     terms['T' .. linha.num] = linha.terminal
-    if linha.tipo == 'BORNE_SEC' and linha.parte then
+    if linha.tipo == 'BORNE_SEC' and linha.modulo then
       comps[unico].parte = nil
-      terms['SUB'] = linha.parte
+      terms['SUB'] = linha.modulo
     else
       comps[unico].parte = linha.parte
     end
