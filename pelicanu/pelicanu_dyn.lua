@@ -15,6 +15,7 @@ function biblioteca_dyn (event)
     -- funcao interativa para criacao de um terminal, no modo de edição de componente
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Adiciona um terminal")
+    cadzinho.nk_option(g_ligacao_tipo)
     
     local sel = cadzinho.get_sel()
     if #sel < 1 then
@@ -32,6 +33,8 @@ function biblioteca_dyn (event)
         modal = ''
       end
     else
+      local tipo = 'T'
+      if g_ligacao_tipo ~= 1 then tipo = 'H' end
       -- armazena o ponto atual na lista
       pts[num_pt] = {}
       pts[num_pt].x = event.x
@@ -42,7 +45,7 @@ function biblioteca_dyn (event)
       cadzinho.nk_label("Nome:")
       cadzinho.nk_edit(g_term_nome)
 
-      local texto = '#T' .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
+      local texto = '#' .. tipo .. string.format('%d', g_term_num.value) .. '$' .. g_term_nome.value
       local term_id = cadzinho.new_text(pts[2].x, pts[2].y, texto, 2.0, "left", "middle")
       if term_id then cadzinho.ent_draw(term_id) end
       
@@ -69,7 +72,7 @@ function biblioteca_dyn (event)
                 if #ext > 1 then
                   cadzinho.del_ext_all (sel[i], "PELICANU") -- apaga os dados existentes
                 end
-                cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", 'T' .. string.format('%d', g_term_num.value)})
+                cadzinho.add_ext(sel[i], "PELICANU", {cadzinho.unique_id(), "TERMINAL", tipo .. string.format('%d', g_term_num.value)})
                 sel[i]:write()
               end
             end

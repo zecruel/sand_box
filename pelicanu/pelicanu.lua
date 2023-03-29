@@ -143,6 +143,8 @@ g_ref_item = {value = ""}
 g_ref_elem = {value = 1, 'CONTATO_NA', 'CONTATO_NF', 'BOBINA'}
 g_ref_contat = {value = false}
 
+g_ligacao_tipo = {value = 1, "Baixa", "Alta"}
+
 excel = require "xlsxwriter.workbook"
 
 cores_claras = {

@@ -15,6 +15,8 @@ function esquematico_dyn (event)
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label("Nova ligacao")
     
+    cadzinho.nk_option(g_ligacao_tipo)
+    
     -- armazena o ponto atual na lista
     pts[num_pt] = {}
     pts[num_pt].x = event.x
@@ -28,20 +30,18 @@ function esquematico_dyn (event)
         
       elseif event.type == 'cancel' then  -- usuario cancela
         -- sai da funcao
-        --cadzinho.set_color("by layer")
-        --cadzinho.set_lw("by layer")
-        --cadzinho.set_ltype("bylayer")
         modal = ''
       end
     else
       cadzinho.nk_label('Proximo ponto')
-      --cadzinho.set_ltype("Continuous") -- linha continua
-      --cadzinho.set_color(1) -- cor vermelha
+      local prop = {color = 1, ltype = "Continuous", lw = 0}
+      if g_ligacao_tipo.value ~= 1 then
+        prop = {color = 20, ltype = "Continuous", lw = 17}
+      end
       
       -- o elemento "ligacao" eh uma linha simples
       local ligacao = cadzinho.new_line(pts[1].x, pts[1].y, 0,
-        pts[2].x, pts[2].y, 0,
-        {color = 1, ltype = "Continuous", lw = 0})
+        pts[2].x, pts[2].y, 0, prop)
       cadzinho.ent_draw(ligacao) -- mostra o desenho temporario
       
       if event.type == 'enter' then -- usuario entra o segundo ponto
@@ -155,7 +155,7 @@ function esquematico_dyn (event)
         cadzinho.nk_edit(g_comp_id)
       end
       if dados.SUB then
-        cadzinho.nk_label("Num:")
+        cadzinho.nk_label("Sub:")
         cadzinho.nk_edit(g_sub)
       end
       if tipo ~= 'BORNE_SEC' then
@@ -332,10 +332,17 @@ function esquematico_dyn (event)
     end
 
     local tipo = nil
-    if #sel > 0 then tipo = pega_comp_tipo(sel[1]) end
+    local sub = nil
+    if #sel > 0 then
+      tipo = pega_comp_tipo(sel[1])
+      local dados = pega_attrib(sel[1])
+      if dados.SUB then
+        sub = dados.SUB
+      end
+    end
     
     if #sel > 0 and  num_pt == 1 then
-      if tipo then
+      if tipo and #sel == 1 then
         num_pt = 2
         if tipo == 'ENGATE' then
           g_engate.value = pega_engate(sel[1])
@@ -354,7 +361,14 @@ function esquematico_dyn (event)
             g_descricoes[i] = {value = descr}
           end
         end
-        
+        if sub then
+          g_sub.value = sub
+        end
+      elseif tipo and #sel > 1 and tipo == 'ENGATE' then
+        cadzinho.clear_sel()
+      elseif tipo and #sel > 1 then
+        g_comp_id.value = pega_comp_id(sel[1])
+        num_pt = 2
       else
         cadzinho.clear_sel()
       end
@@ -371,58 +385,83 @@ function esquematico_dyn (event)
     
       cadzinho.nk_label('Confirme')
       cadzinho.nk_layout(20, 2)
-      if tipo == 'ENGATE' then
-        cadzinho.nk_label("Engate:")
-        cadzinho.nk_edit(g_engate)
-      else
+      if #sel > 1 then
         cadzinho.nk_label("ID:")
         cadzinho.nk_edit(g_comp_id)
-      end
-
-      cadzinho.nk_layout(20, 1)
-      cadzinho.nk_label("Terminais:")
-      cadzinho.nk_layout(20, 2)
-      for i, term in pairs(g_terminais) do
-        cadzinho.nk_label(tostring(i)..':')
-        cadzinho.nk_edit(term)
-      end
-      
-      if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
-        cadzinho.nk_layout(20, 1)
-        cadzinho.nk_label("Descrições:")
-        cadzinho.nk_layout(20, 2)
-        for i, descr in pairs(g_descricoes) do
-          cadzinho.nk_label(tostring(i)..':')
-          cadzinho.nk_edit(descr)
+        if event.type == 'enter' then
+          for i = 1, #sel do
+            muda_comp_id (sel[i], g_comp_id.value)
+            sel[i]:write()
+          end
+          cadzinho.clear_sel()
+          num_pt = 1
         end
-      end
-      
-      if event.type == 'enter' then
+        
+      else
         if tipo == 'ENGATE' then
-          muda_engate (sel[1], g_engate.value)
+          cadzinho.nk_label("Engate:")
+          cadzinho.nk_edit(g_engate)
         else
-          muda_comp_id (sel[1], g_comp_id.value)
+          cadzinho.nk_label("ID:")
+          cadzinho.nk_edit(g_comp_id)
         end
-        local terminais = {}
-        for i, term in pairs(g_terminais) do
-          terminais[i] = term.value
+        
+        if sub then
+          cadzinho.nk_label("Sub:")
+          cadzinho.nk_edit(g_sub)
         end
-        muda_terminais(sel[1], terminais)
+        
+        if tipo ~= 'BORNE_SEC' then
+          cadzinho.nk_layout(20, 1)
+          cadzinho.nk_label("Terminais:")
+          cadzinho.nk_layout(20, 2)
+          for i, term in pairs(g_terminais) do
+            cadzinho.nk_label(tostring(i)..':')
+            cadzinho.nk_edit(term)
+          end
+        end
         
         if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
-          local descricoes = {}
+          cadzinho.nk_layout(20, 1)
+          cadzinho.nk_label("Descrições:")
+          cadzinho.nk_layout(20, 2)
           for i, descr in pairs(g_descricoes) do
-            descricoes[i] = descr.value
+            cadzinho.nk_label(tostring(i)..':')
+            cadzinho.nk_edit(descr)
           end
-          muda_descricoes(sel[1], descricoes)
         end
-        
-        sel[1]:write()
-        
-        cadzinho.clear_sel()
-        --modal = ''
-        num_pt = 1
-      elseif event.type == 'cancel' then
+      
+      
+        if event.type == 'enter' then
+          if tipo == 'ENGATE' then
+            muda_engate (sel[1], g_engate.value)
+          else
+            muda_comp_id (sel[1], g_comp_id.value)
+          end
+          local terminais = {}
+          for i, term in pairs(g_terminais) do
+            terminais[i] = term.value
+          end
+          muda_terminais(sel[1], terminais)
+          
+          if tipo == 'ENT_DIG' or tipo == 'SAIDA_DIG' then
+            local descricoes = {}
+            for i, descr in pairs(g_descricoes) do
+              descricoes[i] = descr.value
+            end
+            muda_descricoes(sel[1], descricoes)
+          end
+          
+          if sub then muda_atrib(sel[1], {SUB = g_sub.value}) end
+          
+          sel[1]:write()
+          
+          cadzinho.clear_sel()
+          --modal = ''
+          num_pt = 1
+        end
+      end
+      if event.type == 'cancel' then
         num_pt = 1
         cadzinho.clear_sel()
       end
