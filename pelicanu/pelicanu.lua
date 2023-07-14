@@ -618,11 +618,11 @@ function muda_comp_id (comp, id)
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
     -- "numerador' ou ID principal
-    if string.find(attr['tag'], "^ID1") then
+    if string.find(attr['tag']:upper(), "^ID1") then
       idx1 = i
       ocul1 = attr['hidden']
     -- "denominador"
-    elseif string.find(attr['tag'], "^ID2") then
+    elseif string.find(attr['tag']:upper(), "^ID2") then
       idx2 = i
       ocul2 = attr['hidden']
     end
@@ -655,13 +655,13 @@ function pega_comp_id (comp)
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
     -- "numerador' ou ID principal
-    if string.find(attr['tag'], "^ID1") then 
+    if string.find(attr['tag']:upper(), "^ID1") then 
       idx1 = i
       id1 = attr['value']
       id1 = string.gsub(id1, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
     end
     -- "denominador"
-    if string.find(attr['tag'], "^ID2") then
+    if string.find(attr['tag']:upper(), "^ID2") then
       idx2 = i
       id2 = attr['value']
       id2 = string.gsub(id2, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
@@ -690,7 +690,7 @@ function pega_attrib (ent)
   -- varre os elementos ATTRIB da entidade, cadastrando-as na tabela
   local attrs = cadzinho.get_attribs(ent)
   for i, attr in ipairs(attrs) do
-    dados[attr.tag] = attr.value
+    dados[attr.tag:upper()] = attr.value
   end
   
   return dados
@@ -705,10 +705,10 @@ function muda_atrib (ent, dados)
   local attrs = cadzinho.get_attribs(ent)
   for i, attr in ipairs(attrs) do
     -- confronta o marcador do atributo com a tabela
-    if dados[attr['tag']] then
+    if dados[attr['tag']:upper()] then
       ocul = attr['hidden'] -- mantem a configuração de "oculto"
       -- modifica o indice encontrado
-      cadzinho.edit_attr(ent, i, attr['tag'], dados[attr['tag']], ocul)
+      cadzinho.edit_attr(ent, i, attr['tag']:upper(), dados[attr['tag']:upper()], ocul)
     end
   end
 end
@@ -744,19 +744,19 @@ function muda_engate(comp, engate, num, desenho, folha, descr)
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
     -- "numerador' ou ID principal
-    if string.find(attr['tag'], "ENGATE") then
+    if string.find(attr['tag']:upper(), "ENGATE") then
       eng_i = i
       eng_o = attr['hidden']
-    elseif string.find(attr['tag'], "E1") then
+    elseif string.find(attr['tag']:upper(), "E1") then
       num_i = i
       num_o = attr['hidden']
-    elseif string.find(attr['tag'], "REF1") then
+    elseif string.find(attr['tag']:upper(), "REF1") then
       des_i = i
       des_o = attr['hidden']
-    elseif string.find(attr['tag'], "REF2") then
+    elseif string.find(attr['tag']:upper(), "REF2") then
       fl_i = i
       fl_o = attr['hidden']
-    elseif string.find(attr['tag'], "DESCR1") then
+    elseif string.find(attr['tag']:upper(), "DESCR1") then
       descr_i = i
       descr_o = attr['hidden']
   end
@@ -866,7 +866,7 @@ function info_terminais (comp)
   -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
-    local t_num = string.match(attr['tag'], "^T(%d)")
+    local t_num = string.match(attr['tag']:upper(), "^T(%d)")
     if t_num then
       terminais[tonumber(t_num)] = attr['value']
     end
@@ -883,7 +883,7 @@ function muda_terminais (comp, terminais)
   -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
-    local t_num = string.match(attr['tag'], "^T(%d)")
+    local t_num = string.match(attr['tag']:upper(), "^T(%d)")
     if t_num then
       -- confronta o indice encontrado com a tabela
       local term = terminais[tonumber(t_num)]
@@ -904,7 +904,7 @@ function info_descricoes (comp)
   -- varre os elementos ATTRIB da entidade, buscando as etiquetas "DESCR*"
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
-    local d_num = string.match(attr['tag'], "^DESCR(%d)")
+    local d_num = string.match(attr['tag']:upper(), "^DESCR(%d)")
     if d_num then
       descr[tonumber(d_num)] = attr['value']
     end
@@ -921,7 +921,7 @@ function muda_descricoes (comp, descricoes)
   -- varre os elementos ATTRIB da entidade, buscando as etiquetas "T*"
   local attrs = cadzinho.get_attribs(comp)
   for i, attr in ipairs(attrs) do
-    local d_num = string.match(attr['tag'], "^DESCR(%d)")
+    local d_num = string.match(attr['tag']:upper(), "^DESCR(%d)")
     if d_num then
       -- confronta o indice encontrado com a tabela
       local descr = descricoes[tonumber(d_num)]
