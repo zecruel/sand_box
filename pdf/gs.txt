@@ -1,0 +1,1 @@
+"C:\Program Files\gs\gs9.55.0\bin\gswin64c.exe" -o MySuperPDF.pdf -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress declaracao_4391868628_2023_26062023_7b2274a30270426cb5695a5b23cde78a.pdf teste.txt
