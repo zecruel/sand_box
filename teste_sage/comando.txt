@@ -1,0 +1,1 @@
+C:\util\jdk-17.0.9\bin\java.exe -jar C:\util\libiec61850-1.5\tools\model_generator\genmodel.jar ztto_3m_uac.cid -out ztto_3m_uac -modelprefix ztto_3m_uac
