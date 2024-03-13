@@ -1,0 +1,137 @@
+{
+  "Name": "baixa_gedex",
+  "CreationDate": "2024-3-13",
+  "Commands": [
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"40\")",
+      "Value": "!TIMEOUT_WAIT",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"0\")",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.title.includes(\"Entrada\")",
+      "Value": "titulo",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableInbox\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableResultadoPesquisa\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"1\")",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "while_v2",
+      "Target": "(${conta} < ${num_linhas}-1)",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableResultadoPesquisa\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "2500",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[3]/i",
+        "xpath=//a[3]/i",
+        "css=#detalhesFicha > div:nth-child(2) > div > div.widget-header.blue > div > a.CustomTooltip.lnkDownloadTodosArquivos > i"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "2500",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "id=modalDetalhesFichaX",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return (${conta} + 1)",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    }
+  ]
+}

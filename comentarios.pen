@@ -1,0 +1,29 @@
+!Para ajuda, procure em help->sumario->Print Resymbolization and Design Scripts
+!
+!
+!Este script sera usado para impressao no Microstation onde: 
+!--o level chamado "comentarios" sera impresso na cor magenta
+!--o level "com_carimbo" sera impresso em cinza
+!--os demais levels serao impressos em preto
+!
+!
+!
+!
+!
+if (fill_color == 255) then
+   fill_color = (255, 255, 255) ;branco
+endif
+if (level_name == "comentarios") then 
+   color = (255, 0, 255) ; magenta
+else if (level_name == "com_carimbo") then 
+   color = (64, 64, 64) ; cinza
+;else if (level_name == "ezequiel") then 
+;   color = (255, 0, 0) ; vermelho
+else 
+   color = (0, 0, 0) ; preto
+endif
+
+if (type == text) then
+  fill_color = (255, 255, 255) ;branco
+  boundary_color = (255, 255, 255) ;branco
+endif
