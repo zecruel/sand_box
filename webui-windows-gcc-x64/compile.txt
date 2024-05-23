@@ -1,0 +1,1 @@
+gcc -g -static -Os -m64 -o main.exe "main.c" -I "./include" -L./ sqlite3.dll -lwebui-2-static-x64 -lws2_32 -Wall -Wl,-subsystem=console -luser32
