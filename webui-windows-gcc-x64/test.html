@@ -27,14 +27,54 @@
     <link href="dist/css/tabulator.min.css" rel="stylesheet">
     <script type="text/javascript" src="dist/js/tabulator.min.js"></script>
 <br>
+
 <div id="example-table"></div>
 
+
+<div id="tabela-teste"></div>
     
     <div>
     <p id="demo">JavaScript can change HTML content.</p>
     </div>
     
-    <script>
+<script>
+  const tabela_dados = [];
+  let pausa = false;
+  setInterval(atualiza, 1000);
+  
+  //initialize table
+  const tabela = new Tabulator("#tabela-teste", {
+      data:tabela_dados,           //load row data from array
+      layout:"fitColumns",      //fit columns to width of table
+      responsiveLayout:"hide",  //hide columns that don't fit on the table
+      reactiveData:true,        //turn on data reactivity
+      addRowPos:"top",          //when adding a new row, add it to the top of the table
+      history:true,             //allow undo and redo actions on the table
+      pagination:"local",       //paginate the data
+      paginationSize:7,         //allow 7 rows per page of data
+      paginationCounter:"rows", //display count of paginated rows in footer
+      movableColumns:true,      //allow column order to be changed
+      initialSort:[             //set the initial sort order of the data
+          {column:"modificado", dir:"asc"},
+      ],
+      columnDefaults:{
+          tooltip:true,         //show tool tips on cells
+      },
+      columns:[                 //define the table columns
+          {title:"Caminho", field:"caminho", editor:"input"},
+          {title:"Modificado", field:"modificado", editor:"input"},
+      ],
+  });
+  tabela.on("cellEditing", function(cell){
+    pausa = true;
+  });
+  tabela.on("cellEditCancelled", function(cell){
+    pausa = false;
+  });
+  tabela.on("cellEdited", function(cell){
+    pausa = false;
+  });
+    
 //define data array
 const tabledata = [
     {id:1, name:"Oli Bob", progress:12, gender:"male", rating:1, col:"red", dob:"19/02/1984", car:1},
@@ -50,7 +90,8 @@ const table = new Tabulator("#example-table", {
     data:tabledata,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that don't fit on the table
-    reactiveData:true, //turn on data reactivity
+    groupBy:"gender",
+    reactiveData:true,        //turn on data reactivity
     addRowPos:"top",          //when adding a new row, add it to the top of the table
     history:true,             //allow undo and redo actions on the table
     pagination:"local",       //paginate the data
@@ -91,11 +132,22 @@ table.on("cellEdited", function(cell){
 function teste() {
   const MyInput = document.getElementById('teste_input');
   //document.getElementById("demo").innerHTML = MyInput.value;
-  webui_fn('Sqlite', MyInput.value);
+  //webui_fn('Sqlite', MyInput.value);
   webui_fn('Sqlite', MyInput.value).then((response) => {
       //document.getElementById("demo").innerHTML = response;
-      webui_fn('MyID_One', response);
+      //webui_fn('MyID_One', response);
       const obj = JSON.parse(response);
+      
+      tabela_dados.splice(0,tabela_dados.length); //limpa a tabela
+      for (let linha of obj.data) {
+        const novo = new Object();
+        for (let coluna in linha) {
+          novo[coluna] = linha[coluna];
+        }
+        tabela_dados.push(novo);
+      }
+      //tabela_dados = obj.data;
+      
       document.getElementById("demo").innerHTML = obj.data[0].caminho;
   });
   
@@ -105,6 +157,23 @@ function teste() {
   //webui_fn('MyID_One', tabledata[0].name);
 };
 
+function atualiza() {
+  if(!pausa){
+    webui_fn('Sqlite', "SELECT * FROM arquivos;").then((response) => {
+      const obj = JSON.parse(response);
+      
+      tabela_dados.splice(0,tabela_dados.length); //limpa a tabela
+      for (let linha of obj.data) {
+        const novo = new Object();
+        for (let coluna in linha) {
+          novo[coluna] = linha[coluna];
+        }
+        tabela_dados.push(novo);
+      }
+    });
+    //webui_fn('MyID_One', "atualiza");
+  }
+};
 
 </script>
     
