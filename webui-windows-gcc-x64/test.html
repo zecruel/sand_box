@@ -13,6 +13,7 @@
             font-family: Arial, Tahoma, Verdana, sans-serif;
         }
     </style>
+    <meta charset="utf8">
   </head>
   <body>
     <h2>WebUI - Call C from JavaScript Example</h2>
@@ -22,161 +23,23 @@
     <div>
     <input type="text" id="teste_input" value="SELECT * FROM arquivos;" size="120">
     </div>
-    <!-- Connect this window to the background app -->
-    <script src="/webui.js"></script>
-    <link href="dist/css/tabulator.min.css" rel="stylesheet">
-    <script type="text/javascript" src="dist/js/tabulator.min.js"></script>
+    
 <br>
 
-<div id="example-table"></div>
-
-
-<div id="tabela-teste"></div>
-    
-    <div>
-    <p id="demo">JavaScript can change HTML content.</p>
-    </div>
-    
-<script>
-  const tabela_dados = [];
-  let pausa = false;
-  setInterval(atualiza, 1000);
+  <div id='my-spreadsheet'></div>
+  <div id='componentes_terminais'></div>
   
-  //initialize table
-  const tabela = new Tabulator("#tabela-teste", {
-      data:tabela_dados,           //load row data from array
-      layout:"fitColumns",      //fit columns to width of table
-      responsiveLayout:"hide",  //hide columns that don't fit on the table
-      reactiveData:true,        //turn on data reactivity
-      addRowPos:"top",          //when adding a new row, add it to the top of the table
-      history:true,             //allow undo and redo actions on the table
-      pagination:"local",       //paginate the data
-      paginationSize:7,         //allow 7 rows per page of data
-      paginationCounter:"rows", //display count of paginated rows in footer
-      movableColumns:true,      //allow column order to be changed
-      initialSort:[             //set the initial sort order of the data
-          {column:"modificado", dir:"asc"},
-      ],
-      columnDefaults:{
-          tooltip:true,         //show tool tips on cells
-      },
-      columns:[                 //define the table columns
-          {title:"Caminho", field:"caminho", editor:"input"},
-          {title:"Modificado", field:"modificado", editor:"input"},
-      ],
-  });
-  tabela.on("cellEditing", function(cell){
-    pausa = true;
-  });
-  tabela.on("cellEditCancelled", function(cell){
-    pausa = false;
-  });
-  tabela.on("cellEdited", function(cell){
-    pausa = false;
-  });
-    
-//define data array
-const tabledata = [
-    {id:1, name:"Oli Bob", progress:12, gender:"male", rating:1, col:"red", dob:"19/02/1984", car:1},
-    {id:2, name:"Mary May", progress:1, gender:"female", rating:2, col:"blue", dob:"14/05/1982", car:true},
-    {id:3, name:"Christine Lobowski", progress:42, gender:"female", rating:0, col:"green", dob:"22/05/1982", car:"true"},
-    {id:4, name:"Brendon Philips", progress:100, gender:"male", rating:1, col:"orange", dob:"01/08/1980"},
-    {id:5, name:"Margret Marmajuke", progress:16, gender:"female", rating:5, col:"yellow", dob:"31/01/1999"},
-    {id:6, name:"Frank Harbours", progress:38, gender:"male", rating:4, col:"red", dob:"12/05/1966", car:1},
-];
-
-//initialize table
-const table = new Tabulator("#example-table", {
-    data:tabledata,           //load row data from array
-    layout:"fitColumns",      //fit columns to width of table
-    responsiveLayout:"hide",  //hide columns that don't fit on the table
-    groupBy:"gender",
-    reactiveData:true,        //turn on data reactivity
-    addRowPos:"top",          //when adding a new row, add it to the top of the table
-    history:true,             //allow undo and redo actions on the table
-    pagination:"local",       //paginate the data
-    paginationSize:7,         //allow 7 rows per page of data
-    paginationCounter:"rows", //display count of paginated rows in footer
-    movableColumns:true,      //allow column order to be changed
-    initialSort:[             //set the initial sort order of the data
-        {column:"name", dir:"asc"},
-    ],
-    columnDefaults:{
-        tooltip:true,         //show tool tips on cells
-    },
-    columns:[                 //define the table columns
-        {title:"Name", field:"name", editor:"input"},
-        {title:"Task Progress", field:"progress", editor:"input"},
-        {title:"Gender", field:"gender", width:95, editor:"select", editorParams:{values:["male", "female"]}},
-        {title:"Rating", field:"rating", formatter:"star", hozAlign:"center", width:100, editor:true},
-        {title:"Color", field:"col", width:130, editor:"input"},
-        {title:"Date Of Birth", field:"dob", width:130, sorter:"date", hozAlign:"center"},
-        {title:"Driver", field:"car", width:90,  hozAlign:"center", formatter:"tickCross", sorter:"boolean", editor:true},
-    ],
-});
-
-table.on("cellEdited", function(cell){
-        //cell - cell component
-        let cellval = cell.getValue()
-        let row = cell.getRow();
-        let column = cell.getColumn();
-        let field = cell.getField();
-        let rowPosition = row.getPosition();
-        let namecell = row.getCell('name');
-        let nameval = namecell.getValue();
-        let rowData = row.getData();
-        webui_fn('MyID_One', rowPosition + '-' + nameval + '-' + field + '=' + cellval );
-        webui_fn('MyID_Two', rowData.id);
-});
-
-function teste() {
-  const MyInput = document.getElementById('teste_input');
-  //document.getElementById("demo").innerHTML = MyInput.value;
-  //webui_fn('Sqlite', MyInput.value);
-  webui_fn('Sqlite', MyInput.value).then((response) => {
-      //document.getElementById("demo").innerHTML = response;
-      //webui_fn('MyID_One', response);
-      const obj = JSON.parse(response);
-      
-      tabela_dados.splice(0,tabela_dados.length); //limpa a tabela
-      for (let linha of obj.data) {
-        const novo = new Object();
-        for (let coluna in linha) {
-          novo[coluna] = linha[coluna];
-        }
-        tabela_dados.push(novo);
-      }
-      //tabela_dados = obj.data;
-      
-      document.getElementById("demo").innerHTML = obj.data[0].caminho;
-  });
+  <div>
+  <p id="demo">JavaScript can change HTML content.</p>
+  </div>
   
-  //webui_fn('MyID_One', tabledata[0].name);
-  //tabledata[0].name = MyInput.value;
-  //tabledata[0].name = "teste";
-  //webui_fn('MyID_One', tabledata[0].name);
-};
-
-function atualiza() {
-  if(!pausa){
-    webui_fn('Sqlite', "SELECT * FROM arquivos;").then((response) => {
-      const obj = JSON.parse(response);
-      
-      tabela_dados.splice(0,tabela_dados.length); //limpa a tabela
-      for (let linha of obj.data) {
-        const novo = new Object();
-        for (let coluna in linha) {
-          novo[coluna] = linha[coluna];
-        }
-        tabela_dados.push(novo);
-      }
-    });
-    //webui_fn('MyID_One', "atualiza");
-  }
-};
-
-</script>
-    
-    
+  <!-- Connect this window to the background app -->
+  <script src="/webui.js"></script>
+  <script type="text/javascript" src="jspreadsheet/index.js"></script>
+  <script type="text/javascript" src="jsuites/jsuites.js"></script>
+  <link rel="stylesheet" href="./jsuites/jsuites.css" type="text/css" />
+  <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.css" type="text/css" />
+  <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.theme.css" type="text/css" />
+  <script src="./index.js"></script>
   </body>
 </html>
