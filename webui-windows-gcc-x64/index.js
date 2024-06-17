@@ -4,6 +4,7 @@ let pausa = false;
 setInterval(atualiza, 2000);
 let changes = -1;
 let db_changes = 0;
+let init = false;
 
 const cor_claro = [
   '#cccccc',
@@ -24,27 +25,74 @@ const cor_escuro = [
   '#90ffff',
   '#9090ff',
 ];
-  
-
-const data = [
-    ['Mazda', 2001, 2000],
-    ['Pegeout', 2010, 5000],
-    ['Honda Fit', 2009, 3000],
-    ['Honda CRV', 2010, 6000],
-];
 
 const beforeChange = function(instance, cell, col, lin, value) {
-    const cellName = jspreadsheet.getColumnNameFromId([col,lin]);
+  if (init) {
+    //const cellName = jspreadsheet.getColumnNameFromId([col,lin]);
     //console.log('The cell ' + cellName + ' will be changed =' + value + '-' + col + '-' + lin);
     let y = Number(lin) + 1;
-    document.getElementById("demo").innerHTML = 'Meta H'+ y +' = '+ comp_term.getMeta('H' + y).id;
+    unico = comp_term.getMeta('H' + y).id;
+  
+    if (col == 7) { // modificando o terminal
+      webui_fn('Sqlite_exec', "UPDATE terminais_esq SET terminal = '" + value +
+        "' WHERE componente = " + unico + " AND id = " + comp_term_dados[lin][6] +
+        ";").then((response) => {
+        if (response) {
+          const obj = JSON.parse(response);
+          //console.log(obj);
+          
+        }
+        
+      });
+    }
+    
+    if (col == 3) { // modificando a parte
+      webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value +
+        "' WHERE unico = " + unico + ";").then((response) => {
+        if (response) {
+          const obj = JSON.parse(response);
+          console.log(obj);
+          
+        }
+        
+      });
+    }
+    
+  }
 };
 
 const undo = function(instance, obj) {
   if (obj){
     if (obj.action == "setValue"){
       obj.records.forEach(function(value, index, array) {
-        console.log(value.x, value.y, value.oldValue);
+        let y = Number(value.y) + 1;
+        unico = comp_term.getMeta('H' + y).id;
+        //console.log(value.x, value.y, value.oldValue);
+        if (value.x == 7) { // modificando o terminal
+          webui_fn('Sqlite_exec', "UPDATE terminais_esq SET terminal = '" + value.oldValue +
+            "' WHERE componente = " + unico + " AND id = " + comp_term_dados[value.y][6] +
+            ";").then((response) => {
+            if (response) {
+              const obj = JSON.parse(response);
+              console.log(obj);
+              
+            }
+            
+          });
+        }
+        
+        if (value.x == 3) { // modificando a parte
+          webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value.oldValue +
+            "' WHERE unico = " + unico + ";").then((response) => {
+            if (response) {
+              const obj = JSON.parse(response);
+              console.log(obj);
+              
+            }
+            
+          });
+        }
+        
       });
     }
   }
@@ -54,7 +102,33 @@ const redo = function(instance, obj) {
   if (obj){
     if (obj.action == "setValue"){
       obj.records.forEach(function(value, index, array) {
-        console.log(value.x, value.y, value.newValue);
+        //console.log(value.x, value.y, value.newValue);
+        let y = Number(value.y) + 1;
+        unico = comp_term.getMeta('H' + y).id;
+        if (value.x == 7) { // modificando o terminal
+          webui_fn('Sqlite_exec', "UPDATE terminais_esq SET terminal = '" + value.newValue +
+            "' WHERE componente = " + unico + " AND id = " + comp_term_dados[value.y][6] +
+            ";").then((response) => {
+            if (response) {
+              const obj = JSON.parse(response);
+              console.log(obj);
+              
+            }
+            
+          });
+        }
+        
+        if (value.x == 3) { // modificando a parte
+          webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value.newValue +
+            "' WHERE unico = " + unico + ";").then((response) => {
+            if (response) {
+              const obj = JSON.parse(response);
+              console.log(obj);
+              
+            }
+            
+          });
+        }
       });
     }
   }
@@ -62,6 +136,7 @@ const redo = function(instance, obj) {
 
 
 const loaded = function(instance) {
+  if (init) return;
   let comp_ant = "";
   let unico_ant = "";
   let tipo_ant = "";
@@ -210,6 +285,11 @@ const loaded = function(instance) {
   if ((y - ini_painel) > 1) {
     comp_term.setMerge("A"+ini_painel, 1, y - ini_painel);
   }
+  init = true;
+  if (comp_term_dados[0]) {
+    comp_term.history = [];
+    comp_term.historyIndex = -1;
+  }
 };
 
 const comp_term = jspreadsheet(document.getElementById('componentes_terminais'), {
@@ -230,38 +310,7 @@ const comp_term = jspreadsheet(document.getElementById('componentes_terminais'),
     onload: loaded,
 });
 
-function teste_ant() {
-  data[1][1] = "teste";
-  table.setData();
-  //table.setMerge("A1", 1, 2);
 
-  console.log(JSON.stringify(table.getMeta()));
-  
-  const cel = table.getCell("B2");
-  console.log(cel.style);
-  cel.classList.add('readonly');
-  cel.style.backgroundColor = "#ffcccc";
-  cel.style.color = "#000";
-  
-  console.log(JSON.stringify(table.getStyle('B3')));
-};
-
-function meta() {
-  table.setMeta('B2', 'id', '123');
-  //table.setStyle('B2', "background-color", "red");
-  
-};
-
-function del_meta() {
-  const all_meta = table.getMeta();
-  for (let cel in all_meta) {
-    all_meta[cel] = {};
-  }
-  table.setMeta(all_meta);
-  
-  const cel = table.getCell("B2");
-  cel.classList.remove('readonly');
-};
 
 function teste() {
   const MyInput = document.getElementById('teste_input');
@@ -306,6 +355,7 @@ function atualiza() {
     }
     //console.log(db_changes, changes, db_changes > changes);
     if (db_changes != changes){
+      
       //console.log("Atualiza "+ db_changes);
       webui_fn('Sqlite_exec', "SELECT * FROM comp_term;").then((response) => {
         if (response) {
@@ -357,6 +407,7 @@ function atualiza() {
           });
           
           /* atualiza a exibição */
+          init = false;
           comp_term.setData();
           
         }
