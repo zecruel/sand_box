@@ -4,10 +4,10 @@ let pausa = false;
 setInterval(atualiza, 2000);
 let changes = -1;
 let db_changes = 0;
-let init = false;
+let comp_term_init = false;
 
 const cor_claro = [
-  '#cccccc',
+  '#909090',
   '#ffccff',
   '#ffcccc',
   '#ffffcc',
@@ -17,7 +17,7 @@ const cor_claro = [
 ];
 
 const cor_escuro = [
-  '#909090',
+  '#cccccc',
   '#ff90ff',
   '#ff9090',
   '#ffff90',
@@ -26,8 +26,8 @@ const cor_escuro = [
   '#9090ff',
 ];
 
-const beforeChange = function(instance, cell, col, lin, value) {
-  if (init) {
+const comp_term_mod = function(instance, cell, col, lin, value) {
+  if (comp_term_init) {
     //const cellName = jspreadsheet.getColumnNameFromId([col,lin]);
     //console.log('The cell ' + cellName + ' will be changed =' + value + '-' + col + '-' + lin);
     let y = Number(lin) + 1;
@@ -38,11 +38,9 @@ const beforeChange = function(instance, cell, col, lin, value) {
         "' WHERE componente = " + unico + " AND id = " + comp_term_dados[lin][6] +
         ";").then((response) => {
         if (response) {
-          const obj = JSON.parse(response);
+          //const obj = JSON.parse(response);
           //console.log(obj);
-          
         }
-        
       });
     }
     
@@ -50,18 +48,15 @@ const beforeChange = function(instance, cell, col, lin, value) {
       webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value +
         "' WHERE unico = " + unico + ";").then((response) => {
         if (response) {
-          const obj = JSON.parse(response);
-          console.log(obj);
-          
+          //const obj = JSON.parse(response);
+          //console.log(obj);
         }
-        
       });
     }
-    
   }
 };
 
-const undo = function(instance, obj) {
+const comp_term_undo = function(instance, obj) {
   if (obj){
     if (obj.action == "setValue"){
       obj.records.forEach(function(value, index, array) {
@@ -75,9 +70,7 @@ const undo = function(instance, obj) {
             if (response) {
               const obj = JSON.parse(response);
               console.log(obj);
-              
             }
-            
           });
         }
         
@@ -85,20 +78,17 @@ const undo = function(instance, obj) {
           webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value.oldValue +
             "' WHERE unico = " + unico + ";").then((response) => {
             if (response) {
-              const obj = JSON.parse(response);
-              console.log(obj);
-              
+              //const obj = JSON.parse(response);
+              //console.log(obj);
             }
-            
           });
         }
-        
       });
     }
   }
 };
 
-const redo = function(instance, obj) {
+const comp_term_redo = function(instance, obj) {
   if (obj){
     if (obj.action == "setValue"){
       obj.records.forEach(function(value, index, array) {
@@ -110,11 +100,9 @@ const redo = function(instance, obj) {
             "' WHERE componente = " + unico + " AND id = " + comp_term_dados[value.y][6] +
             ";").then((response) => {
             if (response) {
-              const obj = JSON.parse(response);
-              console.log(obj);
-              
+              //const obj = JSON.parse(response);
+              //console.log(obj);
             }
-            
           });
         }
         
@@ -135,8 +123,8 @@ const redo = function(instance, obj) {
 };
 
 
-const loaded = function(instance) {
-  if (init) return;
+const comp_term_load = function(instance) {
+  if (comp_term_init) return;
   let comp_ant = "";
   let unico_ant = "";
   let tipo_ant = "";
@@ -150,24 +138,62 @@ const loaded = function(instance) {
   let ini_painel = 1;
   
   let paineis = 0, unicos = 0, componentes = 0, modulos = 0;
+  let y = 1;
+  let claro = cor_escuro;
+  let cor_uni = claro[0];
   
-  //agrupa as celulas repetidas
   if (comp_term_dados[0]) {
     painel_ant = comp_term_dados[0][0];
     comp_ant = comp_term_dados[0][1];
     unico_ant = comp_term.getMeta('H1').id;
     parte_ant = comp_term_dados[0][3];
     modulo_ant = comp_term_dados[0][2];
+    
+    let celula = comp_term.getCell("A1");
+    celula.style.backgroundColor = cor_uni;
+    celula.classList.add('readonly');
+    celula.style.color = "#900";
+    
+    celula = comp_term.getCell("B1");
+    celula.style.backgroundColor = cor_uni;
+    celula.classList.add('readonly');
+    celula.style.color = "#900";
+    
+    celula = comp_term.getCell("C1");
+    celula.style.backgroundColor = cor_uni;
+    celula.classList.add('readonly');
+    celula.style.color = "#900";
+    
+    celula = comp_term.getCell("D1");
+    celula.style.backgroundColor = cor_uni;
+    if (parte_ant !== ""){
+      celula.classList.remove('readonly');
+      celula.style.color = "#000";
+    }
+    else {
+      celula.classList.add('readonly');
+      celula.style.color = "#900";
+    }
+    
+    celula = comp_term.getCell("E1");
+    celula.style.backgroundColor = cor_uni;
+    celula.classList.add('readonly');
+    celula.style.color = "#900";
+    
+    celula = comp_term.getCell("F1");
+    celula.style.backgroundColor = cor_uni;
+    celula.classList.add('readonly');
+    celula.style.color = "#900";
   }
-  let y = 1;
-  let claro = cor_claro;
-  let cor_uni = claro[unicos % 7];
   
+  //agrupa as celulas repetidas
   for (let linha of comp_term_dados){
-    
-    
-    
-    
+    if ((paineis % 2) == 0){
+      claro = cor_claro;
+    }
+    else {
+      claro = cor_escuro;
+    }
     
     unico = comp_term.getMeta('H' + y).id;
     
@@ -272,21 +298,30 @@ const loaded = function(instance) {
     modulo_ant = linha[2];
     painel_ant = linha[0];//.painel;
     
-    if ((paineis % 2) == 0){
-      claro = cor_claro;
-    }
-    else {
-      claro = cor_escuro;
-    }
+    
     
     y++;
   }
-  
+  //finaliza os agrupamentos pendentes
   if ((y - ini_painel) > 1) {
     comp_term.setMerge("A"+ini_painel, 1, y - ini_painel);
   }
-  init = true;
+  if ((y - ini_comp) > 1) {
+    comp_term.setMerge("B" + ini_comp, 1, y - ini_comp);
+  }
+  if ((y - ini_modulo) > 1) {
+    comp_term.setMerge("C" + ini_modulo, 1, y - ini_modulo);
+  }
+  if ((y - ini_unico) > 1) {
+    comp_term.setMerge("D"+ini_unico, 1, y - ini_unico);
+    comp_term.setMerge("E"+ini_unico, 1, y - ini_unico);
+    comp_term.setMerge("F"+ini_unico, 1, y - ini_unico);
+  }
+  
+  comp_term_init = true;
+  
   if (comp_term_dados[0]) {
+    // limpa o histórico de undo/redo
     comp_term.history = [];
     comp_term.historyIndex = -1;
   }
@@ -304,10 +339,10 @@ const comp_term = jspreadsheet(document.getElementById('componentes_terminais'),
         { title:'Num', width:50 },
         { title:'Term', width:80 },
     ],
-    onbeforechange: beforeChange,
-    onundo: undo,
-    onredo: redo,
-    onload: loaded,
+    onbeforechange: comp_term_mod,
+    onundo: comp_term_undo,
+    onredo: comp_term_redo,
+    onload: comp_term_load,
 });
 
 
@@ -407,7 +442,7 @@ function atualiza() {
           });
           
           /* atualiza a exibição */
-          init = false;
+          comp_term_init = false;
           comp_term.setData();
           
         }

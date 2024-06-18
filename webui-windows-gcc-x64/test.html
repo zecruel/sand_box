@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
-    <title>Call C from JavaScript Example</title>
+    <title>PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar</title>
     <style>
         body {
             color: white;
@@ -16,29 +16,30 @@
     <meta charset="utf8">
   </head>
   <body>
-    <h2>WebUI - Call C from JavaScript Example</h2>
-    <p>Call C function with argument (<em>See the logs in your terminal</em>)</p>
+    <h2 id='proj_tit'>Projeto: Teste</h2>
+    <p id='proj_descr'>Descrição: <em>Testes de visualização do banco de dados</em></p>
     <br>
     <button onclick="teste();">Teste</button>
     <div>
-    <input type="text" id="teste_input" value="PRAGMA data_version;" size="120">
+      <input type="text" id="teste_input" value="PRAGMA data_version;" size="120">
+      <p id="demo">Saída: </p>
     </div>
     
-<br>
+    <br>
 
-  <div id='componentes_terminais'></div>
-  
-  <div>
-  <p id="demo">JavaScript can change HTML content.</p>
-  </div>
-  
-  <!-- Connect this window to the background app -->
-  <script src="/webui.js"></script>
-  <script type="text/javascript" src="jspreadsheet/index.js"></script>
-  <script type="text/javascript" src="jsuites/jsuites.js"></script>
-  <link rel="stylesheet" href="./jsuites/jsuites.css" type="text/css" />
-  <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.css" type="text/css" />
-  <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.theme.css" type="text/css" />
-  <script src="./index.js"></script>
+    <div id='componentes_terminais'></div>
+    
+    <div>
+      
+    </div>
+    
+    <!-- Connect this window to the background app -->
+    <script src="/webui.js"></script>
+    <script type="text/javascript" src="jspreadsheet/index.js"></script>
+    <script type="text/javascript" src="jsuites/jsuites.js"></script>
+    <link rel="stylesheet" href="./jsuites/jsuites.css" type="text/css" />
+    <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.css" type="text/css" />
+    <link rel="stylesheet" href="./jspreadsheet/jspreadsheet.theme.css" type="text/css" />
+    <script src="./index.js"></script>
   </body>
 </html>
