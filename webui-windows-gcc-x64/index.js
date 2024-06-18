@@ -1,3 +1,53 @@
+let pstyle = 'border: 1px solid #efefef; padding: 5px; color: black;'
+let layout = new w2layout({
+    box: '#layout',
+    name: 'layout',
+    panels: [
+        { type: 'top', size: 50, style: pstyle, html: 'top' },
+        { type: 'left', size: 200, style: pstyle, html: 'left' },
+        { type: 'main', html: '<div id="componentes_terminais"></div>' }
+    ]
+});
+
+layout.html('top', '<div style="padding: 10px">Some HTML</div>');
+
+let sidebar = new w2sidebar({
+  name: 'sidebar',
+  flatButton: true,
+  nodes: [
+      { id: 'general', text: 'General', group: true, expanded: true, groupShowHide: false,
+          nodes: [
+              { id: 'grid1', text: 'Grid 1', icon: 'fa-solid fa-microchip', selected: true },
+              { id: 'grid2', text: 'Grid 2', icon: 'fa fa-list-alt' },
+              { id: 'html', text: 'Some HTML', icon: "fa-solid fa-keyboard" }
+          ],
+          onCollapse(event) {
+              event.preventDefault()
+          }
+      }
+  ],
+  onFlat(event) {
+      layout.sizeTo('left', (event.detail.goFlat ? 35 : 200), true)
+  },
+  onClick(event) {
+      switch (event.target) {
+          case 'grid1':
+              //layout.html('main', grid1)
+              break
+          case 'grid2':
+              //layout.html('main', grid2)
+              break
+          case 'html':
+              //layout.html('main', '<div style="padding: 10px">Some HTML</div>')
+              //query(layout.el('main'))
+               //   .css('border-left', '1px solid #efefef')
+              break
+      }
+  }
+});
+
+layout.html('left', sidebar);
+
 
 const comp_term_dados = [];
 let pausa = false;
@@ -457,3 +507,4 @@ function atualiza() {
 };
 
 atualiza();
+
