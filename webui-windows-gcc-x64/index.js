@@ -1,25 +1,45 @@
+function julian_date (time) { return 2440587.5 + time / 86400; };
+//console.log(julian_date(Math.floor(Date.now()/1000))); // Prints the current time in milliseconds
+
+window.resizeTo(1300, 700);
+
+const tab = '\
+<div id="tab-example"> \
+    <div id="tab1" class="tab-content"> \
+        <div id="componentes_terminais"></div> \
+    </div> \
+    <div id="tab2" class="tab-content"> \
+        Second tab, with some HTML in it. :) \
+    </div> \
+    <div id="tab3" class="tab-content"> \
+        What did you expect, of course it is the third tab. \
+    </div> \
+</div>';
+
 let pstyle = 'border: 1px solid #efefef; padding: 5px; color: black;'
 let layout = new w2layout({
     box: '#layout',
     name: 'layout',
     panels: [
-        { type: 'top', size: 50, style: pstyle, html: 'top' },
+        { type: 'top', size: 50, style: pstyle, html: 'Edição dos terminais' },
         { type: 'left', size: 200, style: pstyle, html: 'left' },
-        { type: 'main', html: '<div id="componentes_terminais"></div>' }
+        { type: 'main', html: tab }
     ]
 });
 
-layout.html('top', '<div style="padding: 10px">Some HTML</div>');
+layout.html('top', 'Edição dos terminais');
+$('#tab-example .tab-content').hide()
+$('#tab-example #tab1').show()
 
 let sidebar = new w2sidebar({
   name: 'sidebar',
   flatButton: true,
   nodes: [
-      { id: 'general', text: 'General', group: true, expanded: true, groupShowHide: false,
+      { id: 'paleta', text: 'Editar', group: true, expanded: true, groupShowHide: false,
           nodes: [
-              { id: 'grid1', text: 'Grid 1', icon: 'fa-solid fa-microchip', selected: true },
-              { id: 'grid2', text: 'Grid 2', icon: 'fa fa-list-alt' },
-              { id: 'html', text: 'Some HTML', icon: "fa-solid fa-keyboard" }
+              { id: 'terminais', text: 'Terminais', icon: 'fa-solid fa-microchip', selected: true },
+              { id: 'bornes', text: 'Bornes', icon: 'fa fa-list-alt' },
+              { id: 'variaveis', text: 'Variáveis', icon: "fa-solid fa-keyboard" }
           ],
           onCollapse(event) {
               event.preventDefault()
@@ -30,19 +50,27 @@ let sidebar = new w2sidebar({
       layout.sizeTo('left', (event.detail.goFlat ? 35 : 200), true)
   },
   onClick(event) {
-      switch (event.target) {
-          case 'grid1':
-              //layout.html('main', grid1)
-              break
-          case 'grid2':
-              //layout.html('main', grid2)
-              break
-          case 'html':
-              //layout.html('main', '<div style="padding: 10px">Some HTML</div>')
-              //query(layout.el('main'))
-               //   .css('border-left', '1px solid #efefef')
-              break
-      }
+    $('#tab-example .tab-content').hide()
+    switch (event.target) {
+      
+      case 'terminais':
+        //layout.html('main', grid1)
+        $('#tab-example #tab1').show()
+        layout.html('top', 'Edição dos terminais');
+        break
+      case 'bornes':
+        //layout.html('main', grid2)
+        $('#tab-example #tab2').show()
+        layout.html('top', 'Edição dos bornes');
+        break
+      case 'variaveis':
+        $('#tab-example #tab3').show()
+        //layout.html('main', '<div style="padding: 10px">Some HTML</div>')
+        //query(layout.el('main'))
+         //   .css('border-left', '1px solid #efefef')
+        layout.html('top', 'Edição dos variáveis dos IED\'s (entradas/saídas)');
+        break
+    }
   }
 });
 
@@ -90,6 +118,16 @@ const comp_term_mod = function(instance, cell, col, lin, value) {
         if (response) {
           //const obj = JSON.parse(response);
           //console.log(obj);
+          let time = Math.floor(Date.now()/1000);
+          let jd = julian_date(time);
+          
+          webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+          ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+            if (response) {
+              //const obj = JSON.parse(response);
+              //console.log(obj);
+            }
+          });
         }
       });
     }
@@ -100,6 +138,16 @@ const comp_term_mod = function(instance, cell, col, lin, value) {
         if (response) {
           //const obj = JSON.parse(response);
           //console.log(obj);
+          let time = Math.floor(Date.now()/1000);
+          let jd = julian_date(time);
+          
+          webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+          ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+            if (response) {
+              //const obj = JSON.parse(response);
+              //console.log(obj);
+            }
+          });
         }
       });
     }
@@ -118,8 +166,18 @@ const comp_term_undo = function(instance, obj) {
             "' WHERE componente = " + unico + " AND id = " + comp_term_dados[value.y][6] +
             ";").then((response) => {
             if (response) {
-              const obj = JSON.parse(response);
-              console.log(obj);
+              //const obj = JSON.parse(response);
+              //console.log(obj);
+              let time = Math.floor(Date.now()/1000);
+              let jd = julian_date(time);
+              
+              webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+              ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+                if (response) {
+                  //const obj = JSON.parse(response);
+                  //console.log(obj);
+                }
+              });
             }
           });
         }
@@ -130,6 +188,16 @@ const comp_term_undo = function(instance, obj) {
             if (response) {
               //const obj = JSON.parse(response);
               //console.log(obj);
+              let time = Math.floor(Date.now()/1000);
+              let jd = julian_date(time);
+              
+              webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+              ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+                if (response) {
+                  //const obj = JSON.parse(response);
+                  //console.log(obj);
+                }
+              });
             }
           });
         }
@@ -152,6 +220,16 @@ const comp_term_redo = function(instance, obj) {
             if (response) {
               //const obj = JSON.parse(response);
               //console.log(obj);
+              let time = Math.floor(Date.now()/1000);
+              let jd = julian_date(time);
+              
+              webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+              ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+                if (response) {
+                  //const obj = JSON.parse(response);
+                  //console.log(obj);
+                }
+              });
             }
           });
         }
@@ -160,8 +238,18 @@ const comp_term_redo = function(instance, obj) {
           webui_fn('Sqlite_exec', "UPDATE componentes_esq SET id = '" + value.newValue +
             "' WHERE unico = " + unico + ";").then((response) => {
             if (response) {
-              const obj = JSON.parse(response);
-              console.log(obj);
+              //const obj = JSON.parse(response);
+              //console.log(obj);
+              let time = Math.floor(Date.now()/1000);
+              let jd = julian_date(time);
+              
+              webui_fn('Sqlite_exec', "UPDATE arquivos SET modificado = " + time +
+              ", jd = " + jd + " WHERE caminho = 'projeto.db';").then((response) => {
+                if (response) {
+                  //const obj = JSON.parse(response);
+                  //console.log(obj);
+                }
+              });
               
             }
             
@@ -506,5 +594,5 @@ function atualiza() {
   }
 };
 
-atualiza();
+//atualiza();
 

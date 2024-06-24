@@ -1,8 +1,30 @@
 // Call C from JavaScript Example
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+#include <time.h>
+
+#include <dirent.h>
 
 #include "webui.h"
+#include "whereami.h"
 
 #include "sqlite3.h"
+
+#define KGFLAGS_IMPLEMENTATION
+#include "kgflags.h"
+
+#if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
+#define PATH_SEPARATOR ';'
+#define DIR_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR ':'
+#define DIR_SEPARATOR '/'
+#endif
+
+#define PATH_MAX_CHARS 512
 
 sqlite3 *db;
 int changes;
@@ -124,9 +146,58 @@ void sqlite_exec(webui_event_t* e){
 	webui_return_string(e, buffer);
 }
 
-int main() {
+int main(int argc, char** argv){
   
-  sqlite3_open("projeto.db", &db);
+  char* path = NULL;
+  int length, dirname_length;
+
+  length = wai_getExecutablePath(NULL, 0, &dirname_length);
+  if (length > 0)
+  {
+    path = (char*)malloc(length + 1);
+    if (!path) return 1; /* fail */
+    wai_getExecutablePath(path, length, &dirname_length);
+    path[dirname_length] = '\0';
+    chdir(path);
+    free(path);
+  }
+  
+  static char full_path[PATH_MAX_CHARS+1];
+	full_path[0] = 0; /*init */
+  
+  const char *proj_path = NULL;  // guaranteed to be assigned only if kgflags_parse succeeds
+	kgflags_string("proj", NULL, "Pasta do projeto.", true, &proj_path);
+	if (!kgflags_parse(argc, argv)) {
+    kgflags_print_errors();
+    kgflags_print_usage();
+    return 1;
+  }
+	//int kgflags_get_non_flag_args_count(void);
+	const char * arg_file = kgflags_get_non_flag_arg(0);
+  
+  /* verifica se o diretorio eh valido */
+  DIR* dir = opendir(proj_path);
+	if (!dir) { 
+		
+		return 1; /* fail */
+	}
+	closedir(dir);
+  //chdir(proj_path);
+  strncpy(full_path, proj_path, PATH_MAX_CHARS);
+  /* put dir separator at end of returnned string */
+	int len = strlen (full_path);
+	if (len < PATH_MAX_CHARS - 1){
+		if (full_path[len - 1] != DIR_SEPARATOR){
+			full_path[len] = DIR_SEPARATOR;
+			full_path[len + 1]  = 0;
+		}
+	}else {
+    return 1; /* fail */
+  }
+  len = strlen (full_path);
+  strncat(full_path, "projeto.db", PATH_MAX_CHARS - len);
+  
+  sqlite3_open(full_path, &db);
   changes = 0;
   pos = 0;
   buffer = malloc(BUF_SIZE+1);
