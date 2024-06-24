@@ -2,12 +2,32 @@
 -- Autor: Ezequiel Rabelo de Aguiar - 2023
 -- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
 
-function bd_novo(caminho)
+function bd_novo(caminho, projeto)
   local bd = sqlite.open(caminho)
+  local t = os.time()
+  local jd = 2440587.5 + t / 86400
   if not bd then return nil end
+  
+  if type(projeto) == 'table' then
+    bd:exec ('DROP TABLE IF EXISTS projeto')
+    bd:exec ('CREATE TABLE projeto(chave TEXT, valor TEXT)')
+    bd:exec ("INSERT INTO projeto VALUES('titulo', '" .. string.gsub(projeto.titulo, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('instalacao', '" .. string.gsub(projeto.instalacao, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('aplicacao', '" .. string.gsub(projeto.aplicacao, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('codigo', '" .. string.gsub(projeto.codigo, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('rev', '" .. string.gsub(projeto.rev, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('aprovacao', '" .. string.gsub(projeto.aprovacao, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('visto', '" .. string.gsub(projeto.visto, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('projetista', '" .. string.gsub(projeto.projetista, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('descr', '" .. string.gsub(projeto.descr, '\\', '\\\\') .. "');")
+    bd:exec ("INSERT INTO projeto VALUES('data', '" .. string.gsub(projeto.data, '\\', '\\\\') .. "');")
+  end
+  
   bd:exec('DROP TABLE IF EXISTS arquivos')
-    bd:exec('CREATE TABLE arquivos('..
-    'caminho TEXT, modificado INTEGER)')
+  bd:exec('CREATE TABLE arquivos('..
+    'caminho TEXT, modificado INTEGER, jd REAL, guid TEXT)')
+  bd:exec ("INSERT INTO arquivos VALUES('projeto.db', "..
+      string.format('%d', t) .. ", " .. string.format('%f', jd) .. ", NULL);")
   bd:exec('DROP TABLE IF EXISTS paineis')
   bd:exec('CREATE TABLE paineis('..
     'id TEXT, titulo TEXT, descr TEXT, fiacao INTEGER, x REAL, y REAL)')
@@ -695,13 +715,11 @@ function atualiza_db_esq(bd, arquivo, caixas)
 end
 
 function atualiza_lista_arq_bd (bd, lista_arq)
-  bd:exec('DROP TABLE IF EXISTS arquivos')
-  bd:exec('CREATE TABLE arquivos('..
-    'caminho TEXT, modificado INTEGER)')
+  bd:exec("DELETE FROM arquivos WHERE caminho <> 'projeto.db';")
   for i = 1, #lista_arq do
     bd:exec ("INSERT INTO arquivos VALUES('"..
       lista_arq[i].name .."', "..
-      string.format('%d', lista_arq[i].modified) ..");")
+      string.format('%d', lista_arq[i].modified) ..", NULL, NULL);")
   end
 end
 

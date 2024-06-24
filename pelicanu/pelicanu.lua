@@ -316,7 +316,7 @@ function novo_projeto(caminho, proj)
     arq_log:close()
   end
   
-  bd_novo(bd)
+  bd_novo(bd, proj)
   
   return abre_projeto(caminho)
 end
@@ -690,7 +690,7 @@ function pega_attrib (ent)
   -- varre os elementos ATTRIB da entidade, cadastrando-as na tabela
   local attrs = cadzinho.get_attribs(ent)
   for i, attr in ipairs(attrs) do
-    dados[attr.tag:upper()] = attr.value
+    dados[attr.tag:lower()] = attr.value
   end
   
   return dados
@@ -715,17 +715,17 @@ end
 
 function pega_comp_tipo(comp)
   local dados = pega_attrib(comp)
-  return dados.TIPO
+  return dados.tipo
 end
 
 function pega_comp_sub(comp)
   local dados = pega_attrib(comp)
-  return dados.SUB
+  return dados.sub
 end
 
 function pega_engate(comp)
   local dados = pega_attrib(comp)
-  return dados.ENGATE
+  return dados.engate
 end
 
 function muda_engate(comp, engate, num, desenho, folha, descr)
@@ -1516,7 +1516,7 @@ function grava_pl_comp ()
   local alerta_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'yellow'})
 
   local erro_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'red'})
-  
+  print('planilha')
   -- grava a lista de componentes na planilha
   for linha in bd:cols(
     'SELECT * FROM componentes ORDER BY painel, id, tipo') do

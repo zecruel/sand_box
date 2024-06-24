@@ -133,7 +133,7 @@ function projeto_dyn (event)
         local bd = sqlite.open(projeto.bd)
         if bd then
           -- pega as informações antigas dos arquivos (caminho e modificação)
-          for linha in bd:cols('select * from arquivos') do -- para cada linha do BD
+          for linha in bd:cols("SELECT * FROM arquivos WHERE caminho <> 'projeto.db';") do -- para cada linha do BD
             arqs_bd[linha.caminho] = linha.modificado
           end
         
@@ -397,6 +397,15 @@ function projeto_dyn (event)
       modal = 'limpa'
       msg = ''
     end
+    if cadzinho.nk_button("拓") then
+      local exe = io.popen("start C:\\util\\webui-windows-gcc-x64\\main.exe --proj " .. projeto.caminho .. "_dados")
+      if not exe then
+        msg = 'erro'
+      else
+        exe:close()
+        msg =""
+      end
+    end
     cadzinho.nk_layout(5, 1)
     cadzinho.nk_layout(15, 1)
     cadzinho.nk_label("Projeto atual:")
@@ -422,6 +431,6 @@ function projeto_dyn (event)
     cadzinho.nk_layout(15, 1)
     cadzinho.nk_label("Caminho:")
     cadzinho.nk_label(projeto.caminho)
-    --outros ícones "罹 ﮏ  ﮻    ﯨ ﯱ    "
+    --outros ícones "罹 ﮏ  ﮻    ﯨ ﯱ     "
   end
 end
