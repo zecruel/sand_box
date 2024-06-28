@@ -4,15 +4,11 @@ function julian_date (time) { return 2440587.5 + time / 86400; };
 window.resizeTo(1300, 700);
 
 const tab = '\
-<div id="tab-example"> \
-    <div id="tab1" class="tab-content"> \
-        <div id="componentes_terminais"></div> \
-    </div> \
-    <div id="tab2" class="tab-content"> \
-        Second tab, with some HTML in it. :) \
-    </div> \
-    <div id="tab3" class="tab-content"> \
-        What did you expect, of course it is the third tab. \
+<div id="area_princ"> \
+    <div id="componentes_terminais" class="area_princ_cont"></div> \
+    <div id="descr_projeto" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
+    <div id="tab3" class="area_princ_cont"> \
+      What did you expect, of course it is the third tab. \
     </div> \
 </div>';
 
@@ -27,9 +23,59 @@ let layout = new w2layout({
     ]
 });
 
-layout.html('top', 'Edição dos terminais');
-$('#tab-example .tab-content').hide()
-$('#tab-example #tab1').show()
+const proj_id = new Object();
+
+webui_fn('Sqlite_exec', "SELECT * FROM projeto;").then((response) => {
+  if (response) {
+    //console.log(response);
+    const obj = JSON.parse(response);
+    
+    for (let linha of obj.data) {
+      proj_id[linha.chave] = linha.valor;
+      console.log(proj_id[linha.chave]);
+    }
+    
+  }
+});
+console.log(proj_id.data);
+
+//<i class="fa-solid fa-list-check"></i>
+//<i class="fa-light fa-file-lines"></i>
+//<i class="fa-light fa-list-ol"></i>
+//<i class="fa-solid fa-toilets-portable"></i>
+//<i class="fa-solid fa-kaaba"></i>
+//<i class="fa-solid fa-computer"></i>
+//<i class="fa-solid fa-pen-to-square"></i>
+//<i class="fa-solid fa-sliders"></i>
+//<i class="fa-solid fa-code-compare"></i>
+//<i class="fa-solid fa-database"></i>
+//<i class="fa-solid fa-network-wired"></i>
+//<i class="fa-solid fa-tags"></i>
+//<i class="fa-solid fa-server"></i>
+//<i class="fa-solid fa-file-invoice"></i>
+//<i class="fa-solid fa-marker"></i
+//<i class="fa-solid fa-cube"></i>
+//<i class="fa-solid fa-code-branch"></i>
+//<i class="fa-solid fa-receipt"></i>
+//<i class="fa-solid fa-keyboard"></i>
+//<i class="fa-solid fa-truck-monster"></i>
+//<i class="fa-solid fa-route"></i>
+//<i class="fa-solid fa-dragon"></i>
+//<i class="fa-solid fa-xmarks-lines"></i>
+//<i class="fa-solid fa-trash-can"></i>
+//<i class="fa-solid fa-toilet-portable"></i>
+//<i class="fa-solid fa-timeline"></i>
+//<i class="fa-solid fa-tachograph-digital"></i>
+//<i class="fa-solid fa-table-list"></i>
+//<i class="fa-solid fa-square-poll-horizontal"></i>
+//<i class="fa-solid fa-screwdriver-wrench"></i>
+//<i class="fa-solid fa-shapes"></i>
+//<i class="fa-solid fa-ruler-combined"></i>
+//<i class="fa-solid fa-pallet"></i>
+//<i class="fa-solid fa-folder-tree"></i>
+//<i class="fa-solid fa-chart-gantt"></i>
+
+
 
 let sidebar = new w2sidebar({
   name: 'sidebar',
@@ -37,12 +83,15 @@ let sidebar = new w2sidebar({
   nodes: [
       { id: 'paleta', text: 'Editar', group: true, expanded: true, groupShowHide: false,
           nodes: [
-              { id: 'terminais', text: 'Terminais', icon: 'fa-solid fa-microchip', selected: true },
-              { id: 'bornes', text: 'Bornes', icon: 'fa fa-list-alt' },
-              { id: 'variaveis', text: 'Variáveis', icon: "fa-solid fa-keyboard" }
+            { id: 'projeto', text: 'Projeto', icon: "fa-solid fa-file-invoice", selected: true },
+            { id: 'equip', text: 'Equipamentos', icon: "fa-solid fa-server"},
+            { id: 'paineis', text: 'Paineis', icon: "fa-solid fa-toilets-portable"},
+            { id: 'terminais', text: 'Terminais', icon: 'fa-solid fa-microchip'},
+            { id: 'bornes', text: 'Bornes', icon: "fa-solid fa-code-compare" },
+            { id: 'variaveis', text: 'Variáveis', icon: "fa-solid fa-keyboard" }
           ],
           onCollapse(event) {
-              event.preventDefault()
+            event.preventDefault()
           }
       }
   ],
@@ -50,21 +99,22 @@ let sidebar = new w2sidebar({
       layout.sizeTo('left', (event.detail.goFlat ? 35 : 200), true)
   },
   onClick(event) {
-    $('#tab-example .tab-content').hide()
+    $('#area_princ .area_princ_cont').hide();
     switch (event.target) {
-      
+      case 'projeto':
+        $('#area_princ #descr_projeto').show();
+        layout.html('top', 'Identificação do projeto');
+        break
       case 'terminais':
-        //layout.html('main', grid1)
-        $('#tab-example #tab1').show()
+        $('#area_princ #componentes_terminais').show();
         layout.html('top', 'Edição dos terminais');
         break
       case 'bornes':
-        //layout.html('main', grid2)
-        $('#tab-example #tab2').show()
+        $('#area_princ #descr_projeto').show();
         layout.html('top', 'Edição dos bornes');
         break
       case 'variaveis':
-        $('#tab-example #tab3').show()
+        $('#area_princ #tab3').show();
         //layout.html('main', '<div style="padding: 10px">Some HTML</div>')
         //query(layout.el('main'))
          //   .css('border-left', '1px solid #efefef')
@@ -74,7 +124,121 @@ let sidebar = new w2sidebar({
   }
 });
 
+
+let form = new w2form({
+  box: '#descr_projeto',
+  name: 'descr_projeto',
+  fields: [
+    { field: 'titulo', type: 'text', required: true,
+      html: {
+        label: 'Título',
+        column: 0,
+        attr: 'style="width: 400px"'
+      }
+    },
+    { field: 'rev',  type: 'text', required: true,
+      html: {
+        label: 'Rev.',
+        column: 1,
+        attr: 'style="width: 60px"'
+      }
+    },
+    { field: 'data',  type: 'text', required: true,
+      html: {
+        label: 'Data',
+        column: 2,
+        attr: 'style="width: 80px"'
+      }
+    },
+    { field: 'descr', type: 'textarea',
+      html: {
+        label: 'Descrição',
+        column: 0,
+        attr: 'style="width: 400px; height: 60px"'
+      },
+    },
+    { field: 'aplicacao',  type: 'text', required: true,
+      html: {
+        label: 'Aplic.',
+        column: 1,
+        attr: 'style="width: 60px"'
+      }
+    },
+    { field: 'codigo',  type: 'text',
+      html: {
+        label: 'Cód.',
+        column: 2,
+        attr: 'style="width: 80px"'
+      }
+    },
+    { field: 'instalacao',  type: 'text', required: true,
+      html: {
+        label: 'Instalação',
+        column: 0,
+        attr: 'style="width: 300px"'
+      }
+    },
+    { field: 'projetista',  type: 'text',
+      html: {
+        label: 'Proj.',
+        column: 0,
+        attr: 'style="width: 300px"'
+      }
+    },
+    { field: 'visto',  type: 'text',
+      html: {
+        label: 'Visto',
+        column: 0,
+        attr: 'style="width: 300px"'
+      }
+    },
+    { field: 'aprovacao',  type: 'text',
+      html: {
+        label: 'Aprov.',
+        column: 0,
+        attr: 'style="width: 300px"'
+      }
+    },
+    
+  ],
+  record : {
+    titulo: 'Teste',
+    instalacao: 'SE Teste',
+    rev: 'a',
+    data: '28/06/2024',
+    aplicacao: '22000'
+    
+  },
+  actions: {
+      Atualiza(event) {
+          this.record = {
+              titulo: 'John',
+              instalacao: 'Doe'
+          };
+          this.refresh();
+      },
+      Salva(event) {
+          if (form.validate().length == 0) {
+              w2popup.open({
+                  title: 'Form Data',
+                  with: 600,
+                  height: 550,
+                  body: `<pre>${JSON.stringify(this.getCleanRecord(), null, 4)}</pre>`,
+                  actions: { Ok: w2popup.close }
+              })
+          }
+      }
+  }
+});
+
+form.on('change', function (event) {
+  console.log('Target: '+ event.target, event.detail.value.current);
+});
+
 layout.html('left', sidebar);
+$('#area_princ .area_princ_cont').hide()
+$('#area_princ #descr_projeto').show()
+layout.html('top', 'Identificação do projeto');
 
 
 const comp_term_dados = [];
