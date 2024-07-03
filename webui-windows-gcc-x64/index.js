@@ -1,6 +1,35 @@
 function julian_date (time) { return 2440587.5 + time / 86400; };
 //console.log(julian_date(Math.floor(Date.now()/1000))); // Prints the current time in milliseconds
 
+const comp_term_dados = [];
+let pausa = false;
+setInterval(atualiza, 2000);
+let changes = -1;
+let db_changes = 0;
+let comp_term_init = false;
+let proj_atualiza = false;
+
+const cor_claro = [
+  '#909090',
+  '#ffccff',
+  '#ffcccc',
+  '#ffffcc',
+  '#ccffcc',
+  '#ccffff',
+  '#ccccff',
+];
+
+const cor_escuro = [
+  '#cccccc',
+  '#ff90ff',
+  '#ff9090',
+  '#ffff90',
+  '#90ff90',
+  '#90ffff',
+  '#9090ff',
+];
+
+
 window.resizeTo(1300, 700);
 
 const tab = '\
@@ -22,22 +51,6 @@ let layout = new w2layout({
         { type: 'main', html: tab }
     ]
 });
-
-const proj_id = new Object();
-
-webui_fn('Sqlite_exec', "SELECT * FROM projeto;").then((response) => {
-  if (response) {
-    //console.log(response);
-    const obj = JSON.parse(response);
-    
-    for (let linha of obj.data) {
-      proj_id[linha.chave] = linha.valor;
-      console.log(proj_id[linha.chave]);
-    }
-    
-  }
-});
-console.log(proj_id.data);
 
 //<i class="fa-solid fa-list-check"></i>
 //<i class="fa-light fa-file-lines"></i>
@@ -125,7 +138,7 @@ let sidebar = new w2sidebar({
 });
 
 
-let form = new w2form({
+let projeto_form = new w2form({
   box: '#descr_projeto',
   name: 'descr_projeto',
   fields: [
@@ -202,71 +215,51 @@ let form = new w2form({
     
   ],
   record : {
-    titulo: 'Teste',
-    instalacao: 'SE Teste',
-    rev: 'a',
-    data: '28/06/2024',
-    aplicacao: '22000'
+    titulo: '-',
+    instalacao: '-',
+    rev: '-',
+    data: '-',
+    aplicacao: '-'
     
   },
   actions: {
-      Atualiza(event) {
-          this.record = {
-              titulo: 'John',
-              instalacao: 'Doe'
-          };
-          this.refresh();
-      },
-      Salva(event) {
-          if (form.validate().length == 0) {
-              w2popup.open({
-                  title: 'Form Data',
-                  with: 600,
-                  height: 550,
-                  body: `<pre>${JSON.stringify(this.getCleanRecord(), null, 4)}</pre>`,
-                  actions: { Ok: w2popup.close }
-              })
+    Atualiza(event) {
+      proj_atualiza = false;
+    },
+    Salva(event) {
+      if (projeto_form.validate().length == 0) {
+        let comando = "UPDATE projeto SET valor = CASE chave " +
+          "WHEN 'titulo' THEN '" + this.getValue('titulo') + "' " +
+          "WHEN 'instalacao' THEN '" + this.getValue('instalacao') + "' " +
+          "WHEN 'aplicacao' THEN '" + this.getValue('aplicacao') + "' " +
+          "WHEN 'codigo' THEN '" + this.getValue('codigo') + "' " +
+          "WHEN 'rev' THEN '" + this.getValue('rev') + "' " +
+          "WHEN 'aprovacao' THEN '" + this.getValue('aprovacao') + "' " +
+          "WHEN 'visto' THEN '" + this.getValue('visto') + "' " +
+          "WHEN 'projetista' THEN '" + this.getValue('projetista') + "' " +
+          "WHEN 'descr' THEN '" + this.getValue('descr') + "' " +
+          "WHEN 'data' THEN '" + this.getValue('data') + "' " +
+          "ELSE valor END WHERE chave IN('titulo', 'instalacao', " +
+          "'aplicacao', 'codigo', 'rev', 'aprovacao', 'visto', " +
+          "'projetista', 'descr', 'data');";
+        webui_fn('Sqlite_exec', comando).then((response) => {
+          if (response) {
+            proj_atualiza = false;
           }
+        });
       }
+    }
   }
 });
 
-form.on('change', function (event) {
-  console.log('Target: '+ event.target, event.detail.value.current);
-});
+//projeto_form.on('change', function (event) {
+//  console.log('Target: '+ event.target, event.detail.value.current);
+//});
 
 layout.html('left', sidebar);
 $('#area_princ .area_princ_cont').hide()
 $('#area_princ #descr_projeto').show()
 layout.html('top', 'Identificação do projeto');
-
-
-const comp_term_dados = [];
-let pausa = false;
-setInterval(atualiza, 2000);
-let changes = -1;
-let db_changes = 0;
-let comp_term_init = false;
-
-const cor_claro = [
-  '#909090',
-  '#ffccff',
-  '#ffcccc',
-  '#ffffcc',
-  '#ccffcc',
-  '#ccffff',
-  '#ccccff',
-];
-
-const cor_escuro = [
-  '#cccccc',
-  '#ff90ff',
-  '#ff9090',
-  '#ffff90',
-  '#90ff90',
-  '#90ffff',
-  '#9090ff',
-];
 
 const comp_term_mod = function(instance, cell, col, lin, value) {
   if (comp_term_init) {
@@ -651,7 +644,8 @@ const comp_term = jspreadsheet(document.getElementById('componentes_terminais'),
 
 function teste() {
   const MyInput = document.getElementById('teste_input');
-  //document.getElementById("demo").innerHTML = MyInput.value;
+  //document.getElementById("proj_tit").innerHTML = "Projeto: ";
+  //document.getElementById("proj_descr.innerHTML = "Descrição: <em>-</em>";
   //webui_fn('Sqlite_exec', MyInput.value);
   webui_fn('Sqlite_exec', MyInput.value).then((response) => {
       //document.getElementById("demo").innerHTML = response;
@@ -754,6 +748,29 @@ function atualiza() {
       
       
       
+    }
+    
+    if (!proj_atualiza){
+      const proj_id = new Object();
+
+      webui_fn('Sqlite_exec', "SELECT * FROM projeto;").then((response) => {
+        if (response) {
+          //console.log(response);
+          const obj = JSON.parse(response);
+          
+          for (let linha of obj.data) {
+            projeto_form.record[linha.chave] = linha.valor;
+            //console.log(proj_id[linha.chave]);
+          }
+          //console.log(projeto_form.record);
+          projeto_form.refresh();
+          
+          document.getElementById("proj_tit").innerHTML = "Projeto: " + projeto_form.record.titulo;
+          document.getElementById("proj_descr").innerHTML = "Descrição: <em>"+ projeto_form.record.descr +"</em>";
+          
+          proj_atualiza = true;
+        }
+      });
     }
   }
 };
