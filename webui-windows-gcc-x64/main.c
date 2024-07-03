@@ -204,15 +204,16 @@ int main(int argc, char** argv){
 
     
     // Create a window
-    size_t my_window = webui_new_window();
-    webui_set_icon(my_window, icon, icontype);
+    size_t janela_princ = webui_new_window();
+    webui_set_icon(janela_princ, icon, icontype);
+    //webui_set_event_blocking(janela_princ, true);
 
     // Bind HTML elements with C functions
-    webui_bind(my_window, "Sqlite_get_changes", sqlite_get_changes);
-    webui_bind(my_window, "Sqlite_exec", sqlite_exec);
+    webui_bind(janela_princ, "Sqlite_get_changes", sqlite_get_changes);
+    webui_bind(janela_princ, "Sqlite_exec", sqlite_exec);
 
     // Show the window
-    webui_show(my_window, "test.html"); // webui_show_browser(my_window, my_html, Chrome);
+    webui_show(janela_princ, "test.html"); // webui_show_browser(janela_princ, my_html, Chrome);
 
     // Wait until all windows get closed
     webui_wait();
