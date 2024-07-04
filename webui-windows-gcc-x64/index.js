@@ -8,6 +8,7 @@ let changes = -1;
 let db_changes = 0;
 let comp_term_init = false;
 let proj_atualiza = false;
+let paineis_atualiza = false;
 
 const cor_claro = [
   '#909090',
@@ -36,15 +37,16 @@ const tab = '\
 <div id="area_princ"> \
     <div id="componentes_terminais" class="area_princ_cont"></div> \
     <div id="descr_projeto" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
+    <div id="lista_paineis" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
     <div id="tab3" class="area_princ_cont"> \
       What did you expect, of course it is the third tab. \
     </div> \
 </div>';
 
 let pstyle = 'border: 1px solid #efefef; padding: 5px; color: black;'
-let layout = new w2layout({
-    box: '#layout',
-    name: 'layout',
+let princ_layout = new w2layout({
+    box: '#princ_layout',
+    name: 'princ_layout',
     panels: [
         { type: 'top', size: 50, style: pstyle, html: 'Edição dos terminais' },
         { type: 'left', size: 200, style: pstyle, html: 'left' },
@@ -109,29 +111,33 @@ let sidebar = new w2sidebar({
       }
   ],
   onFlat(event) {
-      layout.sizeTo('left', (event.detail.goFlat ? 35 : 200), true)
+      princ_layout.sizeTo('left', (event.detail.goFlat ? 35 : 200), true)
   },
   onClick(event) {
     $('#area_princ .area_princ_cont').hide();
     switch (event.target) {
       case 'projeto':
         $('#area_princ #descr_projeto').show();
-        layout.html('top', 'Identificação do projeto');
+        princ_layout.html('top', 'Identificação do projeto');
+        break
+      case 'paineis':
+        $('#area_princ #lista_paineis').show();
+        princ_layout.html('top', 'Identificação dos painéis');
         break
       case 'terminais':
         $('#area_princ #componentes_terminais').show();
-        layout.html('top', 'Edição dos terminais');
+        princ_layout.html('top', 'Edição dos terminais');
         break
       case 'bornes':
         $('#area_princ #descr_projeto').show();
-        layout.html('top', 'Edição dos bornes');
+        princ_layout.html('top', 'Edição dos bornes');
         break
       case 'variaveis':
         $('#area_princ #tab3').show();
-        //layout.html('main', '<div style="padding: 10px">Some HTML</div>')
-        //query(layout.el('main'))
+        //princ_layout.html('main', '<div style="padding: 10px">Some HTML</div>')
+        //query(princ_layout.el('main'))
          //   .css('border-left', '1px solid #efefef')
-        layout.html('top', 'Edição dos variáveis dos IED\'s (entradas/saídas)');
+        princ_layout.html('top', 'Edição dos variáveis dos IED\'s (entradas/saídas)');
         break
     }
   }
@@ -252,14 +258,63 @@ let projeto_form = new w2form({
   }
 });
 
+
+
+let tabela_paineis = new w2grid({
+  name: 'tabela_paineis',
+  box: '#lista_paineis',
+  show: {
+    toolbar: true,
+    lineNumbers: true,
+  },
+  columns: [
+    { field: 'id', text: 'ID', size: '15%', sortable: true, searchable: true, editable: { type: 'text' } },
+    { field: 'titulo', text: 'Título', size: '30%', sortable: true, searchable: true, editable: { type: 'text' } },
+    { field: 'descr', text: 'Descrição', size: '50%', editable: { type: 'text' } },
+    { field: 'fiacao', text: 'Fiação', size: '5%', sortable: true, editable: { type: 'checkbox', style: 'text-align: center' } },
+  ],
+  toolbar: {
+    items: [
+      { id: 'add', type: 'button', text: 'Add Record', icon: 'w2ui-icon-plus' },
+      { type: 'break' },
+      { type: 'button', id: 'showChanges', text: 'Show Changes' }
+    ],
+    onClick(event) {
+      //console.log(event);
+      if (event.target == 'w2ui-reload') {
+        console.log('atualiza');
+        paineis_atualiza = false;
+      }
+      if (event.target == 'add') {
+        let recid = this.owner.records.length + 1
+        this.owner.add({ recid });
+        this.owner.scrollIntoView(recid);
+        this.owner.editField(recid, 0)
+      }
+      if (event.target == 'showChanges') {
+        
+      }
+    }
+  },
+  records: [
+  ]
+});
+
+tabela_paineis.on('change', function(event) {
+  if (event.target == 'tabela_paineis'){
+    console.log(event);
+    paineis_atualiza = false;
+  }
+});
+
 //projeto_form.on('change', function (event) {
 //  console.log('Target: '+ event.target, event.detail.value.current);
 //});
 
-layout.html('left', sidebar);
+princ_layout.html('left', sidebar);
 $('#area_princ .area_princ_cont').hide()
 $('#area_princ #descr_projeto').show()
-layout.html('top', 'Identificação do projeto');
+princ_layout.html('top', 'Identificação do projeto');
 
 const comp_term_mod = function(instance, cell, col, lin, value) {
   if (comp_term_init) {
@@ -751,7 +806,7 @@ function atualiza() {
     }
     
     if (!proj_atualiza){
-      const proj_id = new Object();
+      //const proj_id = new Object();
 
       webui_fn('Sqlite_exec', "SELECT * FROM projeto;").then((response) => {
         if (response) {
@@ -769,6 +824,35 @@ function atualiza() {
           document.getElementById("proj_descr").innerHTML = "Descrição: <em>"+ projeto_form.record.descr +"</em>";
           
           proj_atualiza = true;
+        }
+      });
+    }
+    
+    if (!paineis_atualiza){
+      //const proj_id = new Object();
+      let com = "SELECT painel, titulo, descr, fiacao FROM " +
+        "(SELECT DISTINCT painel FROM descr_comp " +
+        "UNION SELECT id FROM paineis) " +
+        "LEFT JOIN paineis ON painel = id " +
+        "ORDER BY painel;";
+      webui_fn('Sqlite_exec', com).then((response) => {
+        if (response) {
+          //console.log(response);
+          const obj = JSON.parse(response);
+          tabela_paineis.mergeChanges()
+          tabela_paineis.clear(); //limpa a tabela
+          let num = 1;
+          for (let linha of obj.data) {
+            tabela_paineis.add({
+              recid: num,
+              id: linha.painel,
+              titulo: linha.titulo,
+            });
+            num++;
+          }
+          tabela_paineis.refresh();
+          
+          paineis_atualiza = true;
         }
       });
     }
