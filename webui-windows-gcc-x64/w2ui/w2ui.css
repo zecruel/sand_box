@@ -2469,14 +2469,14 @@ textarea.w2ui-error {
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-odd {
   color: inherit;
   background-color: #fff;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #777;
 }
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-odd:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-odd:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-odd.w2ui-record-hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-odd.w2ui-record-hover {
   color: inherit;
-  background-color: #f3f3f3;
+  background-color: #d0e8e8;
 }
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-odd.w2ui-empty-record:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-odd.w2ui-empty-record:hover {
@@ -2485,19 +2485,19 @@ textarea.w2ui-error {
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-even,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-even {
   color: inherit;
-  background-color: #fbfbfb;
-  border-bottom: 1px dotted #f5f5f5;
+  background-color: #dfdfdf;
+  border-bottom: 1px dotted #777;
 }
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-even:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-even:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-even.w2ui-record-hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-even.w2ui-record-hover {
   color: inherit;
-  background-color: #f3f3f3;
+  background-color: #b0cfcf;
 }
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-even.w2ui-empty-record:hover,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-even.w2ui-empty-record:hover {
-  background-color: #fbfbfb;
+  background-color: #dfdfdf;
 }
 .w2ui-grid .w2ui-grid-body .w2ui-grid-records table tr.w2ui-selected,
 .w2ui-grid .w2ui-grid-body .w2ui-grid-frecords table tr.w2ui-selected,
@@ -2574,8 +2574,8 @@ textarea.w2ui-error {
 .w2ui-grid .w2ui-grid-body table .w2ui-head {
   margin: 0px;
   padding: 0px;
-  border-right: 1px solid #dcdcdc;
-  border-bottom: 1px solid #dcdcdc;
+  border-right: 1px solid #777;
+  border-bottom: 1px solid #777;
   color: #656164;
   background-image: linear-gradient(#ffffff, #f9f9f9);
 }
@@ -2587,7 +2587,7 @@ textarea.w2ui-error {
   position: relative;
 }
 .w2ui-grid .w2ui-grid-body table td {
-  border-right: 1px solid #f1f1f1;
+  border-right: 1px solid #777;
   border-bottom: 0px solid #D6D5D7;
   cursor: default;
   overflow: hidden;
