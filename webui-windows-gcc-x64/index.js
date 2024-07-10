@@ -9,6 +9,7 @@ let db_changes = 0;
 let comp_term_init = false;
 let proj_atualiza = false;
 let paineis_atualiza = false;
+let componentes_atualiza = false;
 
 const cor_claro = [
   '#909090',
@@ -38,6 +39,7 @@ const tab = '\
     <div id="componentes_terminais" class="area_princ_cont"></div> \
     <div id="descr_projeto" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
     <div id="lista_paineis" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
+    <div id="lista_componentes" class="area_princ_cont" style="width: 1000px; height: 350px; text-align: left; padding-right: 1px; padding-left: 1px; margin-right: 1px; margin-left: 1px;"></div> \
     <div id="tab3" class="area_princ_cont"> \
       What did you expect, of course it is the third tab. \
     </div> \
@@ -99,7 +101,7 @@ let sidebar = new w2sidebar({
       { id: 'paleta', text: 'Editar', group: true, expanded: true, groupShowHide: false,
           nodes: [
             { id: 'projeto', text: 'Projeto', icon: "fa-solid fa-file-invoice", selected: true },
-            { id: 'equip', text: 'Equipamentos', icon: "fa-solid fa-server"},
+            { id: 'componentes', text: 'Componentes', icon: "fa-solid fa-server"},
             { id: 'paineis', text: 'Paineis', icon: "fa-solid fa-toilets-portable"},
             { id: 'terminais', text: 'Terminais', icon: 'fa-solid fa-microchip'},
             { id: 'bornes', text: 'Bornes', icon: "fa-solid fa-code-compare" },
@@ -127,6 +129,10 @@ let sidebar = new w2sidebar({
       case 'terminais':
         $('#area_princ #componentes_terminais').show();
         princ_layout.html('top', 'Edição dos terminais');
+        break
+      case 'componentes':
+        $('#area_princ #lista_componentes').show();
+        princ_layout.html('top', 'Edição dos componentes');
         break
       case 'bornes':
         $('#area_princ #descr_projeto').show();
@@ -271,7 +277,8 @@ let tabela_paineis = new w2grid({
     { field: 'id', text: 'ID', size: '15%', sortable: true, searchable: true, editable: { type: 'text' } },
     { field: 'titulo', text: 'Título', size: '30%', sortable: true, searchable: true, editable: { type: 'text' } },
     { field: 'descr', text: 'Descrição', size: '50%', editable: { type: 'text' } },
-    { field: 'fiacao', text: 'Fiação', size: '5%', sortable: true, editable: { type: 'checkbox', style: 'text-align: center' } },
+    { field: 'fiacao', text: 'Fia', size: '5%', sortable: true, editable: { type: 'checkbox', style: 'text-align: center' } },
+    { field: 'existe', text: 'Esq', size: '5%', sortable: true, style: 'text-align: center'},
   ],
   toolbar: {
     items: [
@@ -302,6 +309,55 @@ let tabela_paineis = new w2grid({
 
 tabela_paineis.on('change', function(event) {
   if (event.target == 'tabela_paineis'){
+    console.log(event);
+    paineis_atualiza = false;
+  }
+});
+
+let tabela_componentes = new w2grid({
+  name: 'tabela_componentes',
+  box: '#lista_componentes',
+  show: {
+    toolbar: true,
+    lineNumbers: true,
+  },
+  columns: [
+    { field: 'painel', text: 'Painel', size: '15%', sortable: true, searchable: true },
+    { field: 'componente', text: 'Componente', size: '25%', sortable: true, searchable: true },
+    { field: 'item', text: 'Item LE', size: '10%', sortable: true, searchable: true },
+    { field: 'id_fiacao', text: 'Id Fiação', size: '20%', sortable: true, searchable: true },
+    { field: 'tipo', text: 'Tipo', size: '25%', sortable: true, searchable: true },
+    { field: 'existe', text: 'Esq', size: '5%', sortable: true, style: 'text-align: center'},
+  ],
+  toolbar: {
+    items: [
+      { id: 'add', type: 'button', text: 'Add Record', icon: 'w2ui-icon-plus' },
+      { type: 'break' },
+      { type: 'button', id: 'showChanges', text: 'Show Changes' }
+    ],
+    onClick(event) {
+      //console.log(event);
+      if (event.target == 'w2ui-reload') {
+        console.log('atualiza');
+        componentes_atualiza = false;
+      }
+      if (event.target == 'add') {
+        let recid = this.owner.records.length + 1
+        this.owner.add({ recid });
+        this.owner.scrollIntoView(recid);
+        this.owner.editField(recid, 0)
+      }
+      if (event.target == 'showChanges') {
+        
+      }
+    }
+  },
+  records: [
+  ]
+});
+
+tabela_componentes.on('change', function(event) {
+  if (event.target == 'tabela_componentes'){
     console.log(event);
     paineis_atualiza = false;
   }
@@ -830,29 +886,82 @@ function atualiza() {
     
     if (!paineis_atualiza){
       //const proj_id = new Object();
-      let com = "SELECT painel, titulo, descr, fiacao FROM " +
-        "(SELECT DISTINCT painel FROM descr_comp " +
-        "UNION SELECT id FROM paineis) " +
-        "LEFT JOIN paineis ON painel = id " +
-        "ORDER BY painel;";
+      let com = "WITH cte_paineis AS ( SELECT DISTINCT painel FROM descr_comp ) " +
+        "SELECT paineis_total.painel, titulo, descr, fiacao, " +
+        "CASE WHEN EXISTS ( SELECT cte_paineis.painel FROM cte_paineis " +
+        "WHERE cte_paineis.painel = paineis_total.painel) THEN 'x' END existe " +
+        "FROM ( SELECT painel FROM cte_paineis UNION SELECT id FROM paineis) " +
+        "AS paineis_total LEFT JOIN paineis ON painel = id ORDER BY painel;";
+      
       webui_fn('Sqlite_exec', com).then((response) => {
         if (response) {
           //console.log(response);
           const obj = JSON.parse(response);
-          tabela_paineis.mergeChanges()
+          let recid = tabela_paineis.last.sel_recid;
+          tabela_paineis.mergeChanges();
           tabela_paineis.clear(); //limpa a tabela
           let num = 1;
           for (let linha of obj.data) {
+            let fiacao = linha.fiacao != "";
             tabela_paineis.add({
               recid: num,
               id: linha.painel,
               titulo: linha.titulo,
+              descr: linha.descr,
+              fiacao: fiacao,
+              existe: linha.existe
             });
             num++;
           }
           tabela_paineis.refresh();
+          tabela_paineis.scrollIntoView(recid);
           
           paineis_atualiza = true;
+        }
+      });
+    }
+    
+    if (!componentes_atualiza){
+      //const proj_id = new Object();
+      let com = "SELECT comp_total.painel, comp_total.componente, " +
+        "CASE WHEN componentes.item IS NULL THEN 'x' END estimado, " +
+        "CASE WHEN componentes.item IS NULL THEN est.item ELSE componentes.item END item, " +
+        "CASE WHEN componentes.item IS NULL THEN est.estimado ELSE componentes.tipo END tipo, " +
+        "componentes.id_fiacao, CASE WHEN est.componente IS NOT NULL THEN 'x' END existe " +
+        "FROM (SELECT painel, componente FROM estima_comp_esq " +
+        "UNION SELECT painel, id FROM componentes ORDER BY painel, componente) comp_total " +
+        "LEFT JOIN estima_comp_esq est ON est.painel = comp_total.painel AND  " +
+        "est.componente = comp_total.componente " +
+        "LEFT JOIN componentes ON comp_total.painel = componentes.painel AND  " +
+        "comp_total.componente = componentes.id " +
+        "ORDER BY comp_total.painel, comp_total.componente;";
+      
+      webui_fn('Sqlite_exec', com).then((response) => {
+        if (response) {
+          //console.log(response);
+          const obj = JSON.parse(response);
+          let recid = tabela_componentes.last.sel_recid;
+          tabela_componentes.mergeChanges();
+          tabela_componentes.clear(); //limpa a tabela
+          let num = 1;
+          for (let linha of obj.data) {
+            //let fiacao = linha.fiacao != "";
+            tabela_componentes.add({
+              recid: num,
+              painel: linha.painel,
+              componente: linha.componente,
+              tipo: linha.tipo,
+              item: linha.item,
+              id_fiacao: linha.id_fiacao,
+              existe: linha.existe,
+              estimado: linha.estimado
+            });
+            num++;
+          }
+          tabela_componentes.refresh();
+          tabela_componentes.scrollIntoView(recid);
+          
+          componentes_atualiza = true;
         }
       });
     }
