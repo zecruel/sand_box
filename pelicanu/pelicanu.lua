@@ -658,13 +658,13 @@ function pega_comp_id (comp)
     if string.find(attr['tag']:upper(), "^ID1") then 
       idx1 = i
       id1 = attr['value']
-      id1 = string.gsub(id1, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
+      id1 = string.gsub(id1, '%%%%%a', '') -- retira as marcas de formatacao, se houver
     end
     -- "denominador"
     if string.find(attr['tag']:upper(), "^ID2") then
       idx2 = i
       id2 = attr['value']
-      id2 = string.gsub(id2, '(%%%%%a)', '') -- retira as marcas de formatacao, se houver
+      id2 = string.gsub(id2, '%%%%%a', '') -- retira as marcas de formatacao, se houver
     end
   end
   
