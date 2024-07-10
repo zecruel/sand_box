@@ -438,6 +438,52 @@ function bd_novo(caminho, projeto)
     "comp_term.num = tip.t_id AND ( \n" ..
     "(tip.modulo IS NULL AND efetivo.modulo IS NULL) \n" ..
     "OR efetivo.modulo = tip.modulo);")
+  bd:exec('DROP VIEW IF EXISTS estima_comp_esq')
+  bd:exec("CREATE VIEW estima_comp_esq AS\n"..
+    "SELECT painel, componente, sum(num) elementos, sum(DISTINCT est) est,\n" ..
+    "  CASE WHEN est = 1 THEN 'DIODO'\n" ..
+    "  WHEN est = 1 THEN 'DIODO'\n" ..
+    "  WHEN est = 2 THEN 'RÉGUA'\n" ..
+    "  WHEN est = 4 THEN 'MINI DJ'\n" ..
+    "  WHEN est = 20 THEN 'MINI DJ'\n" ..
+    "  WHEN est = 8 THEN 'CT TENSÃO'\n" ..
+    "  WHEN est = 16 THEN 'CT CORRENTE'\n" ..
+    "  WHEN est = 24 THEN 'CT TENSÃO+CORRENTE'\n" ..
+    "  WHEN est = 32 THEN 'CONTATO EXTERNO'\n" ..
+    "  WHEN est >= 64 AND est < 128 THEN\n" ..
+    "    CASE WHEN componente LIKE '%94%' THEN 'RELÉ TRIP'\n" ..
+    "    WHEN componente LIKE '%83%' THEN 'RELÉ BIEST CTRL'\n" ..
+    "    WHEN componente LIKE '%86%' THEN 'RELÉ BIEST BLOQ'\n" ..
+    "    ELSE 'RELÉ AUX' END\n" ..
+    "  WHEN est >= 128 AND est < 417 THEN\n" ..
+    "    CASE WHEN componente LIKE '%21%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%87%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%50%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%51%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%67%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%59%' THEN 'IED RELÉ PROT'\n" ..
+    "    WHEN componente LIKE '%61%' THEN 'IED RELÉ PROT'\n" ..
+    "    ELSE 'IED' END ELSE 'ERRO' END\n" ..
+    "  estimado, item\n" ..
+    "FROM ( SELECT painel, componente, tipo, COUNT(tipo) num,\n" ..
+    "  CASE tipo WHEN 'DIODO' THEN 1\n" ..
+    "  WHEN 'BORNE_SEC' THEN 2\n" ..
+    "  WHEN 'BORNE' THEN 2\n" ..
+    "  WHEN 'MINI_DISJ' THEN 4\n" ..
+    "  WHEN 'CT_TENSAO' THEN 8\n" ..
+    "  WHEN 'CT_CORR' THEN 16\n" ..
+    "  WHEN 'CONTATO_NA' THEN 32\n" ..
+    "  WHEN 'CONTATO_NF' THEN 32\n" ..
+    "  WHEN 'BOBINA' THEN 64\n" ..
+    "  WHEN 'ALIM_CC' THEN 128\n" ..
+    "  WHEN 'ENT_DIG' THEN 256\n" ..
+    "  WHEN 'SAIDA_DIG' THEN 256\n" ..
+    "  ELSE 0 END est\n" ..
+    "  FROM descr_comp WHERE NOT tipo = 'REFERENCIA' AND \n" ..
+    "  NOT componente = '' AND componente NOT NULL\n" ..
+    "  GROUP BY painel, componente, tipo)\n" ..
+    "LEFT JOIN regras_equip ON estimado = regras_equip.tipo\n" ..
+    "GROUP BY painel, componente;")
   
   bd:close()
   return true
