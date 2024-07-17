@@ -1,5 +1,8 @@
+(async () => {
 function julian_date (time) { return 2440587.5 + time / 86400; };
 //console.log(julian_date(Math.floor(Date.now()/1000))); // Prints the current time in milliseconds
+
+let locale = await w2utils.locale('./w2ui/pt-br.json');
 
 const comp_term_dados = [];
 let pausa = false;
@@ -272,6 +275,10 @@ let tabela_paineis = new w2grid({
   show: {
     toolbar: true,
     lineNumbers: true,
+    footer: true,
+    toolbarAdd: true,
+    toolbarDelete: true,
+    toolbarEdit: true
   },
   columns: [
     { field: 'id', text: 'ID', size: '15%', sortable: true, searchable: true, editable: { type: 'text' } },
@@ -280,31 +287,20 @@ let tabela_paineis = new w2grid({
     { field: 'fiacao', text: 'Fia', size: '5%', sortable: true, editable: { type: 'checkbox', style: 'text-align: center' } },
     { field: 'existe', text: 'Esq', size: '5%', sortable: true, style: 'text-align: center'},
   ],
-  toolbar: {
-    items: [
-      { id: 'add', type: 'button', text: 'Add Record', icon: 'w2ui-icon-plus' },
-      { type: 'break' },
-      { type: 'button', id: 'showChanges', text: 'Show Changes' }
-    ],
-    onClick(event) {
-      //console.log(event);
-      if (event.target == 'w2ui-reload') {
-        console.log('atualiza');
-        paineis_atualiza = false;
-      }
-      if (event.target == 'add') {
-        let recid = this.owner.records.length + 1
-        this.owner.add({ recid });
-        this.owner.scrollIntoView(recid);
-        this.owner.editField(recid, 0)
-      }
-      if (event.target == 'showChanges') {
-        
-      }
-    }
+  onAdd: function (event) {
+    console.log('add', event);
   },
-  records: [
-  ]
+  onEdit: function (event) {
+    console.log('edit', event);
+  },
+  onDelete: function (event) {
+    console.log('delete has default behavior');
+  },
+  onReload: function (event) {
+    console.log('atualiza');
+    paineis_atualiza = false;
+  },
+  records: []
 });
 
 tabela_paineis.on('change', function(event) {
@@ -338,7 +334,7 @@ let tabela_componentes = new w2grid({
     onClick(event) {
       //console.log(event);
       if (event.target == 'w2ui-reload') {
-        console.log('atualiza');
+        //console.log('atualiza');
         componentes_atualiza = false;
       }
       if (event.target == 'add') {
@@ -970,3 +966,4 @@ function atualiza() {
 
 //atualiza();
 
+})()
