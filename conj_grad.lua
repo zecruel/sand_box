@@ -10,13 +10,13 @@ function conjugate_gradient (A, x, b)
 	-- obtem r0
 	for l = 1, n do
 		tmp = 0
-		for c = 1, n do
-			tmp = tmp + A[l][c] * x[c]
+		for c, v in pairs(A[l]) do
+			tmp = tmp + v * x[c]
 		end
 		r[l] = b[l] - tmp
 		erro = erro + r[l] * r[l]
 	end
-	if erro < 1e-4 then return erro, 0 end -- verifica criterio de parada
+	if erro < 1e-6 then return erro, 0 end -- verifica criterio de parada
 	
 	-- obtem p0
 	local p = {}
@@ -25,14 +25,14 @@ function conjugate_gradient (A, x, b)
 	-- comeca as iteracoes
 	local alfa, beta
 	local num, den
-	for k = 1, 300 do -- max de 300 iteracoes
+	for k = 1, 2000 do -- max de 2000 iteracoes
 	
 		-- calcula alfa -> escalar
 		num = 0; den = 0
 		for l = 1, n do
 			tmp = 0
-			for c = 1, n do
-				tmp = tmp + A[l][c] * p[c]
+			for c, v in pairs(A[l]) do
+				tmp = tmp + v * p[c]
 			end
 			den = den + p[l] * tmp
 			num = num + r[l] * r[l]
@@ -48,15 +48,15 @@ function conjugate_gradient (A, x, b)
 		den = 0; erro = 0
 		for l = 1, n do
 			tmp = 0
-			for c = 1, n do
-				tmp = tmp + A[l][c] * p[c]
+			for c, v in pairs(A[l]) do
+				tmp = tmp + v * p[c]
 			end
 			den = den +  r[l] * r[l]
 			r[l] = r[l] - alfa * tmp
 			erro = erro + r[l] * r[l]
 		end
 		
-		if erro < 1e-4 then return erro, k end -- verifica criterio de parada
+		if erro < 1e-6 then return erro, k end -- verifica criterio de parada
 		
 		-- calcula beta e aplica ao proximo vetor p
 		beta = erro / den
@@ -69,7 +69,7 @@ function conjugate_gradient (A, x, b)
 end
 
 
---[[
+
 entrada = {
 	{
 		{0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001},
@@ -291,7 +291,7 @@ entrada = {
 
 	},
 }
-]]--
+--[[
 entrada = {
 	{
 		{0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001},
@@ -397,7 +397,7 @@ entrada = {
 
 	},
 }
-
+]]--
 pags =  #entrada
 lins = #entrada[1]
 cols = #entrada[1][1]
@@ -413,9 +413,9 @@ for i = 1, lins * cols * pags do
 	matriz[i] = {}
 	x[i] = 2
 	b[i] = 0
-	for j = 1, lins * cols * pags do
-		matriz[i][j] = 0
-	end
+	--for j = 1, lins * cols * pags do
+	--	matriz[i][j] = 0
+	--end
 end
 pos_l = 1
 for k = 1, pags do
@@ -429,8 +429,10 @@ for k = 1, pags do
 				matriz[pos_l][pos_c] = -g
 				matriz[pos_c][pos_l] = -g
 				-- adiciona na diagonal
-				matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-				matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+				else matriz[pos_c][pos_c] =  g end
+				if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				else matriz[pos_l][pos_l] = g end
 			else
 				-- escolhe o menor valor de condutancia
 				g = (entrada[k][i][j] < entrada[k][i][j -1]) and entrada[k][i][j] or entrada[k][i][j -1]
@@ -446,8 +448,10 @@ for k = 1, pags do
 				matriz[pos_l][pos_c] = -g
 				matriz[pos_c][pos_l] = -g
 				-- adiciona na diagonal
-				matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-				matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+				else matriz[pos_c][pos_c] =  g end
+				if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				else matriz[pos_l][pos_l] = g end
 			else
 				-- escolhe o menor valor de condutancia
 				g = (entrada[k][i][j] < entrada[k][i - 1][j]) and entrada[k][i][j] or entrada[k][i - 1][j]
@@ -463,8 +467,10 @@ for k = 1, pags do
 				matriz[pos_l][pos_c] = -g
 				matriz[pos_c][pos_l] = -g
 				-- adiciona na diagonal
-				matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-				matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+				else matriz[pos_c][pos_c] =  g end
+				if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				else matriz[pos_l][pos_l] = g end
 			else
 				matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g_t_remoto
 			end
@@ -480,8 +486,8 @@ end
 t2 = os.time()
 print ("tempo de montagem da matriz = "..os.difftime(t2, t1)..'s')
 
---i = 22; j = 22
-i = 11; j = 8
+i = 22; j = 22
+--i = 11; j = 8
 b[(i - 1) * cols + j] = 1
 
 erro, n = conjugate_gradient (matriz, x, b)
