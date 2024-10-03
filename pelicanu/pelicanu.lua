@@ -12,6 +12,7 @@ require('pelicanu_bd')
 require('pelicanu_dyn')
 require('pelicanu_dyn_prj')
 require('pelicanu_dyn_esq')
+require('pelicanu_malha_dyn')
 
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
@@ -145,7 +146,7 @@ g_ref_contat = {value = false}
 
 g_ligacao_tipo = {value = 1, "Baixa", "Alta"}
 
-excel = require "xlsxwriter.workbook"
+--excel = require "xlsxwriter.workbook"
 
 cores_claras = {
   [1] = '#FFBC37', -- laranja
@@ -383,6 +384,50 @@ function no_segmento (pt, linha)
   
   -- nao estah no segmento
   return false
+end
+
+function no_segmento2 (pt, linha)
+  -- Verifica se um ponto esta num segmento de reta
+  
+  -- confere os parametros passados
+  if type(pt) ~= "table" then return false end
+  if type(linha) ~= "table" then return false end
+  
+  -- calcula o produto escalar
+  
+  local dxc = pt.x - linha[1].x
+  local dyc = pt.y - linha[1].y
+  local dxl = linha[2].x - linha[1].x
+  local dyl = linha[2].y - linha[1].y
+  local cross = dxc * dyl - dyc * dxl
+  
+  -- verifica se esta dentro do segmento
+  if math.abs(cross) > tolerancia then
+    return false
+  end
+  
+  return true
+end
+
+function intersec(l1, l2)
+	-- Verifica se há interseção entre dois segmentos de reta e calcula o ponto
+
+	-- confere os parametros passados
+	if type(l1) ~= "table" then return false end
+	if type(l2) ~= "table" then return false end
+	
+	-- verifica se as linhas não são paralelas
+	local den = (l1[1].x - l1[2].x) * (l2[1].y - l2[2].y) - (l1[1].y - l1[2].y) * (l2[1].x - l2[2].x)
+	if math.abs(den) < tolerancia then return false end
+	
+	t = ((l1[1].x - l2[1].x) * (l2[1].y - l2[2].y) - (l1[1].y - l2[1].y) * (l2[1].x - l2[2].x)) / den
+	
+	if t > 1 or t < 0 then return false end
+	
+	local pt = {}
+	pt.x = l1[1].x + t * (l1[2].x - l1[1].x)
+	pt.y = l1[1].y + t * (l1[2].y - l1[1].y)
+	return pt
 end
 
 function linha_conect (a, b)
@@ -2653,8 +2698,13 @@ function pelicanu_win()
     sub_modal = ''
     cadzinho.start_dynamic('biblioteca_dyn')
   end
+if cadzinho.nk_button(" Malha") then
+    modal = ''
+    sub_modal = ''
+    cadzinho.start_dynamic('malha_dyn')
+  end
   if cadzinho.nk_button_img(icon) then
-    
+	
   end
   
   
