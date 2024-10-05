@@ -17,6 +17,11 @@ function compara_pts(pt1, pt2)
 	else return false end
 end
 
+function compara_pts_cabo(pt1, pt2)
+	if (pt1.t < pt2.t) then return true
+	else return false end
+end
+
 function malha_dyn (event)
 
   if modal == 'limite' then
@@ -193,16 +198,6 @@ function malha_dyn (event)
 			end
 		end
 	end
-	for j = 1, #pts do
-		for k = 1, #cabos do
-			if no_segmento2 (pts[j], cabos[k]) then
-				pts[j].cond = true
-				local prop = {color = 1, ltype = "Continuous", lw = 0}
-				local c = cadzinho.new_circle(pts[j].x, pts[j].y, 1, prop)
-				c:write()
-			end
-		end
-	end
 	
 	
 	table.sort(pts, compara_pts) -- organiza os pontos em ordem
@@ -223,6 +218,39 @@ function malha_dyn (event)
 	if #linha > 0 then grade[#grade +1] = linha end
 	
 	cadzinho.db_print(#grade, #grade[1])
+	
+	for i = 1, #grade do
+		for j, pt in ipairs(grade[i]) do
+			for k = 1, #cabos do
+				if no_segmento2 (pt, cabos[k]) then
+					local dx = cabos[k][2].x - cabos[k][1].x
+					local dy = cabos[k][2].y - cabos[k][1].y
+					local t = 0
+					if math.abs(dx) > tolerancia then
+						t = (pt.x - cabos[k][1].x) / dx
+					elseif math.abs(dy) > tolerancia then
+						t = (pt.y - cabos[k][1].y) / dy
+					else t = 0 end
+					if not cabos[k].pts then cabos[k].pts = {} end
+					ponto = {}
+					ponto.i = i; ponto.j = j; ponto.t = t
+					cabos[k].pts[#cabos[k].pts + 1] = ponto
+					
+					--[[local prop = {color = 1, ltype = "Continuous", lw = 0}
+					local c = cadzinho.new_circle(pt.x, pt.y, 1, prop)
+					c:write()]]--
+				end
+			end
+		end
+	end
+	for i = 1, #cabos do
+		if cabos[i].pts then
+			table.sort(cabos[i].pts,  compara_pts_cabo) -- organiza os pontos em ordem na linha do cabo
+			--[[for j = 1, #cabos[i].pts do
+				cadzinho.db_print(i, cabos[i].pts[j].i, cabos[i].pts[j].j)
+			end]]--
+		end
+	end
       end
   end
 end

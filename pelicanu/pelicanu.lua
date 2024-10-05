@@ -393,19 +393,23 @@ function no_segmento2 (pt, linha)
   if type(pt) ~= "table" then return false end
   if type(linha) ~= "table" then return false end
   
-  -- calcula o produto escalar
-  
   local dxc = pt.x - linha[1].x
   local dyc = pt.y - linha[1].y
   local dxl = linha[2].x - linha[1].x
   local dyl = linha[2].y - linha[1].y
-  local cross = dxc * dyl - dyc * dxl
+  -- calcula o produto vetorial
+  local prod = dxc * dyl - dyc * dxl
   
-  -- verifica se esta dentro do segmento
-  if math.abs(cross) > tolerancia then
-    return false
-  end
+  -- verifica se esta na reta
+  if math.abs(prod) > tolerancia then return false end
   
+  -- calcula o produto escalar
+  prod = dxc * dxl + dyc * dyl
+   -- calcula a distancia quadratica
+  local dist = dxl * dxl + dyl * dyl
+   -- agora, verifica se esta dentro do segmento
+   if prod < -tolerancia  or prod > dist + tolerancia then return false end
+   
   return true
 end
 
