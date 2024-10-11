@@ -1,3 +1,4 @@
+--coding: utf-8
 -- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar
 -- Autor: Ezequiel Rabelo de Aguiar - 2023
 -- Utiliza a sintaxe padrao da linguagem Lua 5.4. Codificado em UTF-8
@@ -20,6 +21,82 @@ end
 function compara_pts_cabo(pt1, pt2)
 	if (pt1.t < pt2.t) then return true
 	else return false end
+end
+
+function distancia(pt1, pt2)
+	local dx = pt2.x - pt1.x
+	local dy = pt2.y - pt1.y
+	return math.sqrt(dx * dx + dy * dy)
+end
+
+function conjugate_gradient (A, x, b)
+-- credito: https://en.wikipedia.org/wiki/Conjugate_gradient_method
+
+	--inicializa
+	n = #A
+	local r = {}
+	local tmp = 0
+	local erro = 0
+	
+	-- obtem r0
+	for l = 1, n do
+		tmp = 0
+		for c, v in pairs(A[l]) do
+			tmp = tmp + v * x[c]
+		end
+		r[l] = b[l] - tmp
+		erro = erro + r[l] * r[l]
+	end
+	if erro < 1e-6 then return erro, 0 end -- verifica criterio de parada
+	
+	-- obtem p0
+	local p = {}
+	for l = 1, n do  p[l] = r[l] end
+	
+	-- comeca as iteracoes
+	local alfa, beta
+	local num, den
+	for k = 1, 2000 do -- max de 2000 iteracoes
+	
+		-- calcula alfa -> escalar
+		num = 0; den = 0
+		for l = 1, n do
+			tmp = 0
+			for c, v in pairs(A[l]) do
+				tmp = tmp + v * p[c]
+			end
+			den = den + p[l] * tmp
+			num = num + r[l] * r[l]
+		end
+		alfa = num / den
+		
+		-- proximo vetor de resultado
+		for l = 1, n do
+			x[l] = x[l] + alfa * p[l]
+		end
+		
+		-- calcula o vetor de restos r e os componentes de beta
+		den = 0; erro = 0
+		for l = 1, n do
+			tmp = 0
+			for c, v in pairs(A[l]) do
+				tmp = tmp + v * p[c]
+			end
+			den = den +  r[l] * r[l]
+			r[l] = r[l] - alfa * tmp
+			erro = erro + r[l] * r[l]
+		end
+		
+		if erro < 1e-6 then return erro, k end -- verifica criterio de parada
+		
+		-- calcula beta e aplica ao proximo vetor p
+		beta = erro / den
+		for l = 1, n do
+			p[l] = r[l] + beta * p[l]
+		end
+	end
+	
+	return erro, k
 end
 
 function malha_dyn (event)
@@ -217,7 +294,7 @@ function malha_dyn (event)
 	end
 	if #linha > 0 then grade[#grade +1] = linha end
 	
-	cadzinho.db_print(#grade, #grade[1])
+	
 	
 	for i = 1, #grade do
 		for j, pt in ipairs(grade[i]) do
@@ -243,14 +320,172 @@ function malha_dyn (event)
 			end
 		end
 	end
+	
+	local camadas = {}
+	camadas[1] = {res = 10, prof = 0.1}
+	camadas[2] = {res = 10, prof = 0.1}
+	camadas[3] = {res = 10, prof = 0.1}
+	camadas[4] = {res = 10, prof = 0.1}
+	
+	local lins = #grade
+	local cols = #grade[1]
+	local cams = #camadas
+	
+	local i_malha = 2
+	local res_cabo = 0.001
+	local res_remoto = 1
+	local g_t_remoto = res_remoto / (lins * cols)
+	local cam_cabos = 1
+	
+	
+	matriz = {}
+	v = {}
+	b = {}
+	for i = 1, lins * cols * cams do
+		matriz[i] = {}
+		v[i] = 2
+		b[i] = 0
+		--for j = 1, lins * cols * cams do
+		--	matriz[i][j] = 0
+		--end
+	end
+	local cam = 1
+	--local lin = 1
+	--local col = 1
+	cadzinho.db_print(#grade, #grade[1])
+	
+	local pos_l = 1
+	local pos_c = 1
+	local pt_corrente = false
 	for i = 1, #cabos do
 		if cabos[i].pts then
 			table.sort(cabos[i].pts,  compara_pts_cabo) -- organiza os pontos em ordem na linha do cabo
-			--[[for j = 1, #cabos[i].pts do
-				cadzinho.db_print(i, cabos[i].pts[j].i, cabos[i].pts[j].j)
-			end]]--
+			for j = 1, #cabos[i].pts - 1 do
+				local lin1 = cabos[i].pts[j].i
+				local col1 = cabos[i].pts[j].j
+				local lin2 = cabos[i].pts[j + 1].i
+				local col2 = cabos[i].pts[j + 1].j
+				
+				-- calcula a condutancia
+				local g = 1/(distancia(grade[lin1][col1], grade[lin2][col2]) * res_cabo)
+				
+				pos_l = (cam - 1) * cols * lins + (lin1 - 1) * cols + col1
+				pos_c = (cam - 1) * cols * lins + (lin2 - 1) * cols + col2
+				matriz[pos_l][pos_c] = -g
+				matriz[pos_c][pos_l] = -g
+				-- adiciona na diagonal
+				if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+				else matriz[pos_c][pos_c] =  g end
+				if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+				else matriz[pos_l][pos_l] = g end
+				
+				if not pt_corrente then
+					b[pos_c] = i_malha
+					pt_corrente = true
+				end
+				
+			end
 		end
 	end
+	pos_l = 1
+	for k = 1, cams do
+		for i = 1, lins do
+			for j = 1, cols do
+				
+				if (j < cols) then
+					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j + 1
+					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
+						-- calcula a condutancia
+						local g = 1/(distancia(grade[i][j], grade[i][j + 1]) * camadas[k].res)
+						matriz[pos_l][pos_c] = -g
+						matriz[pos_c][pos_l] = -g
+						-- adiciona na diagonal
+						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+						else matriz[pos_c][pos_c] =  g end
+						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+						else matriz[pos_l][pos_l] = g end
+					end
+				else
+					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j - 1
+					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
+						-- calcula a condutancia
+						local g = 1/(distancia(grade[i][j], grade[i][j - 1]) * camadas[k].res)
+						
+						matriz[pos_l][pos_c] = -g
+						matriz[pos_c][pos_l] = -g
+					end
+				end
+				
+				if (i < lins) then
+					pos_c = (k - 1) * cols * lins + (i) * cols + j
+					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
+						-- calcula a condutancia
+						local g = 1/(distancia(grade[i][j], grade[i + 1][j]) * camadas[k].res)
+						
+						matriz[pos_l][pos_c] = -g
+						matriz[pos_c][pos_l] = -g
+						-- adiciona na diagonal
+						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+						else matriz[pos_c][pos_c] =  g end
+						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+						else matriz[pos_l][pos_l] = g end
+					end
+				else
+					pos_c = (k - 1) * cols * lins + (i - 2) * cols + j
+					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
+						-- calcula a condutancia
+						local g = 1/(distancia(grade[i][j], grade[i - 1][j]) * camadas[k].res)
+						
+						matriz[pos_l][pos_c] = -g
+						matriz[pos_c][pos_l] = -g
+					end
+				end
+				
+				if (k < cams) then
+					pos_c = (k) * cols * lins + (i - 1) * cols + j
+						if k ~= cam_cabos or not matriz[pos_l][pos_c] then
+						-- calcula a condutancia
+						local g = 1/(camadas[k].prof * camadas[k].res)
+						
+						matriz[pos_l][pos_c] = -g
+						matriz[pos_c][pos_l] = -g
+						-- adiciona na diagonal
+						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+						else matriz[pos_c][pos_c] =  g end
+						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+						else matriz[pos_l][pos_l] = g end
+					end
+				else
+					matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g_t_remoto
+				end
+			
+			
+				--pos_c = (k - 1) * cols * lins + (i - 1) * cols + j
+				
+				
+				pos_l = pos_l + 1
+			end
+		end
+	end
+	
+	erro, n = conjugate_gradient (matriz, v, b)
+	
+	local file = assert(io.open('teste.csv', "w"))
+	for k = 1, cams do
+		for i = 1, lins do
+			for j = 1, cols do
+				t = tostring(v[(k - 1) * lins + (i - 1) * cols + j])
+				file:write( t:gsub('%.', ','))
+				if ( j < cols) then file:write( ";" ) end
+			end
+			file:write( "\n" ) 
+		end
+		file:write( "\n" ) 
+	end
+	file:close()
+	
+	cadzinho.db_print ('erro =', erro, 'iteracoes =' , n)
+	
       end
   end
 end
