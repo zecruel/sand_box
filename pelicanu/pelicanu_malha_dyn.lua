@@ -29,9 +29,10 @@ function distancia(pt1, pt2)
 	return math.sqrt(dx * dx + dy * dy)
 end
 
-function conjugate_gradient (A, x, b)
+function conjugate_gradient (A, x, b, parada, max_iter)
 -- credito: https://en.wikipedia.org/wiki/Conjugate_gradient_method
-
+  parada = parada or 1e-6
+  max_iter = max_iter or 1000
 	--inicializa
 	n = #A
 	local r = {}
@@ -47,7 +48,7 @@ function conjugate_gradient (A, x, b)
 		r[l] = b[l] - tmp
 		erro = erro + r[l] * r[l]
 	end
-	if erro < 1e-6 then return erro, 0 end -- verifica criterio de parada
+	if erro < parada then return erro, 0 end -- verifica criterio de parada
 	
 	-- obtem p0
 	local p = {}
@@ -56,7 +57,7 @@ function conjugate_gradient (A, x, b)
 	-- comeca as iteracoes
 	local alfa, beta
 	local num, den
-	for k = 1, 2000 do -- max de 2000 iteracoes
+	for k = 1, max_iter do -- max de iteracoes
 	
 		-- calcula alfa -> escalar
 		num = 0; den = 0
@@ -87,7 +88,7 @@ function conjugate_gradient (A, x, b)
 			erro = erro + r[l] * r[l]
 		end
 		
-		if erro < 1e-6 then return erro, k end -- verifica criterio de parada
+		if erro < parada then return erro, k end -- verifica criterio de parada
 		
 		-- calcula beta e aplica ao proximo vetor p
 		beta = erro / den
@@ -96,7 +97,7 @@ function conjugate_gradient (A, x, b)
 		end
 	end
 	
-	return erro, k
+	return erro, max_iter
 end
 
 function malha_dyn (event)
@@ -322,19 +323,17 @@ function malha_dyn (event)
 	end
 	
 	local camadas = {}
-	camadas[1] = {res = 10, prof = 0.1}
-	camadas[2] = {res = 10, prof = 0.1}
-	camadas[3] = {res = 10, prof = 0.1}
-	camadas[4] = {res = 10, prof = 0.1}
+	camadas[1] = {res = 760, prof = 0.6}
+	camadas[2] = {res = 191, prof = 1}
 	
 	local lins = #grade
 	local cols = #grade[1]
 	local cams = #camadas
 	
-	local i_malha = 2
-	local res_cabo = 0.001
-	local res_remoto = 1
-	local g_t_remoto = res_remoto / (lins * cols)
+	local i_malha = 3200
+	local res_cabo = 0.0001
+	local res_remoto = 0.1
+	local g_t_remoto = (lins * cols)/res_remoto
 	local cam_cabos = 1
 	
 	
@@ -343,7 +342,7 @@ function malha_dyn (event)
 	b = {}
 	for i = 1, lins * cols * cams do
 		matriz[i] = {}
-		v[i] = 2
+		v[i] = i_malha * res_remoto
 		b[i] = 0
 		--for j = 1, lins * cols * cams do
 		--	matriz[i][j] = 0
@@ -367,7 +366,7 @@ function malha_dyn (event)
 				local col2 = cabos[i].pts[j + 1].j
 				
 				-- calcula a condutancia
-				local g = 1/(distancia(grade[lin1][col1], grade[lin2][col2]) * res_cabo)
+				local g = 0.5/(distancia(grade[lin1][col1], grade[lin2][col2]) * res_cabo)
 				
 				pos_l = (cam - 1) * cols * lins + (lin1 - 1) * cols + col1
 				pos_c = (cam - 1) * cols * lins + (lin2 - 1) * cols + col2
@@ -396,7 +395,7 @@ function malha_dyn (event)
 					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j + 1
 					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
 						-- calcula a condutancia
-						local g = 1/(distancia(grade[i][j], grade[i][j + 1]) * camadas[k].res)
+						local g = 0.5/(distancia(grade[i][j], grade[i][j + 1]) * camadas[k].res)
 						matriz[pos_l][pos_c] = -g
 						matriz[pos_c][pos_l] = -g
 						-- adiciona na diagonal
@@ -409,7 +408,7 @@ function malha_dyn (event)
 					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j - 1
 					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
 						-- calcula a condutancia
-						local g = 1/(distancia(grade[i][j], grade[i][j - 1]) * camadas[k].res)
+						local g = 0.5/(distancia(grade[i][j], grade[i][j - 1]) * camadas[k].res)
 						
 						matriz[pos_l][pos_c] = -g
 						matriz[pos_c][pos_l] = -g
@@ -420,7 +419,7 @@ function malha_dyn (event)
 					pos_c = (k - 1) * cols * lins + (i) * cols + j
 					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
 						-- calcula a condutancia
-						local g = 1/(distancia(grade[i][j], grade[i + 1][j]) * camadas[k].res)
+						local g = 0.5/(distancia(grade[i][j], grade[i + 1][j]) * camadas[k].res)
 						
 						matriz[pos_l][pos_c] = -g
 						matriz[pos_c][pos_l] = -g
@@ -434,7 +433,7 @@ function malha_dyn (event)
 					pos_c = (k - 1) * cols * lins + (i - 2) * cols + j
 					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
 						-- calcula a condutancia
-						local g = 1/(distancia(grade[i][j], grade[i - 1][j]) * camadas[k].res)
+						local g = 0.5/(distancia(grade[i][j], grade[i - 1][j]) * camadas[k].res)
 						
 						matriz[pos_l][pos_c] = -g
 						matriz[pos_c][pos_l] = -g
@@ -445,7 +444,7 @@ function malha_dyn (event)
 					pos_c = (k) * cols * lins + (i - 1) * cols + j
 						if k ~= cam_cabos or not matriz[pos_l][pos_c] then
 						-- calcula a condutancia
-						local g = 1/(camadas[k].prof * camadas[k].res)
+						local g = 0.5/(camadas[k].prof * camadas[k].res)
 						
 						matriz[pos_l][pos_c] = -g
 						matriz[pos_c][pos_l] = -g
@@ -468,7 +467,10 @@ function malha_dyn (event)
 		end
 	end
 	
-	erro, n = conjugate_gradient (matriz, v, b)
+  cadzinho.set_timeout(360)
+	erro, n = conjugate_gradient (matriz, v, b, 1e-6 * i_malha * res_remoto, 3000)--lins * cols * cams)
+  
+  cadzinho.db_print ('erro =', erro, 'iteracoes =' , n)
 	
 	local file = assert(io.open('teste.csv', "w"))
 	for k = 1, cams do
@@ -484,7 +486,7 @@ function malha_dyn (event)
 	end
 	file:close()
 	
-	cadzinho.db_print ('erro =', erro, 'iteracoes =' , n)
+	
 	
       end
   end
