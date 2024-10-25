@@ -323,8 +323,10 @@ function malha_dyn (event)
 	end
 	
 	local camadas = {}
-	camadas[1] = {res = 760, prof = 0.6}
-	camadas[2] = {res = 191, prof = 1}
+	camadas[1] = {res = 400, prof = 0.3}
+  camadas[2] = {res = 400, prof = 0.3}
+	camadas[3] = {res = 191, prof = 1}
+  camadas[4] = {res = 191, prof = 1}
 	
 	local lins = #grade
 	local cols = #grade[1]
@@ -340,7 +342,7 @@ function malha_dyn (event)
 	matriz = {}
 	v = {}
 	b = {}
-	for i = 1, lins * cols * cams do
+	for i = 1, lins * cols * (cams + 1) do
 		matriz[i] = {}
 		v[i] = i_malha * res_remoto
 		b[i] = 0
@@ -387,88 +389,85 @@ function malha_dyn (event)
 		end
 	end
 	pos_l = 1
+  
+  local dx = grade[1][2].x - grade[1][1].x
+  local dy = grade[2][1].y - grade[1][1].y
+  local g = 1
+  
 	for k = 1, cams do
-		for i = 1, lins do
-			for j = 1, cols do
-				
-				if (j < cols) then
-					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j + 1
-					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
-						-- calcula a condutancia
-						local g = 0.5/(distancia(grade[i][j], grade[i][j + 1]) * camadas[k].res)
-						matriz[pos_l][pos_c] = -g
-						matriz[pos_c][pos_l] = -g
-						-- adiciona na diagonal
-						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-						else matriz[pos_c][pos_c] =  g end
-						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
-						else matriz[pos_l][pos_l] = g end
-					end
-				else
-					pos_c = (k - 1) * cols * lins + (i - 1) * cols + j - 1
-					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
-						-- calcula a condutancia
-						local g = 0.5/(distancia(grade[i][j], grade[i][j - 1]) * camadas[k].res)
-						
-						matriz[pos_l][pos_c] = -g
-						matriz[pos_c][pos_l] = -g
-					end
-				end
-				
-				if (i < lins) then
-					pos_c = (k - 1) * cols * lins + (i) * cols + j
-					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
-						-- calcula a condutancia
-						local g = 0.5/(distancia(grade[i][j], grade[i + 1][j]) * camadas[k].res)
-						
-						matriz[pos_l][pos_c] = -g
-						matriz[pos_c][pos_l] = -g
-						-- adiciona na diagonal
-						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-						else matriz[pos_c][pos_c] =  g end
-						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
-						else matriz[pos_l][pos_l] = g end
-					end
-				else
-					pos_c = (k - 1) * cols * lins + (i - 2) * cols + j
-					if k ~= cam_cabos or not matriz[pos_l][pos_c] then
-						-- calcula a condutancia
-						local g = 0.5/(distancia(grade[i][j], grade[i - 1][j]) * camadas[k].res)
-						
-						matriz[pos_l][pos_c] = -g
-						matriz[pos_c][pos_l] = -g
-					end
-				end
-				
-				if (k < cams) then
-					pos_c = (k) * cols * lins + (i - 1) * cols + j
-						if k ~= cam_cabos or not matriz[pos_l][pos_c] then
-						-- calcula a condutancia
-						local g = 0.5/(camadas[k].prof * camadas[k].res)
-						
-						matriz[pos_l][pos_c] = -g
-						matriz[pos_c][pos_l] = -g
-						-- adiciona na diagonal
-						if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
-						else matriz[pos_c][pos_c] =  g end
-						if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
-						else matriz[pos_l][pos_l] = g end
-					end
-				else
-					matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g_t_remoto
-				end
-			
-			
-				--pos_c = (k - 1) * cols * lins + (i - 1) * cols + j
-				
-				
-				pos_l = pos_l + 1
+		for i = 1, lins - 1 do
+			for j = 1, cols - 1 do
+        dx = grade[i][j + 1].x - grade[i][j].x
+        dy = grade[i + 1][j].y - grade[i][j].y
+        
+        -- calcula a condutancia -- arestas em x
+        g = (dy * camadas[k].prof) / (4 * dx * camadas[k].res)
+        local arestas = {{i = 0, k = 0}, {i = 1, k = 0},
+                        {i = 0, k = 1}, {i = 1, k = 1} }
+        for _, aresta in pairs(arestas) do
+          pos_l = (k - 1 + aresta.k) * cols * lins + (i - 1 + aresta.i) * cols + j
+          pos_c = (k - 1 + aresta.k) * cols * lins + (i - 1 + aresta.i) * cols + j + 1
+          -- adiciona na matriz - diagonal
+          if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+          else matriz[pos_c][pos_c] =  g end
+          if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+          else matriz[pos_l][pos_l] = g end
+          -- adiciona na matriz - interconexoes
+          if matriz[pos_l][pos_c] then matriz[pos_l][pos_c] = matriz[pos_l][pos_c] - g
+          else matriz[pos_l][pos_c] =  -g end
+          if matriz[pos_c][pos_l] then matriz[pos_c][pos_l] = matriz[pos_c][pos_l] - g
+          else matriz[pos_c][pos_l] = -g end
+        end
+        
+        -- calcula a condutancia -- arestas em y
+        g = (dx * camadas[k].prof) / (4 * dy * camadas[k].res)
+        arestas = {{j = 0, k = 0}, {j = 1, k = 0},
+                    {j = 0, k = 1}, {j = 1, k = 1} }
+        for _, aresta in pairs(arestas) do
+          pos_l = (k - 1 + aresta.k) * cols * lins + (i - 1) * cols + j + aresta.j
+          pos_c = (k - 1 + aresta.k) * cols * lins + (i) * cols + j + aresta.j
+          -- adiciona na matriz - diagonal
+          if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+          else matriz[pos_c][pos_c] =  g end
+          if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+          else matriz[pos_l][pos_l] = g end
+          -- adiciona na matriz - interconexoes
+          if matriz[pos_l][pos_c] then matriz[pos_l][pos_c] = matriz[pos_l][pos_c] - g
+          else matriz[pos_l][pos_c] =  -g end
+          if matriz[pos_c][pos_l] then matriz[pos_c][pos_l] = matriz[pos_c][pos_l] - g
+          else matriz[pos_c][pos_l] = -g end
+        end
+        
+        -- calcula a condutancia -- arestas em z
+        g = (dx * dy) / (4 * camadas[k].prof * camadas[k].res)
+        arestas = {{i = 0, j = 0}, {i = 1, j = 0},
+                    {i = 0, j = 1}, {i = 1, j = 1} }
+        for _, aresta in pairs(arestas) do
+          pos_l = (k - 1) * cols * lins + (i - 1 + aresta.i) * cols + j + aresta.j
+          pos_c = (k) * cols * lins + (i - 1 + aresta.i) * cols + j + aresta.j
+          -- adiciona na matriz - diagonal
+          if matriz[pos_c][pos_c] then matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g
+          else matriz[pos_c][pos_c] =  g end
+          if matriz[pos_l][pos_l] then matriz[pos_l][pos_l] = matriz[pos_l][pos_l] + g
+          else matriz[pos_l][pos_l] = g end
+          -- adiciona na matriz - interconexoes
+          if matriz[pos_l][pos_c] then matriz[pos_l][pos_c] = matriz[pos_l][pos_c] - g
+          else matriz[pos_l][pos_c] =  -g end
+          if matriz[pos_c][pos_l] then matriz[pos_c][pos_l] = matriz[pos_c][pos_l] - g
+          else matriz[pos_c][pos_l] = -g end
+          
+          -- na ultima camada, liga ao terra remoto
+          if (k == cams) then
+            matriz[pos_c][pos_c] = matriz[pos_c][pos_c] + g_t_remoto 
+          end
+        end
+      
 			end
 		end
 	end
 	
-  cadzinho.set_timeout(360)
-	erro, n = conjugate_gradient (matriz, v, b, 1e-6 * i_malha * res_remoto, 3000)--lins * cols * cams)
+  cadzinho.set_timeout(3600)
+	erro, n = conjugate_gradient (matriz, v, b, 1e-6 * i_malha * res_remoto, lins * cols * cams)
   
   cadzinho.db_print ('erro =', erro, 'iteracoes =' , n)
 	
