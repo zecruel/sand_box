@@ -160,6 +160,30 @@ cores_claras = {
   [8] = '#DDDDDD' -- cinza
 }
 
+malha_corrotina = false
+malha_corr_exec = false
+malha_grade = {}
+malha_cabos = {}
+malha_camadas = {}
+malha_matriz = {}
+malha_v = {}
+malha_b = {}
+malha_iter = 1
+malha_erro = 1000
+malha_max_iter = 1000
+malha_crit_parada = 1e-6
+
+malha_camadas[1] = {res = 760, prof = 0.6}
+malha_camadas[2] = {res = 760, prof = 0.1}
+malha_camadas[3] = {res = 191, prof = 0.5}
+malha_camadas[4] = {res = 191, prof = 0.5}
+
+malha_i = 3200
+malha_res_cabo = 0.0001
+malha_res_remoto = .01
+--local g_t_remoto = (lins * cols) / res_remoto
+malha_cam_cabos = 3
+
 -- ============================================
 
 
