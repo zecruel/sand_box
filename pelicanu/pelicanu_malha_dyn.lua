@@ -320,6 +320,11 @@ function malha_dyn (event)
         end
       end
       
+      local lins = #malha_grade
+      local cols = #malha_grade[1]
+      local cams = #malha_camadas
+      malha_max_iter = lins * cols * cams
+      malha_crit_parada = 1e-4 * malha_i * malha_res_remoto
       
       sub_modal = 'espera'
       
@@ -359,7 +364,7 @@ function malha_dyn (event)
         local cams = #malha_camadas
         local pos_c = lins * cols * cams + 1
         local cores = {}
-        cores[1] = 1
+        --[[cores[1] = 1
         cores[2] = 32
         cores[3] = 2
         cores[4] = 57
@@ -370,9 +375,29 @@ function malha_dyn (event)
         cores[9] = 154
         cores[10] = 5
         cores[11] = 7
+        ]]--
         
-        local max_v = malha_v[1]
-        local min_v = malha_v[1]
+        
+        cores[1] = 160
+        cores[2] = 150
+        cores[3] = 140
+        cores[4] = 130
+        cores[5] = 120
+        cores[6] = 110
+        cores[7] = 100
+        cores[8] = 90
+        cores[9] = 80
+        cores[10] = 70
+        cores[11] = 60
+        cores[12] = 50
+        cores[13] = 40
+        cores[14] = 30
+        cores[15] = 20
+        cores[16] = 10
+        cores[17] = 7
+        
+        local max_v = math.log(malha_v[1])
+        local min_v = math.log(malha_v[1])
         local max_x = malha_grade[1][1].x
         local min_x = malha_grade[1][1].x
         local max_y = malha_grade[1][1].y
@@ -380,7 +405,7 @@ function malha_dyn (event)
         
         for i = 1, lins do
           for j = 1, cols do
-            local v = malha_v[(i - 1) * cols + j]
+            local v = math.log(malha_v[(i - 1) * cols + j])
             local x = malha_grade[i][j].x
             local y = malha_grade[i][j].y
             max_v = v > max_v and v or max_v
@@ -392,29 +417,41 @@ function malha_dyn (event)
           end
         end
         
-        local dv = (max_v - min_v)/10
+        local dv = (max_v - min_v)/16
         local dx = (max_x - min_x)
         local dy = (max_y - min_y)
-        local f = dy / dv * 0.5
-        if dx < dy then f = dx / dv * 5 end
+        local f = dy / (dv * 50)
+        if dx < dy then f = dx / (dv * 50) end
           
         
         
-        for i = 1, lins do
-          for j = 1, cols do
+        for i = 1, lins -1 do
+          for j = 1, cols - 1 do
             local x = malha_grade[i][j].x - malha_grade[1][1].x + event.x
             local y = malha_grade[i][j].y - malha_grade[1][1].y + event.y
-            local z = f * (malha_v[(i - 1) * cols + j] - min_v)
+            local y1 = malha_grade[i+1][j].y - malha_grade[1][1].y + event.y
+            local x1 = malha_grade[i][j+1].x - malha_grade[1][1].x + event.x
+            local z = math.log(malha_v[(i - 1) * cols + j])
+            local zy = math.log(malha_v[(i) * cols + j])
+            local zx = math.log(malha_v[(i - 1) * cols + j + 1])
             
-            local cor_i = 1 + (malha_v[(i - 1) * cols + j] - min_v) // dv
+            local cor_i = 1 + ((z + zx) / 2 - min_v) // dv
             
-            
-            local prop = {color = cores[cor_i], ltype = "Continuous", lw = 11}
-            local l = cadzinho.new_line(x, y, z, x+0.2, y+0.2, z, prop)
+            local prop = {color = cores[cor_i], ltype = "Continuous", lw = 0}
+            local l = cadzinho.new_line(x, y, (z - min_v)*f, x1, y, (zx - min_v)*f, prop)
             if l then
-                cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(), "ATERRAMENTO", "V = " .. malha_v[(i - 1) * cols + j]})
-                l:write()
-              end
+              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(), "ATERRAMENTO", "V = " .. malha_v[(i - 1) * cols + j]})
+              l:write()
+            end
+            
+            cor_i = 1 + ((z + zy) / 2 - min_v) // dv
+            
+            prop = {color = cores[cor_i], ltype = "Continuous", lw = 0}
+            l = cadzinho.new_line(x, y, (z - min_v)*f, x, y1, (zy - min_v)*f, prop)
+            if l then
+              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(), "ATERRAMENTO", "V = " .. malha_v[(i - 1) * cols + j]})
+              l:write()
+            end
           end
            
         end
@@ -583,7 +620,7 @@ function malha_dyn (event)
         malha_iter = 1
         malha_erro = 1000
         malha_max_iter = lins * cols * cams
-        malha_crit_parada = 1e-6 * malha_i * malha_res_remoto
+        malha_crit_parada = 1e-4 * malha_i * malha_res_remoto
         malha_corr_exec = false
         malha_corrotina = coroutine.create (conjugate_gradient)
         _ , malha_corr_exec, malha_erro, malha_iter = coroutine.resume(malha_corrotina, malha_matriz, malha_v, malha_b, malha_crit_parada, malha_max_iter)
