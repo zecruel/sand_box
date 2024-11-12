@@ -179,7 +179,7 @@ malha_camadas[3] = {res = 191, prof = 2}
 
 malha_i = 3200
 malha_res_cabo = 0.0001
-malha_res_remoto = 1
+malha_res_remoto = 0.001
 --local g_t_remoto = (lins * cols) / res_remoto
 malha_cam_cabos = 2
 

@@ -440,7 +440,9 @@ function malha_dyn (event)
             local prop = {color = cores[cor_i], ltype = "Continuous", lw = 0}
             local l = cadzinho.new_line(x, y, (z - min_v)*f, x1, y, (zx - min_v)*f, prop)
             if l then
-              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(), "ATERRAMENTO", "V = " .. malha_v[(i - 1) * cols + j]})
+              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(),
+                "ATERRAMENTO", "V1 = " .. malha_v[(i - 1) * cols + j] .. ", " ..
+                "V2 = " .. malha_v[(i - 1) * cols + j + 1]})
               l:write()
             end
             
@@ -449,7 +451,9 @@ function malha_dyn (event)
             prop = {color = cores[cor_i], ltype = "Continuous", lw = 0}
             l = cadzinho.new_line(x, y, (z - min_v)*f, x, y1, (zy - min_v)*f, prop)
             if l then
-              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(), "ATERRAMENTO", "V = " .. malha_v[(i - 1) * cols + j]})
+              cadzinho.add_ext(l, "PELICANU", {cadzinho.unique_id(),
+                "ATERRAMENTO", "V1 = " .. malha_v[(i - 1) * cols + j] .. ", " ..
+                "V2 = " .. malha_v[(i) * cols + j]})
               l:write()
             end
           end
@@ -629,13 +633,85 @@ function malha_dyn (event)
     
       if cadzinho.nk_button("Salva") then
         --sub_modal = 'salva'
+        local file = assert(io.open('teste.csv', "w"))
         
         local lins = #malha_grade
         local cols = #malha_grade[1]
         local cams = #malha_camadas
         local pos_c = lins * cols * cams + 1
         
-        local file = assert(io.open('teste.csv', "w"))
+        file:write( "Area (lin, col) =;" .. tostring(lins) .. ";" .. tostring(cols) .. "\n" )
+        
+        file:write( "Cabos =;" )
+        local t = tostring(#malha_cabos)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Corrente =;" )
+        local t = tostring(malha_i)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Res_cabo =;" )
+        t = tostring(malha_res_cabo)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Res_remoto =;" )
+        t = tostring(malha_res_remoto)
+        file:write( t:gsub('%.', ',') .. "\n\n" )
+        
+        file:write( "Camadas = (indice, resistividade, profundidade) \n" )
+        for k = 1, cams do
+          file:write( ";" .. tostring(k) .. ";")
+          t = tostring(malha_camadas[k].res)
+          file:write( t:gsub('%.', ',') .. ";")
+          t = tostring(malha_camadas[k].prof)
+          file:write( t:gsub('%.', ',') .. "\n")
+        end
+        file:write( "\n" )
+        
+        file:write( "Cabos na camada =;" )
+        t = tostring(malha_cam_cabos)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Max iter=;" )
+        t = tostring(malha_max_iter)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Iteracoes =;" )
+        t = tostring(malha_iter)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Criterio de parada =;" )
+        t = tostring(malha_crit_parada)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Erro =;" )
+        t = tostring(malha_erro)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "V Terra remoto =;" )
+        t = tostring(malha_v[pos_c])
+        file:write( t:gsub('%.', ',') ..  "\n\n" )
+        
+        file:write( ";x;" )
+        for j = 1, cols do
+          t = tostring(malha_grade[1][j].x - malha_grade[1][1].x)
+          file:write( t:gsub('%.', ',') .. ";")
+        end
+        file:write( "\ny\n" )
+        
+        for i = 1, lins do
+          t = tostring(malha_grade[i][1].y - malha_grade[1][1].y)
+          file:write( t:gsub('%.', ',') .. ";;")
+          for j = 1, cols do
+            t = tostring(malha_v[(i - 1) * cols + j] - malha_v[pos_c])
+            file:write( t:gsub('%.', ',') .. "")
+            if ( j < cols) then file:write( ";" ) end
+          end
+          file:write( "\n" ) 
+        end
+
+        
+        --[[
         for k = 1, cams do
           for i = 1, lins do
             for j = 1, cols do
@@ -650,6 +726,7 @@ function malha_dyn (event)
         
         t = tostring(malha_v[pos_c])
         file:write( t:gsub('%.', ','))
+        ]]--
         
         file:close()
       end
