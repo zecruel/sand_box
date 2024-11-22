@@ -109,7 +109,9 @@ function malha_dyn (event)
     -- funcao interativa para criacao de uma caixa limite
   
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Caixa limite")
+    cadzinho.nk_label("Define limites")
+    
+    cadzinho.nk_propertyd("Espaçamento", g_malha_espacamento, 0.01)
     
     -- armazena o ponto atual na lista
     pts[num_pt] = {}
@@ -136,15 +138,22 @@ function malha_dyn (event)
       --cadzinho.set_color(4) -- ciano
       local prop = {color = 4, ltype = "Hidden", lw = 0}
       local lims = {}
-      lims[1] = cadzinho.new_line(pts[1].x, pts[1].y, 0, pts[2].x, pts[1].y, 0, prop)
-      lims[2] = cadzinho.new_line(pts[2].x, pts[1].y, 0, pts[2].x, pts[2].y, 0, prop)
-      lims[3] = cadzinho.new_line(pts[2].x, pts[2].y, 0, pts[1].x, pts[2].y, 0, prop)
-      lims[4] = cadzinho.new_line(pts[1].x, pts[2].y, 0, pts[1].x, pts[1].y, 0, prop)
+      local passosx = math.ceil(math.abs(pts[2].x - pts[1].x) / g_malha_espacamento.value)
+      local passosy = math.ceil(math.abs(pts[2].y - pts[1].y) / g_malha_espacamento.value)
+      local sx = pts[2].x >= pts[1].x and 1 or -1
+      local sy = pts[2].y >= pts[1].y and 1 or -1
       
-      lims[5] = cadzinho.new_line(pts[1].x, pts[1].y + (pts[2].y - pts[1].y) / 3, 0, pts[2].x, pts[1].y + (pts[2].y - pts[1].y) / 3, 0, prop)
-      lims[6] = cadzinho.new_line(pts[1].x, pts[1].y + (pts[2].y - pts[1].y) * 2/3, 0, pts[2].x, pts[1].y + (pts[2].y - pts[1].y) * 2/3, 0, prop)
-      lims[7] = cadzinho.new_line(pts[1].x + (pts[2].x - pts[1].x) * 1/3, pts[1].y, 0, pts[1].x + (pts[2].x - pts[1].x) * 1/3, pts[2].y, 0, prop)
-      lims[8] = cadzinho.new_line(pts[1].x + (pts[2].x - pts[1].x) * 2/3, pts[1].y, 0, pts[1].x + (pts[2].x - pts[1].x) * 2/3, pts[2].y, 0, prop)
+      for i = 0, passosx do
+        lims[#lims + 1] = cadzinho.new_line(pts[1].x + i * sx * g_malha_espacamento.value, 
+          pts[1].y, 0, pts[1].x + i * sx * g_malha_espacamento.value,
+          pts[1].y + sy * passosy * g_malha_espacamento.value, 0, prop)
+      end
+      for i = 0, passosy do
+        lims[#lims + 1] = cadzinho.new_line(pts[1].x, pts[1].y + i * sy * g_malha_espacamento.value, 0,
+          pts[1].x + passosx * sx * g_malha_espacamento.value,
+          pts[1].y + i * sy * g_malha_espacamento.value, 0, prop)
+      end
+      
       for _, l in pairs(lims) do cadzinho.ent_draw(l) end
       
 
@@ -264,71 +273,215 @@ function malha_dyn (event)
         end
       end
       
-      for j = 1, #lims do
-        for k = j, #lims do
-          local pt = intersec(lims[j], lims[k])
-          if pt then
-            pts[#pts +1] = pt
-            --cadzinho.db_print(pt.x, pt.y) 
-            
-          end
-        end
-      end
-      
-      
-      table.sort(pts, compara_pts) -- organiza os pontos em ordem
-      
-      malha_grade = {}
-      local linha = {}
-      local y_ant = pts[1].y
-      for j = 1, #pts do
-        if math.abs(pts[j].y - y_ant) > tolerancia then
-          malha_grade[#malha_grade + 1] = linha
-          linha = {}
-          linha[#linha + 1] = pts[j]
-          y_ant = pts[j].y
-        else
-          linha[#linha + 1] = pts[j]
-        end
-      end
-      if #linha > 0 then malha_grade[#malha_grade + 1] = linha end
-      
-      
-      
-      for i = 1, #malha_grade do
-        for j, pt in ipairs(malha_grade[i]) do
-          for k = 1, #malha_cabos do
-            if no_segmento2 (pt, malha_cabos[k]) then
-              local dx = malha_cabos[k][2].x - malha_cabos[k][1].x
-              local dy = malha_cabos[k][2].y - malha_cabos[k][1].y
-              local t = 0
-              if math.abs(dx) > tolerancia then
-                t = (pt.x - malha_cabos[k][1].x) / dx
-              elseif math.abs(dy) > tolerancia then
-                t = (pt.y - malha_cabos[k][1].y) / dy
-              else t = 0 end
-              if not malha_cabos[k].pts then malha_cabos[k].pts = {} end
-              ponto = {}
-              ponto.i = i; ponto.j = j; ponto.t = t
-              malha_cabos[k].pts[#malha_cabos[k].pts + 1] = ponto
+      if #lims > 0 and #malha_cabos > 0 then
+        
+        for j = 1, #lims do
+          for k = j, #lims do
+            local pt = intersec(lims[j], lims[k])
+            if pt then
+              pts[#pts +1] = pt
+              --cadzinho.db_print(pt.x, pt.y) 
               
-              --[[local prop = {color = 1, ltype = "Continuous", lw = 0}
-              local c = cadzinho.new_circle(pt.x, pt.y, 1, prop)
-              c:write()]]--
             end
           end
         end
+        
+        
+        table.sort(pts, compara_pts) -- organiza os pontos em ordem
+        
+        malha_grade = {}
+        local linha = {}
+        local y_ant = pts[1].y
+        for j = 1, #pts do
+          if math.abs(pts[j].y - y_ant) > tolerancia then
+            malha_grade[#malha_grade + 1] = linha
+            linha = {}
+            linha[#linha + 1] = pts[j]
+            y_ant = pts[j].y
+          else
+            linha[#linha + 1] = pts[j]
+          end
+        end
+        if #linha > 0 then malha_grade[#malha_grade + 1] = linha end
+        
+        
+        
+        for i = 1, #malha_grade do
+          for j, pt in ipairs(malha_grade[i]) do
+            for k = 1, #malha_cabos do
+              if no_segmento2 (pt, malha_cabos[k]) then
+                local dx = malha_cabos[k][2].x - malha_cabos[k][1].x
+                local dy = malha_cabos[k][2].y - malha_cabos[k][1].y
+                local t = 0
+                if math.abs(dx) > tolerancia then
+                  t = (pt.x - malha_cabos[k][1].x) / dx
+                elseif math.abs(dy) > tolerancia then
+                  t = (pt.y - malha_cabos[k][1].y) / dy
+                else t = 0 end
+                if not malha_cabos[k].pts then malha_cabos[k].pts = {} end
+                ponto = {}
+                ponto.i = i; ponto.j = j; ponto.t = t
+                malha_cabos[k].pts[#malha_cabos[k].pts + 1] = ponto
+                
+                --[[local prop = {color = 1, ltype = "Continuous", lw = 0}
+                local c = cadzinho.new_circle(pt.x, pt.y, 1, prop)
+                c:write()]]--
+              end
+            end
+          end
+        end
+        
+        local lins = #malha_grade
+        local cols = #malha_grade[1]
+        local cams = #malha_camadas
+        malha_max_iter = lins * cols * cams
+        malha_crit_parada = 1e-4 * malha_i * malha_res_remoto
+      
+        sub_modal = 'espera'
+        
+      else
+        msg = "Selecione dados válidos"
+        modal = ''
+        sub_modal = ''
       end
       
-      local lins = #malha_grade
-      local cols = #malha_grade[1]
-      local cams = #malha_camadas
-      malha_max_iter = lins * cols * cams
-      malha_crit_parada = 1e-4 * malha_i * malha_res_remoto
+    elseif sub_modal == 'param' then
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label('Parâmetros')
+      cadzinho.nk_propertyi("Camadas", g_malha_cams, 1, 8)
       
-      sub_modal = 'espera'
+      cadzinho.nk_layout(15, 2)
+      for i = 1, g_malha_cams.value do
+        cadzinho.nk_propertyd("r" .. i, g_malha_res_cam[i], 0.01)
+        cadzinho.nk_propertyd("p" .. i, g_malha_prof_cam[i], 0.01)
+      end
+      
+      cadzinho.nk_layout(15, 1)
+      if g_malha_cam_malha.value > g_malha_cams.value then g_malha_cam_malha.value = g_malha_cams.value end
+      cadzinho.nk_propertyi("Cam_malha", g_malha_cam_malha, 1, g_malha_cams.value)
+      
+      cadzinho.nk_propertyd("I_malha", g_malha_i, 1.0)
+      
+      cadzinho.nk_propertyd("r_cabo", g_malha_res_cabo, 0.00001)
+      
+      cadzinho.nk_propertyd("R_remoto", g_malha_res_remoto, 0.00001)
+      
+      if cadzinho.nk_button(" Volta") then
+        sub_modal = 'espera'
+      end
+      
+    elseif sub_modal == 'salva' then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label('Salva resultado')
+      cadzinho.nk_label("Caminho:")
+      cadzinho.nk_edit(g_malha_arq_res)
+      
+      if cadzinho.nk_button(" Salva") then
+        --sub_modal = 'salva'
+        local file = assert(io.open(g_malha_arq_res.value, "w"))
+        
+        local lins = #malha_grade
+        local cols = #malha_grade[1]
+        local cams = #malha_camadas
+        local pos_c = lins * cols * cams + 1
+        
+        file:write( "Area (lin, col) =;" .. tostring(lins) .. ";" .. tostring(cols) .. "\n" )
+        
+        file:write( "Cabos =;" )
+        local t = tostring(#malha_cabos)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Corrente =;" )
+        local t = tostring(malha_i)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Res_cabo =;" )
+        t = tostring(malha_res_cabo)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Res_remoto =;" )
+        t = tostring(malha_res_remoto)
+        file:write( t:gsub('%.', ',') .. "\n\n" )
+        
+        file:write( "Camadas = (indice, resistividade, profundidade) \n" )
+        for k = 1, cams do
+          file:write( ";" .. tostring(k) .. ";")
+          t = tostring(malha_camadas[k].res)
+          file:write( t:gsub('%.', ',') .. ";")
+          t = tostring(malha_camadas[k].prof)
+          file:write( t:gsub('%.', ',') .. "\n")
+        end
+        file:write( "\n" )
+        
+        file:write( "Cabos na camada =;" )
+        t = tostring(malha_cam_cabos)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Max iter=;" )
+        t = tostring(malha_max_iter)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Iteracoes =;" )
+        t = tostring(malha_iter)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Criterio de parada =;" )
+        t = tostring(malha_crit_parada)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "Erro =;" )
+        t = tostring(malha_erro)
+        file:write( t:gsub('%.', ',') .. "\n" )
+        
+        file:write( "V Terra remoto =;" )
+        t = tostring(malha_v[pos_c])
+        file:write( t:gsub('%.', ',') ..  "\n\n" )
+        
+        file:write( ";x;" )
+        for j = 1, cols do
+          t = tostring(malha_grade[1][j].x - malha_grade[1][1].x)
+          file:write( t:gsub('%.', ',') .. ";")
+        end
+        file:write( "\ny\n" )
+        
+        for i = 1, lins do
+          t = tostring(malha_grade[i][1].y - malha_grade[1][1].y)
+          file:write( t:gsub('%.', ',') .. ";;")
+          for j = 1, cols do
+            t = tostring(malha_v[(i - 1) * cols + j] - malha_v[pos_c])
+            file:write( t:gsub('%.', ',') .. "")
+            if ( j < cols) then file:write( ";" ) end
+          end
+          file:write( "\n" ) 
+        end
+
+        
+        --[[
+        for k = 1, cams do
+          for i = 1, lins do
+            for j = 1, cols do
+              t = tostring(malha_v[(k - 1) * lins + (i - 1) * cols + j] - malha_v[pos_c])
+              file:write( t:gsub('%.', ','))
+              if ( j < cols) then file:write( ";" ) end
+            end
+            file:write( "\n" ) 
+          end
+          file:write( "\n" ) 
+        end
+        
+        t = tostring(malha_v[pos_c])
+        file:write( t:gsub('%.', ','))
+        ]]--
+        
+        file:close()
+        sub_modal = 'espera'
+      end
+      if cadzinho.nk_button(" Volta") then
+        sub_modal = 'espera'
+      end
       
     elseif sub_modal == 'executa' then
+      cadzinho.nk_layout(15, 1)
       cadzinho.nk_label('Calculando ...')
       cadzinho.nk_label('-Iterações = ' .. malha_iter)
       cadzinho.nk_label('-Max. iter = ' .. malha_max_iter)
@@ -339,7 +492,8 @@ function malha_dyn (event)
       else
         sub_modal = 'espera'
       end
-      if cadzinho.nk_button("Para") then
+      cadzinho.nk_layout(20, 1)
+      if cadzinho.nk_button(" Para") then
         sub_modal = 'espera'
         if malha_corr_exec then coroutine.close(malha_corrotina) end
         malha_corr_exec = false
@@ -470,7 +624,7 @@ function malha_dyn (event)
         sub_modal = 'espera'
       end
     else
-      
+      cadzinho.nk_layout(15, 1)
       cadzinho.nk_label('-Cabos = ' .. #malha_cabos)
       cadzinho.nk_label('-Linhas = ' .. #malha_grade)
       cadzinho.nk_label('-Colunas = ' .. #malha_grade[1])
@@ -480,8 +634,29 @@ function malha_dyn (event)
       cadzinho.nk_label('-Erro = ' .. string.format("%.2e", malha_erro))
       cadzinho.nk_label('-Critério = ' .. malha_crit_parada)
       
-      if cadzinho.nk_button("Executa") then
+      cadzinho.nk_layout(20, 1)
+      
+      if cadzinho.nk_button("璘 Parâmetros") then
+        sub_modal = 'param'
+        
+        
+      end
+      
+      if cadzinho.nk_button(" Executa") then
         sub_modal = 'executa'
+        
+        malha_camadas = {}
+        
+        for i = 1, g_malha_cams.value do
+          malha_camadas[i] = {res = g_malha_res_cam[i].value, prof = g_malha_prof_cam[i].value}
+        end
+      
+        malha_i = g_malha_i.value
+        malha_res_cabo = g_malha_res_cabo.value
+        malha_res_remoto = g_malha_res_remoto.value
+        --local g_t_remoto = (lins * cols) / res_remoto
+        malha_cam_cabos = g_malha_cam_malha.value
+
         
         local lins = #malha_grade
         local cols = #malha_grade[1]
@@ -631,113 +806,21 @@ function malha_dyn (event)
         
       end
     
-      if cadzinho.nk_button("Salva") then
-        --sub_modal = 'salva'
-        local file = assert(io.open('teste.csv', "w"))
+      if cadzinho.nk_button(" Salva") then
+        sub_modal = 'salva'
         
-        local lins = #malha_grade
-        local cols = #malha_grade[1]
-        local cams = #malha_camadas
-        local pos_c = lins * cols * cams + 1
-        
-        file:write( "Area (lin, col) =;" .. tostring(lins) .. ";" .. tostring(cols) .. "\n" )
-        
-        file:write( "Cabos =;" )
-        local t = tostring(#malha_cabos)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Corrente =;" )
-        local t = tostring(malha_i)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Res_cabo =;" )
-        t = tostring(malha_res_cabo)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Res_remoto =;" )
-        t = tostring(malha_res_remoto)
-        file:write( t:gsub('%.', ',') .. "\n\n" )
-        
-        file:write( "Camadas = (indice, resistividade, profundidade) \n" )
-        for k = 1, cams do
-          file:write( ";" .. tostring(k) .. ";")
-          t = tostring(malha_camadas[k].res)
-          file:write( t:gsub('%.', ',') .. ";")
-          t = tostring(malha_camadas[k].prof)
-          file:write( t:gsub('%.', ',') .. "\n")
-        end
-        file:write( "\n" )
-        
-        file:write( "Cabos na camada =;" )
-        t = tostring(malha_cam_cabos)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Max iter=;" )
-        t = tostring(malha_max_iter)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Iteracoes =;" )
-        t = tostring(malha_iter)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Criterio de parada =;" )
-        t = tostring(malha_crit_parada)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "Erro =;" )
-        t = tostring(malha_erro)
-        file:write( t:gsub('%.', ',') .. "\n" )
-        
-        file:write( "V Terra remoto =;" )
-        t = tostring(malha_v[pos_c])
-        file:write( t:gsub('%.', ',') ..  "\n\n" )
-        
-        file:write( ";x;" )
-        for j = 1, cols do
-          t = tostring(malha_grade[1][j].x - malha_grade[1][1].x)
-          file:write( t:gsub('%.', ',') .. ";")
-        end
-        file:write( "\ny\n" )
-        
-        for i = 1, lins do
-          t = tostring(malha_grade[i][1].y - malha_grade[1][1].y)
-          file:write( t:gsub('%.', ',') .. ";;")
-          for j = 1, cols do
-            t = tostring(malha_v[(i - 1) * cols + j] - malha_v[pos_c])
-            file:write( t:gsub('%.', ',') .. "")
-            if ( j < cols) then file:write( ";" ) end
-          end
-          file:write( "\n" ) 
-        end
-
-        
-        --[[
-        for k = 1, cams do
-          for i = 1, lins do
-            for j = 1, cols do
-              t = tostring(malha_v[(k - 1) * lins + (i - 1) * cols + j] - malha_v[pos_c])
-              file:write( t:gsub('%.', ','))
-              if ( j < cols) then file:write( ";" ) end
-            end
-            file:write( "\n" ) 
-          end
-          file:write( "\n" ) 
-        end
-        
-        t = tostring(malha_v[pos_c])
-        file:write( t:gsub('%.', ','))
-        ]]--
-        
-        file:close()
       end
     
-      if cadzinho.nk_button("Plota") then
+      if cadzinho.nk_button(" Plota") then
         sub_modal = 'plota'
         
         
       end
     
-    
+      if cadzinho.nk_button(" Volta") then
+        modal = ''
+        sub_modal = ''
+      end
     
     
       if event.type == 'cancel' then
@@ -766,20 +849,23 @@ function malha_dyn (event)
   else
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label('Malha de aterramento')
-    if cadzinho.nk_button("cabo") then
+    if cadzinho.nk_button("⚡ Cabo") then --
       num_pt = 1
       modal = 'cabo'
       msg = ''
     end
-    if cadzinho.nk_button("麗 Limite") then
+    if cadzinho.nk_button("麗 Limites") then
       num_pt = 1
       modal = 'limite'
       msg = ''
     end
-    if cadzinho.nk_button("calcula") then
+    if cadzinho.nk_button(" Calcula") then
       modal = 'calcula_malha'
       sub_modal = 'ini'
+      msg = ''
     end
+    
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
     
     
   end

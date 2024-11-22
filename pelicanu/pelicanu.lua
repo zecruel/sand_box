@@ -147,6 +147,37 @@ g_ref_contat = {value = false}
 
 g_ligacao_tipo = {value = 1, "Baixa", "Alta"}
 
+g_malha_espacamento = {value = 1.0}
+g_malha_i = {value = 1000}
+g_malha_res_remoto = {value = 0.0001}
+g_malha_res_cabo = {value = 0.0001}
+
+g_malha_cams = {value = 4}
+g_malha_cam_malha = {value = 2}
+
+g_malha_arq_res = {value = "malha.csv"}
+
+g_malha_res_cam = {{value = 700},
+  {value = 600},
+  {value = 500},
+  {value = 400},
+  {value = 300},
+  {value = 200},
+  {value = 100},
+  {value = 50}}
+
+g_malha_prof_cam = {{value = 0.5},
+  {value = 0.1},
+  {value = 1.0},
+  {value = 1.0},
+  {value = 1.0},
+  {value = 1.0},
+  {value = 1.0},
+  {value = 1.0}}
+
+
+
+
 --excel = require "xlsxwriter.workbook"
 
 cores_claras = {
