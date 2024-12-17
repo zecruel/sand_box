@@ -1,0 +1,12 @@
+prefix=C:/Program Files (x86)/manifold
+exec_prefix=${prefix}
+libdir=C:/Program Files (x86)/manifold/lib
+includedir=C:/Program Files (x86)/manifold/include
+
+Name: manifold
+Description: Geometry library for topological robustness
+Version: 3.0.0
+URL: https://github.com/elalish/manifold
+Requires-private:  Clipper2
+Libs: -L${libdir} -lmanifold
+Cflags: -I${includedir} -std=c++17
