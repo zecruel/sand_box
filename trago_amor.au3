@@ -16,9 +16,9 @@ $_WD_DEBUG = $_WD_DEBUG_None ; You could also use $_WD_DEBUG_Error
 
 _WD_Option('Driver', @ScriptDir & '\msedgedriver.exe')
 _WD_Option('Port', 9515)
-_WD_Option('DriverParams', '--log-path="' & @ScriptDir & '\edge.log"')
+_WD_Option('DriverParams', '--log-path="' & @ScriptDir & '\edge.log" ' & '--port=9515')
 
-$sDesiredCapabilities = '{"capabilities": {"alwaysMatch": {"ms:edgeOptions": {"binary": "' & StringReplace (@ProgramFilesDir, "\", "/") & '/Microsoft/Edge/Application/msedge.exe", "excludeSwitches": [ "enable-automation"], "useAutomationExtension": false}}}}'
+$sDesiredCapabilities = '{"capabilities": {"alwaysMatch": {"ms:edgeOptions": {"binary": "' & StringReplace (@ProgramFilesDir, "\", "/") & '/Microsoft/Edge/Application/msedge.exe", "excludeSwitches": [ "enable-automation"]}}}}'
 
 _WD_Startup()
 
@@ -27,6 +27,7 @@ If @error <> $_WD_ERROR_Success Then
 	Exit -1
 EndIf
 
+
 $sSession = _WD_CreateSession($sDesiredCapabilities)
 
 If @error <> $_WD_ERROR_Success Then
@@ -34,11 +35,17 @@ If @error <> $_WD_ERROR_Success Then
 	Exit -1
 EndIf
 
-_WD_Window($sSession, 'rect', '{"x":375,"y":5,"width":1000,"height":650}')
+
+
+Sleep (10000)
+
+
 
 Global $tab_principal = '{"handle":"' & _WD_Window($sSession, "window") & '"}'
-;_WD_Window($sSession, "switch", $tab_principal)
+_WD_Window($sSession, "switch", $tab_principal)
 _WD_Navigate($sSession, "http://gedex/Inbox/Pessoal")
+Sleep (1000)
+_WD_Window($sSession, 'rect', '{"x":375,"y":5,"width":1000,"height":650}')
 
 Global $acoes[][2] = [["Pesquisa", True], _
 			   ["Revisa", False], _
@@ -915,7 +922,7 @@ Func sub_espera_aprov()
 	Local $comentarios = GUICtrlRead ($e_comentarios)
 	$msg_erro = "Falha ao processar aprovação"
 
-	$sElement = _WD_FindElement($sSession, $_WD_LOCATOR_ByXPath, "//textarea[@id='WorkflowStep_Comentarios']")
+	$sElement = _WD_FindElement($sSession, $_WD_LOCATOR_ByXPath, "//textarea[@id='textareaComentarios']")
 	If @error = $_WD_ERROR_Success Then
 		Local $IsVisible = _WD_ElementAction($sSession, $sElement, 'displayed')
 		If @error Then
