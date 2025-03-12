@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+  <Header revision="" toolID="" id="" version="1.0.0" nameStructure="IEDName" />
+  <Communication>
+    <SubNetwork type="8-MMS" name="subnetwork1">
+      <ConnectedAP apName="accessPoint1" iedName="P_3MUC1">
+        <Address>
+          <P type="IP">0.0.0.0</P>
+          <P type="IP-SUBNET">255.255.255.0</P>
+          <P type="IP-GATEWAY">10.0.0.1</P>
+          <P type="OSI-TSEL">0001</P>
+          <P type="OSI-PSEL">00000001</P>
+          <P type="OSI-SSEL">0001</P>
+        </Address>
+      </ConnectedAP>
+    </SubNetwork>
+  </Communication>
+  <IED name="P_3MUC1">
+    <Services>
+      <DynAssociation />
+      <GetDirectory />
+      <GetDataObjectDefinition />
+      <GetDataSetValue />
+      <DataSetDirectory />
+      <ReadWrite />
+      <GetCBValues />
+      <ConfLNs fixLnInst="true" fixPrefix="true" />
+      <FileHandling />
+      <TimerActivatedControl />
+    </Services>
+    <AccessPoint name="accessPoint1">
+      <Server>
+        <Authentication />
+        <LDevice inst="LDInst">
+          <LN0 lnClass="LLN0" inst="" lnType="LLN01">
+            <DataSet desc="control related events" name="ControlEvents">
+              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="stVal" lnInst="1" />
+              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="stVal" lnInst="1" />
+              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="stSeld" lnInst="1" />
+              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="stSeld" lnInst="1" />
+              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="opRcvd" lnInst="1" />
+              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="opRcvd" lnInst="1" />
+              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="opOk" lnInst="1" />
+              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="opOk" lnInst="1" />
+            </DataSet>
+            <ReportControl bufTime="0" indexed="true" intgPd="1000" name="ControlEventsRCB" datSet="ControlEvents" buffered="false" confRev="1" rptID="ControlEvents">
+              <TrgOps dchg="true" />
+              <OptFields configRef="true" seqNum="true" dataSet="true" reasonCode="true" entryID="true" timeStamp="true" />
+              <RptEnabled max="2" />
+            </ReportControl>
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+          </LN0>
+          <LN lnClass="LPHD" prefix="" inst="1" lnType="LPHD1" />
+          <LN lnClass="GGIO" prefix="" inst="3" lnType="GGIO1">
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO001">
+              <DAI name="ctlModel">
+                <Val>sbo-with-normal-security</Val>
+              </DAI>
+              <DAI name="sboTimeout">
+                <Val>2000</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO002">
+              <DAI name="ctlModel">
+                <Val>sbo-with-normal-security</Val>
+              </DAI>
+              <DAI name="sboTimeout">
+                <Val>2000</Val>
+              </DAI>
+            </DOI>
+          </LN>
+          <LN lnClass="CSWI" prefix="" inst="1" lnType="CSWI1">
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+            <DOI name="Pos">
+              <SDI name="Oper">
+                <DAI name="ctlVal" />
+                <SDI name="origin">
+                  <DAI name="orCat" />
+                </SDI>
+              </SDI>
+              <DAI name="stVal" />
+              <DAI name="q" />
+              <DAI name="ctlModel" />
+              <DAI name="sboTimeout" />
+            </DOI>
+            <DOI name="OpOpn">
+              <DAI name="general" />
+              <DAI name="q" />
+            </DOI>
+            <DOI name="OpCls">
+              <DAI name="general" />
+              <DAI name="q" />
+            </DOI>
+          </LN>
+          <LN lnClass="XCBR" prefix="" inst="1" lnType="XCBR1_3">
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+            <DOI name="Loc">
+              <DAI name="stVal" />
+              <DAI name="q" />
+            </DOI>
+            <DOI name="OpCnt">
+              <DAI name="stVal" />
+              <DAI name="q" />
+            </DOI>
+            <DOI name="Pos">
+              <DAI name="stVal" />
+              <DAI name="q" />
+              <DAI name="ctlModel" />
+            </DOI>
+            <DOI name="BlkOpn">
+              <DAI name="stVal" />
+              <DAI name="q" />
+              <DAI name="ctlModel" />
+            </DOI>
+            <DOI name="BlkCls">
+              <DAI name="stVal" />
+              <DAI name="q" />
+              <DAI name="ctlModel" />
+            </DOI>
+            <DOI name="CBOpCap">
+              <DAI xmlns:esel="http://www.selinc.com/2006/61850" esel:datasrc="imm" name="stVal">
+                <Val>1</Val>
+              </DAI>
+              <DAI xmlns:esel="http://www.selinc.com/2006/61850" esel:datasrc="db:EN" name="q" />
+            </DOI>
+          </LN>
+        </LDevice>
+      </Server>
+    </AccessPoint>
+  </IED>
+  <DataTypeTemplates>
+    <LNodeType lnClass="LLN0" id="LLN01">
+      <DO type="INC_1_Mod" name="Mod" />
+      <DO type="INS_1_Beh" name="Beh" />
+      <DO type="INS_1_Beh" name="Health" />
+      <DO type="LPL_1_NamPlt" name="NamPlt" />
+    </LNodeType>
+    <LNodeType lnClass="LPHD" id="LPHD1">
+      <DO type="DPL_1_PhyNam" name="PhyNam" />
+      <DO type="INS_1_Beh" name="PhyHealth" />
+      <DO type="SPS_1_Proxy" name="Proxy" />
+    </LNodeType>
+    <LNodeType lnClass="GGIO" id="GGIO1">
+      <DO type="INC_1_Mod" name="Mod" />
+      <DO type="INS_1_Beh" name="Beh" />
+      <DO type="INS_1_Beh" name="Health" />
+      <DO type="LPL_2_NamPlt" name="NamPlt" />
+      <DO type="MV_1_AnIn1" name="AnIn1" />
+      <DO type="MV_1_AnIn1" name="AnIn2" />
+      <DO type="MV_1_AnIn1" name="AnIn3" />
+      <DO type="MV_1_AnIn1" name="AnIn4" />
+      <DO type="SPC_1_SPCSO2" name="SPCSO001" />
+      <DO type="SPC_1_SPCSO2" name="SPCSO002" />
+      <DO type="SPS_1_Proxy" name="Ind1" />
+      <DO type="SPS_1_Proxy" name="Ind2" />
+      <DO type="SPS_1_Proxy" name="Ind3" />
+      <DO type="SPS_1_Proxy" name="Ind4" />
+    </LNodeType>
+    <LNodeType lnClass="CSWI" id="CSWI1">
+      <DO type="INC_1_Mod" name="Mod" />
+      <DO type="INS_1_Beh" name="Beh" />
+      <DO type="INS_1_Beh" name="Health" />
+      <DO type="LPL_2_NamPlt" name="NamPlt" />
+      <DO type="DPC_SBO_enhanced" name="Pos" />
+      <DO type="ACT_0" name="OpOpn" />
+      <DO type="ACT_0" name="OpCls" />
+    </LNodeType>
+    <LNodeType lnClass="XCBR" id="XCBR1_3">
+      <DO type="INC_1_Mod" name="Mod" />
+      <DO type="INS_1_Beh" name="Beh" />
+      <DO type="SPS_0" name="Loc" />
+      <DO type="INS_0" name="OpCnt" />
+      <DO type="DPC_0" name="Pos" />
+      <DO type="SPC_1" name="BlkOpn" />
+      <DO type="SPC_1" name="BlkCls" />
+      <DO type="CBOpCapINS_3" name="CBOpCap" />
+    </LNodeType>
+    <DOType cdc="INC" id="INC_1_Mod">
+      <DA qchg="true" bType="Quality" fc="ST" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="CF" type="CtlModels" bType="Enum" name="ctlModel" />
+    </DOType>
+    <DOType cdc="INS" id="INS_1_Beh">
+      <DA fc="ST" bType="INT32" dchg="true" name="stVal" />
+      <DA qchg="true" bType="Quality" fc="ST" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DOType cdc="LPL" id="LPL_1_NamPlt">
+      <DA bType="VisString255" fc="DC" name="vendor" />
+      <DA bType="VisString255" fc="DC" name="swRev" />
+      <DA bType="VisString255" fc="DC" name="d" />
+      <DA bType="VisString255" fc="DC" name="configRev" />
+      <DA bType="VisString255" fc="EX" name="ldNs" />
+    </DOType>
+    <DOType cdc="DPL" id="DPL_1_PhyNam">
+      <DA bType="VisString255" fc="DC" name="vendor" />
+    </DOType>
+    <DOType cdc="SPS" id="SPS_1_Proxy">
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
+      <DA qchg="true" bType="Quality" fc="ST" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DOType cdc="ACT" id="ACT_0">
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="general" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DOType cdc="MV" id="MV_1_AnIn1">
+      <DA type="AnalogueValue_1" dchg="true" name="mag" bType="Struct" fc="MX" />
+      <DA qchg="true" bType="Quality" fc="MX" name="q" />
+      <DA bType="Timestamp" fc="MX" name="t" />
+    </DOType>
+    <DOType cdc="LPL" id="LPL_2_NamPlt">
+      <DA bType="VisString255" fc="DC" name="vendor" />
+      <DA bType="VisString255" fc="DC" name="swRev" />
+      <DA bType="VisString255" fc="DC" name="d" />
+    </DOType>
+    <DOType cdc="SPC" id="SPC_1_SPCSO2">
+      <DA bType="VisString64" fc="CO" name="SBO" />
+      <DA fc="CO" type="SPCOperate_1" bType="Struct" name="Oper" />
+      <DA fc="CO" type="SPCCancel_1" bType="Struct" name="Cancel" />
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
+      <DA qchg="true" bType="Quality" fc="ST" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA name="stSeld" bType="BOOLEAN" dchg="true" fc="ST" />
+      <DA fc="OR" bType="BOOLEAN" dchg="true" name="opRcvd" />
+      <DA fc="OR" bType="BOOLEAN" dchg="true" name="opOk" />
+      <DA bType="Timestamp" fc="OR" name="tOpOk" />
+      <DA fc="CF" type="CtlModels" bType="Enum" name="ctlModel" />
+      <DA name="sboTimeout" bType="INT32U" dchg="true" fc="CF" />
+      <DA fc="CF" type="SboClasses" bType="Enum" name="sboClass" />
+    </DOType>
+    <DOType cdc="DPC" id="DPC_SBO_enhanced">
+      <DA fc="CO" bType="Struct" type="SBOw_b" name="SBOw" />
+      <DA fc="CO" bType="Struct" type="SPCOperate_1" name="Oper" />
+      <DA fc="CO" bType="Struct" type="SPCCancel_1" name="Cancel" />
+      <DA type="Dbpos" dchg="true" name="stVal" bType="Dbpos" fc="ST" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
+      <DA bType="INT32U" fc="CF" name="sboTimeout" />
+    </DOType>
+    <DOType cdc="DPC" id="DPC_0">
+      <DA type="Dbpos" dchg="true" name="stVal" bType="Dbpos" fc="ST" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
+    </DOType>
+    <DOType cdc="SPC" id="SPC_1">
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
+    </DOType>
+    <DOType cdc="INS" id="INS_0">
+      <DA fc="ST" bType="INT32" dchg="true" name="stVal" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DOType cdc="SPS" id="SPS_0">
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DOType cdc="INS" id="CBOpCapINS_3">
+      <DA type="CBOpCap_3" dchg="true" name="stVal" bType="Enum" fc="ST" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA bType="Timestamp" fc="ST" name="t" />
+    </DOType>
+    <DAType id="SPCOperate_1">
+      <BDA bType="BOOLEAN" name="ctlVal" />
+      <BDA type="Originator_1" bType="Struct" name="origin" />
+      <BDA bType="INT8U" name="ctlNum" />
+      <BDA bType="Timestamp" name="T" />
+      <BDA bType="BOOLEAN" name="Test" />
+      <BDA bType="Check" name="Check" />
+    </DAType>
+    <DAType id="Originator_1">
+      <BDA type="OrCat" bType="Enum" name="orCat" />
+      <BDA bType="Octet64" name="orIdent" />
+    </DAType>
+    <DAType id="SPCOperate_5">
+      <BDA bType="BOOLEAN" name="ctlVal" />
+      <BDA bType="Timestamp" name="operTm" />
+      <BDA type="Originator_1" bType="Struct" name="origin" />
+      <BDA bType="INT8U" name="ctlNum" />
+      <BDA bType="Timestamp" name="T" />
+      <BDA bType="BOOLEAN" name="Test" />
+      <BDA bType="Check" name="Check" />
+    </DAType>
+    <DAType id="AnalogueValue_1">
+      <BDA bType="FLOAT32" name="f" />
+    </DAType>
+    <DAType id="SPCCancel_1">
+      <BDA bType="BOOLEAN" name="ctlVal" />
+      <BDA type="Originator_1" bType="Struct" name="origin" />
+      <BDA bType="INT8U" name="ctlNum" />
+      <BDA bType="Timestamp" name="T" />
+      <BDA bType="BOOLEAN" name="Test" />
+    </DAType>
+    <DAType id="SPCCancel_5">
+      <BDA bType="BOOLEAN" name="ctlVal" />
+      <BDA bType="Timestamp" name="operTm" />
+      <BDA type="Originator_1" bType="Struct" name="origin" />
+      <BDA bType="INT8U" name="ctlNum" />
+      <BDA bType="Timestamp" name="T" />
+      <BDA bType="BOOLEAN" name="Test" />
+    </DAType>
+    <DAType id="SBOw_b">
+      <BDA bType="BOOLEAN" name="ctlVal" />
+      <BDA bType="Struct" type="Originator_1" name="origin" />
+      <BDA bType="INT8U" name="ctlNum" />
+      <BDA bType="Timestamp" name="T" />
+      <BDA bType="BOOLEAN" name="Test" />
+      <BDA bType="Check" name="Check" />
+    </DAType>
+    <EnumType id="CtlModels">
+      <EnumVal ord="0">status-only</EnumVal>
+      <EnumVal ord="1">direct-with-normal-security</EnumVal>
+      <EnumVal ord="2">sbo-with-normal-security</EnumVal>
+      <EnumVal ord="3">direct-with-enhanced-security</EnumVal>
+      <EnumVal ord="4">sbo-with-enhanced-security</EnumVal>
+    </EnumType>
+    <EnumType id="SboClasses">
+      <EnumVal ord="0">operate-once</EnumVal>
+      <EnumVal ord="1">operate-many</EnumVal>
+    </EnumType>
+    <EnumType id="OrCat">
+      <EnumVal ord="0">not-supported</EnumVal>
+      <EnumVal ord="1">bay-control</EnumVal>
+      <EnumVal ord="2">station-control</EnumVal>
+      <EnumVal ord="3">remote-control</EnumVal>
+      <EnumVal ord="4">automatic-bay</EnumVal>
+      <EnumVal ord="5">automatic-station</EnumVal>
+      <EnumVal ord="6">automatic-remote</EnumVal>
+      <EnumVal ord="7">maintenance</EnumVal>
+      <EnumVal ord="8">process</EnumVal>
+    </EnumType>
+    <EnumType id="Dbpos">
+      <EnumVal ord="0">intermediate</EnumVal>
+      <EnumVal ord="1">off</EnumVal>
+      <EnumVal ord="2">on</EnumVal>
+      <EnumVal ord="3">bad</EnumVal>
+    </EnumType>
+    <EnumType id="CBOpCap_3">
+      <EnumVal ord="1">None</EnumVal>
+      <EnumVal ord="2">Open</EnumVal>
+      <EnumVal ord="3">Close</EnumVal>
+      <EnumVal ord="4">Close-Open</EnumVal>
+      <EnumVal ord="5">Open-Close-Open</EnumVal>
+      <EnumVal ord="6">Close-Open-Close-Open</EnumVal>
+    </EnumType>
+  </DataTypeTemplates>
+</SCL>

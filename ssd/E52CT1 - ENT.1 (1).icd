@@ -1,0 +1,3100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL SCL.xsd">
+   <Private type="Siemens-CRC">264664669</Private>
+   <Private type="Siemens-SclLib-Version">V02.08.02</Private>
+   <Private type="Siemens-SclLib-EditTime">19.12.2007 19:23:52</Private>
+   <Private type="Siemens-ICD-Language">en-US</Private>
+   <Header id="7SJ6XX" version="1" revision="9" nameStructure="IEDName"/>
+   <Communication>
+      <SubNetwork name="NONE">
+         <ConnectedAP iedName="E52CT1" apName="P1">
+            <Address>
+               <P type="OSI-AP-Title">1,3,9999,23</P>
+               <P type="OSI-AE-Qualifier">23</P>
+               <P type="OSI-PSEL">00000001</P>
+               <P type="OSI-SSEL">0001</P>
+               <P type="OSI-TSEL">0001</P>
+            </Address>
+         </ConnectedAP>
+      </SubNetwork>
+   </Communication>
+   <IED name="E52CT1" type="Siprotec-7SJ6xx" manufacturer="SIEMENS" configVersion="1.0">
+      <Private type="Siemens-Inkrement">2</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">PROT\LLN0\brcbA|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">PROT\LLN0\brcbB|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">MEAS\LLN0\brcbA|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">MEAS\LLN0\brcbB|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">DR\LLN0\brcbA|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">DR\LLN0\brcbB|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">CTRL\LLN0\brcbA|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">CTRL\LLN0\brcbB|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">EXT\LLN0\brcbA|10</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">EXT\LLN0\brcbB|10</Private>
+      <Services>
+         <!--DynReportControl max="10"/-->
+         <!-- present in FDIS, removed in IS, commented by SIEMENS -->
+         <DynAssociation/>
+         <GetDirectory/>
+         <GetDataObjectDefinition/>
+         <DataObjectDirectory/>
+         <GetDataSetValue/>
+         <DataSetDirectory/>
+         <ConfDataSet max="15" maxAttributes="60"/>
+         <DynDataSet max="15" maxAttributes="60"/>
+         <ReadWrite/>
+         <ConfReportControl max="10"/>
+         <GetCBValues/>
+         <ReportSettings cbName="Fix" datSet="Dyn" rptID="Dyn" optFields="Dyn" bufTime="Dyn" trgOps="Dyn" intgPd="Dyn"/>
+         <GOOSE max="16"/>
+         <FileHandling/>
+         <ConfLNs fixPrefix="true" fixLnInst="true"/>
+      </Services>
+      <AccessPoint name="P1">
+         <Server>
+            <Authentication none="true"/>
+            <LDevice inst="PROT" desc="Protection">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="E52CT1/PROT/LLN0">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbC" rptID="E52CT1PROT/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbD" rptID="E52CT1PROT/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbE" rptID="E52CT1PROT/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbF" rptID="E52CT1PROT/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbG" rptID="E52CT1PROT/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbH" rptID="E52CT1PROT/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbI" rptID="E52CT1PROT/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbJ" rptID="E52CT1PROT/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbA" rptID="E52CT1PROT/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbB" rptID="E52CT1PROT/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-enhanced-security</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <!-- Die DAI vendor, swRev, d, configRev und ldNs beziehen sich auf das EN100-Modul. Bis auf ldNs haben sie keinen InitValue! Sie werden mit Dummy vorbelegt. Gefuellt werden sie durch die EN100-Software zur Laufzeit. -->
+                     <DAI name="configRev">
+                        <Val>050407143035312</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="OpTmh" desc="Operating hours"/>
+                  <SettingControl numOfSGs="1"/>
+               </LN0>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="E52CT1/PROT/LPHD1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="PhyNam" desc="Info">
+                     <DAI name="cdcNs">
+                        <Val>7SJ6 IED Configuration Description File scdConfigRev same Revision as the Station Configuration Description</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+               <LN inst="1" prefix="" desc="Total" lnClass="PTRC" lnType="E52CT1/PROT/PTRC1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTRC1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTRC1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Tr" desc="OFF"/>
+                  <DOI name="Str" desc="Pickup"/>
+               </LN>
+               <LN inst="1" prefix="" desc="CB" lnClass="XCBR" lnType="E52CT1/PROT/XCBR1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/XCBR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/XCBR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="local"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs1" desc="Sum Ia">
+                     <DAI name="d">
+                        <Val>SumSwARs1 stands for Accumulation of interrupted current L1</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs2" desc="Sum Ib">
+                     <DAI name="d">
+                        <Val>SumSwARs2 stands for Accumulation of interrupted current L2</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs3" desc="Sum Ic">
+                     <DAI name="d">
+                        <Val>SumSwARs3 stands for Accumulation of interrupted current L3</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CBOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="6" prefix="" desc="50-1" lnClass="PTOC" lnType="E52CT1/PROT/PTOC6">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOC6$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOC6$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="7" prefix="" desc="50-2" lnClass="PTOC" lnType="E52CT1/PROT/PTOC6">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOC7$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOC7$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="51-TOC" lnClass="PTOC" lnType="E52CT1/PROT/PTOC6">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOC1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOC1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="8" prefix="" desc="50N-1" lnClass="PTOC" lnType="E52CT1/PROT/PTOC6">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOC8$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOC8$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="9" prefix="" desc="50N-2" lnClass="PTOC" lnType="E52CT1/PROT/PTOC6">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOC9$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOC9$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="59-1" lnClass="PTOV" lnType="E52CT1/PROT/PTOV1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOV1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOV1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="2" prefix="" desc="59-2" lnClass="PTOV" lnType="E52CT1/PROT/PTOV1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTOV2$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTOV2$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="27-1" lnClass="PTUV" lnType="E52CT1/PROT/PTUV1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTUV1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTUV1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="2" prefix="" desc="27-2" lnClass="PTUV" lnType="E52CT1/PROT/PTUV1">
+                  <ReportControl name="urcbA" rptID="E52CT1PROT/PTUV2$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1PROT/PTUV2$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="MEAS" desc="Measurement">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="E52CT1/MEAS/LLN0">
+                  <ReportControl name="urcbA" rptID="E52CT1MEAS/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1MEAS/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbC" rptID="E52CT1MEAS/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbD" rptID="E52CT1MEAS/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbE" rptID="E52CT1MEAS/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbF" rptID="E52CT1MEAS/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbG" rptID="E52CT1MEAS/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbH" rptID="E52CT1MEAS/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbI" rptID="E52CT1MEAS/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbJ" rptID="E52CT1MEAS/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbA" rptID="E52CT1MEAS/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbB" rptID="E52CT1MEAS/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>050407143035312</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="" desc="Op meas value" lnClass="MMXU" lnType="E52CT1/MEAS/MMXU1">
+                  <ReportControl name="urcbA" rptID="E52CT1MEAS/MMXU1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1MEAS/MMXU1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotW" desc="P">
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotVAr" desc="Q">
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotVA" desc="S">
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotPF" desc="cos">
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Hz" desc="f">
+                     <DAI name="db">
+                        <Val>100</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PPV" desc="V">
+                     <SDI name="phsAB">
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsBC">
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsCA">
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                  </DOI>
+                  <DOI name="A" desc="I">
+                     <SDI name="phsA">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsB">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsC">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="neut">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="Energy counter" lnClass="MMTR" lnType="E52CT1/MEAS/MMTR1">
+                  <ReportControl name="urcbA" rptID="E52CT1MEAS/MMTR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1MEAS/MMTR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SupWh" desc="Wp output"/>
+                  <DOI name="SupVArh" desc="Wq output"/>
+                  <DOI name="DmdWh" desc="Wp Input"/>
+                  <DOI name="DmdVArh" desc="Wq Input"/>
+               </LN>
+               <LN inst="1" prefix="" desc="sym comp value" lnClass="MSQI" lnType="E52CT1/MEAS/MSQI1">
+                  <ReportControl name="urcbA" rptID="E52CT1MEAS/MSQI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1MEAS/MSQI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SeqA" desc="Current">
+                     <SDI name="c1">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c2">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c3">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <DAI name="seqT">
+                        <Val>pos-neg-zero</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SeqV" desc="Voltage">
+                     <SDI name="c1">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c2">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c3">
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <DAI name="seqT">
+                        <Val>pos-neg-zero</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="E52CT1/PROT/LPHD1">
+                  <ReportControl name="urcbA" rptID="E52CT1MEAS/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1MEAS/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="PhyNam" desc="Info">
+                     <DAI name="cdcNs">
+                        <Val>7SJ6 IED Configuration Description File scdConfigRev same Revision as the Station Configuration Description</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="DR" desc="Disturb Rec">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="E52CT1/MEAS/LLN0">
+                  <ReportControl name="urcbA" rptID="E52CT1DR/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1DR/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbC" rptID="E52CT1DR/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbD" rptID="E52CT1DR/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbE" rptID="E52CT1DR/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbF" rptID="E52CT1DR/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbG" rptID="E52CT1DR/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbH" rptID="E52CT1DR/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbI" rptID="E52CT1DR/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbJ" rptID="E52CT1DR/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbA" rptID="E52CT1DR/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbB" rptID="E52CT1DR/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>050407143035312</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="SC_" desc="Recording" lnClass="RDRE" lnType="E52CT1/DR/SC_RDRE1">
+                  <ReportControl name="urcbA" rptID="E52CT1DR/SC_RDRE1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1DR/SC_RDRE1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="RcdMade" desc="Made"/>
+                  <DOI name="FltNum" desc="Fault number"/>
+                  <DOI name="GriFltNum" desc="Grid fault num"/>
+                  <DOI name="RcdStr" desc="Start"/>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="E52CT1/PROT/LPHD1">
+                  <ReportControl name="urcbA" rptID="E52CT1DR/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1DR/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="PhyNam" desc="Info">
+                     <DAI name="cdcNs">
+                        <Val>7SJ6 IED Configuration Description File scdConfigRev same Revision as the Station Configuration Description</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="CTRL" desc="Control">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="E52CT1/CTRL/LLN0">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbC" rptID="E52CT1CTRL/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbD" rptID="E52CT1CTRL/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbE" rptID="E52CT1CTRL/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbF" rptID="E52CT1CTRL/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbG" rptID="E52CT1CTRL/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbH" rptID="E52CT1CTRL/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbI" rptID="E52CT1CTRL/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbJ" rptID="E52CT1CTRL/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbA" rptID="E52CT1CTRL/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbB" rptID="E52CT1CTRL/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>191207191313375</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpTmh" desc="Operating hours"/>
+                  <DOI name="LEDRs" desc="LED acknwldgmnt">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-normal-security</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="" desc="Fault" lnClass="CALH" lnType="E52CT1/CTRL/CALH1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/CALH1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/CALH1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="GrAlm" desc="Group alarms"/>
+                  <DOI name="GrWrn" desc="Group Warning"/>
+               </LN>
+               <LN inst="1" prefix="" desc="SYNC Function 1" lnClass="RSYN" lnType="E52CT1/CTRL/RSYN1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/RSYN1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/RSYN1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Rel" desc="ON release"/>
+                  <DOI name="VInd" desc="Udiff &gt;&gt;"/>
+                  <DOI name="AngInd" desc="alpha diff &gt;&gt;"/>
+                  <DOI name="HzInd" desc="f diff &gt;&gt;"/>
+                  <DOI name="SynPrg" desc="In Progress"/>
+                  <DOI name="DifVClc" desc="d V">
+                     <DAI name="db">
+                        <Val>2000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DifHzClc" desc="d f">
+                     <DAI name="db">
+                        <Val>100</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DifAngClc" desc="d alpha">
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="E52CT1/CTRL/LPHD1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="PhyNam" desc="Info">
+                     <DAI name="cdcNs">
+                        <Val>7SJ6 IED Configuration Description File scdConfigRev same Revision as the Station Configuration Description</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="DevStr" desc="Startup">
+                     <!-- SIEMENS-spezifisch -->
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                     <DAI name="d">
+                        <Val>DevStr stands for either InitialStart or Resume</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CtlNum" desc="Test oper Nr">
+                     <!-- SIEMENS-spezifisch -->
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                     <DAI name="d">
+                        <Val>CtlNum stands for number of Test Operations</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+               <LN inst="1" prefix="G_BF" desc="G_BFGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_BFGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/G_BFGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/G_BFGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>260307112214952</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="50BF_52C1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="50BF_52C2">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO3" desc="50BF_52C3">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO4" desc="50BF_52C4">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO5" desc="50BF_52C5">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO6" desc="50BF_52C6">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO7" desc="50BF_52C7">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO8" desc="50BF_52C8">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO9" desc="50BF_52C9">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO10" desc="50BF_52C10">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO11" desc="50BF_52C11">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO12" desc="50BF_52C12">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO25" desc="50BF_52CA1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Cmd" desc="CmdGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/CmdGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/CmdGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/CmdGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>260307140824796</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="CmdReset86">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="Fec52CA1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO3" desc="Fec52CT2">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO4" desc="F2-TrsfMan">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="G_52" desc="G_52GGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_52GGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/G_52GGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/G_52GGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>260307164604155</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO1" desc="52CA1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO2" desc="52CT2">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO3" desc="52CA1Est">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO4" desc="52CT2Est">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="GERAL" desc="GERALGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/GERALGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/GERALGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/GERALGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>270307095216061</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="IntBTResAT">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="MCB_B1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO3" desc="EnchufeDes">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO4" desc="86B1 atuado">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO5" desc="Bloq86">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO6" desc="VentForc">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO7" desc="TripExtBF">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO8" desc="86Atuado">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO26" desc="Falla Vcc mando cierre_disparo y 86B1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO27" desc="DESC 89K30">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="DJCT1" desc="DJCT1GGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/DJCT1GGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/DJCT1GGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/DJCT1GGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>270307095356764</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="ResDescar">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO1" desc="43LR">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO3" desc="Est52">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="G_Cmd" desc="G_CmdGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_CmdGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/G_CmdGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/G_CmdGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>280307152731202</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="CmdFe52CA1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="CmdFe52CT2">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="G_PROC" desc="G_PROCGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_PROCGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/G_PROCGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/G_PROCGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>280307152759108</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="TransfMan">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="PROCES" desc="PROCESGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/PROCESGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/PROCESGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/PROCESGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>280307163342373</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="27DJCT1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="BF Atuado">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="HTI52" desc="HTI52GGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/HTI52GGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/HTI52GGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/HTI52GGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>300907174934296</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO1" desc="52HT1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="BQ86T1" desc="BQ86T1GGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_PROCGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/BQ86T1GGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/BQ86T1GGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>300907175020500</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="86T1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="TRpara" desc="TRparaGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/G_PROCGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/TRparaGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/TRparaGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>300907182153359</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="TR Paralelo">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="INT" desc="INTGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/INTGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/INTGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/INTGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>181007103711000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="52IntAb">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO27" desc="52IntFe">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="TAP" desc="TAPGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/TAPGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/TAPGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/TAPGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>181207000428015</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO30" desc="TRIP DIFERENCIA 2 TAP ACOPLADO CT1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO31" desc="BLOQUEO POR DIFERENCIA 2 TAP CT1">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="TAPD" desc="TAPDGGIO1" lnClass="GGIO" lnType="E52CT1/CTRL/TAPDGGIO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/TAPDGGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/TAPDGGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>191207191313375</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO28" desc="TRIP DIFERENCIA 2 TAP ACOPLADO CT1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO29" desc="BLOQUEO POR DIFERENCIA 2 TAP CT1">
+                     <Private type="Siemens-Dir">Rx</Private>
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>Siemens Proxy Object as defined in PIXIT</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="DJCT1" desc="52CT1XCBR" lnClass="XCBR" lnType="E52CT1/CTRL/DJCT1XCBR1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/DJCT1XCBR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/DJCT1XCBR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>131107210105125</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CBOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="DJCT1" desc="52CT1CSWI" lnClass="CSWI" lnType="E52CT1/CTRL/DJCT1CSWI1">
+                  <Private type="Siemens-LN-Dependency">E52CT1|CTRL||RSYN|1</Private>
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/DJCT1CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/DJCT1CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>131107210105125</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="DJCT1" desc="52CT1CILO" lnClass="CILO" lnType="E52CT1/CTRL/DJCT1CILO1">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/DJCT1CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/DJCT1CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>131107210105125</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enabe Close"/>
+               </LN>
+               <LN inst="3" prefix="R86" desc="RESET 86GAPC" lnClass="GAPC" lnType="E52CT1/CTRL/R86GAPC3">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/R86GAPC3$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/R86GAPC3$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>301007035409703</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-normal-security</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>IEC 61850-8-1:2004(E)</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="2" prefix="DJCT1" desc="52CT1_1GAPC" lnClass="GAPC" lnType="E52CT1/CTRL/DJCT1GAPC2">
+                  <ReportControl name="urcbA" rptID="E52CT1CTRL/DJCT1GAPC2$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1CTRL/DJCT1GAPC2$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>131107124939000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO" desc="52CT1">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                     <DAI name="cdcNs">
+                        <Val>IEC 61850-8-1:2004(E)</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="EXT" desc="Extended">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="E52CT1/MEAS/LLN0">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbC" rptID="E52CT1EXT/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbD" rptID="E52CT1EXT/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbE" rptID="E52CT1EXT/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbF" rptID="E52CT1EXT/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbG" rptID="E52CT1EXT/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbH" rptID="E52CT1EXT/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbI" rptID="E52CT1EXT/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbJ" rptID="E52CT1EXT/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbA" rptID="E52CT1EXT/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="brcbB" rptID="E52CT1EXT/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>050407143035312</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="E52CT1/PROT/LPHD1">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="PhyNam" desc="Info">
+                     <DAI name="cdcNs">
+                        <Val>7SJ6 IED Configuration Description File scdConfigRev same Revision as the Station Configuration Description</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+               <LN inst="32776" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO32776">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO32776$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO32776$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="Failure EN100 Link Channel 1 (Ch1)">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO3" desc="Failure EN100 Link Channel 2 (Ch2)">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="32768" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO32768">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO32768$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO32768$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO16" desc="25-group 1 is BLOCKED">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO19" desc="25 Monitoring time exceeded">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="3" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO3">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO3$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO3$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO41" desc="VT Fuse Failure (alarm &gt;10s)">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="2" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO2">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO2$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO2$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO4" desc="Clock Synchronization Error">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="23" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO23">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO23$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO23$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO23" desc="&gt;50BF  initiated externally">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO48" desc="50BF (internal) PICKUP">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO49" desc="50BF (external) PICKUP">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO63" desc="50BF TRIP">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="28" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO28">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO28$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO28$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO34" desc="50/51  Phase  A picked up">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO35" desc="50/51  Phase  B picked up">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO36" desc="50/51  Phase  C picked up">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO37" desc="50N/51N picked up">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="29" prefix="pd" lnClass="GGIO" lnType="E52CT1/EXT/pdGGIO29">
+                  <ReportControl name="urcbA" rptID="E52CT1EXT/pdGGIO29$RP$urcbA01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <ReportControl name="urcbB" rptID="E52CT1EXT/pdGGIO29$RP$urcbB01" confRev="0" bufTime="100" buffered="false">
+                     <TrgOps dchg="true" qchg="true" dupd="true" period="true"/>
+                     <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/>
+                     <RptEnabled max="1"/>
+                  </ReportControl>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO48" desc="Phase A inrush detection">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO49" desc="Phase B inrush detection">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO50" desc="Phase C inrush detection">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+            </LDevice>
+         </Server>
+      </AccessPoint>
+   </IED>
+   <DataTypeTemplates>
+      <LNodeType id="E52CT1/PROT/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_0"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+         <DO name="OpTmh" type="myOpTmh_7"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/LPHD1" lnClass="LPHD">
+         <DO name="PhyNam" type="myPhyNam_9"/>
+         <DO name="PhyHealth" type="myHealth_5"/>
+         <DO name="Proxy" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/PTRC1" lnClass="PTRC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Tr" type="myTr_16"/>
+         <DO name="Str" type="myStr_17"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/XCBR1" lnClass="XCBR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpCnt" type="myOpTmh_7"/>
+         <DO name="Pos" type="myPos_24"/>
+         <DO name="BlkOpn" type="myBlkOpn_25"/>
+         <DO name="BlkCls" type="myBlkOpn_25"/>
+         <DO name="SumSwARs1" type="mySumSwARs1_27"/>
+         <DO name="SumSwARs2" type="mySumSwARs1_27"/>
+         <DO name="SumSwARs3" type="mySumSwARs1_27"/>
+         <DO name="CBOpCap" type="myCBOpCap_33"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/PTOC6" lnClass="PTOC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/PTOV1" lnClass="PTOV">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/PROT/PTUV1" lnClass="PTUV">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/MEAS/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/MEAS/MMXU1" lnClass="MMXU">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="TotW" type="myTotW_96"/>
+         <DO name="TotVAr" type="myTotW_96"/>
+         <DO name="TotVA" type="myTotW_96"/>
+         <DO name="TotPF" type="myTotW_96"/>
+         <DO name="Hz" type="myTotW_96"/>
+         <DO name="PPV" type="myPPV_116"/>
+         <DO name="A" type="myA_135"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/MEAS/MMTR1" lnClass="MMTR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SupWh" type="mySupWh_164"/>
+         <DO name="SupVArh" type="mySupWh_164"/>
+         <DO name="DmdWh" type="mySupWh_164"/>
+         <DO name="DmdVArh" type="mySupWh_164"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/MEAS/MSQI1" lnClass="MSQI">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SeqA" type="mySeqA_176"/>
+         <DO name="SeqV" type="mySeqA_176"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/DR/SC_RDRE1" lnClass="RDRE">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="RcdMade" type="myProxy_11"/>
+         <DO name="FltNum" type="myOpTmh_7"/>
+         <DO name="GriFltNum" type="myOpTmh_7"/>
+         <DO name="RcdStr" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpTmh" type="myOpTmh_7"/>
+         <DO name="LEDRs" type="myLEDRs_238"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/CALH1" lnClass="CALH">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="GrAlm" type="myProxy_11"/>
+         <DO name="GrWrn" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/RSYN1" lnClass="RSYN">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Rel" type="myProxy_11"/>
+         <DO name="VInd" type="myProxy_11"/>
+         <DO name="AngInd" type="myProxy_11"/>
+         <DO name="HzInd" type="myProxy_11"/>
+         <DO name="SynPrg" type="myProxy_11"/>
+         <DO name="DifVClc" type="myTotW_96"/>
+         <DO name="DifHzClc" type="myTotW_96"/>
+         <DO name="DifAngClc" type="myTotW_96"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/LPHD1" lnClass="LPHD">
+         <DO name="PhyNam" type="myPhyNam_9"/>
+         <DO name="PhyHealth" type="myHealth_5"/>
+         <DO name="DevStr" type="myDevStr_271"/>
+         <DO name="CtlNum" type="myDevStr_271"/>
+         <DO name="Proxy" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/G_BFGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="mySPCSO1_278"/>
+         <DO name="SPCSO2" type="mySPCSO1_278"/>
+         <DO name="SPCSO3" type="mySPCSO1_278"/>
+         <DO name="SPCSO4" type="mySPCSO1_278"/>
+         <DO name="SPCSO5" type="mySPCSO1_278"/>
+         <DO name="SPCSO6" type="mySPCSO1_278"/>
+         <DO name="SPCSO7" type="mySPCSO1_278"/>
+         <DO name="SPCSO8" type="mySPCSO1_278"/>
+         <DO name="SPCSO9" type="mySPCSO1_278"/>
+         <DO name="SPCSO10" type="mySPCSO1_278"/>
+         <DO name="SPCSO11" type="mySPCSO1_278"/>
+         <DO name="SPCSO12" type="mySPCSO1_278"/>
+         <DO name="SPCSO25" type="mySPCSO1_278"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/CmdGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="myBlkOpn_25"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+         <DO name="SPCSO3" type="myBlkOpn_25"/>
+         <DO name="SPCSO4" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/G_52GGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="DPCSO1" type="myDPCSO1_303"/>
+         <DO name="DPCSO2" type="myDPCSO1_303"/>
+         <DO name="DPCSO3" type="myDPCSO1_303"/>
+         <DO name="DPCSO4" type="myDPCSO1_303"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/GERALGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="myBlkOpn_25"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+         <DO name="SPCSO3" type="myBlkOpn_25"/>
+         <DO name="SPCSO4" type="myBlkOpn_25"/>
+         <DO name="SPCSO5" type="myBlkOpn_25"/>
+         <DO name="SPCSO6" type="myBlkOpn_25"/>
+         <DO name="SPCSO7" type="myBlkOpn_25"/>
+         <DO name="SPCSO8" type="myBlkOpn_25"/>
+         <DO name="SPCSO26" type="myBlkOpn_25"/>
+         <DO name="SPCSO27" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/DJCT1GGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+         <DO name="DPCSO1" type="myPos_24"/>
+         <DO name="DPCSO3" type="myPos_24"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/G_CmdGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="mySPCSO1_278"/>
+         <DO name="SPCSO2" type="mySPCSO1_278"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/G_PROCGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="mySPCSO1_278"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/PROCESGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="myBlkOpn_25"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/HTI52GGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="DPCSO1" type="myDPCSO1_303"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/INTGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="myBlkOpn_25"/>
+         <DO name="SPCSO27" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/TAPGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO30" type="myBlkOpn_25"/>
+         <DO name="SPCSO31" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/TAPDGGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO28" type="mySPCSO1_278"/>
+         <DO name="SPCSO29" type="mySPCSO1_278"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/DJCT1XCBR1" lnClass="XCBR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpCnt" type="myOpTmh_7"/>
+         <DO name="Pos" type="myPos_24"/>
+         <DO name="BlkOpn" type="myBlkOpn_25"/>
+         <DO name="BlkCls" type="myBlkOpn_25"/>
+         <DO name="CBOpCap" type="myCBOpCap_33"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/DJCT1CSWI1" lnClass="CSWI">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="Pos" type="myPos_393"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/DJCT1CILO1" lnClass="CILO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="EnaOpn" type="myProxy_11"/>
+         <DO name="EnaCls" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/R86GAPC3" lnClass="GAPC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO" type="mySPCSO_411"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/CTRL/DJCT1GAPC2" lnClass="GAPC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO" type="mySPCSO_420"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO32776" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+         <DO name="SPCSO3" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO32768" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO16" type="myBlkOpn_25"/>
+         <DO name="SPCSO19" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO3" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO41" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO2" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO4" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO23" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO23" type="myBlkOpn_25"/>
+         <DO name="SPCSO48" type="myBlkOpn_25"/>
+         <DO name="SPCSO49" type="myBlkOpn_25"/>
+         <DO name="SPCSO63" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO28" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO34" type="myBlkOpn_25"/>
+         <DO name="SPCSO35" type="myBlkOpn_25"/>
+         <DO name="SPCSO36" type="myBlkOpn_25"/>
+         <DO name="SPCSO37" type="myBlkOpn_25"/>
+      </LNodeType>
+      <LNodeType id="E52CT1/EXT/pdGGIO29" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO48" type="myBlkOpn_25"/>
+         <DO name="SPCSO49" type="myBlkOpn_25"/>
+         <DO name="SPCSO50" type="myBlkOpn_25"/>
+      </LNodeType>
+      <DOType cdc="INC" id="myMod_0">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_2"/>
+      </DOType>
+      <DOType cdc="INS" id="myBeh_4">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INS" id="myHealth_5">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Health"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="LPL" id="myNamPlt_6">
+         <DA bType="VisString255" fc="DC" name="vendor"/>
+         <DA bType="VisString255" fc="DC" name="swRev"/>
+         <DA bType="VisString255" fc="DC" name="d"/>
+         <DA bType="VisString255" fc="DC" name="configRev"/>
+         <DA bType="VisString255" fc="EX" name="ldNs"/>
+      </DOType>
+      <DOType cdc="INS" id="myOpTmh_7">
+         <DA bType="INT32" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="DPL" id="myPhyNam_9">
+         <DA bType="VisString255" fc="DC" name="vendor"/>
+         <DA bType="VisString255" fc="DC" name="hwRev"/>
+         <DA bType="VisString255" fc="DC" name="swRev"/>
+         <DA bType="VisString255" fc="DC" name="serNum"/>
+         <DA bType="VisString255" fc="DC" name="model"/>
+         <DA bType="VisString255" fc="DC" name="location"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="VisString255" fc="DC" name="scdConfigRev"/>
+      </DOType>
+      <DOType cdc="SPS" id="myProxy_11">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INC" id="myMod_12">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="LPL" id="myNamPlt_15">
+         <DA bType="VisString255" fc="DC" name="vendor"/>
+         <DA bType="VisString255" fc="DC" name="swRev"/>
+         <DA bType="VisString255" fc="DC" name="d"/>
+         <DA bType="VisString255" fc="DC" name="configRev"/>
+      </DOType>
+      <DOType cdc="ACT" id="myTr_16">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="ACD" id="myStr_17">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirGeneral" type="dir"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="DPC" id="myPos_24">
+         <DA bType="Dbpos" dchg="true" fc="ST" name="stVal" type="Dbpos"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="SPC" id="myBlkOpn_25">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="BCR" id="mySumSwARs1_27">
+         <DA bType="INT32" dchg="true" fc="ST" name="actVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="FLOAT32" fc="CF" name="pulsQty"/>
+         <DA bType="VisString255" fc="DC" name="d"/>
+         <DA bType="VisString255" fc="EX" name="dataNs"/>
+      </DOType>
+      <DOType cdc="INS" id="myCBOpCap_33">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="CBOpCap"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="MV" id="myTotW_96">
+         <DA bType="Struct" fc="MX" name="instMag" type="myinstMag_97"/>
+         <DA bType="Struct" fc="MX" name="mag" type="myinstMag_97"/>
+         <DA bType="Quality" fc="MX" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="MX" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="INT32U" fc="CF" name="db"/>
+      </DOType>
+      <DOType cdc="DEL" id="myPPV_116">
+         <SDO name="phsAB" type="myphsAB_117"/>
+         <SDO name="phsBC" type="myphsAB_117"/>
+         <SDO name="phsCA" type="myphsAB_117"/>
+      </DOType>
+      <DOType cdc="CMV" id="myphsAB_117">
+         <DA bType="Struct" fc="MX" name="instCVal" type="myinstCVal_118"/>
+         <DA bType="Struct" fc="MX" name="cVal" type="myinstCVal_118"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="Quality" fc="MX" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="MX" name="t"/>
+         <DA bType="INT32U" fc="CF" name="db"/>
+      </DOType>
+      <DOType cdc="WYE" id="myA_135">
+         <SDO name="phsA" type="myphsAB_117"/>
+         <SDO name="phsB" type="myphsAB_117"/>
+         <SDO name="phsC" type="myphsAB_117"/>
+         <SDO name="neut" type="myphsAB_117"/>
+      </DOType>
+      <DOType cdc="BCR" id="mySupWh_164">
+         <DA bType="INT32" dchg="true" fc="ST" name="actVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="FLOAT32" fc="CF" name="pulsQty"/>
+      </DOType>
+      <DOType cdc="SEQ" id="mySeqA_176">
+         <SDO name="c1" type="myphsAB_117"/>
+         <SDO name="c2" type="myphsAB_117"/>
+         <SDO name="c3" type="myphsAB_117"/>
+         <DA bType="Enum" fc="MX" name="seqT" type="seqT"/>
+      </DOType>
+      <DOType cdc="SPC" id="myLEDRs_238">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_240"/>
+      </DOType>
+      <DOType cdc="INS" id="myDevStr_271">
+         <DA bType="INT32" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="VisString255" fc="EX" name="dataNs"/>
+         <DA bType="VisString255" fc="DC" name="d"/>
+      </DOType>
+      <DOType cdc="SPC" id="mySPCSO1_278">
+         <DA bType="BOOLEAN" fc="CO" name="ctlVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+      </DOType>
+      <DOType cdc="DPC" id="myDPCSO1_303">
+         <DA bType="BOOLEAN" fc="CO" name="ctlVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+      </DOType>
+      <DOType cdc="DPC" id="myPos_393">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="Dbpos" dchg="true" fc="ST" name="stVal" type="Dbpos"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stSeld"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="INT32U" fc="CF" name="sboTimeout"/>
+         <DA bType="Enum" fc="CF" name="sboClass" type="sboClass"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="Struct" fc="CO" name="SBOw" type="myOper_240"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_240"/>
+         <DA bType="Struct" fc="CO" name="Cancel" type="myCancel_399"/>
+      </DOType>
+      <DOType cdc="SPC" id="mySPCSO_411">
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_240"/>
+      </DOType>
+      <DOType cdc="SPC" id="mySPCSO_420">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stSeld"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" type="ctlModel"/>
+         <DA bType="INT32U" fc="CF" name="sboTimeout"/>
+         <DA bType="Enum" fc="CF" name="sboClass" type="sboClass"/>
+         <DA bType="VisString255" fc="EX" name="cdcNs"/>
+         <DA bType="Struct" fc="CO" name="SBOw" type="myOper_240"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_240"/>
+         <DA bType="Struct" fc="CO" name="Cancel" type="myCancel_399"/>
+      </DOType>
+      <DAType id="myorigin_1">
+         <BDA bType="Enum" name="orCat" type="orCategory"/>
+         <BDA bType="Octet64" name="orIdent"/>
+      </DAType>
+      <DAType id="myOper_2">
+         <BDA bType="Enum" name="ctlVal" type="Beh"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+         <BDA bType="Check" name="Check" type="Check"/>
+      </DAType>
+      <DAType id="myunits_28">
+         <BDA bType="Enum" name="SIUnit" type="SIUnit"/>
+         <BDA bType="Enum" name="multiplier" type="multiplier"/>
+      </DAType>
+      <DAType id="myinstMag_97">
+         <BDA bType="FLOAT32" name="f"/>
+      </DAType>
+      <DAType id="myinstCVal_118">
+         <BDA bType="Struct" name="mag" type="myinstMag_97"/>
+      </DAType>
+      <DAType id="myOper_240">
+         <BDA bType="BOOLEAN" name="ctlVal"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+         <BDA bType="Check" name="Check" type="Check"/>
+      </DAType>
+      <DAType id="myCancel_399">
+         <BDA bType="BOOLEAN" name="ctlVal"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+      </DAType>
+      <EnumType id="PulseConfigCmdQual">
+         <EnumVal ord="0">pulse</EnumVal>
+         <EnumVal ord="1">persistent</EnumVal>
+      </EnumType>
+      <EnumType id="orCategory">
+         <EnumVal ord="0">not-supported</EnumVal>
+         <EnumVal ord="1">bay-control</EnumVal>
+         <EnumVal ord="2">station-control</EnumVal>
+         <EnumVal ord="3">remote-control</EnumVal>
+         <EnumVal ord="4">automatic-bay</EnumVal>
+         <EnumVal ord="5">automatic-station</EnumVal>
+         <EnumVal ord="6">automatic-remote</EnumVal>
+         <EnumVal ord="7">maintenance</EnumVal>
+         <EnumVal ord="8">process</EnumVal>
+      </EnumType>
+      <EnumType id="SIUnit">
+         <EnumVal ord="1">none</EnumVal>
+         <EnumVal ord="2">m</EnumVal>
+         <EnumVal ord="3">kg</EnumVal>
+         <EnumVal ord="4">s</EnumVal>
+         <EnumVal ord="5">A</EnumVal>
+         <EnumVal ord="6">K</EnumVal>
+         <EnumVal ord="7">mol</EnumVal>
+         <EnumVal ord="8">cd</EnumVal>
+         <EnumVal ord="9">deg</EnumVal>
+         <EnumVal ord="10">rad</EnumVal>
+         <EnumVal ord="11">sr</EnumVal>
+         <EnumVal ord="21">Gy</EnumVal>
+         <EnumVal ord="22">q</EnumVal>
+         <EnumVal ord="23">°C</EnumVal>
+         <EnumVal ord="24">Sv</EnumVal>
+         <EnumVal ord="25">F</EnumVal>
+         <EnumVal ord="26">C</EnumVal>
+         <EnumVal ord="27">S</EnumVal>
+         <EnumVal ord="28">H</EnumVal>
+         <EnumVal ord="29">V</EnumVal>
+         <EnumVal ord="30">ohm</EnumVal>
+         <EnumVal ord="31">J</EnumVal>
+         <EnumVal ord="32">N</EnumVal>
+         <EnumVal ord="33">Hz</EnumVal>
+         <EnumVal ord="34">lx</EnumVal>
+         <EnumVal ord="35">Lm</EnumVal>
+         <EnumVal ord="36">Wb</EnumVal>
+         <EnumVal ord="37">T</EnumVal>
+         <EnumVal ord="38">W</EnumVal>
+         <EnumVal ord="39">Pa</EnumVal>
+         <EnumVal ord="41">m²</EnumVal>
+         <EnumVal ord="42">m³</EnumVal>
+         <EnumVal ord="43">m/s</EnumVal>
+         <EnumVal ord="44">m/s²</EnumVal>
+         <EnumVal ord="45">m³/s</EnumVal>
+         <EnumVal ord="46">m/m³</EnumVal>
+         <EnumVal ord="47">M</EnumVal>
+         <EnumVal ord="48">kg/m³</EnumVal>
+         <EnumVal ord="49">m²/s</EnumVal>
+         <EnumVal ord="50">W/m K</EnumVal>
+         <EnumVal ord="51">J/K</EnumVal>
+         <EnumVal ord="52">ppm</EnumVal>
+         <EnumVal ord="53">1/s</EnumVal>
+         <EnumVal ord="54">rad/s</EnumVal>
+         <EnumVal ord="61">VA</EnumVal>
+         <EnumVal ord="62">Watts</EnumVal>
+         <EnumVal ord="63">VAr</EnumVal>
+         <EnumVal ord="64">phi</EnumVal>
+         <EnumVal ord="65">cos_phi</EnumVal>
+         <EnumVal ord="66">Vs</EnumVal>
+         <EnumVal ord="67">V²</EnumVal>
+         <EnumVal ord="68">As</EnumVal>
+         <EnumVal ord="69">A²</EnumVal>
+         <EnumVal ord="70">A²t</EnumVal>
+         <EnumVal ord="71">VAh</EnumVal>
+         <EnumVal ord="72">Wh</EnumVal>
+         <EnumVal ord="73">VArh</EnumVal>
+         <EnumVal ord="74">V/Hz</EnumVal>
+      </EnumType>
+      <EnumType id="multiplier">
+         <EnumVal ord="-24">y</EnumVal>
+         <EnumVal ord="-21">z</EnumVal>
+         <EnumVal ord="-18">a</EnumVal>
+         <EnumVal ord="-15">f</EnumVal>
+         <EnumVal ord="-12">p</EnumVal>
+         <EnumVal ord="-9">n</EnumVal>
+         <EnumVal ord="-6">µ</EnumVal>
+         <EnumVal ord="-3">m</EnumVal>
+         <EnumVal ord="-2">c</EnumVal>
+         <EnumVal ord="-1">d</EnumVal>
+         <EnumVal ord="0"></EnumVal>
+         <EnumVal ord="1">da</EnumVal>
+         <EnumVal ord="2">h</EnumVal>
+         <EnumVal ord="3">k</EnumVal>
+         <EnumVal ord="6">M</EnumVal>
+         <EnumVal ord="9">G</EnumVal>
+         <EnumVal ord="12">T</EnumVal>
+         <EnumVal ord="15">P</EnumVal>
+         <EnumVal ord="18">E</EnumVal>
+         <EnumVal ord="21">Z</EnumVal>
+         <EnumVal ord="24">Y</EnumVal>
+      </EnumType>
+      <EnumType id="Boolean">
+         <EnumVal ord="0">FALSE</EnumVal>
+         <EnumVal ord="1">TRUE</EnumVal>
+      </EnumType>
+      <EnumType id="ctlModel">
+         <EnumVal ord="0">status-only</EnumVal>
+         <EnumVal ord="1">direct-with-normal-security</EnumVal>
+         <EnumVal ord="2">sbo-with-normal-security</EnumVal>
+         <EnumVal ord="3">direct-with-enhanced-security</EnumVal>
+         <EnumVal ord="4">sbo-with-enhanced-security</EnumVal>
+      </EnumType>
+      <EnumType id="sboClass">
+         <EnumVal ord="0">operate-once</EnumVal>
+         <EnumVal ord="1">operate-many</EnumVal>
+      </EnumType>
+      <EnumType id="dir">
+         <EnumVal ord="0">unknown</EnumVal>
+         <EnumVal ord="1">forward</EnumVal>
+         <EnumVal ord="2">backward</EnumVal>
+         <EnumVal ord="3">both</EnumVal>
+      </EnumType>
+      <EnumType id="dirPhs">
+         <EnumVal ord="0">unknown</EnumVal>
+         <EnumVal ord="1">forward</EnumVal>
+         <EnumVal ord="2">backward</EnumVal>
+      </EnumType>
+      <EnumType id="Check">
+         <EnumVal ord="0">no-check</EnumVal>
+         <EnumVal ord="1">synchrocheck</EnumVal>
+         <EnumVal ord="2">interlocking-check</EnumVal>
+         <EnumVal ord="3">both</EnumVal>
+      </EnumType>
+      <EnumType id="Dbpos">
+         <EnumVal ord="0">intermediate</EnumVal>
+         <EnumVal ord="1">off</EnumVal>
+         <EnumVal ord="2">on</EnumVal>
+         <EnumVal ord="3">bad</EnumVal>
+      </EnumType>
+      <EnumType id="seqT">
+         <EnumVal ord="0">pos-neg-zero</EnumVal>
+         <EnumVal ord="1">dir-quad-zero</EnumVal>
+      </EnumType>
+      <EnumType id="Tcmd">
+         <EnumVal ord="0">stop</EnumVal>
+         <EnumVal ord="1">lower</EnumVal>
+         <EnumVal ord="2">higher</EnumVal>
+         <EnumVal ord="3">reserved</EnumVal>
+      </EnumType>
+      <EnumType id="sev">
+         <EnumVal ord="0">unknown</EnumVal>
+         <EnumVal ord="1">critical</EnumVal>
+         <EnumVal ord="2">major</EnumVal>
+         <EnumVal ord="3">minor</EnumVal>
+         <EnumVal ord="4">warning</EnumVal>
+      </EnumType>
+      <EnumType id="range">
+         <EnumVal ord="0">normal</EnumVal>
+         <EnumVal ord="1">high</EnumVal>
+         <EnumVal ord="2">low</EnumVal>
+         <EnumVal ord="3">high-high</EnumVal>
+         <EnumVal ord="4">low-low</EnumVal>
+      </EnumType>
+      <EnumType id="angidCMV">
+         <EnumVal ord="0">V</EnumVal>
+         <EnumVal ord="1">A</EnumVal>
+         <EnumVal ord="2">other</EnumVal>
+      </EnumType>
+      <EnumType id="angid">
+         <EnumVal ord="0">Va</EnumVal>
+         <EnumVal ord="1">Vb</EnumVal>
+         <EnumVal ord="2">Vc</EnumVal>
+         <EnumVal ord="3">Aa</EnumVal>
+         <EnumVal ord="4">Ab</EnumVal>
+         <EnumVal ord="5">Ac</EnumVal>
+         <EnumVal ord="6">Vab</EnumVal>
+         <EnumVal ord="7">Vbc</EnumVal>
+         <EnumVal ord="8">Vca</EnumVal>
+         <EnumVal ord="9">Vother</EnumVal>
+         <EnumVal ord="10">Aother</EnumVal>
+      </EnumType>
+      <EnumType id="phsid">
+         <EnumVal ord="0">A</EnumVal>
+         <EnumVal ord="1">B</EnumVal>
+         <EnumVal ord="2">C</EnumVal>
+      </EnumType>
+      <EnumType id="hvid">
+         <EnumVal ord="0">fundamental</EnumVal>
+         <EnumVal ord="1">rms</EnumVal>
+         <EnumVal ord="2">absolute</EnumVal>
+      </EnumType>
+      <EnumType id="SetCharact">
+         <EnumVal ord="1"></EnumVal>
+         <EnumVal ord="2"></EnumVal>
+         <EnumVal ord="3"></EnumVal>
+         <EnumVal ord="4"></EnumVal>
+         <EnumVal ord="5"></EnumVal>
+         <EnumVal ord="6"></EnumVal>
+         <EnumVal ord="7"></EnumVal>
+         <EnumVal ord="8"></EnumVal>
+         <EnumVal ord="9"></EnumVal>
+         <EnumVal ord="10"></EnumVal>
+         <EnumVal ord="11"></EnumVal>
+         <EnumVal ord="12"></EnumVal>
+         <EnumVal ord="13"></EnumVal>
+         <EnumVal ord="14"></EnumVal>
+         <EnumVal ord="15"></EnumVal>
+         <EnumVal ord="16"></EnumVal>
+         <EnumVal ord="17"></EnumVal>
+         <EnumVal ord="18"></EnumVal>
+         <EnumVal ord="19"></EnumVal>
+         <EnumVal ord="20"></EnumVal>
+         <EnumVal ord="21"></EnumVal>
+         <EnumVal ord="22"></EnumVal>
+         <EnumVal ord="23"></EnumVal>
+         <EnumVal ord="24"></EnumVal>
+         <EnumVal ord="25"></EnumVal>
+         <EnumVal ord="26"></EnumVal>
+         <EnumVal ord="27"></EnumVal>
+         <EnumVal ord="28"></EnumVal>
+         <EnumVal ord="29"></EnumVal>
+         <EnumVal ord="30"></EnumVal>
+         <EnumVal ord="31"></EnumVal>
+         <EnumVal ord="32"></EnumVal>
+         <EnumVal ord="33"></EnumVal>
+         <EnumVal ord="34"></EnumVal>
+         <EnumVal ord="35"></EnumVal>
+         <EnumVal ord="36"></EnumVal>
+         <EnumVal ord="37"></EnumVal>
+         <EnumVal ord="38"></EnumVal>
+         <EnumVal ord="39"></EnumVal>
+         <EnumVal ord="40"></EnumVal>
+         <EnumVal ord="41"></EnumVal>
+         <EnumVal ord="42"></EnumVal>
+         <EnumVal ord="43"></EnumVal>
+         <EnumVal ord="44"></EnumVal>
+         <EnumVal ord="45"></EnumVal>
+         <EnumVal ord="46"></EnumVal>
+         <EnumVal ord="47"></EnumVal>
+         <EnumVal ord="48"></EnumVal>
+      </EnumType>
+      <EnumType id="AutoRecSt">
+         <EnumVal ord="1">Ready</EnumVal>
+         <EnumVal ord="2">InProgress</EnumVal>
+         <EnumVal ord="3">Successful</EnumVal>
+      </EnumType>
+      <EnumType id="Beh">
+         <EnumVal ord="1">on</EnumVal>
+         <EnumVal ord="2">blocked</EnumVal>
+         <EnumVal ord="3">test</EnumVal>
+         <EnumVal ord="4">test/blocked</EnumVal>
+         <EnumVal ord="5">off</EnumVal>
+      </EnumType>
+      <EnumType id="CBOpCap">
+         <EnumVal ord="1">None</EnumVal>
+         <EnumVal ord="2">Open</EnumVal>
+         <EnumVal ord="3">Close-Open</EnumVal>
+         <EnumVal ord="4">Open-Close-Open</EnumVal>
+         <EnumVal ord="5">Close-Open-Close-Open</EnumVal>
+      </EnumType>
+      <EnumType id="DirMod">
+         <EnumVal ord="1">NonDirectional</EnumVal>
+         <EnumVal ord="2">Forward</EnumVal>
+         <EnumVal ord="3">Inverse</EnumVal>
+      </EnumType>
+      <EnumType id="FanCtl">
+         <EnumVal ord="1">Inactive</EnumVal>
+         <EnumVal ord="2">Stage1</EnumVal>
+         <EnumVal ord="3">Stage2</EnumVal>
+         <EnumVal ord="4">Stage3</EnumVal>
+      </EnumType>
+      <EnumType id="FltLoop">
+         <EnumVal ord="1">PhaseAtoGround</EnumVal>
+         <EnumVal ord="2">PhaseBtoGround</EnumVal>
+         <EnumVal ord="3">PhaseCtoGround</EnumVal>
+         <EnumVal ord="4">PhaseAtoB</EnumVal>
+         <EnumVal ord="5">PhaseBtoC</EnumVal>
+         <EnumVal ord="6">PhaseCtoA</EnumVal>
+         <EnumVal ord="7">Others</EnumVal>
+      </EnumType>
+      <EnumType id="GnSt">
+         <EnumVal ord="1">Stopped</EnumVal>
+         <EnumVal ord="2">Stopping</EnumVal>
+         <EnumVal ord="3">Started</EnumVal>
+         <EnumVal ord="4">Starting</EnumVal>
+         <EnumVal ord="5">Disabled</EnumVal>
+      </EnumType>
+      <EnumType id="Health">
+         <EnumVal ord="1">Ok</EnumVal>
+         <EnumVal ord="2">Warning</EnumVal>
+         <EnumVal ord="3">Alarm</EnumVal>
+      </EnumType>
+      <EnumType id="POWCap">
+         <EnumVal ord="1">None</EnumVal>
+         <EnumVal ord="2">Close</EnumVal>
+         <EnumVal ord="3">Open</EnumVal>
+         <EnumVal ord="4">Close and Open</EnumVal>
+      </EnumType>
+      <EnumType id="ShOpCap">
+         <EnumVal ord="1">None</EnumVal>
+         <EnumVal ord="2">Open</EnumVal>
+         <EnumVal ord="3">Close</EnumVal>
+         <EnumVal ord="4">Open and Close</EnumVal>
+      </EnumType>
+      <EnumType id="SwTyp">
+         <EnumVal ord="1">Load Break</EnumVal>
+         <EnumVal ord="2">Disconnector</EnumVal>
+         <EnumVal ord="3">Earthing Switch</EnumVal>
+         <EnumVal ord="4">High Speed Earthing Switch</EnumVal>
+      </EnumType>
+   </DataTypeTemplates>
+</SCL>
