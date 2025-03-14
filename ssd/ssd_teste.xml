@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SCL xmlns:sxy="http://www.iec.ch/61850/2003/SCLcoordinates" release="4" xmlns="http://www.iec.ch/61850/2003/SCL" revision="B" version="2007">
+  <Header toolID="CadZinho-PELICAnU" nameStructure="IEDName" revision="A" version="1" id="SSD_SE_teste">
+    <History>
+      <Hitem when="2025-03-14" who="Zecruel" why="Padronização de SEs digitais na Cemig GT" what="Versão inaugural do arquivo SSD" revision="A" version="1" />
+    </History>
+  </Header>
+  <Substation desc="Teste de criação de SSD" name="SE_Teste">
+    <VoltageLevel desc="Setor de 500kV - Arranjo disjuntor e meio" name="U" sxy:x="0" sxy:y="0">
+      <Bay desc="Barra 1 500kV" name="BU1" sxy:x="0" sxy:y="22">
+        <ConnectivityNode pathName="SE_Teste/U/BU1/BU1" sxy:y="0" name="BU1" sxy:dir="horizontal" sxy:x="0" />
+      </Bay>
+    </VoltageLevel>
+  </Substation>
+  <DataTypeTemplates>
+    <LNodeType lnClass="CSWI" id="CSWI_CEMIG">
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="GAPC" id="GAPC_CEMIG">
+      <DO desc="Indicação de todos sec. final 6 abertos" name="Ind3" type="SPS" />
+      <DO desc="Indicação de todos sec. final 2 abertos" name="Ind2" type="SPS" />
+      <DO desc="Indicação de vão fechado" name="Ind1" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="TCTR" id="TCTR_CEMIG">
+      <DO desc="Corrente no TC - fase" name="AmpSv" type="SAV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RDRE" id="RDRE_CEMIG">
+      <DO desc="RDP - número de registros" name="FltNum" type="INS" />
+      <DO desc="RDP - registro feito" name="RcdMade" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CPOW" id="CPOW_CEMIG">
+      <DO desc="Fechamento disjuntor fase Br" name="PosC" type="DPC" />
+      <DO desc="Manobra controlada não executada (time-out)" name="TmExc" type="SPS" />
+      <DO desc="Fechamento disjuntor fase Az" name="PosB" type="DPC" />
+      <DO desc="Fechamento disjuntor fase Vm" name="PosA" type="DPC" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PTRC" id="PTRC_CEMIG">
+      <DO desc="94 - Trip geral" name="Tr" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LPHD" id="LPHD_CEMIG">
+      <DO desc="Saúde do IED" name="PhyHealth" type="ENS_ied" />
+      <DO desc="Identificação do IED (Modelo, Fabr, etc)" name="PhyNam" type="DPL" />
+      <DO desc="IED como proxy" name="Proxy" type="SPS" />
+    </LNodeType>
+    <LNodeType lnClass="RSYN" id="RSYN_CEMIG">
+      <DO desc="Diferença de tensão" name="VInd" type="SPS" />
+      <DO desc="Diferença de ângulo" name="AngInd" type="SPS" />
+      <DO desc="Diferença de frequência" name="HzInd" type="SPS" />
+      <DO desc="Verificação de sincronismo (25)" name="Rel" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PDIF" id="PDIF_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RREC" id="RREC_CEMIG">
+      <DO desc="Religamento - pulso de fechamento para o disjuntor" name="OpCls" type="ACT" />
+      <DO desc="Religamento - mono/tripolar" name="TrBeh" type="ENS_rmono" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Religamento - status (pronto - em progr. - sucesso - não sucedido)" name="AutoRecSt" type="ENS_relig" />
+    </LNodeType>
+    <LNodeType lnClass="ATCC" id="ATCC_CEMIG">
+      <DO desc="Discordância de posição TAP" name="TapOpErr" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Aumentar/diminuir TAP" name="TapChg" type="BSC" />
+      <DO desc="Acoplar/desacoplar" name="ParOp" type="SPC" />
+      <DO desc="Mestre/Comandado" name="ParTraMod" type="ENG_mci" />
+      <DO desc="Chave local/remoto" name="LocKey" type="SPS" />
+      <DO desc="Automatico/Manual" name="Auto" type="SPC" />
+      <DO desc="Discordância Mestre/Comandado" name="ErrPar" type="SPS" />
+    </LNodeType>
+    <LNodeType lnClass="SOPM" id="SOPM_CEMIG">
+      <DO desc="Motor ligado" name="MotOp" type="SPS" />
+      <DO desc="Defeito motor" name="MotAlm" type="SPS" />
+      <DO desc="Mola descarregada" name="EnBlk" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="MMXU" id="MMXU_CEMIG">
+      <DO desc="Média das correntes" name="AvAPhs" type="MV" />
+      <DO desc="Tensão fase" name="PNV" type="WYE" />
+      <DO desc="Potência Reativa" name="TotVAr" type="MV" />
+      <DO desc="Corrente fase" name="A" type="WYE" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Potência Ativa" name="TotW" type="MV" />
+      <DO desc="Frequencia" name="Hz" type="MV" />
+      <DO desc="Média das tensões fase-fase" name="AvPPVPhs" type="MV" />
+      <DO desc="Potência Aparente" name="TotVA" type="MV" />
+    </LNodeType>
+    <LNodeType lnClass="IHMI" id="IHMI_CEMIG">
+      <DO desc="Chave local/remoto" name="LocKey" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RADR" id="RADR_CEMIG">
+      <DO desc="RDP - canal analógico TC fase Vm" name="ChTrg" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PTOV" id="PTOV_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RFLO" id="RFLO_CEMIG">
+      <DO desc="Localizador de faltas - impedância de falta medida" name="FltZ" type="CMV" />
+      <DO desc="Localizador de faltas - loop com falta" name="FltLoop" type="ENS_loc" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RPSB" id="RPSB_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="68 - bloqueio dinâmico por oscilação de potência" name="BlkZn" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PTOC" id="PTOC_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LLN0" id="LLN0_CEMIG">
+      <DO desc="Local/Remoto" name="LocKey" type="SPS" />
+      <DO desc="Seta o modo (N/T/B)" name="Mod" type="ENS_mod" />
+      <DO desc="Indicador de saúde" name="Health" type="ENS_heal" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Nome do LD" name="NamPlt" type="LPL" />
+    </LNodeType>
+    <LNodeType lnClass="TVTR" id="TVTR_CEMIG">
+      <DO desc="Tensão no TP - fase" name="VolSv" type="SAV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Minidisjuntor ou fusível aberto no TP Vm" name="FuFail" type="SPS" />
+    </LNodeType>
+    <LNodeType lnClass="SIMG" id="SIMG_CEMIG">
+      <DO desc="Baixa pressão SF6 - Bloqueio" name="InsBlk" type="SPS" />
+      <DO desc="Baixa pressão SF6 - Trip" name="InsTr" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Baixa pressão SF6 - Alarme" name="InsAlm" type="SPS" />
+    </LNodeType>
+    <LNodeType lnClass="SIML" id="SIML_CEMIG">
+      <DO desc="Etileno dissolvido no óleo" name="C2H4ppm" type="MV" />
+      <DO desc="Etano dissolvido no óleo" name="C2H6ppm" type="MV" />
+      <DO desc="Oxigênio dissolvido no óleo" name="O2ppm" type="MV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Temperatura óleo - Trip" name="InsTr" type="SPS" />
+      <DO desc="Baixo nível de óleo" name="InsAlm" type="SPS" />
+      <DO desc="Temperatura óleo" name="Tmp" type="MV" />
+      <DO desc="63 - alarme" name="GasInsAlm" type="SPS" />
+      <DO desc="63 - trip" name="GasFlwTr" type="SPS" />
+      <DO desc="Humidade relativa no óleo" name="H2O" type="MV" />
+      <DO desc="Temperatura do óleo no instante da medição de Humidade" name="H2OTmp" type="MV" />
+      <DO desc="Temperatura óleo - alarme" name="TmpAlm" type="SPS" />
+      <DO desc="Nitrogênio dissolvido no óleo" name="N2ppm" type="MV" />
+      <DO desc="Monoxido de carbono  dissolvido no óleo" name="COppm" type="MV" />
+      <DO desc="Humidade relativa no papel" name="H2OPap" type="MV" />
+      <DO desc="Humidade relativa no tanque de expansão" name="H2OAir" type="MV" />
+      <DO desc="Metano dissolvido no óleo" name="CH4ppm" type="MV" />
+      <DO desc="Acetileno dissolvido no óleo" name="C2H2ppm" type="MV" />
+      <DO desc="Gás carbonico dissolvido no óleo" name="CO2ppm" type="MV" />
+      <DO desc="Hidrogênio dissolvido no óleo" name="H2ppm" type="MV" />
+    </LNodeType>
+    <LNodeType lnClass="LTMS" id="LTMS_CEMIG">
+      <DO desc="Status da fonte sincr tempo" name="TmChSt1" type="SPS" />
+      <DO desc="Fonte do sincronismo de tempo" name="TmSrc" type="VSS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PDIS" id="PDIS_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CILO" id="CILO_CEMIG">
+      <DO desc="Habilita fechamento" name="EnaCls" type="SPS" />
+      <DO desc="Habilita abertura" name="EnaOpn" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="YLTC" id="YLTC_CEMIG">
+      <DO desc="Comutador - posição do TAP" name="TapPos" type="ISC" />
+      <DO desc="Comutador - Fim de curso - TAP inferior" name="EndPosL" type="SPS" />
+      <DO desc="Comutador - Discordância de passo" name="OoStep" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Comutador - alarme ciclo incompleto" name="LTCCycAlm" type="SPS" />
+      <DO desc="Comutador - Fim de curso - TAP superior" name="EndPosR" type="SPS" />
+    </LNodeType>
+    <LNodeType lnClass="PIOC" id="PIOC_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="ZBSH" id="ZBSH_CEMIG">
+      <DO desc="Bucha Fase VM - tangente delta" name="LosFact" type="MV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Bucha Fase VM- capacitância relativa" name="React" type="MV" />
+      <DO desc="Bucha Fase VM - corrente de fuga" name="LeakA" type="MV" />
+    </LNodeType>
+    <LNodeType lnClass="XCBR" id="XCBR_CEMIG">
+      <DO desc="Bloqueio fechamento" name="BlkCls" type="SPC" />
+      <DO desc="Disjuntor (transf. Prot.) - Discordância de posição" name="Dsc" type="SPS" />
+      <DO desc="Contador de operacoes" name="OpCnt" type="INS" />
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+      <DO desc="Disjuntor (transf. Prot.) - Capacidade do disjuntor (1 = nada, 2 = O, 3 = CO, ...)" name="CBOpCap" type="ENS_dj" />
+      <DO desc="Bloqueio abertura" name="BlkOpn" type="SPC" />
+      <DO desc="Chave local/remoto" name="Loc" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="SPTR" id="SPTR_CEMIG">
+      <DO desc="Temp. Direta Núcleo" name="CoreTmp" type="MV" />
+      <DO desc="Temperatura Enrolamento - trip" name="HPTmpOp" type="SPS" />
+      <DO desc="Vávula de alívio - alarme" name="MbrAlm" type="SPS" />
+      <DO desc="Temperatura Enrolamento" name="HPTmpClc" type="MV" />
+      <DO desc="Temp. Direta Núcleo - alarme" name="CGAlm" type="SPS" />
+      <DO desc="Temperatura Enrolamento - alarme" name="HPTmpAlm" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CCGR" id="CCGR_CEMIG">
+      <DO desc="Falha ventilação forçada" name="FanOvCur" type="SPS" />
+      <DO desc="Automatico/Manual" name="Auto" type="SPC" />
+      <DO desc="Ligar/desligar ventilação (lista de estágios)" name="FanCtlGen" type="ENC_vent" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="ITPC" id="ITPC_CEMIG">
+      <DO desc="Alarme perda de sinal" name="LosSig" type="SPS" />
+      <DO desc="Equip. Teleprot. Saúde do equipamento" name="EEHealth" type="ENS_tpl" />
+      <DO desc="Alarme perda de sinal sincronismo" name="LosSyn" type="SPS" />
+      <DO desc="Alarme interferência" name="GrdRxCmdRx" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="XSWI" id="XSWI_CEMIG">
+      <DO desc="Discordância de posição" name="Dsc" type="SPS" />
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+      <DO desc="Tipo secionador (2 = chave, 3 = terra)" name="SwTyp" type="ENS_t_sec" />
+      <DO desc="Contador de operacoes" name="OpCnt" type="INS" />
+      <DO desc="Chave local/remoto" name="Loc" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RBRF" id="RBRF_CEMIG">
+      <DO desc="50BF - Retrip (disjuntor próprio)" name="OpIn" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="50BF - Trip (disjuntores adjacentes)" name="OpEx" type="ACT" />
+    </LNodeType>
+    <LNodeType lnClass="RBDR" id="RBDR_CEMIG">
+      <DO desc="RDP - canal digital - Trip geral" name="ChTrg" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LSVS" id="LSVS_CEMIG">
+      <DO desc="Status da subscrição SV" name="St" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LGOS" id="LGOS_CEMIG">
+      <DO desc="Status da subscrição GOOSE" name="St" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LCCH" id="LCCH_CEMIG">
+      <DO desc="Taxa de falha do canal de comunicação redundante" name="RedFer" type="INS" />
+      <DO desc="Canal de comunicação redundante ativo" name="RedChLiv" type="SPS" />
+      <DO desc="Canal de comunicação ativo" name="ChLiv" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Taxa de falha do canal de comunicação" name="Fer" type="INS" />
+    </LNodeType>
+    <LNodeType lnClass="PSCH" id="PSCH_CEMIG">
+      <DO desc="Teleprot. envio Trip geral" name="TxTr" type="ACT" />
+      <DO desc="Sinal echo ou weak infeed" name="EchoWei" type="SPS" />
+      <DO desc="Teleprot. envio sinal permissivo geral" name="TxPrm" type="ACT" />
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Teleprot. recep. Trip geral" name="RxTr1" type="ACT" />
+      <DO desc="Teleprot. recep. sinal permissivo geral" name="RxPrm1" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PHAR" id="PHAR_CEMIG">
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CALH" id="CALH_CEMIG">
+      <DO desc="Sinal de alarme" name="GrAlm" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <DOType cdc="ENS" id="ENS_heal">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_heal" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_dj">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_dj" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENC" id="ENC_vent">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_vent" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_relig">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_relig" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_ied">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_ied" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="DPC" id="DPC">
+      <DA fc="CF" name="ctlModel" dchg="true" bType="Enum" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="stVal" dchg="true" bType="Dbpos" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="CMV" id="CMV">
+      <DA type="Vector" dupd="true" fc="MX" name="cVal" dchg="true" bType="Struct" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_loc">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_loc" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="BSC" id="BSC">
+      <DA fc="CF" name="persistent" dchg="true" bType="BOOLEAN" />
+      <DA fc="CF" name="ctlModel" dchg="true" bType="Enum" />
+    </DOType>
+    <DOType cdc="VSS" id="VSS">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="stVal" dchg="true" bType="VisString255" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ACD" id="ACD">
+      <DA fc="ST" name="dirPhsB" dchg="true" bType="Enum" />
+      <DA fc="ST" name="dirPhsA" dchg="true" bType="Enum" />
+      <DA fc="ST" name="dirPhsC" dchg="true" bType="Enum" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="dirNeut" dchg="true" bType="Enum" />
+      <DA fc="ST" name="phsA" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="neut" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+      <DA fc="ST" name="phsC" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="dirGeneral" dchg="true" bType="Enum" />
+      <DA fc="ST" name="phsB" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="general" dchg="true" bType="BOOLEAN" />
+    </DOType>
+    <DOType cdc="INS" id="INS">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA dupd="true" fc="ST" name="stVal" dchg="true" bType="INT32" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="SPS" id="SPS">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="stVal" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_Beh">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_Beh" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENG" id="ENG_mci">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_mci" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ISC" id="ISC">
+      <DA fc="ST" name="ctlNum" bType="INT8U" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+      <DA fc="CF" name="ctlModel" dchg="true" bType="Enum" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA desc="Indicação de mudança de TAP" type="ValWithTrans" fc="ST" name="valWTr" dchg="true" bType="Struct" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_rmono">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_rmono" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_tpl">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_tpl" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="LPL" id="LPL">
+      <DA fc="DC" name="configRev" bType="VisString255" />
+      <DA fc="DC" name="swRev" bType="VisString255" />
+      <DA desc="Fabricante" fc="DC" name="vendor" bType="VisString255" />
+    </DOType>
+    <DOType cdc="MV" id="MV">
+      <DA type="AnalogueValue" dupd="true" fc="MX" name="mag" dchg="true" bType="Struct" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="SAV" id="SAV">
+      <DA type="AnalogueValue" fc="MX" name="instMag" bType="Struct" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="SPC" id="SPC">
+      <DA fc="CF" name="ctlModel" dchg="true" bType="Enum" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_mod">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_mod" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_t_sec">
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA type="Enum_t_sec" dupd="true" fc="ST" name="stVal" dchg="true" bType="Enum" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+    </DOType>
+    <DOType cdc="WYE" id="WYE">
+      <SDO type="CMV" name="phsA" />
+      <SDO type="CMV" name="phsB" />
+      <SDO type="CMV" name="phsC" />
+    </DOType>
+    <DOType cdc="ACT" id="ACT">
+      <DA fc="ST" name="phsA" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="neut" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="t" bType="Timestamp" />
+      <DA fc="ST" name="phsC" dchg="true" bType="BOOLEAN" />
+      <DA fc="ST" name="phsB" dchg="true" bType="BOOLEAN" />
+      <DA qchg="true" fc="ST" name="q" bType="Quality" />
+      <DA fc="ST" name="general" dchg="true" bType="BOOLEAN" />
+    </DOType>
+    <DOType cdc="DPL" id="DPL">
+      <DA desc="Modelo" fc="DC" name="model" bType="VisString255" />
+      <DA desc="Número de operação" fc="DC" name="name" bType="VisString255" />
+      <DA desc="Outros dizeres" fc="DC" name="owner" bType="VisString255" />
+      <DA desc="Fabricante" fc="DC" name="vendor" bType="VisString255" />
+    </DOType>
+    <DAType id="ValWithTrans">
+      <BDA name="posVal" bType="INT8" />
+      <BDA name="transInd" bType="BOOLEAN" />
+    </DAType>
+    <DAType id="Vector">
+      <BDA name="ang" type="AnalogueValue" bType="Struct" />
+      <BDA name="mag" type="AnalogueValue" bType="Struct" />
+    </DAType>
+    <DAType id="AnalogueValue">
+      <BDA name="i" bType="INT32" />
+      <BDA name="f" bType="FLOAT32" />
+    </DAType>
+    <EnumType id="Enum_heal">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_mci">
+      <EnumVal ord="1">No mode predefined</EnumVal>
+      <EnumVal ord="2">Master</EnumVal>
+      <EnumVal ord="3">Follower</EnumVal>
+      <EnumVal ord="4">Power factor</EnumVal>
+      <EnumVal ord="5">Negative reactance</EnumVal>
+      <EnumVal ord="6">Circulating current</EnumVal>
+      <EnumVal ord="7">Circulating reactive current (var balancing)</EnumVal>
+      <EnumVal ord="8">Circulating reactive current by equalizing calculated transformer power factor</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_dj">
+      <EnumVal ord="1">None</EnumVal>
+      <EnumVal ord="2">Open</EnumVal>
+      <EnumVal ord="3">Close-Open</EnumVal>
+      <EnumVal ord="4">Open-Close-Open</EnumVal>
+      <EnumVal ord="5">Close-Open-Close-Open</EnumVal>
+      <EnumVal ord="6">Open-Close-Open-Close-Open</EnumVal>
+      <EnumVal ord="7">more</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_ied">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_vent">
+      <EnumVal ord="1">Inactive</EnumVal>
+      <EnumVal ord="2">Stage 1</EnumVal>
+      <EnumVal ord="3">Stage 2</EnumVal>
+      <EnumVal ord="4">Stage 3</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_rmono">
+      <EnumVal ord="1">Single Pole Tripping</EnumVal>
+      <EnumVal ord="2">Undefined</EnumVal>
+      <EnumVal ord="3">Three Pole Tripping</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_relig">
+      <EnumVal ord="1">Ready</EnumVal>
+      <EnumVal ord="2">In Progress</EnumVal>
+      <EnumVal ord="3">Successful</EnumVal>
+      <EnumVal ord="4">Waiting For Trip</EnumVal>
+      <EnumVal ord="5">Trip From Protection</EnumVal>
+      <EnumVal ord="6">Fault Disappeared</EnumVal>
+      <EnumVal ord="7">Wait To Complete</EnumVal>
+      <EnumVal ord="8">CB closed</EnumVal>
+      <EnumVal ord="9">Cycle Unsuccessful</EnumVal>
+      <EnumVal ord="10">Unsuccessful</EnumVal>
+      <EnumVal ord="11">Aborted</EnumVal>
+      <EnumVal ord="12">Not Ready</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_t_sec">
+      <EnumVal ord="1">Load Break</EnumVal>
+      <EnumVal ord="2">Disconnector</EnumVal>
+      <EnumVal ord="3">Earthing Switch</EnumVal>
+      <EnumVal ord="4">High Speed Earthing Switch</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_Beh">
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="2">blocked</EnumVal>
+      <EnumVal ord="3">test</EnumVal>
+      <EnumVal ord="4">test/blocked</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_mod">
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="2">blocked</EnumVal>
+      <EnumVal ord="3">test</EnumVal>
+      <EnumVal ord="4">test/blocked</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_loc">
+      <EnumVal ord="1">Phase A to ground</EnumVal>
+      <EnumVal ord="2">Phase B to ground</EnumVal>
+      <EnumVal ord="3">Phase C to ground</EnumVal>
+      <EnumVal ord="4">Phase A to phase B</EnumVal>
+      <EnumVal ord="5">Phase B to phase C</EnumVal>
+      <EnumVal ord="6">Phase C to phase A</EnumVal>
+      <EnumVal ord="7">Others</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_tpl">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+  </DataTypeTemplates>
+</SCL>

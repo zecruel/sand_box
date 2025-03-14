@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SCL xmlns="http://www.iec.ch/61850/2003/SCL">
-  <Header revision="" toolID="" id="" version="1.0.0" nameStructure="IEDName" />
+  <Header id="" toolID="" nameStructure="IEDName" version="1.0.0" revision="" />
   <Communication>
     <SubNetwork type="8-MMS" name="subnetwork1">
-      <ConnectedAP apName="accessPoint1" iedName="P_3MUC1">
+      <ConnectedAP iedName="P_3MUC1" apName="accessPoint1">
         <Address>
           <P type="IP">0.0.0.0</P>
           <P type="IP-SUBNET">255.255.255.0</P>
@@ -32,20 +32,20 @@
       <Server>
         <Authentication />
         <LDevice inst="LDInst">
-          <LN0 lnClass="LLN0" inst="" lnType="LLN01">
+          <LN0 inst="" lnType="LLN01" lnClass="LLN0">
             <DataSet desc="control related events" name="ControlEvents">
-              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="stVal" lnInst="1" />
-              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="stVal" lnInst="1" />
-              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="stSeld" lnInst="1" />
-              <FCDA fc="ST" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="stSeld" lnInst="1" />
-              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="opRcvd" lnInst="1" />
-              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="opRcvd" lnInst="1" />
-              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO001" daName="opOk" lnInst="1" />
-              <FCDA fc="OR" ldInst="LDInst" lnClass="GGIO" doName="SPCSO002" daName="opOk" lnInst="1" />
+              <FCDA lnClass="GGIO" daName="stVal" fc="ST" doName="SPCSO001" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="stVal" fc="ST" doName="SPCSO002" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="stSeld" fc="ST" doName="SPCSO001" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="stSeld" fc="ST" doName="SPCSO002" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="opRcvd" fc="OR" doName="SPCSO001" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="opRcvd" fc="OR" doName="SPCSO002" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="opOk" fc="OR" doName="SPCSO001" lnInst="1" ldInst="LDInst" />
+              <FCDA lnClass="GGIO" daName="opOk" fc="OR" doName="SPCSO002" lnInst="1" ldInst="LDInst" />
             </DataSet>
-            <ReportControl bufTime="0" indexed="true" intgPd="1000" name="ControlEventsRCB" datSet="ControlEvents" buffered="false" confRev="1" rptID="ControlEvents">
+            <ReportControl indexed="true" bufTime="0" buffered="false" rptID="ControlEvents" confRev="1" intgPd="1000" name="ControlEventsRCB" datSet="ControlEvents">
               <TrgOps dchg="true" />
-              <OptFields configRef="true" seqNum="true" dataSet="true" reasonCode="true" entryID="true" timeStamp="true" />
+              <OptFields configRef="true" entryID="true" seqNum="true" dataSet="true" timeStamp="true" reasonCode="true" />
               <RptEnabled max="2" />
             </ReportControl>
             <DOI name="Mod">
@@ -54,8 +54,8 @@
               </DAI>
             </DOI>
           </LN0>
-          <LN lnClass="LPHD" prefix="" inst="1" lnType="LPHD1" />
-          <LN lnClass="GGIO" prefix="" inst="3" lnType="GGIO1">
+          <LN inst="1" lnType="LPHD1" prefix="" lnClass="LPHD" />
+          <LN inst="3" lnType="GGIO1" prefix="" lnClass="GGIO">
             <DOI name="Mod">
               <DAI name="ctlModel">
                 <Val>status-only</Val>
@@ -78,7 +78,7 @@
               </DAI>
             </DOI>
           </LN>
-          <LN lnClass="CSWI" prefix="" inst="1" lnType="CSWI1">
+          <LN inst="1" lnClass="CSWI" prefix="" lnType="CSWI1">
             <DOI name="Mod">
               <DAI name="ctlModel">
                 <Val>status-only</Val>
@@ -105,7 +105,7 @@
               <DAI name="q" />
             </DOI>
           </LN>
-          <LN lnClass="XCBR" prefix="" inst="1" lnType="XCBR1_3">
+          <LN inst="1" lnClass="XCBR" prefix="" lnType="XCBR1_3">
             <DOI name="Mod">
               <DAI name="ctlModel">
                 <Val>status-only</Val>
@@ -135,10 +135,10 @@
               <DAI name="ctlModel" />
             </DOI>
             <DOI name="CBOpCap">
-              <DAI xmlns:esel="http://www.selinc.com/2006/61850" esel:datasrc="imm" name="stVal">
+              <DAI esel:datasrc="imm" xmlns:esel="http://www.selinc.com/2006/61850" name="stVal">
                 <Val>1</Val>
               </DAI>
-              <DAI xmlns:esel="http://www.selinc.com/2006/61850" esel:datasrc="db:EN" name="q" />
+              <DAI esel:datasrc="db:EN" xmlns:esel="http://www.selinc.com/2006/61850" name="q" />
             </DOI>
           </LN>
         </LDevice>
@@ -146,18 +146,18 @@
     </AccessPoint>
   </IED>
   <DataTypeTemplates>
-    <LNodeType lnClass="LLN0" id="LLN01">
+    <LNodeType id="LLN01" lnClass="LLN0">
       <DO type="INC_1_Mod" name="Mod" />
       <DO type="INS_1_Beh" name="Beh" />
       <DO type="INS_1_Beh" name="Health" />
       <DO type="LPL_1_NamPlt" name="NamPlt" />
     </LNodeType>
-    <LNodeType lnClass="LPHD" id="LPHD1">
+    <LNodeType id="LPHD1" lnClass="LPHD">
       <DO type="DPL_1_PhyNam" name="PhyNam" />
       <DO type="INS_1_Beh" name="PhyHealth" />
       <DO type="SPS_1_Proxy" name="Proxy" />
     </LNodeType>
-    <LNodeType lnClass="GGIO" id="GGIO1">
+    <LNodeType id="GGIO1" lnClass="GGIO">
       <DO type="INC_1_Mod" name="Mod" />
       <DO type="INS_1_Beh" name="Beh" />
       <DO type="INS_1_Beh" name="Health" />
@@ -173,7 +173,7 @@
       <DO type="SPS_1_Proxy" name="Ind3" />
       <DO type="SPS_1_Proxy" name="Ind4" />
     </LNodeType>
-    <LNodeType lnClass="CSWI" id="CSWI1">
+    <LNodeType id="CSWI1" lnClass="CSWI">
       <DO type="INC_1_Mod" name="Mod" />
       <DO type="INS_1_Beh" name="Beh" />
       <DO type="INS_1_Beh" name="Health" />
@@ -182,7 +182,7 @@
       <DO type="ACT_0" name="OpOpn" />
       <DO type="ACT_0" name="OpCls" />
     </LNodeType>
-    <LNodeType lnClass="XCBR" id="XCBR1_3">
+    <LNodeType id="XCBR1_3" lnClass="XCBR">
       <DO type="INC_1_Mod" name="Mod" />
       <DO type="INS_1_Beh" name="Beh" />
       <DO type="SPS_0" name="Loc" />
@@ -192,97 +192,97 @@
       <DO type="SPC_1" name="BlkCls" />
       <DO type="CBOpCapINS_3" name="CBOpCap" />
     </LNodeType>
-    <DOType cdc="INC" id="INC_1_Mod">
-      <DA qchg="true" bType="Quality" fc="ST" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+    <DOType id="INC_1_Mod" cdc="INC">
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA fc="ST" bType="Timestamp" name="t" />
       <DA fc="CF" type="CtlModels" bType="Enum" name="ctlModel" />
     </DOType>
-    <DOType cdc="INS" id="INS_1_Beh">
+    <DOType id="INS_1_Beh" cdc="INS">
       <DA fc="ST" bType="INT32" dchg="true" name="stVal" />
-      <DA qchg="true" bType="Quality" fc="ST" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="LPL" id="LPL_1_NamPlt">
-      <DA bType="VisString255" fc="DC" name="vendor" />
-      <DA bType="VisString255" fc="DC" name="swRev" />
-      <DA bType="VisString255" fc="DC" name="d" />
-      <DA bType="VisString255" fc="DC" name="configRev" />
-      <DA bType="VisString255" fc="EX" name="ldNs" />
+    <DOType id="LPL_1_NamPlt" cdc="LPL">
+      <DA fc="DC" bType="VisString255" name="vendor" />
+      <DA fc="DC" bType="VisString255" name="swRev" />
+      <DA fc="DC" bType="VisString255" name="d" />
+      <DA fc="DC" bType="VisString255" name="configRev" />
+      <DA fc="EX" bType="VisString255" name="ldNs" />
     </DOType>
-    <DOType cdc="DPL" id="DPL_1_PhyNam">
-      <DA bType="VisString255" fc="DC" name="vendor" />
+    <DOType id="DPL_1_PhyNam" cdc="DPL">
+      <DA fc="DC" bType="VisString255" name="vendor" />
     </DOType>
-    <DOType cdc="SPS" id="SPS_1_Proxy">
+    <DOType id="SPS_1_Proxy" cdc="SPS">
       <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
-      <DA qchg="true" bType="Quality" fc="ST" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="ACT" id="ACT_0">
+    <DOType id="ACT_0" cdc="ACT">
       <DA fc="ST" bType="BOOLEAN" dchg="true" name="general" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="MV" id="MV_1_AnIn1">
-      <DA type="AnalogueValue_1" dchg="true" name="mag" bType="Struct" fc="MX" />
-      <DA qchg="true" bType="Quality" fc="MX" name="q" />
-      <DA bType="Timestamp" fc="MX" name="t" />
+    <DOType id="MV_1_AnIn1" cdc="MV">
+      <DA bType="Struct" fc="MX" type="AnalogueValue_1" dchg="true" name="mag" />
+      <DA fc="MX" bType="Quality" qchg="true" name="q" />
+      <DA fc="MX" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="LPL" id="LPL_2_NamPlt">
-      <DA bType="VisString255" fc="DC" name="vendor" />
-      <DA bType="VisString255" fc="DC" name="swRev" />
-      <DA bType="VisString255" fc="DC" name="d" />
+    <DOType id="LPL_2_NamPlt" cdc="LPL">
+      <DA fc="DC" bType="VisString255" name="vendor" />
+      <DA fc="DC" bType="VisString255" name="swRev" />
+      <DA fc="DC" bType="VisString255" name="d" />
     </DOType>
-    <DOType cdc="SPC" id="SPC_1_SPCSO2">
-      <DA bType="VisString64" fc="CO" name="SBO" />
+    <DOType id="SPC_1_SPCSO2" cdc="SPC">
+      <DA fc="CO" bType="VisString64" name="SBO" />
       <DA fc="CO" type="SPCOperate_1" bType="Struct" name="Oper" />
       <DA fc="CO" type="SPCCancel_1" bType="Struct" name="Cancel" />
       <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
-      <DA qchg="true" bType="Quality" fc="ST" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
-      <DA name="stSeld" bType="BOOLEAN" dchg="true" fc="ST" />
+      <DA fc="ST" bType="Quality" qchg="true" name="q" />
+      <DA fc="ST" bType="Timestamp" name="t" />
+      <DA fc="ST" bType="BOOLEAN" dchg="true" name="stSeld" />
       <DA fc="OR" bType="BOOLEAN" dchg="true" name="opRcvd" />
       <DA fc="OR" bType="BOOLEAN" dchg="true" name="opOk" />
-      <DA bType="Timestamp" fc="OR" name="tOpOk" />
+      <DA fc="OR" bType="Timestamp" name="tOpOk" />
       <DA fc="CF" type="CtlModels" bType="Enum" name="ctlModel" />
-      <DA name="sboTimeout" bType="INT32U" dchg="true" fc="CF" />
+      <DA fc="CF" bType="INT32U" dchg="true" name="sboTimeout" />
       <DA fc="CF" type="SboClasses" bType="Enum" name="sboClass" />
     </DOType>
-    <DOType cdc="DPC" id="DPC_SBO_enhanced">
+    <DOType id="DPC_SBO_enhanced" cdc="DPC">
       <DA fc="CO" bType="Struct" type="SBOw_b" name="SBOw" />
       <DA fc="CO" bType="Struct" type="SPCOperate_1" name="Oper" />
       <DA fc="CO" bType="Struct" type="SPCCancel_1" name="Cancel" />
-      <DA type="Dbpos" dchg="true" name="stVal" bType="Dbpos" fc="ST" />
+      <DA bType="Dbpos" fc="ST" type="Dbpos" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
       <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
-      <DA bType="INT32U" fc="CF" name="sboTimeout" />
+      <DA fc="CF" bType="INT32U" name="sboTimeout" />
     </DOType>
-    <DOType cdc="DPC" id="DPC_0">
-      <DA type="Dbpos" dchg="true" name="stVal" bType="Dbpos" fc="ST" />
+    <DOType id="DPC_0" cdc="DPC">
+      <DA bType="Dbpos" fc="ST" type="Dbpos" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
       <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
     </DOType>
-    <DOType cdc="SPC" id="SPC_1">
+    <DOType id="SPC_1" cdc="SPC">
       <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
       <DA fc="CF" bType="Enum" type="CtlModels" name="ctlModel" />
     </DOType>
-    <DOType cdc="INS" id="INS_0">
+    <DOType id="INS_0" cdc="INS">
       <DA fc="ST" bType="INT32" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="SPS" id="SPS_0">
+    <DOType id="SPS_0" cdc="SPS">
       <DA fc="ST" bType="BOOLEAN" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
-    <DOType cdc="INS" id="CBOpCapINS_3">
-      <DA type="CBOpCap_3" dchg="true" name="stVal" bType="Enum" fc="ST" />
+    <DOType id="CBOpCapINS_3" cdc="INS">
+      <DA bType="Enum" fc="ST" type="CBOpCap_3" dchg="true" name="stVal" />
       <DA fc="ST" bType="Quality" qchg="true" name="q" />
-      <DA bType="Timestamp" fc="ST" name="t" />
+      <DA fc="ST" bType="Timestamp" name="t" />
     </DOType>
     <DAType id="SPCOperate_1">
       <BDA bType="BOOLEAN" name="ctlVal" />
