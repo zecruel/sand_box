@@ -1,57 +1,59 @@
 leitor = require 'xlsx_lua'
 
-path = "61850_cemig.xlsm"
+path = "61850_cemig.xlsx"
 
 planilha = leitor.open(path)
 
-bd = sqlite.open('61850_cemig2.db')
+bd = sqlite.open('61850_cemig3.db')
 
 -- limpa o banco de dados
 bd:exec('DROP TABLE IF EXISTS geral')
 bd:exec('CREATE TABLE geral('..
   'ld TEXT, pre TEXT, ln TEXT, inst INTEGER, d_o TEXT, d_a TEXT, ' ..
-  'uso TEXT, goose INTEGER, descr TEXT, obs TEXT)')
+  'uso TEXT, tipo_mens TEXT, descr TEXT, obs TEXT)')
 
 for nome_aba, aba in pairs(planilha.sheets) do
 	cadzinho.db_print (("aba: %s, index = %s"):format(nome_aba, aba.idx))
-	--expande as celulas mescladas
-  leitor.expand_merge (aba)
+	
+  if nome_aba ~= 'Capa' then
+    --expande as celulas mescladas
+    leitor.expand_merge (aba)
 
-	for _, r in ipairs(aba.dim.rows) do
-    if r > 1 and aba.data[r]['B'] then
-      pre = 'NULL'
-      inst = 'NULL'
-      d_o = 'NULL'
-      d_a = 'NULL'
-      uso = 'NULL'
-      goose = 'NULL'
-      descr = 'NULL'
-      obs = 'NULL'
-      
-      if aba.data[r]['A'] then pre = "'".. tostring(aba.data[r]['A']) .. "'" end
-      if aba.data[r]['C'] then inst = tonumber(aba.data[r]['C']) end
-      if aba.data[r]['D'] then d_o = "'".. tostring(aba.data[r]['D']) .. "'" end
-      if aba.data[r]['E'] then d_a = "'".. tostring(aba.data[r]['E']) .. "'" end
-      if aba.data[r]['F'] then uso = "'".. tostring(aba.data[r]['F']) .. "'" end
-      if aba.data[r]['G'] then goose = '1' end
-      if aba.data[r]['H'] then descr = "'".. tostring(aba.data[r]['H']) .. "'" end
-      if aba.data[r]['I'] then obs = "'".. tostring(aba.data[r]['I']) .. "'" end
-      
-      bd:exec ("INSERT INTO geral VALUES('".. tostring(nome_aba) .."', "..
-        pre ..", '".. tostring(aba.data[r]['B']) .."', "..
-        inst ..", ".. d_o ..", ".. d_a  ..", "..
-        uso ..", ".. goose ..", ".. descr ..", ".. obs ..");")
-      
-      --[[
-      str = ""
-      for _, c in ipairs(aba.dim.cols) do
-        str = str .. tostring(aba.data[r][c]) .. "    "
+    for _, r in ipairs(aba.dim.rows) do
+      if r > 1 and aba.data[r]['B'] then
+        pre = 'NULL'
+        inst = 'NULL'
+        d_o = 'NULL'
+        d_a = 'NULL'
+        uso = 'NULL'
+        tipo_mens = 'NULL'
+        descr = 'NULL'
+        obs = 'NULL'
+        
+        if aba.data[r]['A'] then pre = "'".. tostring(aba.data[r]['A']) .. "'" end
+        if aba.data[r]['C'] then inst = tonumber(aba.data[r]['C']) end
+        if aba.data[r]['D'] then d_o = "'".. tostring(aba.data[r]['D']) .. "'" end
+        if aba.data[r]['E'] then d_a = "'".. tostring(aba.data[r]['E']) .. "'" end
+        if aba.data[r]['F'] then uso = "'".. tostring(aba.data[r]['F']) .. "'" end
+        if aba.data[r]['G'] then tipo_mens = "'".. tostring(aba.data[r]['G']) .. "'" end
+        if aba.data[r]['H'] then descr = "'".. tostring(aba.data[r]['H']) .. "'" end
+        if aba.data[r]['I'] then obs = "'".. tostring(aba.data[r]['I']) .. "'" end
+        
+        bd:exec ("INSERT INTO geral VALUES('".. tostring(nome_aba) .."', "..
+          pre ..", '".. tostring(aba.data[r]['B']) .."', "..
+          inst ..", ".. d_o ..", ".. d_a  ..", "..
+          uso ..", ".. tipo_mens ..", ".. descr ..", ".. obs ..");")
+        
+        --[[
+        str = ""
+        for _, c in ipairs(aba.dim.cols) do
+          str = str .. tostring(aba.data[r][c]) .. "    "
+        end
+        print (str)
+        ]]--
       end
-      print (str)
-      ]]--
     end
 	end
-	
 end
 
 bd:close()
