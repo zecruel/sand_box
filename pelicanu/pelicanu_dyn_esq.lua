@@ -540,20 +540,20 @@ function esquematico_dyn (event)
       
       if event.type == 'enter' then
         local dados = {}
-        dados.ident = g_fmt_id.value
-        dados.titulo = g_fmt_tit.value
-        dados.tipo = 'DIAGRAMA ESQUEMÁTICO'
-        dados.projeto = g_fmt_prj.value
-        dados.rev = g_fmt_rev.value
-        dados.versao = g_fmt_ver.value
-        dados.fl = g_fmt_fl.value
-        dados.data = projeto.data
-        dados.aplic = projeto.aplicacao
-        dados.instal = projeto.instalacao
-        dados.visto = projeto.visto
-        dados.aprov = projeto.aprovacao
-        dados.classif = 'RESERVADO'
-        dados.p_fl = g_fmt_pfl.value
+        dados.IDENT = g_fmt_id.value
+        dados.TITULO = g_fmt_tit.value
+        dados.TIPO = 'DIAGRAMA ESQUEMÁTICO'
+        dados.PROJETO = g_fmt_prj.value
+        dados.REV = g_fmt_rev.value
+        dados.VERSAO = g_fmt_ver.value
+        dados.FL = g_fmt_fl.value
+        dados.DATA = projeto.data
+        dados.APLIC = projeto.aplicacao
+        dados.INSTAL = projeto.instalacao
+        dados.VISTO = projeto.visto
+        dados.APROV = projeto.aprovacao
+        dados.CLASSIF = 'RESERVADO'
+        dados.P_FL = g_fmt_pfl.value
         muda_atrib (fmt, dados)
         
         cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo

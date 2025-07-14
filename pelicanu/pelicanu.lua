@@ -794,7 +794,7 @@ function pega_attrib (ent)
   -- varre os elementos ATTRIB da entidade, cadastrando-as na tabela
   local attrs = cadzinho.get_attribs(ent)
   for i, attr in ipairs(attrs) do
-    dados[attr.tag:lower()] = attr.value
+    dados[attr.tag:upper()] = attr.value
   end
   
   return dados
@@ -819,17 +819,17 @@ end
 
 function pega_comp_tipo(comp)
   local dados = pega_attrib(comp)
-  return dados.tipo
+  return dados.TIPO
 end
 
 function pega_comp_sub(comp)
   local dados = pega_attrib(comp)
-  return dados.sub
+  return dados.SUB
 end
 
 function pega_engate(comp)
   local dados = pega_attrib(comp)
-  return dados.engate
+  return dados.ENGATE
 end
 
 function muda_engate(comp, engate, num, desenho, folha, descr)
@@ -1236,7 +1236,7 @@ function obtem_desenhos (caixas, tipos)
         if sub_caixa then
           if sub_caixa.tipo == "DESENHO" then
             local dados = pega_attrib(el.ent)
-            local des_tipo = string.upper(dados.tipo)
+            local des_tipo = string.upper(dados.TIPO)
             for _, tipo in pairs(tipos) do
               if string.find(des_tipo, tipo) then
                 desenhos[el_id] = sub_caixa
@@ -2549,7 +2549,7 @@ function nova_ref (x, y)
   end
   
   if ref_blc then
-    muda_atrib (ref_blc, {terminal = g_ref_term.value})
+    muda_atrib (ref_blc, {TERMINAL = g_ref_term.value})
     cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
     cadzinho.add_ext(ref_blc, "PELICANU", 
       {cadzinho.unique_id(), "COMPONENTE"})
@@ -2849,4 +2849,4 @@ if ini then
   abre_projeto(ini.projeto)
 end
 --cadzinho.win_show("pelicanu_win", "Pelicanu", 220,120,250,200)
-cadzinho.win_show("pelicanu_win", "Pelicanu", 215, 88, 200, 180)
+cadzinho.win_show("pelicanu_win", "Pelicanu", 2, 540, 210, 165)
