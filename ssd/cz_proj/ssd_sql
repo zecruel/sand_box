@@ -1,0 +1,96 @@
+select painel setor, modulo as vao, unico, 
+case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
+when 'borne' then 'BAR_' || replace(componente, 'B', '')
+when 'borne_e' then 'LT_' || componente
+when 'bob_1' then 'TP_' || componente
+when 'm_disj' then 'DISJ_' || componente
+when 'ct_v_r' then 'SEC_' || componente
+else componente end equip, 
+case bloco when 'bob' then 'TC'
+when 'borne' then 'BARRA'
+when 'borne_e' then 'LT'
+when 'bob_1' then 'TP'
+when 'm_disj' then 'DISJ'
+when 'ct_v_r' then 'SEC'
+else bloco end tipo, num, terminal
+from comp_term order by setor, modulo, unico, componente, tipo, num, terminal;
+
+SELECT CASE WHEN EXISTS (SELECT eng_term.barra
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+THEN (SELECT CASE WHEN EXISTS (
+SELECT eng_repetidos.node FROM eng_repetidos
+where eng_term.engate || eng_term.terminal = eng_repetidos.node)
+THEN (SELECT eng_repetidos.barra FROM eng_repetidos 
+WHERE eng_term.engate || eng_term.terminal = eng_repetidos.node
+LIMIT 1) ELSE eng_term.engate || eng_term.terminal END
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+ELSE 'NO_' || (select n from (select id, row_number() over (order by id) n from barras_esq) bs where barras_esq.id = bs.id limit 1) END
+node, componentes_esq.unico componente, barras_esq.terminal,
+(select caixas.id from caixas where hierarquia_esq.modulo = caixas.unico) vao, caixas.id setor
+FROM barras_esq, componentes_esq, hierarquia_esq, caixas
+WHERE componentes_esq.unico = barras_esq.componente AND 
+NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente
+AND NOT componentes_esq.tipo = 'REFERENCIA'
+AND hierarquia_esq.painel = caixas.unico
+ORDER BY node;
+
+WITH nodes AS (
+SELECT CASE WHEN EXISTS (SELECT eng_term.barra
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+THEN (SELECT CASE WHEN EXISTS (
+SELECT eng_repetidos.node FROM eng_repetidos
+where eng_term.engate || eng_term.terminal = eng_repetidos.node)
+THEN (SELECT eng_repetidos.barra FROM eng_repetidos 
+WHERE eng_term.engate || eng_term.terminal = eng_repetidos.node
+LIMIT 1) ELSE eng_term.engate || eng_term.terminal END
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+ELSE 'NO_' || (select n from (select id, row_number() over (order by id) n from barras_esq) bs where barras_esq.id = bs.id limit 1) END
+node, componentes_esq.unico componente, barras_esq.terminal,
+(select caixas.id from caixas where hierarquia_esq.modulo = caixas.unico) vao, caixas.id setor
+FROM barras_esq, componentes_esq, hierarquia_esq, caixas
+WHERE componentes_esq.unico = barras_esq.componente AND 
+NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente
+AND NOT componentes_esq.tipo = 'REFERENCIA'
+AND hierarquia_esq.painel = caixas.unico
+ORDER BY node, vao ASC)
+select  distinct setor, first_value(vao) over (partition by node) vao, node from nodes order by setor, vao, node;
+
+
+
+select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode
+from (select painel setor, modulo as vao, unico, 
+case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
+when 'borne' then 'BAR_' || replace(componente, 'B', '')
+when 'borne_e' then componente
+when 'bob_1' then 'TP_' || componente
+when 'm_disj' then 'DISJ_' || componente
+when 'ct_v_r' then 'SEC_' || componente
+else componente end equip, 
+case bloco when 'bob' then 'CTR'
+when 'borne' then 'BARRA'
+when 'borne_e' then 'IFL'
+when 'bob_1' then 'VTR'
+when 'm_disj' then 'CBR'
+when 'ct_v_r' then 'DIS'
+else bloco end tipo, num, terminal
+from comp_term order by setor, modulo, unico, componente, tipo, num, terminal) equip
+inner join
+(SELECT CASE WHEN EXISTS (SELECT eng_term.barra
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+THEN (SELECT CASE WHEN EXISTS (
+SELECT eng_repetidos.node FROM eng_repetidos
+where eng_term.engate || eng_term.terminal = eng_repetidos.node)
+THEN (SELECT eng_repetidos.barra FROM eng_repetidos 
+WHERE eng_term.engate || eng_term.terminal = eng_repetidos.node
+LIMIT 1) ELSE eng_term.engate || eng_term.terminal END
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+ELSE 'NO_' || (select n from (select id, row_number() over (order by id) n from barras_esq) bs where barras_esq.id = bs.id limit 1) END
+node, componentes_esq.unico componente, barras_esq.terminal,
+(select caixas.id from caixas where hierarquia_esq.modulo = caixas.unico) vao, caixas.id setor
+FROM barras_esq, componentes_esq, hierarquia_esq, caixas
+WHERE componentes_esq.unico = barras_esq.componente AND 
+NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente
+AND NOT componentes_esq.tipo = 'REFERENCIA'
+AND hierarquia_esq.painel = caixas.unico
+ORDER BY node) nodes
+on equip.unico = nodes.componente and equip.num = nodes.terminal and not equip.tipo = 'BARRA'
