@@ -14,6 +14,7 @@ require('pelicanu_dyn')
 require('pelicanu_dyn_prj')
 require('pelicanu_dyn_esq')
 require('pelicanu_malha_dyn')
+require('pelicanu_fiacao_dyn')
 
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
@@ -2735,7 +2736,9 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button("練 Fiação") then
-    
+    modal = ''
+    sub_modal = ''
+    cadzinho.start_dynamic('fiacao_dyn')
   end
   if cadzinho.nk_button(" Interligação") then
     
