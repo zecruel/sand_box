@@ -4,7 +4,7 @@ path = "61850_cemig.xlsx"
 
 planilha = leitor.open(path)
 
-bd = sqlite.open('61850_cemig3.db')
+bd = sqlite.open('61850_cemig.db')
 
 -- limpa o banco de dados
 bd:exec('DROP TABLE IF EXISTS geral')
