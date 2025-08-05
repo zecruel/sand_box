@@ -57,12 +57,12 @@ select  distinct setor, first_value(vao) over (partition by node) vao, node from
 
 
 
-select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode
+select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
 from (select painel setor, modulo as vao, unico, 
 case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
 when 'borne' then 'BAR_' || replace(componente, 'B', '')
 when 'borne_e' then componente
-when 'bob_1' then 'TP_' || componente
+when 'bob_1' then 'TP_' || replace(componente, 'TP', '')
 when 'm_disj' then 'DISJ_' || componente
 when 'ct_v_r' then 'SEC_' || componente
 else componente end equip, 
@@ -93,4 +93,120 @@ NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.c
 AND NOT componentes_esq.tipo = 'REFERENCIA'
 AND hierarquia_esq.painel = caixas.unico
 ORDER BY node) nodes
-on equip.unico = nodes.componente and equip.num = nodes.terminal and not equip.tipo = 'BARRA'
+inner join componentes_esq
+on equip.unico = nodes.componente and equip.num = nodes.terminal and not equip.tipo = 'BARRA' and componentes_esq.unico = equip.unico;
+
+CREATE TABLE c_nodes (
+    setor    TEXT,
+    vao   TEXT,
+    node  TEXT,
+    descr TEXT,
+    obs   TEXT
+);
+
+INSERT INTO c_nodes (setor, vao, node)
+select  distinct setor, first_value(vao) over (partition by node) vao, node
+from (
+SELECT CASE WHEN EXISTS (SELECT eng_term.barra
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+THEN (SELECT CASE WHEN EXISTS (
+SELECT eng_repetidos.node FROM eng_repetidos
+where eng_term.engate || eng_term.terminal = eng_repetidos.node)
+THEN (SELECT eng_repetidos.barra FROM eng_repetidos 
+WHERE eng_term.engate || eng_term.terminal = eng_repetidos.node
+LIMIT 1) ELSE eng_term.engate || eng_term.terminal END
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+ELSE 'NO_' || (select n from (select id, row_number() over (order by id) n from barras_esq) bs where barras_esq.id = bs.id limit 1) END
+node, componentes_esq.unico componente, barras_esq.terminal,
+(select caixas.id from caixas where hierarquia_esq.modulo = caixas.unico) vao, caixas.id setor
+FROM barras_esq, componentes_esq, hierarquia_esq, caixas
+WHERE componentes_esq.unico = barras_esq.componente AND 
+NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente
+AND NOT componentes_esq.tipo = 'REFERENCIA'
+AND hierarquia_esq.painel = caixas.unico
+ORDER BY node, vao ASC)
+order by setor, vao, node;
+
+CREATE TABLE equipamentos (
+    setor    TEXT,
+    vao   TEXT,
+    equip   TEXT,
+    tipo   TEXT,
+    terminal   TEXT,
+    connectivityNode  TEXT,
+    x REAL,
+    y REAL,
+    painel TEXT,
+    mu TEXT,
+    descr TEXT,
+    obs   TEXT
+);
+
+INSERT INTO equipamentos (setor, vao, equip, tipo, terminal, connectivityNode, x, y)
+select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
+from (select painel setor, modulo as vao, unico, 
+case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
+when 'borne' then 'BAR_' || replace(componente, 'B', '')
+when 'borne_e' then componente
+when 'bob_1' then 'TP_' || replace(componente, 'TP', '')
+when 'm_disj' then 'DISJ_' || componente
+when 'ct_v_r' then 'SEC_' || componente
+else componente end equip, 
+case bloco when 'bob' then 'CTR'
+when 'borne' then 'BARRA'
+when 'borne_e' then 'IFL'
+when 'bob_1' then 'VTR'
+when 'm_disj' then 'CBR'
+when 'ct_v_r' then 'DIS'
+else bloco end tipo, num, terminal
+from comp_term order by setor, modulo, unico, componente, tipo, num, terminal) equip
+inner join
+(SELECT CASE WHEN EXISTS (SELECT eng_term.barra
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+THEN (SELECT CASE WHEN EXISTS (
+SELECT eng_repetidos.node FROM eng_repetidos
+where eng_term.engate || eng_term.terminal = eng_repetidos.node)
+THEN (SELECT eng_repetidos.barra FROM eng_repetidos 
+WHERE eng_term.engate || eng_term.terminal = eng_repetidos.node
+LIMIT 1) ELSE eng_term.engate || eng_term.terminal END
+FROM eng_term WHERE barras_esq.id = eng_term.barra)
+ELSE 'NO_' || (select n from (select id, row_number() over (order by id) n from barras_esq) bs where barras_esq.id = bs.id limit 1) END
+node, componentes_esq.unico componente, barras_esq.terminal,
+(select caixas.id from caixas where hierarquia_esq.modulo = caixas.unico) vao, caixas.id setor
+FROM barras_esq, componentes_esq, hierarquia_esq, caixas
+WHERE componentes_esq.unico = barras_esq.componente AND 
+NOT componentes_esq.tipo = 'ENGATE' AND barras_esq.componente = hierarquia_esq.componente
+AND NOT componentes_esq.tipo = 'REFERENCIA'
+AND hierarquia_esq.painel = caixas.unico
+ORDER BY node) nodes
+inner join componentes_esq
+on equip.unico = nodes.componente and equip.num = nodes.terminal and not equip.tipo = 'BARRA' and componentes_esq.unico = equip.unico;
+
+WITH lds AS (
+select distinct setor, vao, equip, tipo, x, y, SUBSTR(painel, 1, INSTR(painel, ';') - 1) painel, mu from equipamentos where painel not null
+union all select distinct setor, vao, equip, tipo, x, y, SUBSTR(painel, INSTR(painel, ';') + 1) painel, mu from equipamentos where painel not null
+order by setor, vao, equip, tipo)
+select lds.setor, lds.vao, lds.equip, lds.tipo, lds.painel as painel from lds
+union all select lds.setor, lds.vao, lds.equip, lds.tipo, case when cast(SUBSTR(painel, 2) as integer) % 2 = 1 then 'MUP_' else 'MUS_' end || lds.mu as painel from lds where mu not null
+order by setor, vao, equip, tipo, painel;
+
+WITH lds AS (
+select distinct setor, vao, equip, tipo, x, y, SUBSTR(painel, 1, INSTR(painel, ';') - 1) painel, mu from equipamentos where painel not null
+union all select distinct setor, vao, equip, tipo, x, y, SUBSTR(painel, INSTR(painel, ';') + 1) painel, mu from equipamentos where painel not null
+order by setor, vao, equip, tipo)
+select lds.setor, lds.vao, lds.equip, lds.tipo, IED, paineis.tipo in_ld from lds
+inner join paineis on painel = id and (
+(lds.tipo = 'VTR' and (paineis.tipo = 'C_LT')) or
+(lds.tipo = 'CBR' and (paineis.tipo = 'C_DJ')) or
+(lds.tipo = 'DIS' and (paineis.tipo = 'C_SEC')) or
+(lds.tipo = 'CTR' and (paineis.tipo = 'P_BARRA'))
+)
+union all select lds.setor, lds.vao, lds.equip, lds.tipo, case when cast(SUBSTR(painel, 2) as integer) % 2 = 1 then 'MUP_' else 'MUS_' end || lds.mu as IED, 
+case lds.tipo when 'VTR' then 'E_TP'
+when 'CBR' then 'E_DJ'
+when 'CTR' then 'E_TC'
+when 'DIS' then 'E_SEC' END
+from lds where mu not null AND NOT lds.tipo = 'IFL'
+union all select lds.setor, lds.vao, lds.equip, lds.tipo, case when cast(SUBSTR(painel, 2) as integer) % 2 = 1 then 'PP_' else 'PS_' end || 'BU_87' as IED, 'P_BARRA' from lds where mu not null and lds.tipo = 'CBR'
+union all select lds.setor, lds.vao, lds.equip, lds.tipo, case when cast(SUBSTR(painel, 2) as integer) % 2 = 1 then 'PP_' else 'PS_' end || 'BU_87' as IED, 'P_50BF' from lds where mu not null and lds.tipo = 'CBR'
+order by setor, vao, equip, lds.tipo
