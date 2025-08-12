@@ -56,9 +56,7 @@ ORDER BY node, vao ASC)
 select  distinct setor, first_value(vao) over (partition by node) vao, node from nodes order by setor, vao, node;
 
 
-
-select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
-from (select painel setor, modulo as vao, unico, 
+with equip as (select painel setor, modulo as vao, unico, 
 case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
 when 'borne' then 'BAR_' || replace(componente, 'B', '')
 when 'borne_e' then componente
@@ -72,8 +70,12 @@ when 'borne_e' then 'IFL'
 when 'bob_1' then 'VTR'
 when 'm_disj' then 'CBR'
 when 'ct_v_r' then 'DIS'
+when 'diodo' then 'LIN'
 else bloco end tipo, num, terminal
-from comp_term order by setor, modulo, unico, componente, tipo, num, terminal) equip
+from comp_term order by setor, modulo, unico, componente, tipo, num, terminal)
+select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, 
+(select c_nodes.setor from c_nodes where c_nodes.node = nodes.node limit 1) || '/' || (select c_nodes.vao from c_nodes where c_nodes.node = nodes.node limit 1) || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
+from equip
 inner join
 (SELECT CASE WHEN EXISTS (SELECT eng_term.barra
 FROM eng_term WHERE barras_esq.id = eng_term.barra)
@@ -143,8 +145,7 @@ CREATE TABLE equipamentos (
 );
 
 INSERT INTO equipamentos (setor, vao, equip, tipo, terminal, connectivityNode, x, y)
-select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, nodes.setor || '/' || nodes.vao || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
-from (select painel setor, modulo as vao, unico, 
+with equip as (select painel setor, modulo as vao, unico, 
 case bloco when 'bob' then 'TC_' || replace(componente, 'TC', '')
 when 'borne' then 'BAR_' || replace(componente, 'B', '')
 when 'borne_e' then componente
@@ -158,8 +159,12 @@ when 'borne_e' then 'IFL'
 when 'bob_1' then 'VTR'
 when 'm_disj' then 'CBR'
 when 'ct_v_r' then 'DIS'
+when 'diodo' then 'LIN'
 else bloco end tipo, num, terminal
-from comp_term order by setor, modulo, unico, componente, tipo, num, terminal) equip
+from comp_term order by setor, modulo, unico, componente, tipo, num, terminal)
+select equip.setor, equip.vao, equip.equip, equip.tipo, equip.terminal, 
+(select c_nodes.setor from c_nodes where c_nodes.node = nodes.node limit 1) || '/' || (select c_nodes.vao from c_nodes where c_nodes.node = nodes.node limit 1) || '/' || nodes.node connectivityNode, componentes_esq.x, componentes_esq.y
+from equip
 inner join
 (SELECT CASE WHEN EXISTS (SELECT eng_term.barra
 FROM eng_term WHERE barras_esq.id = eng_term.barra)
@@ -197,6 +202,7 @@ order by setor, vao, equip, tipo)
 select lds.setor, lds.vao, lds.equip, lds.tipo, IED, paineis.tipo in_ld from lds
 inner join paineis on painel = id and (
 (lds.tipo = 'VTR' and (paineis.tipo = 'C_LT')) or
+(lds.tipo = 'LIN' and (paineis.tipo = 'C_LC')) or
 (lds.tipo = 'CBR' and (paineis.tipo = 'C_DJ')) or
 (lds.tipo = 'DIS' and (paineis.tipo = 'C_SEC')) or
 (lds.tipo = 'CTR' and (paineis.tipo = 'P_BARRA'))
