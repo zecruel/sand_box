@@ -42,7 +42,7 @@
 
 -- **** Modified in aug/2021 by ZeCruel, to use in Cadzinho
 
-require "xlsxwriter.strict"
+
 
 --[[ -- **** Modified in aug/2021 by ZeCruel, to use in Cadzinho
 local ZipWriter     = require "ZipWriter" ]]--
@@ -159,7 +159,7 @@ end
 function Packager:_add_to_zip(writer)
   -- **** Modified in aug/2021 by ZeCruel, to use in Cadzinho
   --writer:_set_filehandle(assert(io.tmpfile()))
-  local tmp_file = fs.cwd()..os.tmpname () --
+  local tmp_file = os.tmpname () --
   writer:_set_xml_writer(tmp_file) --
   
   writer:_assemble_xml_file()
@@ -542,21 +542,21 @@ function Packager:_write_worksheet_rels_files()
         local rels = Relationships:new()
 
         for _, link_data in ipairs(worksheet.external_hyper_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
         for _, link_data in ipairs(worksheet.external_drawing_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
         for _, link_data in ipairs(worksheet.external_vml_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
 
         for _, link_data in ipairs(worksheet.external_table_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
 
         for _, link_data in ipairs(worksheet.external_comment_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
 
         -- Create the .rels file such as /xl/worksheets/_rels/sheet1.xml.rels.
@@ -584,7 +584,7 @@ function Packager:_write_chartsheet_rels_files()
         local rels = Relationships:new()
 
         for _, link_data in ipairs(worksheet.external_drawing_links) do
-          rels:_add_worksheet_relationship(unpack(link_data))
+          rels:_add_worksheet_relationship(table.unpack(link_data))
         end
 
         -- Create the .rels file such as /xl/chartsheets/_rels/sheet1.xml.rels.
