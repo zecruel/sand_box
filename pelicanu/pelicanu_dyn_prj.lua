@@ -164,6 +164,9 @@ function projeto_dyn (event)
           lista_arq = lista_proj() -- obtem as informações atualizadas
           atualiza_lista_arq_bd (bd, lista_arq)
           
+          -- atualiza o comp_term
+          atualiza_comp_term(bd)
+          
           bd:close()
           msg = 'Concluído: ' .. #arqs_mod .. ' desenhos'
           

@@ -484,6 +484,7 @@ function bd_novo(caminho, projeto)
     "  GROUP BY painel, componente, tipo)\n" ..
     "LEFT JOIN regras_equip ON estimado = regras_equip.tipo\n" ..
     "GROUP BY painel, componente;")
+  bd:exec('DROP TABLE IF EXISTS comp_term_esq')
   
   bd:close()
   return true
@@ -596,50 +597,50 @@ function atualiza_db_caixas (bd, arquivo, caixas)
 
           if sub_caixa.tipo == "DESENHO" then
             local dados = pega_attrib(el.ent)
-            if dados.ident then dados.ident = "'" .. dados.ident .. "'" 
-            else dados.ident = 'NULL' end
-            if dados.titulo then dados.titulo = "'" .. dados.titulo .. "'" 
-            else dados.titulo = 'NULL' end
-            if dados.tipo then dados.tipo = "'" .. dados.tipo .. "'" 
-            else dados.tipo = 'NULL' end
-            if dados.projeto then dados.projeto = "'" .. dados.projeto .. "'" 
-            else dados.projeto = 'NULL' end
-            if dados.rev then dados.rev = "'" .. dados.rev .. "'" 
-            else dados.rev = 'NULL' end
-            if dados.versao then dados.versao = "'" .. dados.versao .. "'" 
-            else dados.versao = 'NULL' end
-            if dados.fl then dados.fl = "'" .. dados.fl .. "'" 
-            else dados.fl = 'NULL' end
-            if dados.data then dados.data = "'" .. dados.data .. "'" 
-            else dados.data = 'NULL' end
-            if dados.aplic then dados.aplic = "'" .. dados.aplic .. "'" 
-            else dados.aplic = 'NULL' end
-            if dados.instal then dados.instal = "'" .. dados.instal .. "'" 
-            else dados.instal = 'NULL' end
-            if dados.visto then dados.visto = "'" .. dados.visto .. "'" 
-            else dados.visto = 'NULL' end
-            if dados.aprov then dados.aprov = "'" .. dados.aprov .. "'" 
-            else dados.aprov = 'NULL' end
-            if dados.classif then dados.classif = "'" .. dados.classif .. "'" 
-            else dados.classif = 'NULL' end
-            if dados.p_fl then dados.p_fl = "'" .. dados.p_fl .. "'" 
-            else dados.p_fl = 'NULL' end
+            if dados.IDENT then dados.IDENT = "'" .. dados.IDENT .. "'" 
+            else dados.IDENT = 'NULL' end
+            if dados.TITULO then dados.TITULO = "'" .. dados.TITULO .. "'" 
+            else dados.TITULO = 'NULL' end
+            if dados.TIPO then dados.TIPO = "'" .. dados.TIPO .. "'" 
+            else dados.TIPO = 'NULL' end
+            if dados.PROJETO then dados.PROJETO = "'" .. dados.PROJETO .. "'" 
+            else dados.PROJETO = 'NULL' end
+            if dados.REV then dados.REV = "'" .. dados.REV .. "'" 
+            else dados.REV = 'NULL' end
+            if dados.VERSAO then dados.VERSAO = "'" .. dados.VERSAO .. "'" 
+            else dados.VERSAO = 'NULL' end
+            if dados.FL then dados.FL = "'" .. dados.FL .. "'" 
+            else dados.FL = 'NULL' end
+            if dados.DATA then dados.DATA = "'" .. dados.DATA .. "'" 
+            else dados.DATA = 'NULL' end
+            if dados.APLIC then dados.APLIC = "'" .. dados.APLIC .. "'" 
+            else dados.APLIC = 'NULL' end
+            if dados.INSTAL then dados.INSTAL = "'" .. dados.INSTAL .. "'" 
+            else dados.INSTAL = 'NULL' end
+            if dados.VISTO then dados.VISTO = "'" .. dados.VISTO .. "'" 
+            else dados.VISTO = 'NULL' end
+            if dados.APROV then dados.APROV = "'" .. dados.APROV .. "'" 
+            else dados.APROV = 'NULL' end
+            if dados.CLASSIF then dados.CLASSIF = "'" .. dados.CLASSIF .. "'" 
+            else dados.CLASSIF = 'NULL' end
+            if dados.P_FL then dados.P_FL = "'" .. dados.P_FL .. "'" 
+            else dados.P_FL = 'NULL' end
             bd:exec ("INSERT INTO desenhos VALUES("..
              string.format('%d', el_id) ..", "..
-             dados.ident ..", "..
-             dados.titulo ..", "..
-             dados.tipo ..", "..
-             dados.projeto ..", "..
-             dados.rev ..", "..
-             dados.versao ..", "..
-             dados.fl ..", "..
-             dados.data ..", "..
-             dados.aplic ..", "..
-             dados.instal ..", "..
-             dados.visto ..", "..
-             dados.aprov ..", "..
-             dados.classif ..", "..
-             dados.p_fl ..
+             dados.IDENT ..", "..
+             dados.TITULO ..", "..
+             dados.TIPO ..", "..
+             dados.PROJETO ..", "..
+             dados.REV ..", "..
+             dados.VERSAO ..", "..
+             dados.FL ..", "..
+             dados.DATA ..", "..
+             dados.APLIC ..", "..
+             dados.INSTAL ..", "..
+             dados.VISTO ..", "..
+             dados.APROV ..", "..
+             dados.CLASSIF ..", "..
+             dados.P_FL ..
             ");")
           end
         end
@@ -767,6 +768,50 @@ function atualiza_lista_arq_bd (bd, lista_arq)
       lista_arq[i].name .."', "..
       string.format('%d', lista_arq[i].modified) ..", NULL, NULL);")
   end
+end
+
+function atualiza_comp_term (bd)
+  bd:exec("DROP TABLE IF EXISTS comp_term_esq;")
+  bd:exec("CREATE TABLE comp_term_esq (unico INTEGER, pai   INTEGER,\n" ..
+    "comp TEXT, p_id INTEGER, painel TEXT, m_id INTEGER,\n" ..
+    "modulo TEXT, parte TEXT, bloco TEXT, tipo TEXT,\n" ..
+    "t_num INTEGER, terminal TEXT, des_id INTEGER,\n" ..
+    "desenho TEXT, fl TEXT, x REAL, y REAL);")
+    
+  bd:exec("INSERT INTO comp_term_esq (unico, pai, comp, p_id, m_id,\n" ..
+    "modulo, parte, bloco, tipo, t_num, terminal, des_id, x, y)\n" ..
+    "SELECT hierarquia_esq.componente unico, hierarquia_esq.pai pai,\n" ..
+    "CASE WHEN hierarquia_esq.pai is null THEN componentes_esq.id end comp,\n" ..
+    "hierarquia_esq.painel p_id, hierarquia_esq.modulo m_id,\n" ..
+    "CASE WHEN componentes_esq.sub THEN componentes_esq.sub end modulo,\n" ..
+    "CASE WHEN hierarquia_esq.pai is not null or hierarquia_esq.modulo\n" ..
+    "is not null THEN componentes_esq.id END parte,\n" ..
+    "componentes_esq.bloco, componentes_esq.tipo, terminais_esq.id num,\n" ..
+    "terminais_esq.terminal, hierarquia_esq.desenho des_id,\n" ..
+    "componentes_esq.x, componentes_esq.y from hierarquia_esq \n" ..
+    "inner JOIN componentes_esq ON\n" ..
+    "componentes_esq.unico = hierarquia_esq.componente and\n" ..
+    "NOT componentes_esq.tipo = 'ENGATE' AND\n" ..
+    "NOT componentes_esq.tipo = 'REFERENCIA'\n" ..
+    "INNER JOIN terminais_esq ON\n" ..
+    "terminais_esq.componente = hierarquia_esq.componente;")
+    
+  bd:exec("update comp_term_esq set painel = caixas.id\n" ..
+    "from caixas where comp_term_esq.p_id = caixas.unico;")
+    
+  bd:exec("update comp_term_esq set painel = 'orfao'\n" ..
+    "where comp_term_esq.p_id is null;")
+    
+  bd:exec("update comp_term_esq set modulo = caixas.id\n" ..
+    "from caixas where comp_term_esq.m_id = caixas.unico;")
+    
+  bd:exec("update comp_term_esq set comp = caixas.id\n" ..
+    "from caixas where comp_term_esq.pai = caixas.unico;")
+  
+  bd:exec("update comp_term_esq\n" ..
+    "set desenho = desenhos.ident, fl = desenhos.fl\n" ..
+    "from desenhos where comp_term_esq.des_id = desenhos.unico;")
+  
 end
 
 function atualiza_db_paineis(bd)

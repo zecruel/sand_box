@@ -8,13 +8,14 @@ elems_pelicanu = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
+cadzinho.timeout = 3600
+
 require('pelicanu_util')
 require('pelicanu_bd')
 require('pelicanu_dyn')
 require('pelicanu_dyn_prj')
 require('pelicanu_dyn_esq')
 require('pelicanu_malha_dyn')
-require('pelicanu_fiacao_dyn')
 
 dizeres = {
   pelicanu = '-- PELICAnU - Projeto Elétrico, Lógico, Interligação, Controle, Automação & Unifilar',
@@ -179,7 +180,7 @@ g_malha_prof_cam = {{value = 0.5},
 
 
 
---excel = require "xlsxwriter.workbook"
+excel = require "xlsxwriter.workbook"
 
 cores_claras = {
   [1] = '#FFBC37', -- laranja
@@ -1752,7 +1753,11 @@ function grava_pl_term (num_autom)
   
   
   
-  local cmd = 'select * from comp_term'
+  --local cmd = 'select * from comp_term'
+  local cmd = "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
+    "t_num num, terminal, desenho, fl from comp_term_esq\n" ..
+    "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
+    "desenho ASC, fl asc, x ASC, y ASC, unico asc, num asc;"
   if num_autom then
     cmd = "SELECT tip.unico, tip.painel, tip.componente,\n"..
       "CASE WHEN tip.tipo = 'BORNE_SEC' THEN tip.num ELSE tip.modulo END modulo,\n"..
@@ -2736,9 +2741,7 @@ function pelicanu_win()
     
   end
   if cadzinho.nk_button("練 Fiação") then
-    modal = ''
-    sub_modal = ''
-    cadzinho.start_dynamic('fiacao_dyn')
+    
   end
   if cadzinho.nk_button(" Interligação") then
     
