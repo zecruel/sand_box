@@ -8,7 +8,7 @@ elems_pelicanu = {} -- lista principal dos elementos
 tolerancia = 0.1 -- tolerancia para comparacoes de numeros não inteiros
 biblioteca = "" -- diretorio onde estao os elementos (componentes, formatos, etc)
 
-cadzinho.timeout = 3600
+cadzinho.set_timeout (600)
 
 require('pelicanu_util')
 require('pelicanu_bd')
@@ -1758,7 +1758,7 @@ function grava_pl_term (num_autom)
   local cmd = "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
     "t_num num, terminal, desenho, fl from comp_term_esq\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
-    "desenho ASC, fl asc, x ASC, y ASC, unico asc, num asc;"
+    "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;"
   if num_autom then
     cmd = "SELECT tip.unico, tip.painel, tip.componente,\n"..
       "CASE WHEN tip.tipo = 'BORNE_SEC' THEN tip.num ELSE tip.modulo END modulo,\n"..
@@ -2135,6 +2135,9 @@ function terminais_pl_bd()
       end
     end
   end
+  
+  -- atualiza o comp_term
+  atualiza_comp_term(bd)
   
   bd:close()
   
