@@ -252,6 +252,18 @@ function projeto_dyn (event)
       cadzinho.nk_label("Grava Terminais")
      
       cadzinho.nk_check("Numera Auto.", g_num_auto)
+      if (g_num_auto.value) then
+        cadzinho.nk_layout(15, 3)
+        cadzinho.nk_check("Diodo", g_num_auto_diodo)
+        cadzinho.nk_label("Prefixo:")
+        cadzinho.nk_edit(g_num_pref_diodo)
+        cadzinho.nk_check("ED", g_num_auto_ed)
+        cadzinho.nk_label("Prefixo:")
+        cadzinho.nk_edit(g_num_pref_ed)
+        cadzinho.nk_check("Diodo", g_num_auto_sd)
+        cadzinho.nk_label("Prefixo:")
+        cadzinho.nk_edit(g_num_pref_sd)
+      end
       cadzinho.nk_layout(5, 1)
       cadzinho.nk_layout(15, 1)
       cadzinho.nk_label("A planilha existente")
@@ -261,7 +273,9 @@ function projeto_dyn (event)
       cadzinho.nk_label("Tem certeza?")
       cadzinho.nk_layout(15, 2)
       if cadzinho.nk_button("OK") then
-        if not grava_pl_term (g_num_auto.value) then
+        if not grava_pl_term (g_num_auto.value, g_num_auto_diodo.value,
+          g_num_pref_diodo.value, g_num_auto_ed.value, g_num_pref_ed.value,
+          g_num_auto_sd.value, g_num_pref_sd.value) then
           msg = 'Erro Ger. Planilhas'
         else
           sub_modal = ''

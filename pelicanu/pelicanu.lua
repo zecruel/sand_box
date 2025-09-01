@@ -134,6 +134,12 @@ g_fmt_fl = {value = "1"}
 g_fmt_pfl = {value = "1"}
 
 g_num_auto = {value = false}
+g_num_auto_diodo = {value = true}
+g_num_pref_diodo = {value = "D"}
+g_num_auto_ed = {value = true}
+g_num_pref_ed = {value = "ED."}
+g_num_auto_sd = {value = true}
+g_num_pref_sd = {value = "SD."}
 
 g_ref_alt = {value = 5}
 g_ref_descr = {value = 32}
@@ -1666,8 +1672,11 @@ end
 
 
 
-function grava_pl_term (num_autom)
+function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd, pre_sd)
   local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  pre_diodo = pre_diodo or "D"
+  pre_ed = pre_ed or "ED."
+  pre_sd = pre_sd or "SD."
   if not exists (aux) then
     if not cria_pasta(aux) then
       return false
@@ -1754,23 +1763,42 @@ function grava_pl_term (num_autom)
   
   
   
-  --local cmd = 'select * from comp_term'
-  local cmd = "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
+  local cmd = 'select * from comp_term'
+  --[[local cmd = "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
     "t_num num, terminal, desenho, fl from comp_term_esq\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
-    "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;"
+    "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;"]]--
   if num_autom then
-    cmd = "SELECT tip.unico, tip.painel, tip.componente,\n"..
+    local componente = "tip.componente componente,\n"
+    local parte = "tip.parte parte, "
+    if num_diodo then
+      componente = "case tip.tipo when 'DIODO' then '".. pre_diodo ..
+      "' || tip.num else tip.componente end componente,"
+    end
+    
+    if num_ed or num_sd then
+      parte = "case tip.tipo "
+      if num_ed then
+        parte = parte .. "when 'ENT_DIG' then '" .. pre_ed .. "' || PRINTF('%02d', tip.num) "
+      end
+      if num_sd then
+        parte = parte .. "when 'SAIDA_DIG' then '" .. pre_sd .. "' || PRINTF('%02d', tip.num) "
+      end
+      parte = parte .. "else tip.parte end parte, "
+    end
+  
+    cmd = "SELECT tip.unico, tip.painel, ".. componente ..
       "CASE WHEN tip.tipo = 'BORNE_SEC' THEN tip.num ELSE tip.modulo END modulo,\n"..
-      "tip.parte, tip.tipo, tip.item, tip.t_id num,\n"..
+      parte .. "tip.tipo, tip.item, tip.t_id num,\n"..
       "CASE WHEN tip.term IS NOT NULL THEN tip.term ELSE \n"..
       "(CASE WHEN tipo = 'BORNE' THEN num \n"..
       "WHEN tipo = 'BORNE_SEC' THEN  (CASE WHEN tip.t_id = 1 THEN 'E' ELSE 'S' END)\n"..
-      "ELSE num || t_id END) END terminal,\n"..
+      "when modulo is null and parte is null then tip.t_id\n" ..
+      "ELSE tip.num || t_id END) END terminal,\n"..
       "CASE WHEN item IS NOT NULL AND tip.term IS NULL AND \n"..
       "NOT tipo = 'BORNE' THEN 'Incompleto' ELSE (CASE WHEN NOT tipo = 'BORNE' AND \n"..
       "NOT tipo = 'BORNE_SEC' AND tip.term IS NULL THEN 'Sem tipico' END) END alerta\n"..
-      "FROM tipico_aplic tip;"
+      "FROM tipico_aplic tip order by painel, componente, modulo, tipo, tip.num, num"
   end
   for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
