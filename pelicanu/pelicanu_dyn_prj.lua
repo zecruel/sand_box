@@ -221,7 +221,12 @@ function projeto_dyn (event)
       cadzinho.nk_label("Tem certeza?")
       cadzinho.nk_layout(15, 2)
       if cadzinho.nk_button("OK") then
-        sub_modal = ''
+        
+        if not componentes_pl_bd() then
+          msg = 'Erro Leit. Planilhas'
+        else
+          sub_modal = ''
+        end
       end
       if cadzinho.nk_button("Cancela") then
         sub_modal = ''
@@ -260,7 +265,7 @@ function projeto_dyn (event)
         cadzinho.nk_check("ED", g_num_auto_ed)
         cadzinho.nk_label("Prefixo:")
         cadzinho.nk_edit(g_num_pref_ed)
-        cadzinho.nk_check("Diodo", g_num_auto_sd)
+        cadzinho.nk_check("SD", g_num_auto_sd)
         cadzinho.nk_label("Prefixo:")
         cadzinho.nk_edit(g_num_pref_sd)
       end

@@ -137,7 +137,7 @@ function bd_novo(caminho, projeto)
   bd:exec('DROP VIEW IF EXISTS comp_term')
   bd:exec("CREATE VIEW comp_term AS\n"..
     "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
-    "t_num num, terminal, desenho, fl from comp_term_esq\n" ..
+    "t_num num, terminal, desenho, fl, arquivo from comp_term_esq\n" ..
     "where NOT tipo = 'REFERENCIA'\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
     "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;")

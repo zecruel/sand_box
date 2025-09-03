@@ -220,4 +220,24 @@ function expand_merge (sheet)
 	end
 end
 
-return {open = open_xlsx, n2l = num2letter, l2n = letter2num, range = range2num, expand_merge = expand_merge}
+function get_merge (sheet)
+  local merged = {}
+	for id, merge in ipairs(sheet.merged) do
+		-- parse expression like "A1:C5" to get rows and columns range
+		local col_start, row_start, col_end, row_end = merge:match('(%a+)(%d+):(%a+)(%d+)')
+		-- first cell in range ha the value to copy to entire merged region 
+		local value = sheet.data[tonumber(row_start)][col_start]
+		for row = tonumber(row_start), tonumber(row_end) do
+      merged[row] = merged[row] or {}
+			for col = letter2num(col_start), letter2num(col_end) do -- use auxiliary functions to convert letters to numbers
+				merged[row][num2letter(col)] = {id=id, value=value} 
+				--cadzinho.db_print (("%s%d"):format(row, col), value)
+			end
+		end
+		
+		
+	end
+  return merged
+end
+
+return {open = open_xlsx, n2l = num2letter, l2n = letter2num, range = range2num, expand_merge = expand_merge, get_merge = get_merge}

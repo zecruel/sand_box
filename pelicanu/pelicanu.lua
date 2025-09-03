@@ -1529,7 +1529,7 @@ function grava_pl_comp ()
   if not planilha then return false end -- erro na criacao da planilha
   
   -- cria a primeira aba, listando os painéis
-  local aba_paineis = planilha:add_worksheet("Painéis")
+  local aba_paineis = planilha:add_worksheet("Paineis")
   --aba_paineis:protect("", {["objects"] = true, ["scenarios"] = true}) -- aba protegida
   local protegido = planilha:add_format({
     border = 1,
@@ -1960,13 +1960,20 @@ function le_pl_base()
       end
     end
 	end
+  -- para a aba 'Terminais' é necessário processar as células mescladas
+  local merged = leitor.get_merge (pl_term)
   
   -- expande as celulas mescladas (replica o valor pra todas celulas do grupo)
   leitor.expand_merge (pl_term)
   
+  
   -- grava o dados de terminais no BD
   local t_id = 1 -- identificação sequencial do terminal dentro do elemento
   local el_id = 0
+  local el_atual = nil
+  local item_atual = nil
+  local mod_atual = nil
+  local el_ant = nil
   local item_ant = nil
   local mod_ant = nil
   -- varre a planilha
@@ -1976,6 +1983,11 @@ function le_pl_base()
     local elem = pl_term.data[i]['B']
     local term = pl_term.data[i]['C']
     local mod = pl_term.data[i]['D']
+    
+    item_atual = merged[i] and merged[i]['A'] and merged[i]['A'].id
+    el_atual = merged[i] and merged[i]['B'] and merged[i]['B'].id
+    mod_atual = merged[i] and merged[i]['D'] and merged[i]['D'].id
+    
     
     if mod then
       mod = "'" .. mod .. "'"
@@ -1989,17 +2001,17 @@ function le_pl_base()
       mod_fia = 'NULL'
     end
     
-    if elems[i] then
+    if not el_atual or el_atual ~= el_ant then
       el_id = el_id + 1
       t_id = 1
     end
     
-    if mod_ant ~= mod then
+    if not mod_atual or mod_ant ~= mod_atual then
       el_id = 1
       t_id = 1
     end
     
-    if item_ant ~= item then
+    if not item_atual or item_ant ~= item_atual then
       el_id = 1
       t_id = 1
     end
@@ -2011,8 +2023,10 @@ function le_pl_base()
         t_id .. ", '".. term .. "', ".. mod ..", ".. mod_fia .. ");")
     end
     
-    mod_ant = mod
-    item_ant = item
+    mod_ant = mod_atual
+    item_ant = item_atual
+    el_ant = el_atual
+    
     t_id = t_id + 1
   end
   
@@ -2116,6 +2130,76 @@ end
   
   cadzinho.db_print ("----- Concluido  ------")
 end]]--
+
+function componentes_pl_bd()
+  local leitor = require 'xlsx_lua'
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  local cam_pl = aux .. "componentes.xlsx"
+  
+  local pl_pain = false
+  -- le o arquivo excel
+  local workbook = leitor.open(cam_pl)
+  -- procura pela aba 'Paineis'
+  if type(workbook) == 'table' then pl_pain = workbook.sheets['Paineis']
+  else return false end
+  if type(pl_pain) ~= 'table' then return false end
+  
+  local paineis = {}
+  
+  for nome, pl in pairs(workbook.sheets) do
+    if nome ~= 'Paineis' then
+      local comps = {}
+      for _, lin in ipairs(pl.dim.rows) do
+        if lin > 2 then -- ignora as primeiras linhas com o titulo
+          comp = {}
+          comp.id = pl.data[lin]['A']
+          comp.tipo = pl.data[lin]['B']
+          comp.item = pl.data[lin]['C']
+          comp.fia = pl.data[lin]['D']
+          comps[#comps + 1] = comp
+        end
+      end
+      paineis[nome] = {comp = comps}
+    end
+  end
+  
+  for _, lin in ipairs(pl_pain.dim.rows) do
+    if lin ~= 1 then -- ignora a primeira linha com o titulo
+      local nome = pl_pain.data[lin]['A']
+      if not paineis[nome] then paineis[nome] = {} end
+      paineis[nome].tit = pl_pain.data[lin]['B']
+      paineis[nome].descr = pl_pain.data[lin]['C']
+      paineis[nome].fia = pl_pain.data[lin]['D']
+      paineis[nome].x = pl_pain.data[lin]['E']
+      paineis[nome].y = pl_pain.data[lin]['F']
+    end
+  end
+  
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+  
+  for nome, painel in pairs(paineis) do
+  
+    -- atualiza o banco de dados com as informacoes lidas
+    if painel.comp then
+      for _, comp in ipairs(painel.comp) do
+        local item = 'NULL'
+        if comp.item then item = "'" .. comp.item .. "'" end
+        bd:exec("UPDATE componentes SET item = " ..
+          tostring(item) ..
+          " WHERE painel = '" .. tostring(nome) ..
+          "' AND id = '" .. tostring(comp.id) .. "';")
+      end
+    end
+  end
+  
+  
+  bd:close()
+  return true -- sucesso
+end
 
 function terminais_pl_bd()
   local leitor = require 'xlsx_lua'
