@@ -387,24 +387,23 @@ function bd_novo(caminho, projeto)
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
     "SELECT efetivo.unico, efetivo.painel, efetivo.componente,\n" ..
     "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num,\n" ..
-    "componentes.item, comp_term.num t_id, tip.term FROM\n" ..
+    "efetivo.arquivo, componentes.item, comp_term.num t_id,\n" ..
+    "comp_term.terminal t_des, tip.term FROM\n" ..
     "(SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
-    "ROW_NUMBER() OVER (PARTITION BY painel, tipo) num\n" ..
+    "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, tipo) num\n" ..
     "FROM descr_comp WHERE tipo = 'DIODO'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
-    "ROW_NUMBER() OVER (PARTITION BY painel, componente, tipo) num\n" ..
-    "FROM descr_comp WHERE tipo = 'BORNE_SEC'\n" ..
+    "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
+    "tipo) num FROM descr_comp WHERE tipo = 'BORNE_SEC'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
-    "ROW_NUMBER() OVER (PARTITION BY painel, componente, modulo, tipo) num\n" ..
-    "FROM descr_comp WHERE NOT tipo = 'REFERENCIA'\n" ..
+    "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
+    "modulo, tipo) num FROM descr_comp WHERE NOT tipo = 'REFERENCIA'\n" ..
     "and not tipo = 'BORNE_SEC' and not tipo = 'DIODO'\n" ..
     "order by painel, componente, modulo, parte, tipo, num) efetivo\n" ..
-    "LEFT JOIN comp_term\n" ..
-    "ON efetivo.unico = comp_term.unico\n" ..
+    "LEFT JOIN comp_term ON efetivo.unico = comp_term.unico\n" ..
     "LEFT JOIN componentes\n" ..
     "ON efetivo.painel = componentes.painel AND\n" ..
     "efetivo.componente = componentes.id AND\n" ..
-    "NOT efetivo.tipo = 'DIODO' AND\n" ..
     "NOT efetivo.tipo = 'BORNE' AND\n" ..
     "NOT efetivo.tipo = 'BORNE_SEC'\n" ..
     "LEFT JOIN (SELECT tipico.item,\n" ..
@@ -427,7 +426,6 @@ function bd_novo(caminho, projeto)
     "ON efetivo.tipo = tip.elemento AND\n" ..
     "efetivo.num = tip.num AND\n" ..
     "componentes.item = tip.item AND\n" ..
-    "NOT efetivo.tipo = 'DIODO' AND\n" ..
     "NOT efetivo.tipo = 'BORNE' AND\n" ..
     "NOT efetivo.tipo = 'BORNE_SEC' AND\n" ..
     "comp_term.num = tip.t_id AND ( \n" ..

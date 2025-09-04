@@ -1720,6 +1720,8 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
   aba:set_column(5, 5, 18)
   aba:set_column(6, 6, 4)
   aba:set_column(7, 8, 11)
+  aba:set_column(9, 9, 20)
+  aba:set_column(10, 10, 50)
   
   -- primeira linha de titulo
   local tit_p = planilha:add_format({
@@ -1737,7 +1739,10 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
   aba:write(0, 4, 'Parte', tit_d)
   aba:write(0, 5, 'Tipo', tit_p)
   aba:write(0, 6, 'T id', tit_p)
-  aba:write(0, 7, 'Terminal', tit_d)
+  aba:write(0, 7, 'Term Auto', tit_d)
+  aba:write(0, 8, 'Term Des', tit_p)
+  aba:write(0, 9, 'Alerta', tit_p)
+  aba:write(0, 10, 'Arquivo', tit_p)
   
   local lin = 1
   
@@ -1752,6 +1757,10 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
   local parte_ant = false
   local modulo_ant = nil
   local painel_ant = nil
+  
+  local fmt_comp = m_p
+  local fmt_mod = m_p
+  local fmt_parte = m_p
   
   local alerta_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'yellow'})
   local erro_fmt = planilha:add_format({locked = false, border = 1, bg_color = 'red'})
@@ -1787,7 +1796,7 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
       parte = parte .. "else tip.parte end parte, "
     end
   
-    cmd = "SELECT tip.unico, tip.painel, ".. componente ..
+    cmd = "SELECT tip.unico, tip.painel, tip.arquivo, tip.t_des, ".. componente ..
       "CASE WHEN tip.tipo = 'BORNE_SEC' THEN tip.num ELSE tip.modulo END modulo,\n"..
       parte .. "tip.tipo, tip.item, tip.t_id num,\n"..
       "CASE WHEN tip.term IS NOT NULL THEN tip.term ELSE \n"..
@@ -1803,8 +1812,13 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
   for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
     aba:write(lin, 0, string.format('%X', linha.unico), protegido)
-    aba:write(lin, 1, linha. painel, protegido)
-    aba:write(lin, 2, linha.componente, protegido)
+    aba:write(lin, 1, linha.painel, protegido)
+    
+    if linha.tipo == 'DIODO' then
+      aba:write(lin, 2, linha.componente, desprotegido)
+    else
+      aba:write(lin, 2, linha.componente, protegido)
+    end
     if linha.tipo == 'BORNE_SEC' then
       aba:write(lin, 3, linha.modulo, desprotegido)
     else
@@ -1816,13 +1830,15 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
     aba:write(lin, 5, linha.tipo, protegido)
     aba:write(lin, 6, linha.num, protegido)
     aba:write(lin, 7, linha.terminal, desprotegido)
+    aba:write(lin, 8, linha.t_des, protegido)
     
     if linha.alerta == 'Incompleto' then
-      aba:write(lin, 8, linha.alerta, erro_fmt)
+      aba:write(lin, 9, linha.alerta, erro_fmt)
     elseif linha.alerta then
-      aba:write(lin, 8, linha.alerta, alerta_fmt)
+      aba:write(lin, 9, linha.alerta, alerta_fmt)
     end
     
+    aba:write(lin, 10, linha.arquivo, protegido)
     
     -- agrupa as celulas repetidas
     if painel_ant ~= linha.painel then
@@ -1833,13 +1849,13 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
     end
     if comp_ant ~= linha.componente then
       if (lin - ini_comp) > 1 then
-        aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, m_p)
+        aba:merge_range(ini_comp, 2, lin - 1, 2, comp_ant, fmt_comp)
       end
       ini_comp = lin
     end
     if modulo_ant ~= linha.modulo or comp_ant and comp_ant ~= linha.componente then
       if (lin - ini_modulo) > 1 then
-        aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, m_p)
+        aba:merge_range(ini_modulo, 3, lin - 1, 3, modulo_ant, fmt_mod)
       end
       ini_modulo = lin
     end
@@ -1852,6 +1868,17 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
         else aba:merge_range(ini_unico, 4, lin - 1, 4, parte_ant, m_p) end
       end
       ini_unico = lin
+    end
+    
+    if linha.tipo == 'DIODO' then
+      fmt_comp = m_d
+    else
+      fmt_comp = m_p
+    end
+    if linha.tipo == 'BORNE_SEC' then
+      fmt_mod = m_d
+    else
+      fmt_mod = m_p
     end
     
     comp_ant = linha.componente
@@ -2006,7 +2033,7 @@ function le_pl_base()
       t_id = 1
     end
     
-    if not mod_atual or mod_ant ~= mod_atual then
+    if mod_ant ~= mod then
       el_id = 1
       t_id = 1
     end
@@ -2023,7 +2050,7 @@ function le_pl_base()
         t_id .. ", '".. term .. "', ".. mod ..", ".. mod_fia .. ");")
     end
     
-    mod_ant = mod_atual
+    mod_ant = mod
     item_ant = item_atual
     el_ant = el_atual
     
@@ -2245,6 +2272,12 @@ function terminais_pl_bd()
         tostring(pl_term.data[lin]['D']) ..
         "' WHERE unico = " .. string.format('%d', unico) .. ";")
       end
+      
+      if pl_term.data[lin]['F'] == 'DIODO' then
+        bd:exec("UPDATE componentes_esq SET id = '" ..
+        tostring(pl_term.data[lin]['C']) ..
+        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+      end
     end
   end
   
@@ -2258,7 +2291,7 @@ function terminais_pl_bd()
 end
 
 function atualiza_comp (bd, cam)
-  local cmd =  "SELECT t.unico, t.parte, t.tipo, t.num, t.terminal, " ..
+  local cmd =  "SELECT t.unico, c.id, t.parte, t.tipo, t.num, t.terminal, " ..
     "t.modulo FROM comp_term t INNER JOIN " ..
     "componentes_esq c ON t.unico = c.unico " ..
     "WHERE c.arquivo = '" .. cam .. "';"
@@ -2280,6 +2313,9 @@ function atualiza_comp (bd, cam)
     else
       comps[unico].parte = linha.parte
     end
+    if linha.tipo == 'DIODO' then
+      comps[unico].id = linha.id
+    end
     
   end
   
@@ -2287,6 +2323,9 @@ function atualiza_comp (bd, cam)
     local el = elems_pelicanu[unico]
     if comp.parte then
       muda_comp_id (el.ent, comp.parte)
+    end
+    if comp.id then
+      muda_comp_id (el.ent, comp.id)
     end
     
     muda_atrib (el.ent, comp.terms)
@@ -2380,6 +2419,31 @@ function atualiza_engates(bd, cam)
   
 end
 
+
+function atualiza_lista_desenhos()
+  -- abre e le o banco de dados
+  local bd = sqlite.open(projeto.bd)
+  if not bd then -- erro na abertura do bd
+    return false
+  end
+  
+  -- pega o caminho do documento atual
+  local drwg, dir = cadzinho.get_drwg_path()
+  
+  if drwg == '' then
+    return false
+  end
+  
+  -- atualiza a lista principal com os elementos
+  atualiza_elems()
+  
+  atualiza_comp (bd, dir .. drwg)
+  atualiza_engates (bd, dir .. drwg)
+  atualiza_ref (bd, dir .. drwg)
+  
+  bd:close()
+  
+end
 
 function atualiza_ref_desenho()
   -- abre e le o banco de dados

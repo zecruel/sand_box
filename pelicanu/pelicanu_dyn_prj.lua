@@ -91,19 +91,8 @@ function projeto_dyn (event)
     end
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
   
-  -- Consolida o projeto (todos os desenhos)
-  elseif modal == 'consolida' then
-    cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Consolida o projeto")
-    cadzinho.nk_label("Tem certeza?")
-    cadzinho.nk_layout(15, 2)
-    if cadzinho.nk_button("OK") then
-      modal = ''
-    end
-    if cadzinho.nk_button("Cancela") then
-      modal = ''
-    end
-    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+  
+ 
     
   -- Atualiza o banco de dados
   elseif modal == 'atualiza' then
@@ -176,6 +165,97 @@ function projeto_dyn (event)
               ' => Atualização do banco de dados- ' .. 
               #arqs_mod .. ' desenhos modificados e ' ..
               arqs_del ..' excluídos\n')
+            
+            arq_log:close()
+          end
+          
+        else
+          msg = 'Erro no banco de dados'
+        end
+        sub_modal = ''
+        
+        -- restaura o documento anterior
+        if drwg ~= '' then
+          cadzinho.open_drwg (dir .. drwg, true)
+        end
+        
+      end
+      if cadzinho.nk_button("Cancela") then
+        sub_modal = ''
+      end
+    else
+      cadzinho.nk_layout(20, 2)
+      if cadzinho.nk_button("Atualiza") then
+        sub_modal = 'executa'
+      end
+      if cadzinho.nk_button("Volta") then
+        modal = ''
+      end
+    end
+    cadzinho.nk_layout(5, 1)
+    cadzinho.nk_layout(15, 1)
+    cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)  
+  
+  -- Consolida o projeto (todos os desenhos)
+  -- Atualiza os desenhos com as informacoes do banco de dados
+  elseif modal == 'consolida' then
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Atualiza todos os desenhos")
+    cadzinho.nk_layout(5, 1)
+    if sub_modal == 'executa' then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label("As alterações atuais")
+      cadzinho.nk_label("não poderão ser desfeitas")
+      cadzinho.nk_layout(5, 1)
+      cadzinho.nk_layout(15, 1)
+      cadzinho.nk_label("Tem certeza?")
+      cadzinho.nk_layout(15, 2)
+      if cadzinho.nk_button("OK") then
+        -- "salva" o documento atual para restaurar depois
+        local drwg, dir = cadzinho.get_drwg_path()
+      
+        local arqs_mod = {} -- arquivos que foram modificados desde a última atualização
+        local arqs_bd = {} -- registro dos arquivos antigos
+        local arqs_del = 0
+        
+        -- lê a estrutura atual da pasta de projeto
+        local lista_arq = lista_proj()
+        
+        -- abre o banco de dados
+        local bd = sqlite.open(projeto.bd)
+        if bd then
+        
+          for i = 1, #lista_arq do
+            cadzinho.open_drwg (lista_arq[i].name, true)
+            -- atualiza a lista principal com os elementos
+            atualiza_elems()
+            
+            atualiza_comp (bd, lista_arq[i].name)
+            atualiza_engates (bd, lista_arq[i].name)
+            atualiza_ref (bd, lista_arq[i].name)
+            
+            
+            cadzinho.save_drwg (lista_arq[i].name, true)
+          
+            
+          end
+          
+          
+          -- grava a estrutura atual do projeto na tabela do bd
+          lista_arq = lista_proj() -- obtem as informações atualizadas
+          atualiza_lista_arq_bd (bd, lista_arq)
+          
+          -- atualiza o comp_term
+          atualiza_comp_term(bd)
+          
+          bd:close()
+          msg = 'Concluído: ' .. #lista_arq .. ' desenhos'
+          
+          local arq_log = io.open(projeto.log, 'a+')
+          if arq_log then
+            arq_log:write(os.date('%Y/%m/%d-%H:%M:%S') .. 
+              ' => Atualização dos desenhos- ' .. 
+              #lista_arq .. ' desenhos modificados\n')
             
             arq_log:close()
           end
