@@ -1814,7 +1814,7 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
     aba:write(lin, 0, string.format('%X', linha.unico), protegido)
     aba:write(lin, 1, linha.painel, protegido)
     
-    if linha.tipo == 'DIODO' then
+    if linha.tipo == 'DIODO' or linha.tipo == 'BORNE_SEC' or linha.tipo == 'BORNE' then
       aba:write(lin, 2, linha.componente, desprotegido)
     else
       aba:write(lin, 2, linha.componente, protegido)
@@ -1870,7 +1870,7 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
       ini_unico = lin
     end
     
-    if linha.tipo == 'DIODO' then
+    if linha.tipo == 'DIODO' or linha.tipo == 'BORNE_SEC' or linha.tipo == 'BORNE' then
       fmt_comp = m_d
     else
       fmt_comp = m_p
@@ -2209,15 +2209,27 @@ function componentes_pl_bd()
   end
   
   for nome, painel in pairs(paineis) do
-  
     -- atualiza o banco de dados com as informacoes lidas
+    local tit = 'NULL'
+    if painel.tit then tit = "'" .. painel.tit .. "'" end
+    local fia = '0'
+    if painel.fia then fia = "1" end
+    bd:exec("UPDATE paineis SET\n" ..
+      "titulo = " .. tostring(tit) .. ",\n" ..
+      "fiacao = " .. fia .. "\n" ..
+      "WHERE id = '" .. tostring(nome) .. "';")
+    
+    
     if painel.comp then
       for _, comp in ipairs(painel.comp) do
         local item = 'NULL'
         if comp.item then item = "'" .. comp.item .. "'" end
-        bd:exec("UPDATE componentes SET item = " ..
-          tostring(item) ..
-          " WHERE painel = '" .. tostring(nome) ..
+        local id_fia = 'NULL'
+        if comp.fia then id_fia = "'" .. comp.fia .. "'" end
+        bd:exec("UPDATE componentes SET\n" ..
+          "item = " .. tostring(item) .. ",\n" ..
+          "id_fiacao = " .. tostring(id_fia) .. "\n" ..
+          "WHERE painel = '" .. tostring(nome) ..
           "' AND id = '" .. tostring(comp.id) .. "';")
       end
     end
@@ -2270,10 +2282,16 @@ function terminais_pl_bd()
       if pl_term.data[lin]['F'] == 'BORNE_SEC' then
         bd:exec("UPDATE componentes_esq SET sub = '" ..
         tostring(pl_term.data[lin]['D']) ..
-        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+        "',  id = '" .. tostring(pl_term.data[lin]['C']) .. 
+        "'\nWHERE unico = " .. string.format('%d', unico) .. ";")
       end
       
       if pl_term.data[lin]['F'] == 'DIODO' then
+        bd:exec("UPDATE componentes_esq SET id = '" ..
+        tostring(pl_term.data[lin]['C']) ..
+        "' WHERE unico = " .. string.format('%d', unico) .. ";")
+      end
+      if pl_term.data[lin]['F'] == 'BORNE' then
         bd:exec("UPDATE componentes_esq SET id = '" ..
         tostring(pl_term.data[lin]['C']) ..
         "' WHERE unico = " .. string.format('%d', unico) .. ";")
