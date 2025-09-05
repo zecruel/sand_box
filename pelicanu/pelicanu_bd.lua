@@ -380,26 +380,34 @@ function bd_novo(caminho, projeto)
   bd:exec('DROP VIEW IF EXISTS descr_comp')
   bd:exec("CREATE VIEW descr_comp AS\n"..
     "select distinct unico, painel, comp componente, modulo, parte, tipo,\n" ..
-    "desenho, fl, arquivo from comp_term_esq\n" ..
+    "desenho, fl, x, y, arquivo from comp_term_esq\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n"..
     "desenho ASC, fl asc, x ASC, y desc, unico asc;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
     "SELECT efetivo.unico, efetivo.painel, efetivo.componente,\n" ..
     "efetivo.modulo, efetivo.parte, efetivo.tipo, efetivo.num,\n" ..
-    "efetivo.arquivo, componentes.item, comp_term.num t_id,\n" ..
+    "efetivo.arquivo, efetivo.desenho, efetivo.fl, efetivo.x,\n" ..
+    "efetivo.y, componentes.item, comp_term.num t_id,\n" ..
     "comp_term.terminal t_des, tip.term FROM\n" ..
     "(SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
-    "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, tipo) num\n" ..
+    "desenho, fl, x, y,\n" ..
+    "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, tipo\n" ..
+    "order by desenho asc, fl asc, x asc, y desc) num\n" ..
     "FROM descr_comp WHERE tipo = 'DIODO'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
+    "desenho, fl, x, y,\n" ..
     "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
-    "tipo) num FROM descr_comp WHERE tipo = 'BORNE_SEC'\n" ..
+    "tipo order by desenho asc, fl asc, x asc, y desc) num\n" ..
+    "FROM descr_comp WHERE tipo = 'BORNE_SEC'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
+    "desenho, fl, x, y,\n" ..
     "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
-    "modulo, tipo) num FROM descr_comp WHERE NOT tipo = 'REFERENCIA'\n" ..
+    "modulo, tipo order by desenho asc, fl asc, x asc, y desc) num\n" ..
+    "FROM descr_comp WHERE NOT tipo = 'REFERENCIA'\n" ..
     "and not tipo = 'BORNE_SEC' and not tipo = 'DIODO'\n" ..
-    "order by painel, componente, modulo, parte, tipo, num) efetivo\n" ..
+    "order by painel asc, componente asc, modulo asc, parte asc,\n" ..
+    "tipo asc, num asc, desenho asc, fl asc, x asc, y desc) efetivo\n" ..
     "LEFT JOIN comp_term ON efetivo.unico = comp_term.unico\n" ..
     "LEFT JOIN componentes\n" ..
     "ON efetivo.painel = componentes.painel AND\n" ..
