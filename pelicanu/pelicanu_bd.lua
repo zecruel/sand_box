@@ -140,15 +140,17 @@ function bd_novo(caminho, projeto)
     "t_num num, terminal, desenho, fl, arquivo from comp_term_esq\n" ..
     "where NOT tipo = 'REFERENCIA'\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
-    "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;")
+    "desenho ASC, fl asc, y desc, x asc, unico asc, num asc;")
   bd:exec('DROP VIEW IF EXISTS eng_term')
   bd:exec("CREATE VIEW eng_term AS\n"..
     "SELECT engates_esq.unico, engates_esq.engate, barras_esq.id barra, "..
     "terminais_esq.terminal, hierarquia_esq.desenho\n"..
     "FROM engates_esq, barras_esq, hierarquia_esq\n"..
     "INNER JOIN terminais_esq ON terminais_esq.componente = engates_esq.unico\n"..
-    "WHERE engates_esq.unico = barras_esq.componente AND terminais_esq.id = barras_esq.terminal "..
+    "WHERE engates_esq.unico = barras_esq.componente\n" ..
+    "AND terminais_esq.id = barras_esq.terminal\n"..
     "AND engates_esq.unico = hierarquia_esq.componente\n"..
+    "and not engates_esq.engate = 'TERRA'\n" ..
     "ORDER BY engates_esq.engate ASC, terminais_esq.terminal ASC;\n")
   bd:exec('DROP VIEW IF EXISTS eng_repetidos')
   bd:exec("CREATE VIEW eng_repetidos AS\n".. 
@@ -382,7 +384,7 @@ function bd_novo(caminho, projeto)
     "select distinct unico, painel, comp componente, modulo, parte, tipo,\n" ..
     "desenho, fl, x, y, arquivo from comp_term_esq\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n"..
-    "desenho ASC, fl asc, x ASC, y desc, unico asc;")
+    "desenho ASC, fl asc, y desc, x asc, unico asc;")
   bd:exec('DROP VIEW IF EXISTS tipico_aplic')
   bd:exec("CREATE VIEW tipico_aplic AS\n"..
     "SELECT efetivo.unico, efetivo.painel, efetivo.componente,\n" ..
@@ -393,21 +395,21 @@ function bd_novo(caminho, projeto)
     "(SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
     "desenho, fl, x, y,\n" ..
     "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, tipo\n" ..
-    "order by desenho asc, fl asc, x asc, y desc) num\n" ..
+    "order by desenho asc, fl asc, y desc, x asc) num\n" ..
     "FROM descr_comp WHERE tipo = 'DIODO'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
     "desenho, fl, x, y,\n" ..
     "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
-    "tipo order by desenho asc, fl asc, x asc, y desc) num\n" ..
+    "tipo order by desenho asc, fl asc, y desc, x asc) num\n" ..
     "FROM descr_comp WHERE tipo = 'BORNE_SEC'\n" ..
     "UNION SELECT unico, painel, componente, modulo, parte, tipo,\n" ..
     "desenho, fl, x, y,\n" ..
     "arquivo, ROW_NUMBER() OVER (PARTITION BY painel, componente,\n" ..
-    "modulo, tipo order by desenho asc, fl asc, x asc, y desc) num\n" ..
+    "modulo, tipo order by desenho asc, fl asc, y desc, x asc) num\n" ..
     "FROM descr_comp WHERE NOT tipo = 'REFERENCIA'\n" ..
     "and not tipo = 'BORNE_SEC' and not tipo = 'DIODO'\n" ..
     "order by painel asc, componente asc, modulo asc, parte asc,\n" ..
-    "tipo asc, num asc, desenho asc, fl asc, x asc, y desc) efetivo\n" ..
+    "tipo asc, num asc, desenho asc, fl asc, y desc, x asc) efetivo\n" ..
     "LEFT JOIN comp_term ON efetivo.unico = comp_term.unico\n" ..
     "LEFT JOIN componentes\n" ..
     "ON efetivo.painel = componentes.painel AND\n" ..

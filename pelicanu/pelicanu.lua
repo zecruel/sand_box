@@ -1776,7 +1776,7 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
   --[[local cmd = "select unico, painel, comp componente, modulo, parte, bloco, tipo,\n" ..
     "t_num num, terminal, desenho, fl from comp_term_esq\n" ..
     "ORDER BY painel ASC, componente ASC, modulo ASC, parte asc, tipo ASC,\n" ..
-    "desenho ASC, fl asc, x ASC, y DESC, unico asc, num asc;"]]--
+    "desenho ASC, fl asc, y desc, x asc, unico asc, num asc;"]]--
   if num_autom then
     local componente = "tip.componente componente,\n"
     local parte = "tip.parte parte, "
@@ -1808,7 +1808,7 @@ function grava_pl_term (num_autom, num_diodo, pre_diodo, num_ed, pre_ed, num_sd,
       "NOT tipo = 'BORNE' THEN 'Incompleto' ELSE (CASE WHEN NOT tipo = 'BORNE' AND \n"..
       "NOT tipo = 'BORNE_SEC' AND tip.term IS NULL THEN 'Sem tipico' END) END alerta\n"..
       "FROM tipico_aplic tip order by painel asc, componente asc, modulo asc,\n" ..
-      "tipo asc, desenho asc, fl asc, x asc, y desc, num asc, tip.num asc;"
+      "tipo asc, desenho asc, fl asc, y desc, x asc, num asc, tip.num asc;"
   end
   for linha in bd:cols(cmd) do -- para cada linha do BD
     -- grava na planilha cada celula separada, a principio
@@ -2332,7 +2332,7 @@ function atualiza_comp (bd, cam)
     else
       comps[unico].parte = linha.parte
     end
-    if linha.tipo == 'DIODO' then
+    if linha.tipo == 'DIODO' or linha.tipo == 'BORNE' or linha.tipo == 'BORNE_SEC' then
       comps[unico].id = linha.id
     end
     
