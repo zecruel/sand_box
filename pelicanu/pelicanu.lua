@@ -185,7 +185,11 @@ g_malha_prof_cam = {{value = 0.5},
   {value = 1.0}}
 
 
-
+g_fia_id_esq = {value = 'ESQ'}
+g_fia_id_fia = {value = 'FIA'}
+g_fia_tipo_chic = {value = 1, "Canaleta", "Amarrado"}
+g_fia_tipo_chic_ant = {value = 1}
+g_fia_compr_chic = {value = 500}
 
 excel = require "xlsxwriter.workbook"
 
@@ -2912,6 +2916,59 @@ function quadro_ref (item, x, y, so_contatos)
   bd:close()
   
   return elems
+end
+
+function novo_term_fiacao (x, y, terms)
+  terms = tostring(terms) or '*'
+  terms:gsub("%s", "")
+  if terms == '' then terms = '*' end
+  
+  local nome_bloco = 'pos_terms_fiacao'
+    
+  local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+  
+  
+  if ref_blc == nil then
+  
+    
+    local param = {color = "by block", lw = "by block",
+      ltype = "byblock", style = "ISO"}
+    
+    local elems = {}
+    elems[#elems + 1] = cadzinho.new_circle(0, 0, 4, param)
+    elems[#elems + 1] = cadzinho.new_line(0, -4, 0, 0, 4, 0, param)
+    elems[#elems + 1] = cadzinho.new_line(-4, 0, 0, 4, 0, 0, param)
+    
+    local txt = cadzinho.new_text(0, 4.5, 
+      '#TERMINAIS$*', 4, "center", "bottom", param)
+    elems[#elems + 1] = txt
+    
+    txt = cadzinho.new_text(0, 0, 
+      '#*TIPO$TERMS_FIA', 0.5, "left", "bottom", param)
+    elems[#elems + 1] = txt
+    
+    param.color = "by layer"
+    param.lw = 0
+    param.ltype = "Continuous"
+  
+  
+    if cadzinho.new_block(elems, nome_bloco,
+      "posicao terminais fiacao PELICAnU ",
+      true, '#', '*', '$', '?', 0, 0, 0) then
+
+      ref_blc = cadzinho.new_insert(nome_bloco, x, y, 1, 1, 0, param)
+    end
+  end
+  
+  if ref_blc then
+    muda_atrib (ref_blc, {TERMINAIS = terms})
+    cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+    cadzinho.add_ext(ref_blc, "PELICANU", 
+      {cadzinho.unique_id(), "FIACAO", "POS_TERMS"})
+    return ref_blc
+  end
+  
+  return nil
 end
 
 
