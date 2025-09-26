@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Arquivo gerado pelo FEGAS _ CEMIG GT -->
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:sxy="http://www.iec.ch/61850/2003/SCLcoordinates" version="2007" revision="B" release="4">
+  <!-- Arquivo de especificação do sistema de Proteção e Controle da Subestação Nova Ponte, padrão IEC_61850_6, conforme escopos descritos no projeto básico EI/ET_62 -->
+  <Header id="SSD_Nova_Ponte" revision="B" version="2" toolID="FEGAS-0.0.1" nameStructure="IEDName">
+    <History>
+      <Hitem revision="B" version="2" who="ERA-55897" what="Versão inaugural do arquivo SSD" why="Digitalização completa da SE" when="2025-09-23" />
+    </History>
+  </Header>
+  <!-- Descrição da Subestação (Unifilar) -->
+  <Substation name="SE_Nova_Ponte" desc="SE Nova Ponte - 500kV" />
+</SCL>

@@ -1,0 +1,957 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" revision="B" xmlns:sxy="http://www.iec.ch/61850/2003/SCLcoordinates" release="4" version="2007">
+  <Header nameStructure="IEDName" id="SSD_SE_Nova_Ponte" revision="A" toolID="CadZinho-PELICAnU" version="1">
+    <History>
+      <Hitem who="ERA-55897" revision="A" why="Digitalização completa da SE Nova Ponte" what="Versão inaugural do arquivo SSD" when="2025-09-20" version="1" />
+    </History>
+  </Header>
+  <Substation desc="SE Nova Ponte - 500kV" name="SE_Nova_Ponte">
+    <VoltageLevel desc="Setor de 500kV - Arranjo disjuntor e meio" name="S_500kV">
+      <Voltage unit="V" multiplier="k">500</Voltage>
+      <Bay desc="Barra 1 500kV" name="B_1">
+        <ConductingEquipment type="VTR" name="TP_BU1">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="BARRA_1" />
+      </Bay>
+      <Bay desc="Barra 2 500kV" name="B_2">
+        <ConductingEquipment type="VTR" name="TP_BU2">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="BARRA_2" />
+      </Bay>
+      <Bay desc="Linhas curtas" name="LC">
+        <ConductingEquipment type="LIN" name="LC1">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_140" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_144" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="LIN" name="LC2">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_89" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_101" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="LIN" name="LC3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_122" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_19" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_101" name="NO_101" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_122" name="NO_122" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_140" name="NO_140" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_144" name="NO_144" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_19" name="NO_19" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/LC/NO_89" name="NO_89" />
+      </Bay>
+      <Bay desc="Acessante - LT2 Emborcação" name="VA_15U">
+        <ConductingEquipment type="CBR" name="DISJ_15U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="IFL" name="LT_15U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" name="L1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_15U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_15U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_15U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_15U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="VTR" name="TP_15U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" name="NO_1" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" name="NO_103" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" name="NO_137" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" name="NO_142" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" name="NO_21" />
+      </Bay>
+      <Bay desc="Acessante - LT Estreito - IB na barra" name="VA_2U">
+        <ConductingEquipment type="CBR" name="DISJ_2U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_2U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_2U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_2U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" name="NO_10" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" name="NO_25" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" name="NO_37" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" name="NO_55" />
+      </Bay>
+      <Bay desc="Acessante - LT Estreito" name="VA_3U">
+        <ConductingEquipment type="CBR" name="DISJ_3U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_3U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_3U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_3U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" name="NO_135" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" name="NO_31" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" name="NO_49" />
+      </Bay>
+      <Bay desc="Acessante - LT São Gotardo" name="VA_4U">
+        <ConductingEquipment type="CBR" name="DISJ_4U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_4U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_4U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" name="P1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_4U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" name="NO_113" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" name="NO_124" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" name="NO_128" />
+      </Bay>
+      <Bay desc="Acessante - LT Itumbiara" name="VA_6U">
+        <ConductingEquipment type="CBR" name="DISJ_6U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_6U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_6U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" name="P1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_6U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" name="NO_118" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" name="NO_27" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" name="NO_6" />
+      </Bay>
+      <Bay desc="Acessante - TR2" name="VA_71U">
+        <ConductingEquipment type="CBR" name="DISJ_71U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_71U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_71U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" name="P1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_71U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" name="NO_17" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" name="NO_51" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" name="NO_67" />
+      </Bay>
+      <Bay desc="Acessante - TR1" name="VA_73U">
+        <ConductingEquipment type="CBR" name="DISJ_73U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_73U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_73U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" name="P1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_73U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" name="NO_12" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" name="NO_158" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" name="NO_35" />
+      </Bay>
+      <Bay desc="Acessante - Reator S4" name="VA_S4">
+        <ConductingEquipment type="CBR" name="DISJ_4US4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_4US3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_S4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" name="NO_148" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" name="NO_74" />
+      </Bay>
+      <Bay desc="Acessante - Reator S6" name="VA_S6">
+        <ConductingEquipment type="CBR" name="DISJ_6US4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_6US3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_S6">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" name="NO_130" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" name="NO_8" />
+      </Bay>
+      <Bay desc="Linha curta 2" name="V_10U">
+        <ConductingEquipment type="CBR" name="DISJ_10U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_85" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_99" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_10U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_85" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_10U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_146" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_10U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_89" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_10U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_99" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_146" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_115" name="NO_115" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_146" name="NO_146" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_85" name="NO_85" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_99" name="NO_99" />
+      </Bay>
+      <Bay desc="IB" name="V_11U">
+        <ConductingEquipment type="CBR" name="DISJ_11U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_4" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_78" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_11U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_4" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_11U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_105" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_11U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_78" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_105" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_105" name="NO_105" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_4" name="NO_4" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_78" name="NO_78" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_80" name="NO_80" />
+      </Bay>
+      <Bay desc="LT1 Emborcação" name="V_12U">
+        <ConductingEquipment type="CBR" name="DISJ_12U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_29" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_109" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="IFL" name="LT_12U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" name="L1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_12U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_29" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_12U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_91" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_12U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_12U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_109" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_91" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="VTR" name="TP_12U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_109" name="NO_109" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_29" name="NO_29" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_71" name="NO_71" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_91" name="NO_91" />
+      </Bay>
+      <Bay desc="Linha curta 3" name="V_13U">
+        <ConductingEquipment type="CBR" name="DISJ_13U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_87" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_83" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_13U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_87" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_13U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_111" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_13U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_122" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_13U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_83" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_111" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_111" name="NO_111" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_14" name="NO_14" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_83" name="NO_83" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_87" name="NO_87" />
+      </Bay>
+      <Bay desc="IB" name="V_14U">
+        <ConductingEquipment type="CBR" name="DISJ_14U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_120" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_107" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_14U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_120" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_14U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_93" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_14U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_107" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_93" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_107" name="NO_107" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_120" name="NO_120" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_93" name="NO_93" />
+      </Bay>
+      <Bay desc="Linha curta 1" name="V_7U">
+        <ConductingEquipment type="CBR" name="DISJ_7U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_153" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_33" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_7U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_153" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_7U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_53" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_7U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_140" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_7U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_33" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_53" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_150" name="NO_150" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_153" name="NO_153" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_33" name="NO_33" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_53" name="NO_53" />
+      </Bay>
+      <Bay desc="IB" name="V_8U">
+        <ConductingEquipment type="CBR" name="DISJ_8U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_69" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_23" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_8U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_69" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_8U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_95" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_8U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_23" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_95" name="P2" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_155" name="NO_155" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_23" name="NO_23" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_69" name="NO_69" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_95" name="NO_95" />
+      </Bay>
+      <Bay desc="LT Jaguara" name="V_9U">
+        <ConductingEquipment type="CBR" name="DISJ_9U4">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_76" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_126" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="IFL" name="LT_9U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" name="L1" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_9U3">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_76" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_9U5">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_97" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="DIS" name="SEC_9U8">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="CTR" name="TC_9U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_126" name="P1" />
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_97" name="P2" />
+        </ConductingEquipment>
+        <ConductingEquipment type="VTR" name="TP_9U">
+          <Terminal connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" name="P1" />
+        </ConductingEquipment>
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_126" name="NO_126" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_132" name="NO_132" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_76" name="NO_76" />
+        <ConnectivityNode pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_97" name="NO_97" />
+      </Bay>
+    </VoltageLevel>
+  </Substation>
+  <DataTypeTemplates>
+    <LNodeType lnClass="PSCH_CEMIG" id="PSCH_CEMIG_CEMIG">
+      <DO desc="Sinal echo ou weak infeed" name="EchoWei" type="SPS" />
+      <DO desc="Teleprot. envio Trip geral" name="TxTr" type="ACT" />
+      <DO desc="Teleprot. recep. sinal permissivo geral" name="RxPrm1" type="ACT" />
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Teleprot. envio sinal permissivo geral" name="TxPrm" type="ACT" />
+      <DO desc="Teleprot. recep. Trip geral" name="RxTr1" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="SIML_CEMIG" id="SIML_CEMIG_CEMIG">
+      <DO desc="Oxigênio dissolvido no óleo" name="O2ppm" type="MV" />
+      <DO desc="Monoxido de carbono  dissolvido no óleo" name="COppm" type="MV" />
+      <DO desc="Temperatura do óleo no instante da medição de Humidade" name="H2OTmp" type="MV" />
+      <DO desc="Metano dissolvido no óleo" name="CH4ppm" type="MV" />
+      <DO desc="Humidade relativa no papel" name="H2OPap" type="MV" />
+      <DO desc="63 - trip" name="GasFlwTr" type="SPS" />
+      <DO desc="Humidade relativa no óleo" name="H2O" type="MV" />
+      <DO desc="Baixo nível de óleo" name="InsAlm" type="SPS" />
+      <DO desc="Temperatura óleo - alarme" name="TmpAlm" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Nitrogênio dissolvido no óleo" name="N2ppm" type="MV" />
+      <DO desc="Gás carbonico dissolvido no óleo" name="CO2ppm" type="MV" />
+      <DO desc="Humidade relativa no tanque de expansão" name="H2OAir" type="MV" />
+      <DO desc="Hidrogênio dissolvido no óleo" name="H2ppm" type="MV" />
+      <DO desc="Acetileno dissolvido no óleo" name="C2H2ppm" type="MV" />
+      <DO desc="Temperatura óleo" name="Tmp" type="MV" />
+      <DO desc="63 - alarme" name="GasInsAlm" type="SPS" />
+      <DO desc="Temperatura óleo - Trip" name="InsTr" type="SPS" />
+      <DO desc="Etano dissolvido no óleo" name="C2H6ppm" type="MV" />
+      <DO desc="Etileno dissolvido no óleo" name="C2H4ppm" type="MV" />
+    </LNodeType>
+    <LNodeType lnClass="CILO_CEMIG" id="CILO_CEMIG_CEMIG">
+      <DO desc="Habilita abertura" name="EnaOpn" type="SPS" />
+      <DO desc="Habilita fechamento" name="EnaCls" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CPOW_CEMIG" id="CPOW_CEMIG_CEMIG">
+      <DO desc="Manobra controlada não executada (time-out)" name="TmExc" type="SPS" />
+      <DO desc="Fechamento disjuntor fase Br" name="PosC" type="DPC" />
+      <DO desc="Fechamento disjuntor fase Vm" name="PosA" type="DPC" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Fechamento disjuntor fase Az" name="PosB" type="DPC" />
+    </LNodeType>
+    <LNodeType lnClass="SPTR_CEMIG" id="SPTR_CEMIG_CEMIG">
+      <DO desc="Temperatura Enrolamento - trip" name="HPTmpOp" type="SPS" />
+      <DO desc="Vávula de alívio - alarme" name="MbrAlm" type="SPS" />
+      <DO desc="Temperatura Enrolamento - alarme" name="HPTmpAlm" type="SPS" />
+      <DO desc="Temperatura Enrolamento" name="HPTmpClc" type="MV" />
+      <DO desc="Temp. Direta Núcleo - alarme" name="CGAlm" type="SPS" />
+      <DO desc="Temp. Direta Núcleo" name="CoreTmp" type="MV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RDRE_CEMIG" id="RDRE_CEMIG_CEMIG">
+      <DO desc="RDP - número de registros" name="FltNum" type="INS" />
+      <DO desc="RDP - registro feito" name="RcdMade" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PIOC_CEMIG" id="PIOC_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LCCH_CEMIG" id="LCCH_CEMIG_CEMIG">
+      <DO desc="Taxa de falha do canal de comunicação redundante" name="RedFer" type="INS" />
+      <DO desc="Canal de comunicação ativo" name="ChLiv" type="SPS" />
+      <DO desc="Taxa de falha do canal de comunicação" name="Fer" type="INS" />
+      <DO desc="Canal de comunicação redundante ativo" name="RedChLiv" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RSYN_CEMIG" id="RSYN_CEMIG_CEMIG">
+      <DO desc="Verificação de sincronismo (25) liberada" name="Rel" type="SPS" />
+      <DO desc="Indicação de diferença de frequência" name="HzInd" type="SPS" />
+      <DO desc="Indicação de diferença de ângulo" name="AngInd" type="SPS" />
+      <DO desc="Indicação de diferença de tensão" name="VInd" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="YLTC_CEMIG" id="YLTC_CEMIG_CEMIG">
+      <DO desc="Comutador - alarme ciclo incompleto" name="LTCCycAlm" type="SPS" />
+      <DO desc="Comutador - posição do TAP" name="TapPos" type="ISC" />
+      <DO desc="Comutador - Fim de curso - TAP superior" name="EndPosR" type="SPS" />
+      <DO desc="Comutador - Discordância de passo" name="OoStep" type="SPS" />
+      <DO desc="Comutador - Fim de curso - TAP inferior" name="EndPosL" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="MMXU_CEMIG" id="MMXU_CEMIG_CEMIG">
+      <DO desc="Média das correntes" name="AvAPhs" type="MV" />
+      <DO desc="Tensão fase" name="PNV" type="WYE" />
+      <DO desc="Frequencia" name="Hz" type="MV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Corrente fase" name="A" type="WYE" />
+      <DO desc="Potência Ativa" name="TotW" type="MV" />
+      <DO desc="Média das tensões fase-fase" name="AvPPVPhs" type="MV" />
+      <DO desc="Potência Aparente" name="TotVA" type="MV" />
+      <DO desc="Potência Reativa" name="TotVAr" type="MV" />
+    </LNodeType>
+    <LNodeType lnClass="ITPC_CEMIG" id="ITPC_CEMIG_CEMIG">
+      <DO desc="Alarme interferência" name="GrdRxCmdRx" type="SPS" />
+      <DO desc="Equip. Teleprot. Saúde do equipamento" name="EEHealth" type="ENS_tpl" />
+      <DO desc="Alarme perda de sinal sincronismo" name="LosSyn" type="SPS" />
+      <DO desc="Alarme perda de sinal" name="LosSig" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RADR_CEMIG" id="RADR_CEMIG_CEMIG">
+      <DO desc="RDP - canal analógico TC fase Vm" name="ChTrg" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RFLO_CEMIG" id="RFLO_CEMIG_CEMIG">
+      <DO desc="Localizador de faltas - loop com falta" name="FltLoop" type="ENS_loc" />
+      <DO desc="Localizador de faltas - impedância de falta medida" name="FltZ" type="CMV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CCGR_CEMIG" id="CCGR_CEMIG_CEMIG">
+      <DO desc="Falha ventilação forçada" name="FanOvCur" type="SPS" />
+      <DO desc="Automatico/Manual" name="Auto" type="SPC" />
+      <DO desc="Ligar/desligar ventilação (lista de estágios)" name="FanCtlGen" type="ENC_vent" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PDIF_CEMIG" id="PDIF_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="SOPM_CEMIG" id="SOPM_CEMIG_CEMIG">
+      <DO desc="Mola descarregada" name="EnBlk" type="SPS" />
+      <DO desc="Motor ligado" name="MotOp" type="SPS" />
+      <DO desc="Defeito motor" name="MotAlm" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="TCTR_CEMIG" id="TCTR_CEMIG_CEMIG">
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Saúde do enrolamento do TC (enrolamento aberto)" name="EEHealth" type="ENS_heal" />
+      <DO desc="Corrente no TC - fase" name="AmpSv" type="SAV" />
+    </LNodeType>
+    <LNodeType lnClass="PTOC_CEMIG" id="PTOC_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LLN0_CEMIG" id="LLN0_CEMIG_CEMIG">
+      <DO desc="Seta o modo (N/T/B)" name="Mod" type="ENS_mod" />
+      <DO desc="Indicador de saúde" name="Health" type="ENS_heal" />
+      <DO desc="Nome do LD" name="NamPlt" type="LPL" />
+      <DO desc="Local/Remoto" name="LocKey" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RREC_CEMIG" id="RREC_CEMIG_CEMIG">
+      <DO desc="Religamento - mono/tripolar" name="TrBeh" type="ENS_rmono" />
+      <DO desc="Religamento - status (pronto - em progr. - sucesso - não sucedido)" name="AutoRecSt" type="ENS_relig" />
+      <DO desc="Religamento - pulso de fechamento para o disjuntor" name="OpCls" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="ATCC_CEMIG" id="ATCC_CEMIG_CEMIG">
+      <DO desc="Discordância de posição TAP" name="TapOpErr" type="SPS" />
+      <DO desc="Comando local/remoto" name="LocSta" type="SPC" />
+      <DO desc="Discordância Mestre/Comandado" name="ErrPar" type="SPS" />
+      <DO desc="Automatico/Manual" name="Auto" type="SPC" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Mestre/Comandado" name="ParTraMod" type="ENG_mci" />
+      <DO desc="Aumentar/diminuir TAP" name="TapChg" type="BSC" />
+      <DO desc="Chave local/remoto" name="LocKey" type="SPS" />
+      <DO desc="Acoplar/desacoplar" name="ParOp" type="SPC" />
+    </LNodeType>
+    <LNodeType lnClass="PTOV_CEMIG" id="PTOV_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="XSWI_CEMIG" id="XSWI_CEMIG_CEMIG">
+      <DO desc="Tipo secionador (2 = chave, 3 = terra)" name="SwTyp" type="ENS_t_sec" />
+      <DO desc="Discordância de posição" name="Dsc" type="SPS" />
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+      <DO desc="Chave local/remoto" name="Loc" type="SPS" />
+      <DO desc="Contador de operacoes" name="OpCnt" type="INS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="XCBR_CEMIG" id="XCBR_CEMIG_CEMIG">
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+      <DO desc="Bloqueio fechamento" name="BlkCls" type="SPC" />
+      <DO desc="Contador de operacoes" name="OpCnt" type="INS" />
+      <DO desc="Disjuntor (transf. Prot.) - Discordância de posição" name="Dsc" type="SPS" />
+      <DO desc="Chave local/remoto" name="Loc" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Disjuntor (transf. Prot.) - Capacidade do disjuntor (1 = nada, 2 = O, 3 = CO, ...)" name="CBOpCap" type="ENS_dj" />
+      <DO desc="Bloqueio abertura" name="BlkOpn" type="SPC" />
+    </LNodeType>
+    <LNodeType lnClass="LSVS_CEMIG" id="LSVS_CEMIG_CEMIG">
+      <DO desc="Status da subscrição SV" name="St" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="TVTR_CEMIG" id="TVTR_CEMIG_CEMIG">
+      <DO desc="Tensão no TP - fase" name="VolSv" type="SAV" />
+      <DO desc="Minidisjuntor ou fusível aberto no TP Vm" name="FuFail" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RPSB_CEMIG" id="RPSB_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="68 - bloqueio dinâmico por oscilação de potência" name="BlkZn" type="SPS" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="SIMG_CEMIG" id="SIMG_CEMIG_CEMIG">
+      <DO desc="Baixa pressão SF6 - Trip" name="InsTr" type="SPS" />
+      <DO desc="Baixa pressão SF6 - Alarme" name="InsAlm" type="SPS" />
+      <DO desc="Baixa pressão SF6 - Bloqueio" name="InsBlk" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="IHMI_CEMIG" id="IHMI_CEMIG_CEMIG">
+      <DO desc="Chave local/remoto" name="LocKey" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="CALH_CEMIG" id="CALH_CEMIG_CEMIG">
+      <DO desc="Sinal de alarme" name="GrAlm" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="ZBSH_CEMIG" id="ZBSH_CEMIG_CEMIG">
+      <DO desc="Bucha Fase VM- capacitância relativa" name="React" type="MV" />
+      <DO desc="Bucha Fase VM - corrente de fuga" name="LeakA" type="MV" />
+      <DO desc="Bucha Fase VM - tangente delta" name="LosFact" type="MV" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LTMS_CEMIG" id="LTMS_CEMIG_CEMIG">
+      <DO desc="Status da fonte sincr tempo" name="TmChSt1" type="SPS" />
+      <DO desc="Fonte do sincronismo de tempo" name="TmSrc" type="VSS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RBDR_CEMIG" id="RBDR_CEMIG_CEMIG">
+      <DO desc="RDP - canal digital - Trip geral" name="ChTrg" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LGOS_CEMIG" id="LGOS_CEMIG_CEMIG">
+      <DO desc="Status da subscrição GOOSE" name="St" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="LPHD_CEMIG" id="LPHD_CEMIG_CEMIG">
+      <DO desc="Identificação do IED (Modelo, Fabr, etc)" name="PhyNam" type="DPL" />
+      <DO desc="IED como proxy" name="Proxy" type="SPS" />
+      <DO desc="Saúde do IED" name="PhyHealth" type="ENS_ied" />
+    </LNodeType>
+    <LNodeType lnClass="CSWI_CEMIG" id="CSWI_CEMIG_CEMIG">
+      <DO desc="Comando local/remoto" name="LocSta" type="SPC" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+      <DO desc="Aberto/Fechado" name="Pos" type="DPC" />
+    </LNodeType>
+    <LNodeType lnClass="PHAR_CEMIG" id="PHAR_CEMIG_CEMIG">
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="GAPC_CEMIG" id="GAPC_CEMIG_CEMIG">
+      <DO desc="Indicação de todos sec. final 6 abertos" name="Ind3" type="SPS" />
+      <DO desc="Indicação de todos sec. final 2 abertos" name="Ind2" type="SPS" />
+      <DO desc="Indicação de vão fechado" name="Ind1" type="SPS" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PTRC_CEMIG" id="PTRC_CEMIG_CEMIG">
+      <DO desc="94 - Trip geral" name="Tr" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="PDIS_CEMIG" id="PDIS_CEMIG_CEMIG">
+      <DO desc="Trip" name="Op" type="ACT" />
+      <DO desc="Partida" name="Str" type="ACD" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <LNodeType lnClass="RBRF_CEMIG" id="RBRF_CEMIG_CEMIG">
+      <DO desc="50BF - Trip (disjuntores adjacentes)" name="OpEx" type="ACT" />
+      <DO desc="50BF - Retrip (disjuntor próprio)" name="OpIn" type="ACT" />
+      <DO desc="Status do modo (N/T/B)" name="Beh" type="ENS_Beh" />
+    </LNodeType>
+    <DOType cdc="DPC" id="DPC">
+      <DA name="ctlModel" fc="CF" bType="Enum" dchg="true" />
+      <DA name="stVal" fc="ST" bType="Dbpos" dchg="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="VSS" id="VSS">
+      <DA name="stVal" fc="ST" bType="VisString255" dchg="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="LPL" id="LPL">
+      <DA name="swRev" fc="DC" bType="VisString255" />
+      <DA name="configRev" fc="DC" bType="VisString255" />
+      <DA name="vendor" fc="DC" desc="Fabricante" bType="VisString255" />
+    </DOType>
+    <DOType cdc="CMV" id="CMV">
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA name="cVal" fc="MX" type="Vector" bType="Struct" dchg="true" dupd="true" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ACT" id="ACT">
+      <DA name="neut" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="general" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+      <DA name="phsA" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="phsC" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA name="phsB" fc="ST" bType="BOOLEAN" dchg="true" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_mod">
+      <DA name="stVal" fc="ST" type="Enum_mod" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="SPS" id="SPS">
+      <DA name="stVal" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="WYE" id="WYE">
+      <SDO name="phsA" type="CMV" />
+      <SDO name="phsC" type="CMV" />
+      <SDO name="phsB" type="CMV" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_rmono">
+      <DA name="stVal" fc="ST" type="Enum_rmono" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_t_sec">
+      <DA name="stVal" fc="ST" type="Enum_t_sec" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="SPC" id="SPC">
+      <DA name="ctlModel" fc="CF" bType="Enum" dchg="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_heal">
+      <DA name="stVal" fc="ST" type="Enum_heal" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ACD" id="ACD">
+      <DA name="general" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="dirPhsB" fc="ST" bType="Enum" dchg="true" />
+      <DA name="phsC" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="dirNeut" fc="ST" bType="Enum" dchg="true" />
+      <DA name="neut" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="dirPhsC" fc="ST" bType="Enum" dchg="true" />
+      <DA name="dirGeneral" fc="ST" bType="Enum" dchg="true" />
+      <DA name="phsB" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA name="phsA" fc="ST" bType="BOOLEAN" dchg="true" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA name="dirPhsA" fc="ST" bType="Enum" dchg="true" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_ied">
+      <DA name="stVal" fc="ST" type="Enum_ied" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="INS" id="INS">
+      <DA name="stVal" fc="ST" bType="INT32" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="MV" id="MV">
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA name="mag" fc="MX" type="AnalogueValue" bType="Struct" dchg="true" dupd="true" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_tpl">
+      <DA name="stVal" fc="ST" type="Enum_tpl" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="SAV" id="SAV">
+      <DA name="instMag" fc="MX" type="AnalogueValue" bType="Struct" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENG" id="ENG_mci">
+      <DA name="stVal" fc="ST" type="Enum_mci" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENC" id="ENC_vent">
+      <DA name="stVal" fc="ST" type="Enum_vent" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_relig">
+      <DA name="stVal" fc="ST" type="Enum_relig" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="BSC" id="BSC">
+      <DA name="persistent" fc="CF" bType="BOOLEAN" dchg="true" />
+      <DA name="ctlModel" fc="CF" bType="Enum" dchg="true" />
+    </DOType>
+    <DOType cdc="DPL" id="DPL">
+      <DA name="owner" fc="DC" desc="Outros dizeres" bType="VisString255" />
+      <DA name="name" fc="DC" desc="Número de operação" bType="VisString255" />
+      <DA name="model" fc="DC" desc="Modelo" bType="VisString255" />
+      <DA name="vendor" fc="DC" desc="Fabricante" bType="VisString255" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_Beh">
+      <DA name="stVal" fc="ST" type="Enum_Beh" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_loc">
+      <DA name="stVal" fc="ST" type="Enum_loc" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DOType cdc="ISC" id="ISC">
+      <DA name="ctlNum" fc="ST" bType="INT8U" />
+      <DA name="valWTr" fc="ST" type="ValWithTrans" desc="Indicação de mudança de TAP" dchg="true" bType="Struct" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA name="ctlModel" fc="CF" bType="Enum" dchg="true" />
+    </DOType>
+    <DOType cdc="ENS" id="ENS_dj">
+      <DA name="stVal" fc="ST" type="Enum_dj" bType="Enum" dchg="true" dupd="true" />
+      <DA name="t" fc="ST" bType="Timestamp" />
+      <DA qchg="true" name="q" fc="ST" bType="Quality" />
+    </DOType>
+    <DAType id="Vector">
+      <BDA bType="Struct" name="mag" type="AnalogueValue" />
+      <BDA bType="Struct" name="ang" type="AnalogueValue" />
+    </DAType>
+    <DAType id="ValWithTrans">
+      <BDA bType="INT8" name="posVal" />
+      <BDA bType="BOOLEAN" name="transInd" />
+    </DAType>
+    <DAType id="AnalogueValue">
+      <BDA bType="FLOAT32" name="f" />
+      <BDA bType="INT32" name="i" />
+    </DAType>
+    <EnumType id="Enum_mod">
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="2">blocked</EnumVal>
+      <EnumVal ord="3">test</EnumVal>
+      <EnumVal ord="4">test/blocked</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_rmono">
+      <EnumVal ord="1">Single Pole Tripping</EnumVal>
+      <EnumVal ord="2">Undefined</EnumVal>
+      <EnumVal ord="3">Three Pole Tripping</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_vent">
+      <EnumVal ord="1">Inactive</EnumVal>
+      <EnumVal ord="2">Stage 1</EnumVal>
+      <EnumVal ord="3">Stage 2</EnumVal>
+      <EnumVal ord="4">Stage 3</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_Beh">
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="2">blocked</EnumVal>
+      <EnumVal ord="3">test</EnumVal>
+      <EnumVal ord="4">test/blocked</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_dj">
+      <EnumVal ord="1">None</EnumVal>
+      <EnumVal ord="2">Open</EnumVal>
+      <EnumVal ord="3">Close-Open</EnumVal>
+      <EnumVal ord="4">Open-Close-Open</EnumVal>
+      <EnumVal ord="5">Close-Open-Close-Open</EnumVal>
+      <EnumVal ord="6">Open-Close-Open-Close-Open</EnumVal>
+      <EnumVal ord="7">more</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_t_sec">
+      <EnumVal ord="1">Load Break</EnumVal>
+      <EnumVal ord="2">Disconnector</EnumVal>
+      <EnumVal ord="3">Earthing Switch</EnumVal>
+      <EnumVal ord="4">High Speed Earthing Switch</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_loc">
+      <EnumVal ord="1">Phase A to ground</EnumVal>
+      <EnumVal ord="2">Phase B to ground</EnumVal>
+      <EnumVal ord="3">Phase C to ground</EnumVal>
+      <EnumVal ord="4">Phase A to phase B</EnumVal>
+      <EnumVal ord="5">Phase B to phase C</EnumVal>
+      <EnumVal ord="6">Phase C to phase A</EnumVal>
+      <EnumVal ord="7">Others</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_heal">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_tpl">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_relig">
+      <EnumVal ord="1">Ready</EnumVal>
+      <EnumVal ord="2">In Progress</EnumVal>
+      <EnumVal ord="3">Successful</EnumVal>
+      <EnumVal ord="4">Waiting For Trip</EnumVal>
+      <EnumVal ord="5">Trip From Protection</EnumVal>
+      <EnumVal ord="6">Fault Disappeared</EnumVal>
+      <EnumVal ord="7">Wait To Complete</EnumVal>
+      <EnumVal ord="8">CB closed</EnumVal>
+      <EnumVal ord="9">Cycle Unsuccessful</EnumVal>
+      <EnumVal ord="10">Unsuccessful</EnumVal>
+      <EnumVal ord="11">Aborted</EnumVal>
+      <EnumVal ord="12">Not Ready</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_ied">
+      <EnumVal ord="1">Ok</EnumVal>
+      <EnumVal ord="2">Warning</EnumVal>
+      <EnumVal ord="3">Alarm</EnumVal>
+    </EnumType>
+    <EnumType id="Enum_mci">
+      <EnumVal ord="1">No mode predefined</EnumVal>
+      <EnumVal ord="2">Master</EnumVal>
+      <EnumVal ord="3">Follower</EnumVal>
+      <EnumVal ord="4">Power factor</EnumVal>
+      <EnumVal ord="5">Negative reactance</EnumVal>
+      <EnumVal ord="6">Circulating current</EnumVal>
+      <EnumVal ord="7">Circulating reactive current (var balancing)</EnumVal>
+      <EnumVal ord="8">Circulating reactive current by equalizing calculated transformer power factor</EnumVal>
+    </EnumType>
+  </DataTypeTemplates>
+</SCL>

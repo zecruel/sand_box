@@ -1,0 +1,456 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Arquivo gerado pelo FEGAS _ CEMIG GT -->
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:sxy="http://www.iec.ch/61850/2003/SCLcoordinates" version="2007" revision="B" release="4">
+  <!-- Arquivo de especificação do sistema de Proteção e Controle da Subestação Nova Ponte, padrão IEC_61850_6, conforme escopos descritos no projeto básico EI/ET_62 -->
+  <Header id="SSD_Nova_Ponte" revision="B" version="2" toolID="FEGAS-0.0.1" nameStructure="IEDName">
+    <History>
+      <Hitem revision="B" version="2" who="ERA-55897" what="Versão inaugural do arquivo SSD" why="Digitalização completa da SE" when="2025-09-23" />
+    </History>
+  </Header>
+  <!-- Descrição da Subestação (Unifilar) -->
+  <Substation name="SE_Nova_Ponte" desc="SE Nova Ponte - 500kV">
+    <VoltageLevel name="S_500kV" desc="Setor de 500kV - Disjuntor e meio">
+      <Voltage unit="V" multiplier="k">500</Voltage>
+      <Bay name="B_1" desc="Barra 1 500kV">
+        <ConductingEquipment name="TP_BU1" type="VTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="BARRA_1" pathName="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" />
+      </Bay>
+      <Bay name="B_2" desc="Barra 2 500kV">
+        <ConductingEquipment name="TP_BU2" type="VTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="BARRA_2" pathName="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" />
+      </Bay>
+      <Bay name="LC" desc="Linhas curtas">
+        <ConductingEquipment name="LC3" type="LIN">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_122" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_122" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_19" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_19" />
+        </ConductingEquipment>
+        <ConductingEquipment name="LC1" type="LIN">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_140" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_140" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_144" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_144" />
+        </ConductingEquipment>
+        <ConductingEquipment name="LC2" type="LIN">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_89" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_89" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_101" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_101" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_101" pathName="SE_Nova_Ponte/S_500kV/LC/NO_101" />
+        <ConnectivityNode Name="NO_122" pathName="SE_Nova_Ponte/S_500kV/LC/NO_122" />
+        <ConnectivityNode Name="NO_140" pathName="SE_Nova_Ponte/S_500kV/LC/NO_140" />
+        <ConnectivityNode Name="NO_144" pathName="SE_Nova_Ponte/S_500kV/LC/NO_144" />
+        <ConnectivityNode Name="NO_19" pathName="SE_Nova_Ponte/S_500kV/LC/NO_19" />
+        <ConnectivityNode Name="NO_89" pathName="SE_Nova_Ponte/S_500kV/LC/NO_89" />
+      </Bay>
+      <Bay name="VA_15U" desc="Acessante - LT2 Emborcação">
+        <ConductingEquipment name="SEC_15U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_142" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_15U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_21" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_103" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_15U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_21" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_15U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_103" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_142" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_15U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_1" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_137" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TP_15U" type="VTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_137" />
+        </ConductingEquipment>
+        <ConductingEquipment name="LT_15U" type="IFL">
+          <Terminal name="L1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_137" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_1" pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" />
+        <ConnectivityNode Name="NO_103" pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_103" />
+        <ConnectivityNode Name="NO_137" pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_137" />
+        <ConnectivityNode Name="NO_142" pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_142" />
+        <ConnectivityNode Name="NO_21" pathName="SE_Nova_Ponte/S_500kV/VA_15U/NO_21" />
+      </Bay>
+      <Bay name="VA_2U" desc="Acessante - LT Estreito - IB na barra">
+        <ConductingEquipment name="SEC_2U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_37" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_25" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_2U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_10" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_55" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_2U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_10" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_2U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_55" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_37" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_10" pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_10" />
+        <ConnectivityNode Name="NO_25" pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" />
+        <ConnectivityNode Name="NO_37" pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_37" />
+        <ConnectivityNode Name="NO_55" pathName="SE_Nova_Ponte/S_500kV/VA_2U/NO_55" />
+      </Bay>
+      <Bay name="VA_3U" desc="Acessante - LT Estreito">
+        <ConductingEquipment name="SEC_3U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_135" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_2U/NO_25" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_2U" cNodeName="NO_25" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_3U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_49" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_31" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_3U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_49" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_3U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_31" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_3U" cNodeName="NO_135" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_135" pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_135" />
+        <ConnectivityNode Name="NO_31" pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_31" />
+        <ConnectivityNode Name="NO_49" pathName="SE_Nova_Ponte/S_500kV/VA_3U/NO_49" />
+      </Bay>
+      <Bay name="VA_4U" desc="Acessante - LT São Gotardo">
+        <ConductingEquipment name="SEC_4U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_128" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_4U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_113" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_124" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_4U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_113" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_4U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_124" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_4U" cNodeName="NO_128" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_113" pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_113" />
+        <ConnectivityNode Name="NO_124" pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_124" />
+        <ConnectivityNode Name="NO_128" pathName="SE_Nova_Ponte/S_500kV/VA_4U/NO_128" />
+      </Bay>
+      <Bay name="VA_6U" desc="Acessante - LT Itumbiara">
+        <ConductingEquipment name="SEC_6U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_118" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_6U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_27" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_6" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_6U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_27" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_6U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_6" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_6U" cNodeName="NO_118" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_118" pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_118" />
+        <ConnectivityNode Name="NO_27" pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_27" />
+        <ConnectivityNode Name="NO_6" pathName="SE_Nova_Ponte/S_500kV/VA_6U/NO_6" />
+      </Bay>
+      <Bay name="VA_71U" desc="Acessante - TR2">
+        <ConductingEquipment name="SEC_71U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_51" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_71U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_67" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_17" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_71U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_67" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_71U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_17" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_71U" cNodeName="NO_51" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_17" pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_17" />
+        <ConnectivityNode Name="NO_51" pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_51" />
+        <ConnectivityNode Name="NO_67" pathName="SE_Nova_Ponte/S_500kV/VA_71U/NO_67" />
+      </Bay>
+      <Bay name="VA_73U" desc="Acessante - TR1">
+        <ConductingEquipment name="SEC_73U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_35" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_73U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_12" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_158" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_73U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_12" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_73U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_158" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_73U" cNodeName="NO_35" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_12" pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_12" />
+        <ConnectivityNode Name="NO_158" pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_158" />
+        <ConnectivityNode Name="NO_35" pathName="SE_Nova_Ponte/S_500kV/VA_73U/NO_35" />
+      </Bay>
+      <Bay name="VA_S4" desc="Acessante - Reator S4">
+        <ConductingEquipment name="DISJ_4US4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S4" cNodeName="NO_74" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S4" cNodeName="NO_148" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_4US3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S4" cNodeName="NO_74" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_S4" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S4" cNodeName="NO_148" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_148" pathName="SE_Nova_Ponte/S_500kV/VA_S4/NO_148" />
+        <ConnectivityNode Name="NO_74" pathName="SE_Nova_Ponte/S_500kV/VA_S4/NO_74" />
+      </Bay>
+      <Bay name="VA_S6" desc="Acessante - Reator S6">
+        <ConductingEquipment name="DISJ_6US4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S6" cNodeName="NO_130" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S6" cNodeName="NO_8" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_6US3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S6" cNodeName="NO_130" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_S6" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_S6" cNodeName="NO_8" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_130" pathName="SE_Nova_Ponte/S_500kV/VA_S6/NO_130" />
+        <ConnectivityNode Name="NO_8" pathName="SE_Nova_Ponte/S_500kV/VA_S6/NO_8" />
+      </Bay>
+      <Bay name="V_10U" desc="Linha curta 2">
+        <ConductingEquipment name="SEC_10U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_146" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_146" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_115" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_10U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_85" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_85" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_99" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_99" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_10U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_85" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_85" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_10U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_115" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_89" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_89" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_10U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_99" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_99" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_146" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_146" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_115" pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_115" />
+        <ConnectivityNode Name="NO_146" pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_146" />
+        <ConnectivityNode Name="NO_85" pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_85" />
+        <ConnectivityNode Name="NO_99" pathName="SE_Nova_Ponte/S_500kV/V_10U/NO_99" />
+      </Bay>
+      <Bay name="V_11U" desc="IB">
+        <ConductingEquipment name="SEC_11U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_105" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_105" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_10U/NO_115" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_10U" cNodeName="NO_115" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_11U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_4" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_4" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_78" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_78" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_11U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_4" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_4" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_80" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_11U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_78" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_78" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_105" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_105" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_105" pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_105" />
+        <ConnectivityNode Name="NO_4" pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_4" />
+        <ConnectivityNode Name="NO_78" pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_78" />
+        <ConnectivityNode Name="NO_80" pathName="SE_Nova_Ponte/S_500kV/V_11U/NO_80" />
+      </Bay>
+      <Bay name="V_12U" desc="LT1 Emborcação">
+        <ConductingEquipment name="SEC_12U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_91" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_91" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_80" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_12U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_29" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_29" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_109" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_109" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_12U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_29" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_29" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_12U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_11U/NO_80" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_11U" cNodeName="NO_80" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_71" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_12U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_109" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_109" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_91" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_91" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TP_12U" type="VTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_71" />
+        </ConductingEquipment>
+        <ConductingEquipment name="LT_12U" type="IFL">
+          <Terminal name="L1" connectivityNode="SE_Nova_Ponte/S_500kV/V_12U/NO_71" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_12U" cNodeName="NO_71" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_109" pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_109" />
+        <ConnectivityNode Name="NO_29" pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_29" />
+        <ConnectivityNode Name="NO_71" pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_71" />
+        <ConnectivityNode Name="NO_91" pathName="SE_Nova_Ponte/S_500kV/V_12U/NO_91" />
+      </Bay>
+      <Bay name="V_13U" desc="Linha curta 3">
+        <ConductingEquipment name="SEC_13U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_111" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_111" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_14" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_13U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_87" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_87" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_83" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_83" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_13U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_87" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_87" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_13U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_14" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_122" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_122" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_13U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_83" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_83" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_111" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_111" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_111" pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_111" />
+        <ConnectivityNode Name="NO_14" pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_14" />
+        <ConnectivityNode Name="NO_83" pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_83" />
+        <ConnectivityNode Name="NO_87" pathName="SE_Nova_Ponte/S_500kV/V_13U/NO_87" />
+      </Bay>
+      <Bay name="V_14U" desc="IB">
+        <ConductingEquipment name="SEC_14U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_93" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_93" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_13U/NO_14" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_13U" cNodeName="NO_14" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_14U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_120" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_120" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_107" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_107" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_14U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_120" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_120" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/VA_15U/NO_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="VA_15U" cNodeName="NO_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_14U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_107" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_107" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_14U/NO_93" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_14U" cNodeName="NO_93" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_107" pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_107" />
+        <ConnectivityNode Name="NO_120" pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_120" />
+        <ConnectivityNode Name="NO_93" pathName="SE_Nova_Ponte/S_500kV/V_14U/NO_93" />
+      </Bay>
+      <Bay name="V_7U" desc="Linha curta 1">
+        <ConductingEquipment name="SEC_7U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_53" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_53" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_150" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_7U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_153" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_153" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_33" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_33" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_7U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_153" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_153" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_1/BARRA_1" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_1" cNodeName="BARRA_1" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_7U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_150" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_140" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_140" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_7U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_33" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_33" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_53" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_53" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_150" pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_150" />
+        <ConnectivityNode Name="NO_153" pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_153" />
+        <ConnectivityNode Name="NO_33" pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_33" />
+        <ConnectivityNode Name="NO_53" pathName="SE_Nova_Ponte/S_500kV/V_7U/NO_53" />
+      </Bay>
+      <Bay name="V_8U" desc="IB">
+        <ConductingEquipment name="SEC_8U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_95" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_95" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_7U/NO_150" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_7U" cNodeName="NO_150" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_8U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_69" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_69" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_23" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_23" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_8U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_69" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_69" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_155" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_8U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_23" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_23" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_95" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_95" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_155" pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_155" />
+        <ConnectivityNode Name="NO_23" pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_23" />
+        <ConnectivityNode Name="NO_69" pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_69" />
+        <ConnectivityNode Name="NO_95" pathName="SE_Nova_Ponte/S_500kV/V_8U/NO_95" />
+      </Bay>
+      <Bay name="V_9U" desc="LT Jaguara">
+        <ConductingEquipment name="SEC_9U5" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_97" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_97" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_155" />
+        </ConductingEquipment>
+        <ConductingEquipment name="DISJ_9U4" type="CBR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_76" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_76" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_126" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_126" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_9U3" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_76" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_76" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/B_2/BARRA_2" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="B_2" cNodeName="BARRA_2" />
+        </ConductingEquipment>
+        <ConductingEquipment name="SEC_9U8" type="DIS">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_8U/NO_155" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_8U" cNodeName="NO_155" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_132" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TC_9U" type="CTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_126" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_126" />
+          <Terminal name="P2" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_97" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_97" />
+        </ConductingEquipment>
+        <ConductingEquipment name="TP_9U" type="VTR">
+          <Terminal name="P1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_132" />
+        </ConductingEquipment>
+        <ConductingEquipment name="LT_9U" type="IFL">
+          <Terminal name="L1" connectivityNode="SE_Nova_Ponte/S_500kV/V_9U/NO_132" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="V_9U" cNodeName="NO_132" />
+        </ConductingEquipment>
+        <ConnectivityNode Name="NO_126" pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_126" />
+        <ConnectivityNode Name="NO_132" pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_132" />
+        <ConnectivityNode Name="NO_76" pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_76" />
+        <ConnectivityNode Name="NO_97" pathName="SE_Nova_Ponte/S_500kV/V_9U/NO_97" />
+      </Bay>
+      <Bay name="T_1" desc="Usina - trafo elevador 1">
+        <ConductingEquipment name="TC_T1" type="CTR">
+          <Terminal name="H1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_144" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_144" />
+        </ConductingEquipment>
+      </Bay>
+      <Bay name="T_2" desc="Usina - trafo elevador 2">
+        <ConductingEquipment name="TC_T2" type="CTR">
+          <Terminal name="H1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_101" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_101" />
+        </ConductingEquipment>
+      </Bay>
+      <Bay name="T_3" desc="Usina - trafo elevador 3">
+        <ConductingEquipment name="TC_T3" type="CTR">
+          <Terminal name="H1" connectivityNode="SE_Nova_Ponte/S_500kV/LC/NO_19" substationName="SE_Nova_Ponte" voltageLevelName="S_500kV" bayName="LC" cNodeName="NO_19" />
+        </ConductingEquipment>
+      </Bay>
+    </VoltageLevel>
+  </Substation>
+</SCL>
