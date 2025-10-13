@@ -13,8 +13,116 @@
 
 
 function fiacao_dyn (event)
-
-  if modal == 'chicote' then
+  if modal == 'executa' then
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Tabela fiação")
+    
+    if num_pt == 1 then
+      cadzinho.nk_layout(20, 1)
+      cadzinho.nk_label('Escolha o painel:')
+      cadzinho.nk_layout(100, 1)
+      if cadzinho.nk_group_begin("Paineis", false, true, true) then
+        cadzinho.nk_layout(15, 2)
+        
+        for i = 1, #g_fia_paineis do      
+          if cadzinho.nk_button(g_fia_paineis[i]) then
+            g_fia_painel.value = g_fia_paineis[i]
+          end
+        end
+        cadzinho.nk_group_end()
+      end
+      cadzinho.nk_layout(20, 2)
+      cadzinho.nk_label("Painel:")
+      cadzinho.nk_edit(g_fia_painel)
+      
+      
+      cadzinho.nk_layout(15, 1)
+      if g_fia_painel.value and g_fia_painel.value ~= "" then
+        if cadzinho.nk_button("Executa") then
+          local fiacao = {}
+          local componentes = {}
+          local bd = sqlite.open(projeto.bd)
+          if bd then
+            local ant = ""
+            local ant_t = false
+            local term_ant = nil
+            local barra_ant = ""
+            
+            local cmd = "select b.barra barra_id, d.componente, " ..
+                        "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
+                        "d.modulo, t.terminal from barra_consol b " ..
+                        "left join descr_comp d on d.unico = b.componente " ..
+                        "left join comp_term t on t.unico = b.componente and t.num = b.terminal " ..
+                        "left join componentes c on c.painel = b.nome_painel and c.id = d.componente " ..
+                        "where b.nome_painel = '" .. g_fia_painel.value .. "' " ..
+                        "order by b.barra, case when instr(d.componente, '27') > 0 and d.tipo = 'BOBINA' then 1 " ..
+                        "when d.tipo = 'ALIM_CC' then 2 " ..
+                        "when d.tipo = 'BOBINA' then 3 " ..
+                        "else 5 end, fia desc, d.modulo, t.terminal;"
+            for linha in bd:cols(cmd) do -- para cada linha do BD
+              
+              if linha.barra_id ~= barra_ant then
+                ant = ""
+                ant_t = false
+                term_ant = nil
+              end
+              
+              local comp_id = linha.fia
+              --print (comp_id)
+              if componentes[comp_id] == nil then
+                componentes[comp_id] = {}
+              end
+              
+              if linha.modulo and linha.modulo ~= "" then
+                if componentes[comp_id][linha.modulo] == nil then
+                  componentes[comp_id][linha.modulo] = {}
+                end
+                
+                componentes[comp_id][linha.modulo][linha.terminal] = ant
+                ant = comp_id .. ':' .. linha.modulo .. ':' .. linha.terminal
+                
+                if ant_t and term_ant and term_ant ~= "" then
+                  ant_t[term_ant] = ant_t[term_ant] .. '/' .. ant
+                end
+                
+                ant_t = componentes[comp_id][linha.modulo]
+                term_ant = linha.terminal
+                
+              else
+                componentes[comp_id][linha.terminal] = ant
+                ant = comp_id .. ':' .. linha.terminal
+                
+                if ant_t and term_ant and term_ant ~= "" then
+                  ant_t[term_ant] = ant_t[term_ant] .. '/' .. ant
+                end
+                
+                ant_t = componentes[comp_id]
+                term_ant = linha.terminal
+              end
+              
+              barra_ant = linha.barra_id
+              
+              fiacao[#fiacao + 1] = linha
+            end
+            
+            bd:close()
+          end
+          print('teste')
+          for c_id, m in pairs (componentes) do
+            if type(m) == 'table' then
+              for m_id, t in pairs (m) do
+                print(c_id, '-', m_id, '-', t)
+              end
+            else
+              print(c_id, '-', m)
+            end
+            
+          end
+          
+        end
+      end
+    end
+  elseif modal == 'chicote' then
     -- funcao interativa para criacao dos cabos
   
     cadzinho.nk_layout(20, 1)
@@ -92,7 +200,14 @@ function fiacao_dyn (event)
       
         
       elseif event.type == 'cancel' then
-        if g_fia_tipo_chic.value == 2 then
+        if g_fia_tipo_chic.value == 2 and num_pt > 2 then
+          prop.color = 146
+        
+          chic = cadzinho.new_pline(pts[1].x, pts[1].y, 0.2,
+            pts[2].x, pts[2].y, 0.2, prop)
+          for i = 3, num_pt - 1 do
+            cadzinho.pline_append(chic, pts[i].x, pts[i].y, 0.2)
+          end
           if chic then
             cadzinho.add_ext(chic, "PELICANU", {cadzinho.unique_id(), "FIACAO", "CHICOTE", g_fia_compr_chic.value})
             chic:write()
@@ -198,7 +313,7 @@ function fiacao_dyn (event)
     -- funcao interativa para criacao dos cabos
   
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Chicote")
+    cadzinho.nk_label("Ligação")
     
     -- armazena o ponto atual na lista
     pts[num_pt] = {}
@@ -359,25 +474,44 @@ function fiacao_dyn (event)
   else
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label('Fiacao')
-    if cadzinho.nk_button("⚡ Chicote") then --
+    
+    if cadzinho.nk_button("⚡ BD->Tab ") then
+      modal = 'executa'
+      sub_modal = ''
+      msg = ''
+      
+      g_fia_paineis = {}
+      local bd = sqlite.open(projeto.bd)
+      if bd then
+        
+        local cmd = 'SELECT id FROM paineis ORDER BY id'
+        for linha in bd:cols(cmd) do -- para cada linha do BD
+          g_fia_paineis[#g_fia_paineis + 1] = linha.id
+        end
+        
+        bd:close()
+      end
+    end
+    
+    if cadzinho.nk_button(" Chicote") then --
       num_pt = 1
       modal = 'chicote'
       msg = ''
     end
     
-    if cadzinho.nk_button("麗 Componente") then
+    if cadzinho.nk_button(" Componente") then
       num_pt = 1
       modal = 'componente'
       msg = ''
     end
     
-    if cadzinho.nk_button("麗 Ligação") then
+    if cadzinho.nk_button(" Ligação") then
       num_pt = 1
       modal = 'ligacao'
       msg = ''
     end
     
-    if cadzinho.nk_button(" Calcula") then
+    if cadzinho.nk_button("⚡ Calcula") then
       modal = 'calcula'
       sub_modal = ''
       msg = ''

@@ -190,6 +190,8 @@ g_fia_id_fia = {value = 'FIA'}
 g_fia_tipo_chic = {value = 1, "Canaleta", "Amarrado"}
 g_fia_tipo_chic_ant = {value = 1}
 g_fia_compr_chic = {value = 500}
+g_fia_painel = {value = ""}
+g_fia_paineis = {}
 
 excel = require "xlsxwriter.workbook"
 
