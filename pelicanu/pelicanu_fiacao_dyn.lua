@@ -25,18 +25,75 @@ function novo_terminal_fiacao (x, y, term)
       ltype = "byblock", style = "ISO"}
     
     local elems = {}
-    elems[#elems + 1] = cadzinho.new_line(-0.65, 0, 0, 0.65, 0, 0, param)
+    elems[#elems + 1] = cadzinho.new_line(-1, 0, 0, 1, 0, 0, param)
     
-    local txt = cadzinho.new_text(-1.65, 0,
+    local txt = cadzinho.new_text(-2, 0,
       '#TERMINAL$1', 2.5, "right", "middle", param)
     elems[#elems + 1] = txt
     
-    local txt = cadzinho.new_text(1.65, 0,
+    local txt = cadzinho.new_text(2, 0,
       '#LIGACAO$??.?/??.??.?', 2.5, "left", "middle", param)
     elems[#elems + 1] = txt
     
     txt = cadzinho.new_text(0, 0, 
       '#*TIPO$TERMINAL_FIA', 0.5, "left", "bottom", param)
+    elems[#elems + 1] = txt
+    
+    param.color = "by layer"
+    param.lw = 0
+    param.ltype = "Continuous"
+  
+  
+    if cadzinho.new_block(elems, nome_bloco,
+      "Terminal fiacao PELICAnU ",
+      true, '#', '*', '$', '?', 0, 0, 0) then
+
+      ref_blc = cadzinho.new_insert(nome_bloco, x, y, 1, 1, 0, param)
+    end
+  end
+  
+  if ref_blc then
+    muda_atrib (ref_blc, {TERMINAL = term})
+    cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+    cadzinho.add_ext(ref_blc, "PELICANU", 
+      {cadzinho.unique_id(), "FIACAO", "TERMINAL"})
+    return ref_blc
+  end
+  
+  return nil
+end
+
+function novo_borne_fiacao (x, y, term)
+  term = term or "1"
+  
+  local nome_bloco = 'plcn_borne_fia'
+    
+  local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+  
+  
+  if ref_blc == nil then
+  
+    
+    local param = {color = "by block", lw = "by block",
+      ltype = "byblock", style = "ISO"}
+    
+    local elems = {}
+    local caixa = cadzinho.new_pline(-6, 3, 0,
+      6, 3, 0, param)
+    cadzinho.pline_append(caixa, 6, -3, 0)
+    cadzinho.pline_append(caixa, -6, -3, 0)
+    cadzinho.pline_close(caixa, true)
+    elems[#elems + 1] = caixa
+    
+    elems[#elems + 1] = cadzinho.new_line(-9, 0, 0, -6, 0, 0, param)
+    elems[#elems + 1] = cadzinho.new_line(6, 0, 0, 9, 0, 0, param)
+    
+    local txt = cadzinho.new_text(0, 0,
+      '#TERMINAL$1', 2.5, "right", "middle", param)
+    elems[#elems + 1] = txt
+    
+    local txt = cadzinho.new_text(-10, 0,
+      '#LIGACAO$??.?/??.??.?', 2.5, "right", "middle", param)
     elems[#elems + 1] = txt
     
     param.color = "by layer"
@@ -179,11 +236,6 @@ function grava_pl_fiacao ()
   local planilha = excel:new(cam_pl)
   if not planilha then return false end -- erro na criacao da planilha
   
-  -- cria a primeira aba
-  local aba_be = planilha:add_worksheet("BarrasEsq")
-  
- 
- 
   local protegido = planilha:add_format({
     border = 1,
     locked = true,
@@ -201,13 +253,6 @@ function grava_pl_fiacao ()
     })
   local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
   
-  -- tamanho das colunas
-  aba_be:set_column(0, 0, 20)
-  aba_be:set_column(1, 20, 15)
-  --aba_be:set_column(2, 2, 60)
-  --aba_be:set_column(3, 3, 11)
-  --aba_be:set_column(4, 5, 18)
-  
   -- primeira linha como titulo
   local tit_p = planilha:add_format({
     border = 6,
@@ -217,12 +262,17 @@ function grava_pl_fiacao ()
     bold = true
     })
   local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
-  aba_be:write(0, 0, 'Barra', tit_p)
-  aba_be:write(0, 1, 'Ligações', tit_p)
+  
+   -- cria a primeira aba
+  local aba_be = planilha:add_worksheet("BarrasEsq")
+  -- tamanho das colunas
+  aba_be:set_column(0, 0, 20)
+  aba_be:set_column(1, 20, 15)
+  aba_be:write(0, 0, 'Barra', tit_d)
+  aba_be:write(0, 1, 'Ligações', tit_d)
   
   aba_be:set_tab_color('red')
-  
-  -- grava na planilha a lista atualizada de painéis
+
   local lin = 1
   local col = 1
   for id, barra in pairs(g_fia_bd.barras) do
@@ -232,10 +282,68 @@ function grava_pl_fiacao ()
       local val = barra[col].c
       if barra[col].m then val = val .. "." .. barra[col].m end
       if barra[col].t then val = val .. "." .. barra[col].t end
-      aba_be:write(lin, col, val)
+      aba_be:write(lin, col, val, desprotegido)
     
     end
     -- proxima linha
+    lin = lin + 1
+  end
+  
+   -- cria a segunda aba
+  local aba_bf = planilha:add_worksheet("BarrasFia")
+  -- tamanho das colunas
+  aba_bf:set_column(0, 0, 20)
+  aba_bf:set_column(1, 20, 15)
+  aba_bf:write(0, 0, 'Barra', tit_d)
+  aba_bf:write(0, 1, 'Ligações', tit_d)
+  
+  aba_bf:set_tab_color('blue')
+  
+  lin = 1
+  col = 1
+  for id, barra in pairs(g_fia_bd.barras) do
+    -- grava na planilha cada celula separada, a principio
+    aba_bf:write(lin, 0, id)
+    for col = 1, #barra do
+      local val = barra[col].f
+      if barra[col].m then val = val .. "." .. barra[col].m end
+      if barra[col].t then val = val .. "." .. barra[col].t end
+      aba_bf:write(lin, col, val, desprotegido)
+    
+    end
+    -- proxima linha
+    lin = lin + 1
+  end
+  
+  -- cria a terceira aba
+  local aba_fia = planilha:add_worksheet("Fiacao")
+  -- tamanho das colunas
+  aba_fia:set_column(0, 0, 18)
+  aba_fia:set_column(1, 1, 32)
+  aba_fia:write(0, 0, 'Componente', tit_d)
+  aba_fia:write(0, 1, 'Ligação', tit_d)
+  
+  aba_fia:set_tab_color('green')
+  
+  lin = 1
+  col = 1
+  
+  for c_id, comp in pairs (g_fia_bd.fiacao) do
+    for m_id, m in pairs(comp) do
+      if type(m) == 'table' then
+        for t_id, t in pairs (m) do
+          local val = c_id .. '.' .. m_id .. '.' .. t_id
+          aba_fia:write(lin, 0, val, desprotegido)
+          aba_fia:write(lin, 1, t, desprotegido)
+          lin = lin + 1
+        end
+      else
+        local val = c_id .. '.' .. m_id
+        aba_fia:write(lin, 0, val, desprotegido)
+        aba_fia:write(lin, 1, m, desprotegido)
+        lin = lin + 1
+      end
+    end
     lin = lin + 1
   end
   
@@ -289,12 +397,12 @@ function fiacao_dyn (event)
                 print(c_id .. '.' .. m_id .. '-' .. m)
               end
             end
-          end]]--
+          end
           
           print('***************** ESQUEMATICO ******************')
           for c_id, comp in pairs (componentes) do
             print(c_id .. ' - ' .. comp.esq .. ' - ' .. tostring(comp.le))
-          end
+          end]]--
           print('=============== LOG =======================')
           print(log)
           
@@ -314,6 +422,117 @@ function fiacao_dyn (event)
     cadzinho.nk_edit(g_fia_id_fia)
     cadzinho.nk_label("Esq:")
     cadzinho.nk_edit(g_fia_id_esq)
+    cadzinho.nk_label("LE:")
+    cadzinho.nk_edit(g_fia_id_le)
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_propertyi("Ini", g_fia_ini, 0)
+    cadzinho.nk_propertyi("Lin", g_fia_lin, 0)
+    cadzinho.nk_propertyi("Col", g_fia_col, 0)
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Primeiro ponto')
+      if event.type == 'enter' then
+        num_pt = num_pt + 1
+      elseif event.type == 'cancel' then
+        -- sai da funcao
+        modal = ''
+      end
+    else
+      cadzinho.nk_label('Proximo ponto')
+      
+      --cadzinho.set_color(3) -- cor verde
+      local cor = 4
+      local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0,
+        pts[2].x, pts[1].y, 0,
+        {color = cor, ltype = "Continuous"})
+      cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+      cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+      cadzinho.pline_close(caixa, true)
+      if (caixa) then cadzinho.ent_draw(caixa) end
+      
+      -- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
+      -- posicao do texto - canto superior direito
+      local tx = pts[2].x
+      if tx < pts[1].x then tx = pts[1].x end
+      local ty = pts[2].y
+      if ty < pts[1].y then ty = pts[1].y end
+      
+      local w = pts[2].x - pts[1].x
+      local h = pts[2].y - pts[1].y
+      
+      local cx = w/2.0 + pts[1].x
+      local cy = h/2.0 + pts[1].y
+      
+      local id_fia = cadzinho.new_text(cx, ty-2, g_fia_id_fia.value,
+        3.5, "center", "top", {color = cor, style = "ISO"})
+      if id_fia then cadzinho.ent_draw(id_fia) end
+      
+      local id_esq = cadzinho.new_text(cx, ty-math.abs(h)+2, g_fia_id_esq.value,
+        2, "center", "bottom", {color = cor, style = "ISO"})
+      if id_esq then cadzinho.ent_draw(id_esq) end
+      
+      local id_le = cadzinho.new_text(tx-2, ty-2, "(" .. g_fia_id_le.value .. ")",
+        2, "right", "top", {color = cor, style = "ISO"})
+      if id_le then cadzinho.ent_draw(id_le) end
+      
+      local terms = {}
+      for j = 1, g_fia_col.value do
+        for i = 1, g_fia_lin.value do
+          terms[#terms+1] = novo_terminal_fiacao ((tx-math.abs(w)+8)+(j-1)*36, (ty-12)-(i-1)*4, tostring(#terms+g_fia_ini.value))
+        end
+      end
+      for i = 1, #terms do
+        if terms[i] then cadzinho.ent_draw(terms[i]) end
+      end
+      
+      if event.type == 'enter' then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        
+        if caixa then
+          cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "FIACAO", 'COMPONENTE'})
+          caixa:write()
+        end
+        if id_fia then
+          cadzinho.add_ext(id_fia, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_FIA"})
+          id_fia:write()
+        end
+        if id_esq then
+          cadzinho.add_ext(id_esq, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_ESQ"})
+          id_esq:write()
+        end
+        if id_le then
+          cadzinho.add_ext(id_le, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_LE"})
+          id_le:write()
+        end
+        
+        for i = 1, #terms do
+          if terms[i] then terms[i]:write() end
+        end
+        
+        
+        num_pt = 1
+        
+      elseif event.type == 'cancel' then
+        num_pt = 1
+      end
+    
+    end 
+  elseif modal == 'modulo' then
+    -- funcao interativa para criacao de uma caixa
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Novo modulo")
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    cadzinho.nk_edit(g_fia_id_mod)
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_propertyi("Ini", g_fia_ini, 0)
     cadzinho.nk_propertyi("Lin", g_fia_lin, 0)
     cadzinho.nk_propertyi("Col", g_fia_col, 0)
     
@@ -357,18 +576,14 @@ function fiacao_dyn (event)
       local cx = w/2.0 + pts[1].x
       local cy = h/2.0 + pts[1].y
       
-      local id_fia = cadzinho.new_text(cx, ty-1.5, g_fia_id_fia.value,
-        3.5, "center", "top", {color = cor, style = "ISO"})
+      local id_fia = cadzinho.new_text(cx, ty-2, g_fia_id_mod.value,
+        3, "center", "top", {color = cor, style = "ISO"})
       if id_fia then cadzinho.ent_draw(id_fia) end
-      
-      local id_esq = cadzinho.new_text(cx, ty-math.abs(h)+1, g_fia_id_esq.value,
-        2, "center", "bottom", {color = cor, style = "ISO"})
-      if id_esq then cadzinho.ent_draw(id_esq) end
       
       local terms = {}
       for j = 1, g_fia_col.value do
         for i = 1, g_fia_lin.value do
-          terms[#terms+1] = novo_terminal_fiacao ((tx-math.abs(w)+7.5)+(j-1)*35, (ty-11)-(i-1)*4, tostring(#terms+1))
+          terms[#terms+1] = novo_terminal_fiacao ((tx-math.abs(w)+8)+(j-1)*36, (ty-12)-(i-1)*4, tostring(#terms+g_fia_ini.value))
         end
       end
       for i = 1, #terms do
@@ -379,16 +594,12 @@ function fiacao_dyn (event)
         cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
         
         if caixa then
-          cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "FIACAO", 'COMPONENTE'})
+          cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "FIACAO", 'MODULO'})
           caixa:write()
         end
         if id_fia then
-          cadzinho.add_ext(id_fia, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_FIA"})
+          cadzinho.add_ext(id_fia, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_MOD"})
           id_fia:write()
-        end
-        if id_esq then
-          cadzinho.add_ext(id_esq, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_ESQ"})
-          id_esq:write()
         end
         
         for i = 1, #terms do
@@ -402,6 +613,79 @@ function fiacao_dyn (event)
         num_pt = 1
       end
     
+    end
+    
+  
+  elseif modal == 'regua' then
+    -- funcao interativa para criacao de uma caixa
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Nova régua")
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    cadzinho.nk_edit(g_fia_id_fia)
+    cadzinho.nk_propertyi("Ini", g_fia_ini, 0)
+    cadzinho.nk_propertyi("Lin", g_fia_lin, 1)
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    cadzinho.nk_layout(20, 1)
+  
+    cadzinho.nk_label('Ponto de origem')
+    
+    local w = 12
+    local h = 6 * g_fia_lin.value + 6
+    
+    --cadzinho.set_color(3) -- cor verde
+    local cor = 4
+    local caixa = cadzinho.new_pline(pts[1].x-6, pts[1].y, 0,
+      pts[1].x+6, pts[1].y, 0,
+      {color = cor, ltype = "Continuous"})
+    cadzinho.pline_append(caixa, pts[1].x+6, pts[1].y+h, 0)
+    cadzinho.pline_append(caixa, pts[1].x-6, pts[1].y+h, 0)
+    cadzinho.pline_close(caixa, true)
+    if (caixa) then cadzinho.ent_draw(caixa) end
+    
+    
+    
+    local id_fia = cadzinho.new_text(pts[1].x, pts[1].y-3, g_fia_id_fia.value,
+      3.5, "center", "middle", {color = cor, style = "ISO"})
+    if id_fia then cadzinho.ent_draw(id_fia) end
+    
+    local terms = {}
+    for j = 1, g_fia_col.value do
+      for i = 1, g_fia_lin.value do
+        terms[#terms+1] = novo_borne_fiacao (pts[1].x, (pts[1].y-6)-(i-1)*6, tostring(#terms+g_fia_ini.value))
+      end
+    end
+    for i = 1, #terms do
+      if terms[i] then cadzinho.ent_draw(terms[i]) end
+    end
+    
+    if event.type == 'enter' then
+      cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+      
+      if caixa then
+        cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "FIACAO", 'COMPONENTE'})
+        caixa:write()
+      end
+      if id_fia then
+        cadzinho.add_ext(id_fia, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_FIA"})
+        id_fia:write()
+      end
+      
+      for i = 1, #terms do
+        if terms[i] then terms[i]:write() end
+      end
+      
+      
+      num_pt = 1
+      
+    elseif event.type == 'cancel' then
+      modal = ''
     end
     --cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
     
@@ -788,6 +1072,24 @@ function fiacao_dyn (event)
       num_pt = 1
       modal = 'componente'
       msg = ''
+    end 
+    
+    if cadzinho.nk_button(" Módulo") then
+      num_pt = 1
+      modal = 'modulo'
+      msg = ''
+    end
+    
+    if cadzinho.nk_button(" Régua Bornes") then
+      num_pt = 1
+      modal = 'regua'
+      msg = ''
+    end
+    
+    if cadzinho.nk_button(" Régua Sec") then
+      num_pt = 1
+      modal = 'secion'
+      msg = ''
     end
     
     --[[if cadzinho.nk_button(" Ligação") then
@@ -805,9 +1107,8 @@ function fiacao_dyn (event)
     if g_fia_bd.painel ~= nil then
       cadzinho.nk_label("Carregado: " .. g_fia_bd.painel)
       if cadzinho.nk_button("Salva  ") then
-        grava_pl_fiacao()
-        --modal = 'salva_pl'
-        --msg = ''
+        if grava_pl_fiacao() then msg = 'Sucesso'
+        else  msg = 'Falha' end
       end
       
       

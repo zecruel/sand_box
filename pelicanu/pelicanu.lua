@@ -187,11 +187,14 @@ g_malha_prof_cam = {{value = 0.5},
 
 g_fia_id_esq = {value = 'ESQ'}
 g_fia_id_fia = {value = 'FIA'}
+g_fia_id_mod = {value = 'MOD'}
+g_fia_id_le = {value = '-LE-'}
 g_fia_tipo_chic = {value = 1, "Canaleta", "Amarrado"}
 g_fia_tipo_chic_ant = {value = 1}
 g_fia_compr_chic = {value = 500}
 g_fia_painel = {value = ""}
 g_fia_paineis = {}
+g_fia_ini = {value = 1}
 g_fia_lin = {value = 1}
 g_fia_col = {value = 1}
 g_fia_bd = {}
