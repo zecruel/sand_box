@@ -194,6 +194,7 @@ g_fia_painel = {value = ""}
 g_fia_paineis = {}
 g_fia_lin = {value = 1}
 g_fia_col = {value = 1}
+g_fia_bd = {}
 
 excel = require "xlsxwriter.workbook"
 

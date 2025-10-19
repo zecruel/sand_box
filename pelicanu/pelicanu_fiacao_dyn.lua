@@ -64,9 +64,11 @@ function novo_terminal_fiacao (x, y, term)
 end
 
 
-function exec_fiacao_bd()
+function exec_fiacao_bd(painel)
+  local barras = {}
   local fiacao = {}
   local componentes = {}
+  local log = ""
   local bd = sqlite.open(projeto.bd)
   if bd then
     local ant = ""
@@ -74,19 +76,24 @@ function exec_fiacao_bd()
     local term_ant = nil
     local barra_ant = ""
     
-    local cmd = "select b.barra barra_id, d.componente, " ..
+    local cmd = "select b.barra barra_id, d.componente, c.item, " ..
                 "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
                 "d.modulo, t.terminal from barra_consol b " ..
                 "left join descr_comp d on d.unico = b.componente " ..
                 "left join comp_term t on t.unico = b.componente and t.num = b.terminal " ..
                 "left join componentes c on c.painel = b.nome_painel and c.id = d.componente " ..
-                "where b.nome_painel = '" .. g_fia_painel.value .. "' " ..
+                "where b.nome_painel = '" .. painel .. "' " ..
                 "order by b.barra, case when instr(d.componente, '27') > 0 and d.tipo = 'BOBINA' then 1 " ..
                 "when d.tipo = 'ALIM_CC' then 2 " ..
                 "when d.tipo = 'BOBINA' then 3 " ..
                 "when d.tipo = 'MINI_DISJ' then 6 " ..
                 "else 5 end, fia desc, d.modulo, t.terminal;"
     for linha in bd:cols(cmd) do -- para cada linha do BD
+      if barras[linha.barra_id] == nil then
+        barras[linha.barra_id] = {}
+      end
+      local barra = barras[linha.barra_id]
+      barra[#barra+1] = {c = linha.componente, f = linha.fia, m = linha.modulo, t = linha.terminal}
       
       if linha.barra_id ~= barra_ant then
         ant = ""
@@ -96,16 +103,26 @@ function exec_fiacao_bd()
       
       local comp_id = linha.fia
       --print (comp_id)
+      if fiacao[comp_id] == nil then
+        fiacao[comp_id] = {}
+      end
+      
       if componentes[comp_id] == nil then
-        componentes[comp_id] = {}
+        componentes[comp_id] = {esq = linha.componente, le = linha.item}
+      elseif componentes[comp_id].esq ~= linha.componente then
+        log = log .. "ERRO: Os componentes " .. componentes[comp_id].esq ..
+          " e " .. linha.componente .. " estão com mesmo cod de fiação\n"
+      elseif componentes[comp_id].le ~= linha.item then
+        log = log .. "ERRO: O componente " .. componentes[comp_id].esq ..
+          " está com conflito de item de lista de equipamento\n"
       end
       
       if linha.modulo and linha.modulo ~= "" then
-        if componentes[comp_id][linha.modulo] == nil then
-          componentes[comp_id][linha.modulo] = {}
+        if fiacao[comp_id][linha.modulo] == nil then
+          fiacao[comp_id][linha.modulo] = {}
         end
         
-        componentes[comp_id][linha.modulo][linha.terminal] = ant
+        fiacao[comp_id][linha.modulo][linha.terminal] = ant
         ant = comp_id .. '.' .. linha.modulo .. '.' .. linha.terminal
         
         if ant_t and term_ant and term_ant ~= "" then
@@ -113,11 +130,11 @@ function exec_fiacao_bd()
           ant_t[term_ant] = ant_t[term_ant] .. ant
         end
         
-        ant_t = componentes[comp_id][linha.modulo]
+        ant_t = fiacao[comp_id][linha.modulo]
         term_ant = linha.terminal
         
       else
-        componentes[comp_id][linha.terminal] = ant
+        fiacao[comp_id][linha.terminal] = ant
         ant = comp_id .. '.' .. linha.terminal
         
         if ant_t and term_ant and term_ant ~= "" then
@@ -125,24 +142,111 @@ function exec_fiacao_bd()
           ant_t[term_ant] = ant_t[term_ant] .. ant
         end
         
-        ant_t = componentes[comp_id]
+        ant_t = fiacao[comp_id]
         term_ant = linha.terminal
       end
       
       barra_ant = linha.barra_id
       
-      fiacao[#fiacao + 1] = linha
+      
     end
     
     bd:close()
   end
-  return componentes, fiacao
+  return componentes, fiacao, barras, log
+end
+
+function grava_pl_fiacao ()
+  
+  local cor = 1
+  
+  -- verifica se há necessidade de criar a pasta de saída
+  local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+  if not exists (aux) then
+    if not cria_pasta(aux) then
+      return false -- erro com a pasta de saída
+    end
+  end
+  
+  -- cria o arquivo de planilha
+  local cam_pl = aux .. "fiacao_".. g_fia_bd.painel ..".xlsx"
+  if exists (cam_pl) then -- se há um arquivo antigo
+    if not os.remove(cam_pl) then -- tenta deletar o arquivo existente
+      return false -- erro ao apagar o arquivo antigo
+    end
+  end
+  
+  local planilha = excel:new(cam_pl)
+  if not planilha then return false end -- erro na criacao da planilha
+  
+  -- cria a primeira aba
+  local aba_be = planilha:add_worksheet("BarrasEsq")
+  
+ 
+ 
+  local protegido = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    })
+  local desprotegido = planilha:add_format({locked = false, border = 1})
+  
+  local m_p = planilha:add_format({
+    border = 1,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    valign = "vcenter",
+    })
+  local m_d = planilha:add_format({locked = false, valign = "vcenter", border = 1})
+  
+  -- tamanho das colunas
+  aba_be:set_column(0, 0, 20)
+  aba_be:set_column(1, 20, 15)
+  --aba_be:set_column(2, 2, 60)
+  --aba_be:set_column(3, 3, 11)
+  --aba_be:set_column(4, 5, 18)
+  
+  -- primeira linha como titulo
+  local tit_p = planilha:add_format({
+    border = 6,
+    locked = true,
+    pattern = 1,
+    bg_color = '#D8E4BC',
+    bold = true
+    })
+  local tit_d = planilha:add_format({locked = false, bold = true, border = 6})
+  aba_be:write(0, 0, 'Barra', tit_p)
+  aba_be:write(0, 1, 'Ligações', tit_p)
+  
+  aba_be:set_tab_color('red')
+  
+  -- grava na planilha a lista atualizada de painéis
+  local lin = 1
+  local col = 1
+  for id, barra in pairs(g_fia_bd.barras) do
+    -- grava na planilha cada celula separada, a principio
+    aba_be:write(lin, 0, id)
+    for col = 1, #barra do
+      local val = barra[col].c
+      if barra[col].m then val = val .. "." .. barra[col].m end
+      if barra[col].t then val = val .. "." .. barra[col].t end
+      aba_be:write(lin, col, val)
+    
+    end
+    -- proxima linha
+    lin = lin + 1
+  end
+  
+  planilha:close()
+  return true
 end
 
 function fiacao_dyn (event)
   if modal == 'executa' then
     cadzinho.nk_layout(20, 1)
-    cadzinho.nk_label("Tabela fiação")
+    cadzinho.nk_label("Carrega fiação")
     
     if num_pt == 1 then
       cadzinho.nk_layout(20, 1)
@@ -166,10 +270,16 @@ function fiacao_dyn (event)
       cadzinho.nk_layout(15, 1)
       if g_fia_painel.value and g_fia_painel.value ~= "" then
         if cadzinho.nk_button("Executa") then
-          local componentes = exec_fiacao_bd()
+          local componentes, fiacao, barras, log = exec_fiacao_bd(g_fia_painel.value)
+          g_fia_bd = {}
+          g_fia_bd.painel = g_fia_painel.value
+          g_fia_bd.componentes = componentes
+          g_fia_bd.fiacao = fiacao
+          g_fia_bd.barras = barras
+          g_fia_bd.log = log
           
           print('===============teste=======================')
-          for c_id, comp in pairs (componentes) do
+          --[[for c_id, comp in pairs (fiacao) do
             for m_id, m in pairs(comp) do
               if type(m) == 'table' then
                 for t_id, t in pairs (m) do
@@ -179,8 +289,17 @@ function fiacao_dyn (event)
                 print(c_id .. '.' .. m_id .. '-' .. m)
               end
             end
-          end
+          end]]--
           
+          print('***************** ESQUEMATICO ******************')
+          for c_id, comp in pairs (componentes) do
+            print(c_id .. ' - ' .. comp.esq .. ' - ' .. tostring(comp.le))
+          end
+          print('=============== LOG =======================')
+          print(log)
+          
+          
+          modal = ''
         end
       end
     end
@@ -641,7 +760,7 @@ function fiacao_dyn (event)
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label('Fiacao')
     
-    if cadzinho.nk_button("⚡ BD->Tab ") then
+    if cadzinho.nk_button("⚡ Carrega do BD") then
       modal = 'executa'
       sub_modal = ''
       msg = ''
@@ -659,11 +778,11 @@ function fiacao_dyn (event)
       end
     end
     
-    if cadzinho.nk_button(" Chicote") then --
+    --[[if cadzinho.nk_button(" Chicote") then --
       num_pt = 1
       modal = 'chicote'
       msg = ''
-    end
+    end]]--
     
     if cadzinho.nk_button(" Componente") then
       num_pt = 1
@@ -671,7 +790,7 @@ function fiacao_dyn (event)
       msg = ''
     end
     
-    if cadzinho.nk_button(" Ligação") then
+    --[[if cadzinho.nk_button(" Ligação") then
       num_pt = 1
       modal = 'ligacao'
       msg = ''
@@ -681,6 +800,18 @@ function fiacao_dyn (event)
       modal = 'calcula'
       sub_modal = ''
       msg = ''
+    end]]--
+    
+    if g_fia_bd.painel ~= nil then
+      cadzinho.nk_label("Carregado: " .. g_fia_bd.painel)
+      if cadzinho.nk_button("Salva  ") then
+        grava_pl_fiacao()
+        --modal = 'salva_pl'
+        --msg = ''
+      end
+      
+      
+      
     end
     
     cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
