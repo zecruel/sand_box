@@ -10,7 +10,134 @@
 
 
 -- ================= Edição de Biblioteca de componentes ===============
+function novo_terminal_fiacao (x, y, term)
+  term = term or "1"
+  
+  local nome_bloco = 'plcn_term_fia'
+    
+  local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
+  
+  
+  if ref_blc == nil then
+  
+    
+    local param = {color = "by block", lw = "by block",
+      ltype = "byblock", style = "ISO"}
+    
+    local elems = {}
+    elems[#elems + 1] = cadzinho.new_line(-0.65, 0, 0, 0.65, 0, 0, param)
+    
+    local txt = cadzinho.new_text(-1.65, 0,
+      '#TERMINAL$1', 2.5, "right", "middle", param)
+    elems[#elems + 1] = txt
+    
+    local txt = cadzinho.new_text(1.65, 0,
+      '#LIGACAO$??.?/??.??.?', 2.5, "left", "middle", param)
+    elems[#elems + 1] = txt
+    
+    txt = cadzinho.new_text(0, 0, 
+      '#*TIPO$TERMINAL_FIA', 0.5, "left", "bottom", param)
+    elems[#elems + 1] = txt
+    
+    param.color = "by layer"
+    param.lw = 0
+    param.ltype = "Continuous"
+  
+  
+    if cadzinho.new_block(elems, nome_bloco,
+      "Terminal fiacao PELICAnU ",
+      true, '#', '*', '$', '?', 0, 0, 0) then
 
+      ref_blc = cadzinho.new_insert(nome_bloco, x, y, 1, 1, 0, param)
+    end
+  end
+  
+  if ref_blc then
+    muda_atrib (ref_blc, {TERMINAL = term})
+    cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+    cadzinho.add_ext(ref_blc, "PELICANU", 
+      {cadzinho.unique_id(), "FIACAO", "TERMINAL"})
+    return ref_blc
+  end
+  
+  return nil
+end
+
+
+function exec_fiacao_bd()
+  local fiacao = {}
+  local componentes = {}
+  local bd = sqlite.open(projeto.bd)
+  if bd then
+    local ant = ""
+    local ant_t = false
+    local term_ant = nil
+    local barra_ant = ""
+    
+    local cmd = "select b.barra barra_id, d.componente, " ..
+                "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
+                "d.modulo, t.terminal from barra_consol b " ..
+                "left join descr_comp d on d.unico = b.componente " ..
+                "left join comp_term t on t.unico = b.componente and t.num = b.terminal " ..
+                "left join componentes c on c.painel = b.nome_painel and c.id = d.componente " ..
+                "where b.nome_painel = '" .. g_fia_painel.value .. "' " ..
+                "order by b.barra, case when instr(d.componente, '27') > 0 and d.tipo = 'BOBINA' then 1 " ..
+                "when d.tipo = 'ALIM_CC' then 2 " ..
+                "when d.tipo = 'BOBINA' then 3 " ..
+                "when d.tipo = 'MINI_DISJ' then 6 " ..
+                "else 5 end, fia desc, d.modulo, t.terminal;"
+    for linha in bd:cols(cmd) do -- para cada linha do BD
+      
+      if linha.barra_id ~= barra_ant then
+        ant = ""
+        ant_t = false
+        term_ant = nil
+      end
+      
+      local comp_id = linha.fia
+      --print (comp_id)
+      if componentes[comp_id] == nil then
+        componentes[comp_id] = {}
+      end
+      
+      if linha.modulo and linha.modulo ~= "" then
+        if componentes[comp_id][linha.modulo] == nil then
+          componentes[comp_id][linha.modulo] = {}
+        end
+        
+        componentes[comp_id][linha.modulo][linha.terminal] = ant
+        ant = comp_id .. '.' .. linha.modulo .. '.' .. linha.terminal
+        
+        if ant_t and term_ant and term_ant ~= "" then
+          if ant_t[term_ant] ~= "" then ant_t[term_ant] = ant_t[term_ant] .. '|' end
+          ant_t[term_ant] = ant_t[term_ant] .. ant
+        end
+        
+        ant_t = componentes[comp_id][linha.modulo]
+        term_ant = linha.terminal
+        
+      else
+        componentes[comp_id][linha.terminal] = ant
+        ant = comp_id .. '.' .. linha.terminal
+        
+        if ant_t and term_ant and term_ant ~= "" then
+          if ant_t[term_ant] ~= "" then ant_t[term_ant] = ant_t[term_ant] .. '|' end
+          ant_t[term_ant] = ant_t[term_ant] .. ant
+        end
+        
+        ant_t = componentes[comp_id]
+        term_ant = linha.terminal
+      end
+      
+      barra_ant = linha.barra_id
+      
+      fiacao[#fiacao + 1] = linha
+    end
+    
+    bd:close()
+  end
+  return componentes, fiacao
+end
 
 function fiacao_dyn (event)
   if modal == 'executa' then
@@ -39,89 +166,128 @@ function fiacao_dyn (event)
       cadzinho.nk_layout(15, 1)
       if g_fia_painel.value and g_fia_painel.value ~= "" then
         if cadzinho.nk_button("Executa") then
-          local fiacao = {}
-          local componentes = {}
-          local bd = sqlite.open(projeto.bd)
-          if bd then
-            local ant = ""
-            local ant_t = false
-            local term_ant = nil
-            local barra_ant = ""
-            
-            local cmd = "select b.barra barra_id, d.componente, " ..
-                        "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
-                        "d.modulo, t.terminal from barra_consol b " ..
-                        "left join descr_comp d on d.unico = b.componente " ..
-                        "left join comp_term t on t.unico = b.componente and t.num = b.terminal " ..
-                        "left join componentes c on c.painel = b.nome_painel and c.id = d.componente " ..
-                        "where b.nome_painel = '" .. g_fia_painel.value .. "' " ..
-                        "order by b.barra, case when instr(d.componente, '27') > 0 and d.tipo = 'BOBINA' then 1 " ..
-                        "when d.tipo = 'ALIM_CC' then 2 " ..
-                        "when d.tipo = 'BOBINA' then 3 " ..
-                        "else 5 end, fia desc, d.modulo, t.terminal;"
-            for linha in bd:cols(cmd) do -- para cada linha do BD
-              
-              if linha.barra_id ~= barra_ant then
-                ant = ""
-                ant_t = false
-                term_ant = nil
-              end
-              
-              local comp_id = linha.fia
-              --print (comp_id)
-              if componentes[comp_id] == nil then
-                componentes[comp_id] = {}
-              end
-              
-              if linha.modulo and linha.modulo ~= "" then
-                if componentes[comp_id][linha.modulo] == nil then
-                  componentes[comp_id][linha.modulo] = {}
+          local componentes = exec_fiacao_bd()
+          
+          print('===============teste=======================')
+          for c_id, comp in pairs (componentes) do
+            for m_id, m in pairs(comp) do
+              if type(m) == 'table' then
+                for t_id, t in pairs (m) do
+                  print(c_id .. '.' .. m_id .. '.' .. t_id .. '-' .. t)
                 end
-                
-                componentes[comp_id][linha.modulo][linha.terminal] = ant
-                ant = comp_id .. ':' .. linha.modulo .. ':' .. linha.terminal
-                
-                if ant_t and term_ant and term_ant ~= "" then
-                  ant_t[term_ant] = ant_t[term_ant] .. '/' .. ant
-                end
-                
-                ant_t = componentes[comp_id][linha.modulo]
-                term_ant = linha.terminal
-                
               else
-                componentes[comp_id][linha.terminal] = ant
-                ant = comp_id .. ':' .. linha.terminal
-                
-                if ant_t and term_ant and term_ant ~= "" then
-                  ant_t[term_ant] = ant_t[term_ant] .. '/' .. ant
-                end
-                
-                ant_t = componentes[comp_id]
-                term_ant = linha.terminal
+                print(c_id .. '.' .. m_id .. '-' .. m)
               end
-              
-              barra_ant = linha.barra_id
-              
-              fiacao[#fiacao + 1] = linha
             end
-            
-            bd:close()
-          end
-          print('teste')
-          for c_id, m in pairs (componentes) do
-            if type(m) == 'table' then
-              for m_id, t in pairs (m) do
-                print(c_id, '-', m_id, '-', t)
-              end
-            else
-              print(c_id, '-', m)
-            end
-            
           end
           
         end
       end
     end
+    
+  elseif modal == 'componente' then
+    -- funcao interativa para criacao de uma caixa
+  
+    cadzinho.nk_layout(20, 1)
+    cadzinho.nk_label("Novo componente")
+    cadzinho.nk_layout(20, 2)
+    cadzinho.nk_label("ID:")
+    cadzinho.nk_edit(g_fia_id_fia)
+    cadzinho.nk_label("Esq:")
+    cadzinho.nk_edit(g_fia_id_esq)
+    cadzinho.nk_propertyi("Lin", g_fia_lin, 0)
+    cadzinho.nk_propertyi("Col", g_fia_col, 0)
+    
+    -- armazena o ponto atual na lista
+    pts[num_pt] = {}
+    pts[num_pt].x = event.x
+    pts[num_pt].y = event.y
+    
+    cadzinho.nk_layout(20, 1)
+    if num_pt == 1 then
+      cadzinho.nk_label('Primeiro ponto')
+      if event.type == 'enter' then
+        num_pt = num_pt + 1
+      elseif event.type == 'cancel' then
+        -- sai da funcao
+        modal = ''
+      end
+    else
+      cadzinho.nk_label('Proximo ponto')
+      
+      --cadzinho.set_color(3) -- cor verde
+      local cor = 3
+      local caixa = cadzinho.new_pline(pts[1].x, pts[1].y, 0,
+        pts[2].x, pts[1].y, 0,
+        {color = cor, ltype = "Dashdot"})
+      cadzinho.pline_append(caixa, pts[2].x, pts[2].y, 0)
+      cadzinho.pline_append(caixa, pts[1].x, pts[2].y, 0)
+      cadzinho.pline_close(caixa, true)
+      if (caixa) then cadzinho.ent_draw(caixa) end
+      
+      -- identificador da caixa - eh uma entidade TEXT e um elemento tipo "rotulo"
+      -- posicao do texto - canto superior direito
+      local tx = pts[2].x
+      if tx < pts[1].x then tx = pts[1].x end
+      local ty = pts[2].y
+      if ty < pts[1].y then ty = pts[1].y end
+      
+      local w = pts[2].x - pts[1].x
+      local h = pts[2].y - pts[1].y
+      
+      local cx = w/2.0 + pts[1].x
+      local cy = h/2.0 + pts[1].y
+      
+      local id_fia = cadzinho.new_text(cx, ty-1.5, g_fia_id_fia.value,
+        3.5, "center", "top", {color = cor, style = "ISO"})
+      if id_fia then cadzinho.ent_draw(id_fia) end
+      
+      local id_esq = cadzinho.new_text(cx, ty-math.abs(h)+1, g_fia_id_esq.value,
+        2, "center", "bottom", {color = cor, style = "ISO"})
+      if id_esq then cadzinho.ent_draw(id_esq) end
+      
+      local terms = {}
+      for j = 1, g_fia_col.value do
+        for i = 1, g_fia_lin.value do
+          terms[#terms+1] = novo_terminal_fiacao ((tx-math.abs(w)+7.5)+(j-1)*35, (ty-11)-(i-1)*4, tostring(#terms+1))
+        end
+      end
+      for i = 1, #terms do
+        if terms[i] then cadzinho.ent_draw(terms[i]) end
+      end
+      
+      if event.type == 'enter' then
+        cadzinho.new_appid("PELICANU") -- garante que o desenho tenha a marca do aplicativo
+        
+        if caixa then
+          cadzinho.add_ext(caixa, "PELICANU", {cadzinho.unique_id(), "FIACAO", 'COMPONENTE'})
+          caixa:write()
+        end
+        if id_fia then
+          cadzinho.add_ext(id_fia, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_FIA"})
+          id_fia:write()
+        end
+        if id_esq then
+          cadzinho.add_ext(id_esq, "PELICANU", {cadzinho.unique_id(), "FIACAO", "ID_ESQ"})
+          id_esq:write()
+        end
+        
+        for i = 1, #terms do
+          if terms[i] then terms[i]:write() end
+        end
+        
+        
+        num_pt = 1
+        
+      elseif event.type == 'cancel' then
+        num_pt = 1
+      end
+    
+    end
+    --cadzinho.nk_label(msg) -- exibe mensagem de erro (se houver)
+    
+  
+  --[[
   elseif modal == 'chicote' then
     -- funcao interativa para criacao dos cabos
   
@@ -278,7 +444,7 @@ function fiacao_dyn (event)
         4, "center", "top", {color = cor, style = "ISO"})
       if id_esq then cadzinho.ent_draw(id_esq) end
       
-      local terms = novo_term_fiacao (cx, cy, '*')
+      local terms = novo_terms_fiacao (cx, cy, '*')
       if terms then cadzinho.ent_draw(terms) end
       
       if event.type == 'enter' then
@@ -400,7 +566,7 @@ function fiacao_dyn (event)
     
     
     
-  --[[elseif modal == 'calcula_malha' then
+  elseif modal == 'calcula_malha' then
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label('Cálculo tensões')
     
