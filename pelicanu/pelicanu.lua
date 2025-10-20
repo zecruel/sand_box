@@ -607,16 +607,21 @@ function dentro_poligono(pt, polig)
   return dentro
 end
 
-function dentro_contorno (ent, contorno)
+function dentro_contorno (ent, contorno, pt_chave)
   -- verifica se um objeto do desenho esta dentro de um contorno
   local tol = 0.1 -- tolerância
-  local limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
-  -- verifica se o retangulo está dentro do contorno
-  limite.low.x = limite.low.x + tol
-  limite.low.y = limite.low.y + tol
-  limite.up.x = limite.up.x - tol
-  limite.up.y = limite.up.y - tol
-  return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
+  if pt_chave then
+    local pts = cadzinho.get_points(ent)
+    return dentro_poligono(pts[1], contorno)
+  else
+    local limite = cadzinho.get_bound(ent) -- pega os limites do objeto (retangulo)
+    -- verifica se o retangulo está dentro do contorno
+    limite.low.x = limite.low.x + tol
+    limite.low.y = limite.low.y + tol
+    limite.up.x = limite.up.x - tol
+    limite.up.y = limite.up.y - tol
+    return dentro_poligono(limite.low, contorno) and dentro_poligono(limite.up, contorno)
+  end
 end
 
 function atualiza_elems()
@@ -649,7 +654,7 @@ function atualiza_elems()
   end
 end
 
-function pega_conteudo(id)
+function pega_conteudo(id, pt_chave)
   -- pega o conteudo de uma caixa indicada pelo ID
   
   local caixa = elems_pelicanu[id] -- busca o elemento da lista principal
@@ -676,7 +681,7 @@ function pega_conteudo(id)
   for el_id, el in pairs(elems_pelicanu) do
     if el ~= caixa then
       -- verifica se o elemento atual está dentro da caixa
-      if dentro_contorno(el.ent, contorno) then
+      if dentro_contorno(el.ent, contorno, pt_chave) then
         conteudo[#conteudo+1] = el_id -- adiciona-o a lista de retorno
       end
     end
