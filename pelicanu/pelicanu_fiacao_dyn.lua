@@ -434,24 +434,8 @@ function grava_pl_fiacao ()
   return true
 end
 
-function rotulo_fia_caixa(conteudo)
-  -- busca rotulo da caixa
-  
-  local rotulo = nil
-  for el_id in pairs(conteudo) do -- varredura do conteudo da caixa
-    local el = elems_pelicanu[el_id]
-    if el.tipo == "FIACAO" and (el.esp == "ID_FIA" or el.esp == "ID_MOD") then
-      --pega seu texto (considerando que é uma entidade tipo TEXT)
-      rotulo = cadzinho.get_text_data(el.ent)
-      break
-    end
-  end
-  if rotulo then return rotulo.text
-  else return nil
-  end
-end
 
-function obtem_fia_caixas()
+function obtem_fia_comp()
   local caixas = {}
   local SetLib = require("Set") -- biblioteca para matematica de conjuntos
   local caixa
@@ -459,27 +443,16 @@ function obtem_fia_caixas()
   local componentes = {}
   
   -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
-  atualiza_unicos()
+  --atualiza_unicos()
   -- atualiza a lista principal com os elementos
-  atualiza_elems()
-  
-  -- caixa "ARQUIVO" para armazenar os elementos órfãos
-  --[[caixa = {}
-  conteudo = conteudo_todo()
-  caixa['nome'] = ""
-  caixa['conteudo'] = SetLib.new(conteudo)
-  caixa['filhas'] = {}
-  caixa['tipo'] = 'ARQUIVO'
-  caixas[0] = caixa]]--
+  --atualiza_elems()
   
   -- varre os elementos, cadastrando as caixas existentes no desenho
   for el_id, el in pairs(elems_pelicanu) do
     if el.tipo == "FIACAO" and (el.esp == "COMPONENTE" or el.esp == "MODULO") then
       caixa = {}
       conteudo = pega_conteudo(el_id, true)
-      caixa['nome'] = ""
       caixa['conteudo'] = SetLib.new(conteudo)
-      caixa['filhas'] = {}
       caixa['tipo'] = el.esp
       caixas[el_id] = caixa
     end
@@ -490,21 +463,23 @@ function obtem_fia_caixas()
     if caixa['tipo'] == "COMPONENTE" then
       local comp = {}
       comp.mod = {}
+      comp.terms = {}
       for el_id in pairs(caixa.conteudo) do
         
         local el = elems_pelicanu[el_id]
         if el.tipo == "FIACAO" and el.esp == "MODULO" then
           local mod = {}
-          caixa.filhas[#caixa.filhas+1] = caixas[el_id]
+          mod.terms = {}
           caixa.conteudo = caixa.conteudo - caixas[el_id].conteudo
           for sub_id in pairs(caixas[el_id].conteudo) do
             local sub = elems_pelicanu[sub_id]
             if sub.tipo == "FIACAO" and sub.esp == "ID_MOD" then
               mod.id = sub_id
-              break
+            elseif sub.tipo == "FIACAO" and sub.esp == "TERMINAL" then
+              mod.terms[#mod.terms+1] = sub_id
             end
           end
-          mod.cont = caixas[el_id].conteudo
+          --mod.cont = caixas[el_id].conteudo
           comp.mod[el_id] = mod
         elseif el.tipo == "FIACAO" and el.esp == "ID_FIA" then
           comp.fia = el_id
@@ -517,25 +492,71 @@ function obtem_fia_caixas()
           
         end
       end
-      comp.cont = caixa.conteudo
+      --comp.cont = caixa.conteudo
+      for el_id in pairs(caixa.conteudo) do
+        local el = elems_pelicanu[el_id]
+        if el.tipo == "FIACAO" and el.esp == "TERMINAL" then
+          comp.terms[#comp.terms+1] = el_id
+        end
+      end
       componentes[c_id] = comp
     end
   end
   
-  -- com as caixas cadastradas, os conteúdos estarao sobrepostos ("repetidos")
-  -- ajusta os conteudos, ficando cada caixa com seus elementos exclusivos
-  --[[for _, caixa in pairs(caixas) do
-    for _,filha in ipairs(caixa.filhas) do
-      caixa.conteudo = caixa.conteudo - filha.conteudo
+  return componentes
+end
+
+function texto_el(id)
+  if not id then return nil end
+  local el = elems_pelicanu[id]
+  if not el then return nil end
+  local t = cadzinho.get_text_data(el.ent)
+  if not t then return nil end
+  return t.text
+end
+
+function pega_term(id)
+  if not id then return nil end
+  local el = elems_pelicanu[id]
+  if not el then return nil end
+  
+  local term, lig
+  
+  local attrs = cadzinho.get_attribs(el.ent)
+  for i, attr in ipairs(attrs) do
+    -- terminal
+    if string.find(attr['tag']:upper(), "^TERMINAL") then
+      term = attr['value']
+    -- ligação
+    elseif string.find(attr['tag']:upper(), "^LIGACAO") then
+      lig = attr['value']
     end
-  end]]--
+  end
+  return term, lig
+end
+
+function muda_lig (id, lig)
+  if not id then return nil end
+  local el = elems_pelicanu[id]
+  if not el then return nil end
   
-  -- por fim, pega o nome de cada caixa
-  --[[for id, caixa in pairs(caixas) do
-    caixa.nome = rotulo_fia_caixa(caixa.conteudo)
-  end]]--
+  local idx1 = 0
+  local ocul1 = false
   
-  return caixas, componentes
+  -- varre os elementos ATTRIB da entidade, buscando as etiquetas
+  local attrs = cadzinho.get_attribs(el.ent)
+  for i, attr in ipairs(attrs) do
+    if string.find(attr['tag']:upper(), "^LIGACAO") then
+      idx1 = i
+      ocul1 = attr['hidden']
+    end
+  end
+  
+  if idx1 > 0 then
+    cadzinho.edit_attr(el.ent, idx1, 'LIGACAO', lig, ocul1)
+  end
+  
+  el.ent:write()
 end
 
 function fiacao_dyn (event)
@@ -1374,16 +1395,42 @@ function fiacao_dyn (event)
       msg = ''
     end
     
-    if cadzinho.nk_button("teste") then
-      local caixas, componentes = obtem_fia_caixas()
-      for id, caixa in pairs(caixas) do
-        print(id, caixa.nome, caixa.tipo, #caixa.conteudo, #caixa.filhas)
-      end
+    if cadzinho.nk_button(" Limpa Ligações") then
+      -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
+      atualiza_unicos()
+      -- atualiza a lista principal com os elementos
+      atualiza_elems()
+      local componentes = obtem_fia_comp()
       
       for id, comp in pairs(componentes) do
-        print(id, comp.fia, comp.esq, comp.le, #comp.cont)
+        --local txt = tostring(texto_el(comp.fia))
+        --local e = texto_el(comp.esq)
+        --if e then txt = txt .. '-' .. e end
+        --e = texto_el(comp.le)
+        --if e then txt = txt .. '-' .. e end
+        --print(txt)
+        --print(comp.terms)
+        for i = 1, #comp.terms do
+          --local term, lig = pega_term(comp.terms[i])
+          --txt = "  " .. tostring(i) .. "-" .. tostring (comp.terms[i])
+          --txt = "  " .. tostring(term) .. "-" .. tostring (lig)
+          --print(txt)
+          muda_lig(comp.terms[i], '-')
+        end
+        
+        --print (cadzinho.text_gsub(el.ent, "87", "21", 2))
+        --el.ent:write()
+        
         for m, mod in pairs(comp.mod)do
-          print (m, mod.id)
+          --txt = '    ' .. tostring(texto_el(mod.id))
+          --print(txt)
+          for i = 1, #mod.terms do
+            --local term, lig = pega_term(mod.terms[i])
+            --txt = "      " .. tostring(i) .. "-" .. tostring (mod.terms[i])
+            --txt = "      " .. tostring(term) .. "-" .. tostring (lig)
+            --print(txt)
+            muda_lig(mod.terms[i], '-')
+          end
         end
       end
     end
@@ -1407,7 +1454,83 @@ function fiacao_dyn (event)
         else  msg = 'Falha' end
       end
       
-      
+      if cadzinho.nk_button("Fiação  Desenho") then
+        -- atualiza os identificadores unicos, para evitar elementos repetidos (com mesmo id)
+        atualiza_unicos()
+        -- atualiza a lista principal com os elementos
+        atualiza_elems()
+        local componentes = obtem_fia_comp()
+        
+        for id, comp in pairs(componentes) do
+          local id_fia = tostring(texto_el(comp.fia))
+          local e = texto_el(comp.esq)
+          if e then txt = txt .. '-' .. e end
+          e = texto_el(comp.le)
+          if e then txt = txt .. '-' .. e end
+          print(txt)
+          
+          local t_esq = g_fia_bd.componentes[id_fia]
+          if t_esq and comp.esq then
+            local el = elems_pelicanu[comp.esq]
+            if el then 
+              cadzinho.text_gsub(el.ent, ".*", t_esq.esq)
+              el.ent:write()
+            end
+          end
+          if t_esq and t_esq.le and comp.le then
+            local el = elems_pelicanu[comp.le]
+            if el then 
+              cadzinho.text_gsub(el.ent, ".*", "(" .. t_esq.le .. ")")
+              el.ent:write()
+            end
+          end
+          
+          
+          --g_fia_bd.fiacao = fiacao
+          
+          print('===============teste=======================')
+          --[[for c_id, comp in pairs (fiacao) do
+            for m_id, m in pairs(comp) do
+              if type(m) == 'table' then
+                for t_id, t in pairs (m) do
+                  print(c_id .. '.' .. m_id .. '.' .. t_id .. '-' .. t)
+                end
+              else
+                print(c_id .. '.' .. m_id .. '-' .. m)
+              end
+            end
+          end
+          
+          print('***************** ESQUEMATICO ******************')
+          for c_id, comp in pairs (componentes) do
+            print(c_id .. ' - ' .. comp.esq .. ' - ' .. tostring(comp.le))
+          end]]--
+          
+          
+          for i = 1, #comp.terms do
+            local term, lig = pega_term(comp.terms[i])
+            --txt = "  " .. tostring(i) .. "-" .. tostring (comp.terms[i])
+            txt = "  " .. tostring(term) .. "-" .. tostring (lig)
+            print(txt)
+            muda_lig(comp.terms[i], '-')
+          end
+          
+          --print (cadzinho.text_gsub(el.ent, "87", "21", 2))
+          --el.ent:write()
+          
+          for m, mod in pairs(comp.mod)do
+            txt = '    ' .. tostring(texto_el(mod.id))
+            print(txt)
+            for i = 1, #mod.terms do
+              local term, lig = pega_term(mod.terms[i])
+              --txt = "      " .. tostring(i) .. "-" .. tostring (mod.terms[i])
+              txt = "      " .. tostring(term) .. "-" .. tostring (lig)
+              print(txt)
+              muda_lig(mod.terms[i], '-')
+            end
+          end
+        end
+      end
       
     end
     
