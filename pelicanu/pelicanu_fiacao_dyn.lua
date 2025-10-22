@@ -1403,32 +1403,12 @@ function fiacao_dyn (event)
       local componentes = obtem_fia_comp()
       
       for id, comp in pairs(componentes) do
-        --local txt = tostring(texto_el(comp.fia))
-        --local e = texto_el(comp.esq)
-        --if e then txt = txt .. '-' .. e end
-        --e = texto_el(comp.le)
-        --if e then txt = txt .. '-' .. e end
-        --print(txt)
-        --print(comp.terms)
         for i = 1, #comp.terms do
-          --local term, lig = pega_term(comp.terms[i])
-          --txt = "  " .. tostring(i) .. "-" .. tostring (comp.terms[i])
-          --txt = "  " .. tostring(term) .. "-" .. tostring (lig)
-          --print(txt)
           muda_lig(comp.terms[i], '-')
         end
         
-        --print (cadzinho.text_gsub(el.ent, "87", "21", 2))
-        --el.ent:write()
-        
         for m, mod in pairs(comp.mod)do
-          --txt = '    ' .. tostring(texto_el(mod.id))
-          --print(txt)
           for i = 1, #mod.terms do
-            --local term, lig = pega_term(mod.terms[i])
-            --txt = "      " .. tostring(i) .. "-" .. tostring (mod.terms[i])
-            --txt = "      " .. tostring(term) .. "-" .. tostring (lig)
-            --print(txt)
             muda_lig(mod.terms[i], '-')
           end
         end
@@ -1463,11 +1443,6 @@ function fiacao_dyn (event)
         
         for id, comp in pairs(componentes) do
           local id_fia = tostring(texto_el(comp.fia))
-          local e = texto_el(comp.esq)
-          if e then txt = txt .. '-' .. e end
-          e = texto_el(comp.le)
-          if e then txt = txt .. '-' .. e end
-          print(txt)
           
           local t_esq = g_fia_bd.componentes[id_fia]
           if t_esq and comp.esq then
@@ -1509,24 +1484,26 @@ function fiacao_dyn (event)
           
           for i = 1, #comp.terms do
             local term, lig = pega_term(comp.terms[i])
-            --txt = "  " .. tostring(i) .. "-" .. tostring (comp.terms[i])
-            txt = "  " .. tostring(term) .. "-" .. tostring (lig)
-            print(txt)
-            muda_lig(comp.terms[i], '-')
+            
+            local bd_comp = g_fia_bd.fiacao[id_fia]
+            if type(bd_comp) == 'table' and term and type(bd_comp[term]) == 'string' then
+              muda_lig(comp.terms[i], bd_comp[term])
+            else muda_lig(comp.terms[i], '-') end
           end
           
           --print (cadzinho.text_gsub(el.ent, "87", "21", 2))
           --el.ent:write()
           
           for m, mod in pairs(comp.mod)do
-            txt = '    ' .. tostring(texto_el(mod.id))
-            print(txt)
+            local id_modulo = texto_el(mod.id)
             for i = 1, #mod.terms do
               local term, lig = pega_term(mod.terms[i])
-              --txt = "      " .. tostring(i) .. "-" .. tostring (mod.terms[i])
-              txt = "      " .. tostring(term) .. "-" .. tostring (lig)
-              print(txt)
-              muda_lig(mod.terms[i], '-')
+              local bd_comp = g_fia_bd.fiacao[id_fia]
+              if type(bd_comp) == 'table' and id_modulo and 
+                type(bd_comp[id_modulo]) == 'table' and term and
+                type(bd_comp[id_modulo][term]) == 'string' then
+                  muda_lig(mod.terms[i], bd_comp[id_modulo][term])
+              else muda_lig(mod.terms[i], '-') end
             end
           end
         end
