@@ -231,7 +231,7 @@ function projeto_dyn (event)
             atualiza_elems()
             
             atualiza_comp (bd, lista_arq[i].name)
-            atualiza_engates (bd, lista_arq[i].name)
+            --atualiza_engates (bd, lista_arq[i].name)
             atualiza_ref (bd, lista_arq[i].name)
             
             

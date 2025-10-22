@@ -2474,7 +2474,7 @@ function atualiza_lista_desenhos()
   atualiza_elems()
   
   atualiza_comp (bd, dir .. drwg)
-  atualiza_engates (bd, dir .. drwg)
+  --atualiza_engates (bd, dir .. drwg)
   atualiza_ref (bd, dir .. drwg)
   
   bd:close()
@@ -2499,7 +2499,7 @@ function atualiza_ref_desenho()
   atualiza_elems()
   
   atualiza_comp (bd, dir .. drwg)
-  atualiza_engates (bd, dir .. drwg)
+  --atualiza_engates (bd, dir .. drwg)
   atualiza_ref (bd, dir .. drwg)
   
   
