@@ -590,8 +590,7 @@ function esquematico_dyn (event)
       cadzinho.nk_layout(20, 2)
       cadzinho.nk_label("Item:")
       cadzinho.nk_edit(g_ref_item)
-      
-      
+            
       cadzinho.nk_layout(15, 1)
       if g_ref_le[g_ref_item.value] then
         if g_ref_le[g_ref_item.value].descr then
@@ -614,7 +613,11 @@ function esquematico_dyn (event)
       cadzinho.nk_propertyi("Aplicação", g_ref_descr, 20, 100)
       --cadzinho.nk_check("Oculta Aplicação", g_ref_term_ocul)
       cadzinho.nk_propertyi("Desenho", g_ref_desenho, 20, 100)
+      if g_ref_borne_op.value then
+        cadzinho.nk_propertyi("Borne", g_ref_borne_tam, 5, 20)
+      end
       cadzinho.nk_check("Só Contatos", g_ref_contat)
+      cadzinho.nk_check("Com secionável", g_ref_borne_op)
       
       local quadro = quadro_ref (g_ref_item.value, event.x, event.y, g_ref_contat.value)
       for _, elem in ipairs(quadro) do

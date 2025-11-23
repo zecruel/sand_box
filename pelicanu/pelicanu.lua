@@ -153,6 +153,8 @@ g_ref_le_num = {}
 g_ref_item = {value = ""}
 g_ref_elem = {value = 1, 'CONTATO_NA', 'CONTATO_NF', 'BOBINA'}
 g_ref_contat = {value = false}
+g_ref_borne_op = {value = false}
+g_ref_borne_tam = {value = 10}
 
 g_ligacao_tipo = {value = 1, "Baixa", "Alta"}
 
@@ -2376,7 +2378,8 @@ function atualiza_ref(bd, cam)
     "CASE WHEN r.des_ref = c.desenho THEN 'NESTE' " ..
     "ELSE c.desenho END desenho, " ..
     "CASE WHEN r.des_ref = c.desenho AND " ..
-    "r.fl_ref = c.fl THEN 'NESTA FL.' ELSE c.fl END fl " ..
+    "r.fl_ref = c.fl THEN 'NESTA FL.' ELSE c.fl END fl, " ..
+    "borne.regua, borne.borne " ..
     "FROM (SELECT rf.unico, comp.painel, comp.componente, " ..
     "comp.modulo, comp.arquivo, rf.elemento, rf.terminal, " ..
     "comp.desenho des_ref, comp.fl fl_ref " ..
@@ -2397,6 +2400,14 @@ function atualiza_ref(bd, cam)
     "AND (r.modulo = c.modulo " ..
     "OR (r.modulo IS NULL AND c.modulo IS NULL)) " ..
     "AND r.terminal LIKE '%' || c.terms || '%' " ..
+    "left join (select a.comp, a.term, b.comp regua, " ..
+    "b.mod borne, a.tipo, a.painel from bornes_sec a " ..
+    "inner join bornes_sec b on a.barra = b.barra and " ..
+    "b.tipo = 'BORNE_SEC' " ..
+    "where not a.tipo = 'BORNE_SEC') borne " ..
+    "ON r.painel = borne.painel AND r.elemento = borne.tipo " ..
+    "AND r.componente = borne.comp " ..
+    "AND r.terminal LIKE '%' || borne.term || '%' " ..
     "LEFT JOIN desenhos des " ..
     "ON c.desenho = des.ident AND c.fl = des.fl " ..
     "WHERE r.arquivo = '" .. cam .. "';"
@@ -2404,7 +2415,7 @@ function atualiza_ref(bd, cam)
   for linha in bd:cols(cmd) do -- para cada linha do BD
     local unico = tonumber(linha.unico)
     local el = elems_pelicanu[unico]
-    local dados = {APLIC = '-', DESENHO = '-'}
+    local dados = {APLIC = '-', DESENHO = '-', BORNE = '-'}
     if linha.desenho and linha.fl then
       if linha.fl == 'NESTA FL.' then
         dados.DESENHO = linha.fl
@@ -2414,6 +2425,10 @@ function atualiza_ref(bd, cam)
     end
     if linha.projeto and linha.titulo then
       dados.APLIC = linha.projeto .. ' ' .. linha.titulo
+    end
+
+    if linha.regua and linha.borne then
+      dados.BORNE = linha.regua .. '.' .. linha.borne
     end
     
     dados.APLIC = abrevia(dados.APLIC)
@@ -2708,6 +2723,9 @@ end
 function nova_ref (x, y)
   local nome_bloco = 'referencia_' .. g_ref_alt.value .. '_' ..
     g_ref_descr.value ..  '_' .. g_ref_desenho.value
+  if g_ref_borne_op.value then
+    nome_bloco = nome_bloco .. '_b'
+  end
     
   local ref_blc = cadzinho.new_insert(nome_bloco, x, y)
   if ref_blc == nil then
@@ -2753,6 +2771,18 @@ function nova_ref (x, y)
       '#DESENHO$DES?? fl. ??', 2.0, "left", "middle", param)
     elems[#elems + 1] = txt
 
+    if g_ref_borne_op.value then
+      local x = g_ref_descr.value + g_ref_desenho.value
+      caixa = cadzinho.new_pline(x, 0, 0,
+        x + g_ref_borne_tam.value, 0, 0, param)
+      cadzinho.pline_append(caixa, x + g_ref_borne_tam.value, -g_ref_alt.value, 0)
+      cadzinho.pline_append(caixa, x, -g_ref_alt.value, 0)
+      cadzinho.pline_close(caixa, true)
+      elems[#elems + 1] = caixa
+      txt = cadzinho.new_text(x + g_ref_borne_tam.value/2, -g_ref_alt.value/2,
+        '#BORNE$-', 2.0, "center", "middle", param)
+      elems[#elems + 1] = txt
+    end
     --cadzinho.set_color("by layer")
     --cadzinho.set_lw("by layer")
     --cadzinho.set_ltype("bylayer")
@@ -2803,7 +2833,7 @@ function quadro_ref (item, x, y, so_contatos)
   if so_contatos then
     cmd_cmpl = " AND elemento LIKE 'CONTATO%' AND modulo IS NULL"
   end
-  
+  local param = {style = "ISO"}
   local cmd = "SELECT modulo, COUNT(*) elems FROM " ..
     "(SELECT DISTINCT el_id, elemento, modulo FROM tipico_term " ..
     "WHERE item = '".. item .."'" .. cmd_cmpl ..
@@ -2851,12 +2881,12 @@ function quadro_ref (item, x, y, so_contatos)
     
     local txt = cadzinho.new_text(x + 2,
       pos_y - 0.5 * g_ref_alt.value,
-      linha.elemento, 2.0, "left", "middle")
+      linha.elemento, 2.0, "left", "middle", param)
     elems[#elems + 1] = txt
     
     txt = cadzinho.new_text(x + g_ref_descr.value - 2,
       pos_y - 0.5 * g_ref_alt.value,
-      linha.terms, 2.0, "right", "middle")
+      linha.terms, 2.0, "right", "middle", param)
     elems[#elems + 1] = txt
     
     --pos_y = pos_y - g_ref_alt.value
@@ -2869,7 +2899,7 @@ function quadro_ref (item, x, y, so_contatos)
   elems[#elems + 1] = retan
   
   local txt = cadzinho.new_text(pos_x + g_ref_descr.value/2,
-    y - 2.5 * g_ref_alt.value, 'APLICAÇÃO', 2.0, "center", "middle")
+    y - 2.5 * g_ref_alt.value, 'APLICAÇÃO', 2.0, "center", "middle", param)
   elems[#elems + 1] = txt
   
   retan = retangulo (pos_x + g_ref_descr.value, y - 2 * g_ref_alt.value,
@@ -2877,22 +2907,35 @@ function quadro_ref (item, x, y, so_contatos)
   elems[#elems + 1] = retan
   
   txt = cadzinho.new_text(pos_x + g_ref_descr.value + g_ref_desenho.value/2,
-    y - 2.5 * g_ref_alt.value, 'DESENHO', 2.0, "center", "middle")
+    y - 2.5 * g_ref_alt.value, 'DESENHO', 2.0, "center", "middle", param)
   elems[#elems + 1] = txt
+
+  local larg = g_ref_descr.value + g_ref_desenho.value
   
-  retan = retangulo (pos_x, y,
-    g_ref_descr.value + g_ref_desenho.value, total * g_ref_alt.value)
+  if g_ref_borne_op.value then
+    retan = retangulo (pos_x + larg, y - 2 * g_ref_alt.value,
+      g_ref_borne_tam.value, g_ref_alt.value)
+    elems[#elems + 1] = retan
+    
+    txt = cadzinho.new_text(pos_x + larg + g_ref_borne_tam.value/2,
+      y - 2.5 * g_ref_alt.value, 'SEC', 2.0, "center", "middle", param)
+    elems[#elems + 1] = txt
+
+    larg = larg + g_ref_borne_tam.value
+  end
+
+  retan = retangulo (pos_x, y, larg, total * g_ref_alt.value)
   cadzinho.add_ext(retan, "PELICANU", {cadzinho.unique_id(),
     "CAIXA", "COMPONENTE"})
   elems[#elems + 1] = retan
   
-  txt = cadzinho.new_text(pos_x + (g_ref_descr.value + g_ref_desenho.value)/2,
-    y - g_ref_alt.value, 'ID ??', 2.5, "center", "middle")
+  txt = cadzinho.new_text(pos_x + (larg)/2,
+    y - g_ref_alt.value, 'ID ??', 2.5, "center", "middle", param)
   cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "CAIXA"})
   elems[#elems + 1] = txt
   
-  txt = cadzinho.new_text(pos_x + g_ref_descr.value + g_ref_desenho.value - 2,
-    y - 0.7 * g_ref_alt.value, '(' .. item .. ')', 2.0, "right", "middle")
+  txt = cadzinho.new_text(pos_x + larg - 2,
+    y - 0.7 * g_ref_alt.value, '(' .. item .. ')', 2.0, "right", "middle", param)
   cadzinho.add_ext(txt, "PELICANU", {cadzinho.unique_id(), "ROTULO", "ITEM_LE"})
   elems[#elems + 1] = txt
   
@@ -2900,7 +2943,7 @@ function quadro_ref (item, x, y, so_contatos)
   for id, modulo in pairs(modulos) do
     if id ~= 1 then
       retan = retangulo (pos_x, y - modulo.ini * g_ref_alt.value,
-        g_ref_descr.value + g_ref_desenho.value, (modulo.elems + 2) * g_ref_alt.value)
+        larg, (modulo.elems + 2) * g_ref_alt.value)
       cadzinho.add_ext(retan, "PELICANU", {cadzinho.unique_id(),
         "CAIXA", "MODULO"})
       elems[#elems + 1] = retan

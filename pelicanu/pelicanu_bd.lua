@@ -84,6 +84,9 @@ function bd_novo(caminho, projeto)
     "modulo TEXT, parte TEXT, bloco TEXT, tipo TEXT,\n" ..
     "t_num INTEGER, terminal TEXT, des_id INTEGER,\n" ..
     "desenho TEXT, fl TEXT, arquivo TEXT, x REAL, y REAL);")
+
+  bd:exec("drop table if exists bornes_sec;")
+  bd:exec("create table bornes_sec (barra TEXT, comp TEXT, tipo TEXT, mod TEXT, term TEXT, painel TEXT);")
     
   bd:exec('DROP VIEW IF EXISTS hierarquia_esq')
   bd:exec("CREATE VIEW hierarquia_esq AS\n"..
@@ -813,6 +816,17 @@ function atualiza_comp_term (bd)
   bd:exec("update comp_term_esq\n" ..
     "set desenho = desenhos.ident, fl = desenhos.fl\n" ..
     "from desenhos where comp_term_esq.des_id = desenhos.unico;")
+  
+  bd:exec("drop table if exists bornes_sec;")
+  bd:exec("create table bornes_sec (barra TEXT, comp TEXT, tipo TEXT, mod TEXT, term TEXT, painel TEXT);")
+  bd:exec("insert into bornes_sec (barra, comp, tipo, mod, term, painel)\n" ..
+    "select bbb.barra barra_id, d.componente, d.tipo,\n" ..
+    "d.modulo, t.terminal, b.nome_painel from\n" ..
+    "(select bb.barra, count(*) from barra_consol bb Group by bb.barra having count(*) = 2) bbb\n" ..
+    "left join barra_consol b on b.barra = bbb.barra\n" ..
+    "left join descr_comp d on d.unico = b.componente\n" ..
+    "left join comp_term t on t.unico = b.componente and t.num = b.terminal\n" ..
+    "order by bbb.barra;")
   
 end
 
