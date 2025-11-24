@@ -61,3 +61,40 @@ AND r.terminal LIKE '%' || borne.term || '%'
 LEFT JOIN desenhos des
 ON c.desenho = des.ident AND c.fl = des.fl
 WHERE r.arquivo = '/home/ezequiel/proj/bd3/22012vision4201_000004p.dxf';
+
+select distinct b.id barra from engates_esq e
+inner join barras_esq b on e.unico = b.componente
+where engate = 'TERRA';
+
+select bbb.barra, d.painel, d.componente, d.tipo,
+d.modulo, t.terminal, ROW_NUMBER() OVER (PARTITION BY bbb.barra ORDER BY 
+bbb.barra, d.painel, d.componente, d.modulo, t.terminal) as rn from 
+(select distinct bb.id barra from engates_esq e
+inner join barras_esq bb on e.unico = bb.componente
+where engate = 'TERRA') bbb
+left join barras_esq b on b.id = bbb.barra
+inner join descr_comp d on d.unico = b.componente
+left join comp_term t on t.unico = b.componente and t.num = b.terminal
+order by bbb.barra, d.painel, d.componente, d.modulo, t.terminal;
+
+select painel, componente, modulo, terminal,
+ROW_NUMBER() OVER (partition by painel
+order by painel, componente, modulo, terminal) as bt from (
+select bbb.barra, d.painel, d.componente, d.tipo,
+d.modulo, t.terminal, ROW_NUMBER() OVER (
+PARTITION BY bbb.barra ORDER BY bbb.barra,
+case when d.tipo = 'BORNE' then 1
+when d.tipo = 'CT_CORR' then 2
+when d.tipo = 'CT_TENSAO' then 2
+when d.tipo = 'BORNE_SEC' then 7
+else 6 end, d.painel, 
+d.componente, d.modulo, t.terminal) as rn from 
+(select distinct bb.id barra from engates_esq e
+inner join barras_esq bb on e.unico = bb.componente
+where engate = 'TERRA') bbb
+left join barras_esq b on b.id = bbb.barra
+inner join descr_comp d on d.unico = b.componente
+left join comp_term t on t.unico = b.componente
+and t.num = b.terminal
+)
+where rn = 1 and painel = 'P27'
