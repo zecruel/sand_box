@@ -1,0 +1,221 @@
+{
+  "Name": "d_dwg",
+  "CreationDate": "2025-12-5",
+  "Commands": [
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"40\")",
+      "Value": "!TIMEOUT_WAIT",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"0\")",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.title.includes(\"Entrada\")",
+      "Value": "titulo",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableInbox\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableResultadoPesquisa\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"1\")",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "while_v2",
+      "Target": "(${conta} < ${num_linhas}-1)",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableResultadoPesquisa\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "let arquivos = document.getElementById(\"detalhesFicha\").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children;\nfor (let i = 0; i < arquivos.length; i++) {\n  let ext = arquivos[i].children[1].children[0].children[0].textContent.trim().split('.').pop().toLowerCase();\n  if (ext === \"dwg\") { return i + 1;}\n}\nreturn 0;",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "while",
+      "Target": "${arquivo} > 0",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div[${arquivo}]/div[2]/div/span/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div[${arquivo}]/div[2]/div[3]/div/div/div/div[2]/a[6]/i",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "300",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "css=body > div.bootbox.modal.fade.bootbox-confirm.in > div.modal-dialog > div > div.modal-footer > button.btn.btn-danger.btn-sm",
+      "Value": "arquivo",
+      "Targets": [
+        "xpath=/html/body/div[192]/div[2]/div/div[3]/button[2]",
+        "xpath=//div[3]/button[2]",
+        "css=body > div.bootbox.modal.fade.bootbox-confirm.in > div.modal-dialog > div > div.modal-footer > button.btn.btn-danger.btn-sm"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "store // 0",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "2000",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "let arquivos = document.getElementById(\"detalhesFicha\").children[1].children[0].children[1].children[0].children[0].children[0].children[0].children;\nfor (let i = 0; i < arquivos.length; i++) {\n  let ext = arquivos[i].children[1].children[0].children[0].textContent.trim().split('.').pop().toLowerCase();\n  if (ext === \"dwg\") { return i + 1;}\n}\nreturn 0;",
+      "Value": "arquivo",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "id=modalDetalhesFichaX",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return (${conta} + 1)",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    }
+  ]
+}
