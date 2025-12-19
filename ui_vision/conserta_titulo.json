@@ -1,0 +1,235 @@
+{
+  "Name": "conserta_titulo",
+  "CreationDate": "2025-12-19",
+  "Commands": [
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"40\")",
+      "Value": "!TIMEOUT_WAIT",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"0\")",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.title.includes(\"Entrada\")",
+      "Value": "titulo",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableInbox\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableResultadoPesquisa\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"1\")",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "while_v2",
+      "Target": "(${conta} < ${num_linhas}-1)",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "if_v2",
+      "Target": "${titulo} == true",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableResultadoPesquisa\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "pause // 1000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "waitForElementVisible",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+        "xpath=//div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+        "css=#detalhesFicha > div:nth-child(2) > div > div.widget-body > div > div > div > div > div:nth-child(1) > div.widget-box.transparent.collapsed > div.widget-header.widget-header-small"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div/div/div/h5/a/b",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"detalhesFicha\"]/div/div/div/h5/a/b",
+        "xpath=//h5/a/b",
+        "css=#detalhesFicha > div:nth-child(1) > div > div.widget-header.blue > h5 > a > b"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "waitForElementVisible",
+      "Target": "xpath=//*[@id=\"labelTitulo\"]/span",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"labelTitulo\"]/span",
+        "xpath=//div[8]/div[2]/span/span",
+        "css=#labelTitulo > span:nth-child(1)"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "let nome = document.getElementById(\"labelTitulo\").textContent.trim();\nlet novo = nome.replace(/¿/g,\"-\"); return novo;",
+      "Value": "nome",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"labelTitulo\"]/span[2]/a/i",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"labelTitulo\"]/span[2]/a/i",
+        "xpath=//div[8]/div[2]/span/span[2]/a/i",
+        "css=#labelTitulo > span.action-buttons > a > i"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "type",
+      "Target": "id=tboxTitulo",
+      "Value": "${nome}",
+      "Targets": [
+        "id=tboxTitulo",
+        "xpath=//*[@id=\"tboxTitulo\"]",
+        "xpath=//input[@id='tboxTitulo']",
+        "xpath=//div[8]/div[2]/div/input",
+        "css=#tboxTitulo"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"divTboxTitulo\"]/span/button",
+      "Value": "arquivo",
+      "Targets": [
+        "xpath=//*[@id=\"divTboxTitulo\"]/span/button",
+        "xpath=//div[8]/div[2]/div/span/button",
+        "css=#divTboxTitulo > span > button.btn.btn-success.btn-sm.CustomTooltip.btnAlterarValor"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "1000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "waitForElementVisible",
+      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+        "xpath=//div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div",
+        "css=#detalhesFicha > div:nth-child(2) > div > div.widget-body > div > div > div > div > div:nth-child(1) > div.widget-box.transparent.collapsed > div.widget-header.widget-header-small"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "100",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "id=modalDetalhesFichaX",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return (${conta} + 1)",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    }
+  ]
+}

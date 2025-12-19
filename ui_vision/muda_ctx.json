@@ -1,0 +1,251 @@
+{
+  "Name": "muda_ctx",
+  "CreationDate": "2025-12-19",
+  "Commands": [
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"40\")",
+      "Value": "!TIMEOUT_WAIT",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"0\")",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableResultadoPesquisa\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"1\")",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "while_v2",
+      "Target": "(${conta} < ${num_linhas}-1)",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "//*[@id=\"tableResultadoPesquisa\"]/tbody/tr[${conta}]/td[12]/div/button",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "500",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[starts-with(@id,\"menuOperacoes\")]/li[7]/a/span/i",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"menuOperacoes-64f82054-296e-443c-a341-3a9f3cd2f3cf\"]/li[7]/a/span/i",
+        "xpath=//li[7]/a/span/i",
+        "css=#menuOperacoes-64f82054-296e-443c-a341-3a9f3cd2f3cf > li:nth-child(7) > a > span > i"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "500",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Configuration_Name_chosen\"]/a/span",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Configuration_Name_chosen\"]/a/span",
+        "xpath=//div/a/span",
+        "css=#Configuration_Name_chosen > a > span"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // xpath=//*[@id=\"Configuration_Name_chosen\"]/div/div/input",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "type",
+      "Target": "xpath=//*[@id=\"Configuration_Name_chosen\"]/div/div/input",
+      "Value": "GDX-00023",
+      "Targets": [
+        "xpath=//*[@id=\"Configuration_Name_chosen\"]/div/div/input",
+        "xpath=//input[@type='text']",
+        "xpath=//div[4]/div/div/div/div/div/div/div/input",
+        "css=#Configuration_Name_chosen > div > div > input"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Configuration_Name_chosen\"]/div/ul/li[1]",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Grupo_chosen\"]/a/div/b",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Grupo_chosen\"]/a/div/b",
+        "xpath=//div[5]/div/div/div/div/div/a/div/b",
+        "css=#Grupo_chosen > a > div > b"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "type",
+      "Target": "xpath=//*[@id=\"Grupo_chosen\"]/div/div/input",
+      "Value": "SE_ELTC",
+      "Targets": [
+        "xpath=//*[@id=\"Grupo_chosen\"]/div/div/input",
+        "xpath=//div[5]/div/div/div/div/div/div/div/input",
+        "css=#Grupo_chosen > div > div > input"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Grupo_chosen\"]/div/ul/li[1]",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Grupo_chosen\"]/div/ul/li[2]",
+        "xpath=//div/div/div/div/ul/li[2]",
+        "css=#Grupo_chosen > div > ul > li:nth-child(2)"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Tipo_chosen\"]/a/div/b",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Tipo_chosen\"]/a/div/b",
+        "xpath=//div[6]/div/div/div/div/div/a/div/b",
+        "css=#Tipo_chosen > a > div > b"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "type",
+      "Target": "xpath=//*[@id=\"Tipo_chosen\"]/div/div/input",
+      "Value": "VIS",
+      "Targets": [
+        "xpath=//*[@id=\"Tipo_chosen\"]/div/div/input",
+        "xpath=//div[6]/div/div/div/div/div/div/div/input",
+        "css=#Tipo_chosen > div > div > input"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Tipo_chosen\"]/div/ul/li[1]",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Tipo_chosen\"]/div/ul/li[5]",
+        "xpath=//div[6]/div/div/div/div/div/div/ul/li[5]",
+        "css=#Tipo_chosen > div > ul > li:nth-child(5)"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "id=modalEscopoProsseguir",
+      "Value": "",
+      "Targets": [
+        "id=modalEscopoProsseguir",
+        "xpath=//*[@id=\"modalEscopoProsseguir\"]",
+        "xpath=//button[@id='modalEscopoProsseguir']",
+        "xpath=//div[2]/div/div[3]/div/div/button[2]",
+        "css=#modalEscopoProsseguir"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "3000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return (${conta} + 1)",
+      "Value": "conta",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    }
+  ]
+}
