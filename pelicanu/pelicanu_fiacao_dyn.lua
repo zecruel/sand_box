@@ -224,10 +224,14 @@ function exec_fiacao_bd(painel)
                 "left join componentes c on c.painel = b.nome_painel and c.id = d.componente " ..
                 "where b.nome_painel = '" .. painel .. "' " ..
                 "order by b.barra, case when instr(d.componente, '27') > 0 and d.tipo = 'BOBINA' then 1 " ..
+                "when d.tipo = 'CT_TENSAO' then 1 " ..
+                "when d.tipo = 'CT_CORR' then 1 " ..
                 "when d.tipo = 'ALIM_CC' then 2 " ..
                 "when d.tipo = 'BOBINA' then 3 " ..
                 "when d.tipo = 'MINI_DISJ' then 6 " ..
-                "else 5 end, fia desc, d.modulo, t.terminal;"
+                "else 5 end, fia desc, " .. 
+                "case when cast(d.modulo as int) then cast(d.modulo as int) else d.modulo end, " ..
+                "case when cast(t.terminal as int) then cast(t.terminal as int) else t.terminal end;"
     for linha in bd:cols(cmd) do -- para cada linha do BD
       if barras[linha.barra_id] == nil then
         barras[linha.barra_id] = {}
