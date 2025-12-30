@@ -215,8 +215,30 @@ function exec_fiacao_bd(painel)
     local ant_t = false
     local term_ant = nil
     local barra_ant = ""
-    
-    local cmd = "select b.barra barra_id, d.componente, c.item, " ..
+
+
+    local terra = "select painel, componente, modulo, terminal, " ..
+              "ROW_NUMBER() OVER (partition by painel " ..
+              "order by painel, componente, modulo, terminal) as bt from ( " ..
+              "select bbb.barra, d.painel, d.componente, d.tipo, " ..
+              "d.modulo, t.terminal, ROW_NUMBER() OVER ( " ..
+              "PARTITION BY bbb.barra ORDER BY bbb.barra, " ..
+              "case when d.tipo = 'BORNE' then 1 " ..
+              "when d.tipo = 'CT_CORR' then 2 " ..
+              "when d.tipo = 'CT_TENSAO' then 2 " ..
+              "when d.tipo = 'BORNE_SEC' then 7 " ..
+              "else 6 end, d.painel,  " ..
+              "d.componente, d.modulo, t.terminal) as rn from  " ..
+              "(select distinct bb.id barra from engates_esq e " ..
+              "inner join barras_esq bb on e.unico = bb.componente " ..
+              "where engate = 'TERRA') bbb " ..
+              "left join barras_esq b on b.id = bbb.barra " ..
+              "inner join descr_comp d on d.unico = b.componente " ..
+              "left join comp_term t on t.unico = b.componente " ..
+              "and t.num = b.terminal) " ..
+              "where rn = 1 and painel = '" .. painel .. "';"
+
+    local cmd = "select b.barra barra_id, d.componente, c.item, d.tipo, " ..
                 "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
                 "d.modulo, t.terminal from barra_consol b " ..
                 "left join descr_comp d on d.unico = b.componente " ..
@@ -234,15 +256,19 @@ function exec_fiacao_bd(painel)
                 "case when cast(t.terminal as int) then cast(t.terminal as int) else t.terminal end;"
     for linha in bd:cols(cmd) do -- para cada linha do BD
       if barras[linha.barra_id] == nil then
-        barras[linha.barra_id] = {}
+        barras[linha.barra_id] = {corr = false}
       end
       local barra = barras[linha.barra_id]
       barra[#barra+1] = {c = linha.componente, f = linha.fia, m = linha.modulo, t = linha.terminal}
+      if linha.tipo == "CT_CORR" or linha.tipo == "TOMADA" then
+        barra.corr = true
+      end
       
       if linha.barra_id ~= barra_ant then
         ant = ""
         ant_t = false
         term_ant = nil
+        
       end
       
       local comp_id = linha.fia
@@ -263,27 +289,27 @@ function exec_fiacao_bd(painel)
       
       if linha.modulo and linha.modulo ~= "" then
         if fiacao[comp_id][linha.modulo] == nil then
-          fiacao[comp_id][linha.modulo] = {}
+          fiacao[comp_id][linha.modulo] = {tipo_ = 'modulo'}
         end
         
-        fiacao[comp_id][linha.modulo][linha.terminal] = ant
+        fiacao[comp_id][linha.modulo][linha.terminal] = {l = ant, c = barra.corr, t = false}
         ant = comp_id .. '.' .. linha.modulo .. '.' .. linha.terminal
         
         if ant_t and term_ant and term_ant ~= "" then
-          if ant_t[term_ant] ~= "" then ant_t[term_ant] = ant_t[term_ant] .. '|' end
-          ant_t[term_ant] = ant_t[term_ant] .. ant
+          if ant_t[term_ant].l ~= "" then ant_t[term_ant].l = ant_t[term_ant].l .. '|' end
+          ant_t[term_ant].l = ant_t[term_ant].l .. ant
         end
         
         ant_t = fiacao[comp_id][linha.modulo]
         term_ant = linha.terminal
         
       else
-        fiacao[comp_id][linha.terminal] = ant
+        fiacao[comp_id][linha.terminal] = {l = ant, c = barra.corr, t = false}
         ant = comp_id .. '.' .. linha.terminal
         
         if ant_t and term_ant and term_ant ~= "" then
-          if ant_t[term_ant] ~= "" then ant_t[term_ant] = ant_t[term_ant] .. '|' end
-          ant_t[term_ant] = ant_t[term_ant] .. ant
+          if ant_t[term_ant].l ~= "" then ant_t[term_ant].l = ant_t[term_ant].l .. '|' end
+          ant_t[term_ant].l = ant_t[term_ant].l .. ant
         end
         
         ant_t = fiacao[comp_id]
@@ -354,9 +380,11 @@ function grava_pl_fiacao ()
   local aba_be = planilha:add_worksheet("BarrasEsq")
   -- tamanho das colunas
   aba_be:set_column(0, 0, 20)
-  aba_be:set_column(1, 20, 15)
+  aba_be:set_column(1, 1, 3)
+  aba_be:set_column(2, 50, 15)
   aba_be:write(0, 0, 'Barra', tit_d)
-  aba_be:write(0, 1, 'Ligações', tit_d)
+  aba_be:write(0, 1, '(*)', tit_d)
+  aba_be:write(0, 2, 'Ligações', tit_d)
   
   aba_be:set_tab_color('red')
 
@@ -365,11 +393,13 @@ function grava_pl_fiacao ()
   for id, barra in pairs(g_fia_bd.barras) do
     -- grava na planilha cada celula separada, a principio
     aba_be:write(lin, 0, id)
+    if barra.corr then aba_be:write(lin, 1, 'x') end
+
     for col = 1, #barra do
       local val = barra[col].c
       if barra[col].m then val = val .. "." .. barra[col].m end
       if barra[col].t then val = val .. "." .. barra[col].t end
-      aba_be:write(lin, col, val, desprotegido)
+      aba_be:write(lin, col + 1, val, desprotegido)
     
     end
     -- proxima linha
@@ -380,9 +410,11 @@ function grava_pl_fiacao ()
   local aba_bf = planilha:add_worksheet("BarrasFia")
   -- tamanho das colunas
   aba_bf:set_column(0, 0, 20)
-  aba_bf:set_column(1, 20, 15)
+  aba_bf:set_column(1, 1, 3)
+  aba_bf:set_column(2, 20, 15)
   aba_bf:write(0, 0, 'Barra', tit_d)
-  aba_bf:write(0, 1, 'Ligações', tit_d)
+  aba_bf:write(0, 1, '(*)', tit_d)
+  aba_bf:write(0, 2, 'Ligações', tit_d)
   
   aba_bf:set_tab_color('blue')
   
@@ -391,11 +423,12 @@ function grava_pl_fiacao ()
   for id, barra in pairs(g_fia_bd.barras) do
     -- grava na planilha cada celula separada, a principio
     aba_bf:write(lin, 0, id)
+    if barra.corr then aba_bf:write(lin, 1, 'x') end
     for col = 1, #barra do
       local val = barra[col].f
       if barra[col].m then val = val .. "." .. barra[col].m end
       if barra[col].t then val = val .. "." .. barra[col].t end
-      aba_bf:write(lin, col, val, desprotegido)
+      aba_bf:write(lin, col + 1, val, desprotegido)
     
     end
     -- proxima linha
@@ -417,17 +450,23 @@ function grava_pl_fiacao ()
   
   for c_id, comp in pairs (g_fia_bd.fiacao) do
     for m_id, m in pairs(comp) do
-      if type(m) == 'table' then
+      if m.tipo_ and m.tipo_ == 'modulo' then
         for t_id, t in pairs (m) do
-          local val = c_id .. '.' .. m_id .. '.' .. t_id
-          aba_fia:write(lin, 0, val, desprotegido)
-          aba_fia:write(lin, 1, t, desprotegido)
-          lin = lin + 1
+          if t_id ~= 'tipo_' then
+            local val = c_id .. '.' .. m_id .. '.' .. t_id
+            aba_fia:write(lin, 0, val, desprotegido)
+            val = t.l
+            if t.c then val = val .. '(*)' end
+            aba_fia:write(lin, 1, val, desprotegido)
+            lin = lin + 1
+          end
         end
       else
         local val = c_id .. '.' .. m_id
         aba_fia:write(lin, 0, val, desprotegido)
-        aba_fia:write(lin, 1, m, desprotegido)
+        val = m.l
+        if m.c then val = val .. '(*)'end 
+        aba_fia:write(lin, 1, val, desprotegido)
         lin = lin + 1
       end
     end
@@ -1490,8 +1529,10 @@ function fiacao_dyn (event)
             local term, lig = pega_term(comp.terms[i])
             
             local bd_comp = g_fia_bd.fiacao[id_fia]
-            if type(bd_comp) == 'table' and term and type(bd_comp[term]) == 'string' then
-              muda_lig(comp.terms[i], bd_comp[term])
+            if type(bd_comp) == 'table' and term and bd_comp[term] and bd_comp[term].tipo_ ~= 'modulo' then
+              val = bd_comp[term].l
+              if bd_comp[term].c then val = val .. '(*)' end
+              muda_lig(comp.terms[i], val)
             else muda_lig(comp.terms[i], '-') end
           end
           
@@ -1505,8 +1546,11 @@ function fiacao_dyn (event)
               local bd_comp = g_fia_bd.fiacao[id_fia]
               if type(bd_comp) == 'table' and id_modulo and 
                 type(bd_comp[id_modulo]) == 'table' and term and
-                type(bd_comp[id_modulo][term]) == 'string' then
-                  muda_lig(mod.terms[i], bd_comp[id_modulo][term])
+                bd_comp[id_modulo][term] and
+                type(bd_comp[id_modulo][term].l) == 'string' then
+                val = bd_comp[id_modulo][term].l
+                if bd_comp[id_modulo][term].c then val = val .. '(*)' end
+                muda_lig(mod.terms[i], val)
               else muda_lig(mod.terms[i], '-') end
             end
           end
