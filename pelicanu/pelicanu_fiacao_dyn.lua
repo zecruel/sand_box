@@ -207,6 +207,7 @@ end
 function exec_fiacao_bd(painel)
   local barras = {}
   local fiacao = {}
+  local b_terra = {}
   local componentes = {}
   local log = ""
   local bd = sqlite.open(projeto.bd)
@@ -237,6 +238,15 @@ function exec_fiacao_bd(painel)
               "left join comp_term t on t.unico = b.componente " ..
               "and t.num = b.terminal) " ..
               "where rn = 1 and painel = '" .. painel .. "';"
+    for linha in bd:cols(terra) do -- para cada linha do BD
+      local val = ""
+      if linha.modulo then
+        val = linha.componente .. "." .. linha.modulo .. "." .. linha.terminal
+      else
+        val = linha.componente .. "." .. linha.terminal
+      end
+      b_terra[val] = linha.bt
+    end
 
     local cmd = "select b.barra barra_id, d.componente, c.item, d.tipo, " ..
                 "case when c.id_fiacao is NULL then d.componente else c.id_fiacao end fia, " ..
@@ -315,15 +325,17 @@ function exec_fiacao_bd(painel)
         ant_t = fiacao[comp_id]
         term_ant = linha.terminal
       end
-      
+       
       barra_ant = linha.barra_id
       
-      
+      if b_terra[ant] then
+        ant_t[term_ant].t = true
+      end
     end
     
     bd:close()
   end
-  return componentes, fiacao, barras, log
+  return componentes, fiacao, barras, b_terra, log
 end
 
 function grava_pl_fiacao ()
@@ -436,6 +448,24 @@ function grava_pl_fiacao ()
   end
   
   -- cria a terceira aba
+  local aba_terra = planilha:add_worksheet("Terra")
+  -- tamanho das colunas
+  aba_terra:set_column(0, 0, 18)
+  aba_terra:set_column(1, 1, 32)
+  aba_terra:write(0, 0, 'Componente', tit_d)
+  aba_terra:write(0, 1, 'Ligação', tit_d)
+  
+  aba_terra:set_tab_color('green')
+  
+  lin = 1
+
+  for lig, bt in pairs(g_fia_bd.b_terra) do
+    aba_terra:write(lin, 0, lig, desprotegido)
+    aba_terra:write(lin, 1, bt, desprotegido)
+    lin = lin + 1
+  end
+
+  -- cria a quarta aba
   local aba_fia = planilha:add_worksheet("Fiacao")
   -- tamanho das colunas
   aba_fia:set_column(0, 0, 18)
@@ -443,7 +473,7 @@ function grava_pl_fiacao ()
   aba_fia:write(0, 0, 'Componente', tit_d)
   aba_fia:write(0, 1, 'Ligação', tit_d)
   
-  aba_fia:set_tab_color('green')
+  aba_fia:set_tab_color('gray')
   
   lin = 1
   col = 1
@@ -456,6 +486,7 @@ function grava_pl_fiacao ()
             local val = c_id .. '.' .. m_id .. '.' .. t_id
             aba_fia:write(lin, 0, val, desprotegido)
             val = t.l
+            if t.t then val = val .. '|BT' end
             if t.c then val = val .. '(*)' end
             aba_fia:write(lin, 1, val, desprotegido)
             lin = lin + 1
@@ -465,7 +496,8 @@ function grava_pl_fiacao ()
         local val = c_id .. '.' .. m_id
         aba_fia:write(lin, 0, val, desprotegido)
         val = m.l
-        if m.c then val = val .. '(*)'end 
+        if m.t then val = val .. '|BT' end
+        if m.c then val = val .. '(*)' end 
         aba_fia:write(lin, 1, val, desprotegido)
         lin = lin + 1
       end
@@ -629,12 +661,36 @@ function fiacao_dyn (event)
       cadzinho.nk_layout(15, 1)
       if g_fia_painel.value and g_fia_painel.value ~= "" then
         if cadzinho.nk_button("Executa") then
-          local componentes, fiacao, barras, log = exec_fiacao_bd(g_fia_painel.value)
+          if sub_modal == 'planilha' then
+            --[[   -- le o arquivo excel
+      local leitor = require 'xlsx_lua'
+  local workbook = leitor.open(arq)
+  -- procura pelas abas 'Equipamentos' e 'Terminais'
+  if type(workbook) == 'table' then 
+    pl_equip = workbook.sheets['Equipamentos']
+    pl_term = workbook.sheets['Terminais']
+    pl_regras = workbook.sheets['Regras']
+  else
+    return nil -- erro na abertura do arquivo excel
+  end
+  
+  -- verifica a existência das abas
+  if type(pl_equip) ~= 'table' or type(pl_term) ~= 'table' then return nil end
+  
+    -- insere os dados da aba 'Equipamentos' no banco de dados
+  for lin = 2, #pl_equip.dim.rows do
+    if pl_equip.data[lin]['A'] then
+    end]]--
+  
+          else
+            local componentes, fiacao, barras, b_terra, log = exec_fiacao_bd(g_fia_painel.value)
+          --end
           g_fia_bd = {}
           g_fia_bd.painel = g_fia_painel.value
           g_fia_bd.componentes = componentes
           g_fia_bd.fiacao = fiacao
           g_fia_bd.barras = barras
+          g_fia_bd.b_terra = b_terra
           g_fia_bd.log = log
           
           print('===============teste=======================')
@@ -656,7 +712,7 @@ function fiacao_dyn (event)
           end]]--
           print('=============== LOG =======================')
           print(log)
-          
+          end --
           
           modal = ''
         end
@@ -1389,10 +1445,10 @@ function fiacao_dyn (event)
   else
     cadzinho.nk_layout(20, 1)
     cadzinho.nk_label('Fiacao')
-    
+     
     if cadzinho.nk_button("⚡ Carrega do BD") then
       modal = 'executa'
-      sub_modal = ''
+      sub_modal = 'bd'
       msg = ''
       
       g_fia_paineis = {}
@@ -1408,6 +1464,30 @@ function fiacao_dyn (event)
       end
     end
     
+
+    if cadzinho.nk_button("⚡ Carrega da PL") then
+      modal = 'executa'
+      sub_modal = 'planilha'
+      msg = ''
+      
+      local aux = format_dir(projeto.caminho) .. '_aux' .. fs.dir_sep
+
+      g_fia_paineis = {}
+      local dir = fs.dir(aux)
+      if not dir then 
+        modal = ''
+        sub_modal = ''
+        msg = 'Erro: Diretório'
+      end -- sai em caso de erro
+      for i = 1, #dir do
+        local painel = string.match(dir[i].name, 'fiacao_(%w+).xlsx')
+        if painel then
+          g_fia_paineis[#g_fia_paineis+1] = painel
+        end
+      end
+      table.sort(lista_esq_o)
+    end
+   
     --[[if cadzinho.nk_button(" Chicote") then --
       num_pt = 1
       modal = 'chicote'
@@ -1531,7 +1611,9 @@ function fiacao_dyn (event)
             local bd_comp = g_fia_bd.fiacao[id_fia]
             if type(bd_comp) == 'table' and term and bd_comp[term] and bd_comp[term].tipo_ ~= 'modulo' then
               val = bd_comp[term].l
+              if bd_comp[term].t then val = val .. '|BT' end
               if bd_comp[term].c then val = val .. '(*)' end
+
               muda_lig(comp.terms[i], val)
             else muda_lig(comp.terms[i], '-') end
           end
@@ -1549,6 +1631,7 @@ function fiacao_dyn (event)
                 bd_comp[id_modulo][term] and
                 type(bd_comp[id_modulo][term].l) == 'string' then
                 val = bd_comp[id_modulo][term].l
+                if bd_comp[id_modulo][term].t then val = val .. '|BT' end
                 if bd_comp[id_modulo][term].c then val = val .. '(*)' end
                 muda_lig(mod.terms[i], val)
               else muda_lig(mod.terms[i], '-') end
