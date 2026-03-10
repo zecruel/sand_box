@@ -1,0 +1,175 @@
+{
+  "Name": "encaminha",
+  "CreationDate": "2026-3-10",
+  "Commands": [
+    {
+      "Command": "store",
+      "Target": "c057246",
+      "Value": "quem",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"40\")",
+      "Value": "!TIMEOUT_WAIT",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return parseInt(\"0\")",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "return document.getElementById(\"tableInbox\").rows.length",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "while_v2",
+      "Target": "${num_linhas} > 2",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "click // //*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"tableInbox\"]/tbody/tr[1]/td[13]/div/button/i",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"tableInbox\"]/tbody/tr[41]/td[13]/div/button/i",
+        "xpath=//tr[41]/td[13]/div/button/i",
+        "css=#tableInbox > tbody > tr:nth-child(41) > td:nth-child(13) > div > button > i"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "1000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@class=\"lnkAtribuir CustomTooltip\"]/span/i",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"detalhesFicha\"]/div/div/div/div/div/ul/li[3]/a/span/i",
+        "xpath=//li[3]/a/span/i",
+        "css=#detalhesFicha > div:nth-child(1) > div > div.widget-header.blue > div > div > ul > li:nth-child(3) > a > span > i"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "1000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "waitForElementVisible",
+      "Target": "xpath=//*[@id=\"formReassign\"]/div[4]/div/div/span/label",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"formReassign\"]/div[4]/div/div/span/label",
+        "xpath=//label",
+        "css=#formReassign > div:nth-child(12) > div > div > span > label"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "comment",
+      "Target": "visualVerify // click // xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/a/div/b",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/a/div/b",
+        "xpath=//div/b",
+        "css=#Ficha_ReassignTo_chosen > a > div > b"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "type",
+      "Target": "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/div/div/input",
+      "Value": "${quem}",
+      "Targets": [
+        "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/div/div/input",
+        "xpath=//div[4]/div/div/div/div/div/div/input",
+        "css=#Ficha_ReassignTo_chosen > div > div > input"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "200",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/div/ul/li",
+      "Value": "",
+      "Targets": [
+        "xpath=//*[@id=\"Ficha_ReassignTo_chosen\"]/div/ul/li",
+        "xpath=//div[4]/div/div/div/div/div/ul/li",
+        "css=#Ficha_ReassignTo_chosen > div > ul > li"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "100",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "click",
+      "Target": "id=modalReassignProsseguir",
+      "Value": "",
+      "Targets": [
+        "id=modalReassignProsseguir",
+        "xpath=//*[@id=\"modalReassignProsseguir\"]",
+        "xpath=//button[@id='modalReassignProsseguir']",
+        "xpath=//div[2]/div/div[3]/div/div/button",
+        "css=#modalReassignProsseguir"
+      ],
+      "Description": ""
+    },
+    {
+      "Command": "pause",
+      "Target": "3000",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "executeScript",
+      "Target": "let el = document.getElementById(\"tableInbox\"); if(el){return 3;} else { return 0;}",
+      "Value": "num_linhas",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": ""
+    }
+  ]
+}

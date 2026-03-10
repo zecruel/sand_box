@@ -1,5 +1,5 @@
 {
-  "Name": "b_gedex",
+  "Name": "corrompidos",
   "CreationDate": "2026-3-10",
   "Commands": [
     {
@@ -69,6 +69,12 @@
       "Description": ""
     },
     {
+      "Command": "storeText",
+      "Target": "//*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "ficha",
+      "Description": ""
+    },
+    {
       "Command": "click",
       "Target": "//*[@id=\"tableInbox\"]/tbody/tr[${conta}]/td[3]/a/span",
       "Value": "",
@@ -78,6 +84,12 @@
       "Command": "else",
       "Target": "",
       "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "storeText",
+      "Target": "//*[@id=\"tableResultadoPesquisa\"]/tbody/tr[${conta}]/td[3]/a/span",
+      "Value": "ficha",
       "Description": ""
     },
     {
@@ -99,19 +111,32 @@
       "Description": ""
     },
     {
-      "Command": "click",
-      "Target": "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
+      "Command": "executeScript",
+      "Target": "const result = document.evaluate('//*[@class=\"timeline-indicator ace-icon fa fa-ban btn-purple  no-hover\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null ); if (result.singleNodeValue) { return true;} else { return false;}",
+      "Value": "corrompido",
+      "Description": ""
+    },
+    {
+      "Command": "if",
+      "Target": "${corrompido} == true",
       "Value": "",
-      "Targets": [
-        "xpath=//*[@id=\"detalhesFicha\"]/div[2]/div/div/div/a[2]/i",
-        "xpath=//a[2]/i",
-        "css=#detalhesFicha > div:nth-child(2) > div > div.widget-header.blue > div > a.CustomTooltip.lnkDownloadTodosArquivos > i"
-      ],
+      "Description": ""
+    },
+    {
+      "Command": "store",
+      "Target": "${ficha}",
+      "Value": "!csvLine",
+      "Description": ""
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
       "Description": ""
     },
     {
       "Command": "pause",
-      "Target": "2500",
+      "Target": "500",
       "Value": "",
       "Description": ""
     },
@@ -130,6 +155,12 @@
     {
       "Command": "end",
       "Target": "",
+      "Value": "",
+      "Description": ""
+    },
+    {
+      "Command": "csvSave",
+      "Target": "corrompidos.csv",
       "Value": "",
       "Description": ""
     }
