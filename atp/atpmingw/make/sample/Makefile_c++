@@ -1,0 +1,56 @@
+# File: makefile
+# Purpose: compile and link atp
+#
+CC=gcc.exe
+FOR=g77.exe
+
+OBJECTS =dimdef.o \
+	newmods.o \
+	comtac.o \
+	fgnmod.o \
+	usernl.o \
+	analyt.o \
+	devt69.o \
+	usrfun.o \
+	hopcod.o \
+	user10.o \
+	crandom.o \
+	cmodels.o
+#	cfun.o \
+#	cmodel.o
+
+INSFILE	= blkcom.ins \
+	comta1.ins \
+	comta2.ins \
+	comta3.ins \
+	dekspy.ins \
+	tacsar.ins \
+	space2.ins
+
+CFLAGS =  -DUNDERSCORE -O2
+FFLAGS = -O2
+IMAGE=../atpmingw/mytpbig.exe
+
+LIBRARY = ../atpmingw/make/tpbig.a ../atpmingw/make/dismg7.a -lgdi32
+
+all:	$(IMAGE)
+
+.f.o:
+	$(FOR) -c $(FFLAGS) $<
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+$(IMAGE) : $(OBJECTS) $(INSFILE)
+	$(FOR) -s -o $(IMAGE) $(OBJECTS) $(LIBRARY)
+
+cfun.o: ../atpmingw/make/sample/cfun.c
+	$(CC) -c $(CFLAGS) ../atpmingw/make/sample/cfun.c
+
+cmodel.o: ../atpmingw/make/sample/cmodel.c
+	$(CC) -c $(CFLAGS) ../atpmingw/make/sample/cmodel.c
+
+crandom.o: ../atpmingw/make/sample/crandom.c
+	$(CC) -c $(CFLAGS) ../atpmingw/make/sample/crandom.c
+
+cmodels.o: ../atpmingw/make/sample/cmodels.cpp
+	$(CC) -c $(CFLAGS) ../atpmingw/make/sample/cmodels.cpp

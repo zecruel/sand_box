@@ -1,0 +1,49 @@
+# File: makefile_err
+# Purpose: compile and link atp
+#
+# If you can't make tpbig.exe with default Makefile, try this.
+# The location of libraries is explicitly written in $(LIBRARY)
+#   -L../atpmingw/make/MinGW/lib
+# Object file crt2.o is copied to work directory before linking.
+#   copy ..\atpmingw\make\MinGW\lib\crt2.o > null
+#
+CC=gcc.exe
+FOR=g77.exe
+
+OBJECTS =dimdef.o \
+	newmods.o \
+	comtac.o \
+	fgnmod.o \
+	usernl.o \
+	analyt.o \
+	devt69.o \
+	usrfun.o \
+	hopcod.o \
+	user10.o
+
+INSFILE	= blkcom.ins \
+	comta1.ins \
+	comta2.ins \
+	comta3.ins \
+	dekspy.ins \
+	tacsar.ins \
+	space2.ins
+
+CFLAGS =  -DUNDERSCORE -O2
+FFLAGS = -O2
+IMAGE=../atpmingw/mytpbig.exe
+
+LIBRARY = ../atpmingw/make/tpbig.a ../atpmingw/make/dismg7.a \
+          -L../atpmingw/make/MinGW/lib -lgdi32
+
+all:	$(IMAGE)
+
+.f.o:
+	$(FOR) -c $(FFLAGS) $<
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+$(IMAGE) : $(OBJECTS) $(INSFILE)
+	copy ..\atpmingw\make\MinGW\lib\crt2.o > null
+	$(FOR) -s -o $(IMAGE) $(OBJECTS) $(LIBRARY)
+	del crt2.o > null

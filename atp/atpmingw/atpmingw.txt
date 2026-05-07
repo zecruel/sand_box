@@ -1,0 +1,267 @@
+ATP/Mingw32 is ATP-EMTP compiled by GCC-2.95 for Mingw32. It was
+compiled using the source code created and copyrighted by Can/Am EMTP
+User Group. The source code of GNU ATP was created and tested by Drs.
+Scott Meyer and Tsu-huei Liu, and Mr. Orlando P. Hevia, Santa Fe, Argentina.
+
+<<Environment>>
+  Win95/WinNT
+
+<<Features>
+ - Long filename is supported
+ - Win32 native application.
+ - Quick start.
+ - Runs faster than Watcom ATP on average(especially with Pentium II or 
+   later CPU)
+
+<<Plotting output>>
+ - C-like, wide-nn, formatted, and unformatted pl4 file formats
+   are supported.
+
+ - The following interactive plotting softwares for Win95/98/NT are 
+   available  from the ATP secure ftp server. 
+    - TPPLOT         : Salford TPPLOT(except under NT)
+    - PlotXY         :
+    - gtppl32.zip    : GNU version of tpplot for Win32
+    - dispatp32.zip  : plotting software for GNU ATP formatted and 
+      (dispatpgw.zip)  C-like pl4
+    - DisplayNT      :
+
+ - Batch mode plotting is possible by specifying plotting output in data
+   cards. .PS file can be displayed and printed by Ghostscript, and. GNU
+   file can be displayed and printed by Gnuplot. Please refer to DCN20.DAT
+   as for specifying plotting format. Please note that nopost and nognu 
+   should be set "0"  in startup file.
+
+<<GCC-2.95 for Mingw32>>
+   GCC-2.95 for Mingw32 is a GCC(GNU Compiler Collection) port to mingw32 
+maintained by Dr. Mumit Khan.  The compiler binaries(g77 , gcc) can be 
+obtained from Dr. Mumit Khan's gnu-win32 site;
+
+http://www.xraylith.wisc.edu/~khan/software/gnu-win32/
+[GCC-2.95 release for Cygwin/Mingw/UWin] - [Release information]
+ - [ Mingw32]
+   gcc-2.95-mingw32.zip
+Make.exe used in a compilation can be obtained from J.J.vanderHeijden's 
+GNU mingw32 tools: Home ;
+http://agnes.dida.physik.uni-essen.de/~janjaap/mingw32/
+[Download]
+  make-3_76.zip or 
+  make-3_77.zip
+
+
+<<DISLIN library>>
+DISLIN is a  library  of routines for easy drawing of axis systems,  
+curves,  legends,  bar graphs,  pie charts,   3-D colour plots, 
+surfaces, contours and maps, and is used in ATP by linking it with 
+TPBIG.EXE .   The Windows 95/NT  version of  DISLIN for the  mingw32 
+can be obtained from the following;
+
+http://www.linmpi.mpg.de/dislin/
+[Ftp server] - [ win95] 
+                 dl_72_m1.zip
+                 dl_72_m2.zip
+
+
+<<Ghostscript>>
+As for Ghostscript, please refer to the following.
+http://www.cs.wisc.edu/~ghost/ The related files can be obtained from
+this URL.
+
+<<Gnuplot>>
+As for Gnuplot, please refer to the following. The related files also
+can be obtained from the following.
+  http://www.geocities.com/SiliconValley/Foothills/6647/
+
+  .GNU file can be displayed only Gnuplot newer than v3.6x.
+
+<<Distributed files>>
+ atpmingw.txt ---This file 
+ atpmingw.zip --- ATP/Mingw32 related files
+ libmingw.zip --- ATP/Mingw32 Compiled TACS, Changing Maximum Listsize 
+                  related files
+
+
+ <<INSTALLATION>>
+1. Copy atpmingw.zip to a temporary directory, and unarchive it.
+  Move the following files to the directory where atp is installed.
+     tpbig.exe armafit.exe ruptpgw.bat listsize.big blockd51.bin
+     startup graphics mv.exe
+
+2. Write the following in autoexec.bat file. For example, if you put
+blockd51.bin, startup, graphics and listsize.dat(if any) files in 
+c:\usr\atpwin32, then,
+
+set GNUDIR=c:\usr\atpwin32\
+
+Add the directory where you put runtpgw.bat and armafit.exe to PATH.
+Listsize.big is the maximum size of the dimension. You can specify
+your own listsize.dat within the limits of listsize.big. If there is 
+no listsize.dat, the contents of listsize.big is used.
+
+3. INSTALLATION of Ghostscript
+Obtain the newest binary from the above site(Win95/WinNT).
+
+gsv22w32.zip or newer
+gs501fn1.zip or newer
+gs501ini.zip or newer
+gs501w32.zip or newer
+
+Unzip gsv22w32.zip where gs501fn1.zip gs501ini.zip gs501w32.zip are
+located, then run setup.exe. As for Win3.1, please read readme.txt
+which is included in gsv22w16.zip or newer. 5. INSTALLATION of Gnuplot
+Obtain the newest binary from the above FTP site. and add the directory
+to PATH.. GNU file can be displayed only Gnuplot newer than v3.6x.
+
+
+<<Changing Listsize.big and remaking tpbig.exe with it>>
+
+- The compiler binaries and DISLIN library are needed for compilation. 
+Please obtain them from the sites mentioned above.
+
+- Unarchive atpgwlib.zip .
+
+- To take effect the changing of Listsize.big, remaking tpbig.exe is
+necessary. At first, edit listsize.big file. Then, creat dimesion
+related files.
+
+C> vardim20
+
+By the above command, dimdef.f and newmods.f are created. Based on
+these files, the new tpbig.exe is created by invoking the following 
+command.
+
+C> make -f atp.mak
+
+- For your reference, to run the benchmark data case with 400 mutually 
+coupled coils which was contributed by Dr. Arita et.al in Japan, 
+listsize.hit6 was used. 
+
+<<Compiled TACS>>
+
+- The compiler binaries and DISLIN library are needed for compilation. 
+Please obtain them from the sites mentioned above.
+
+- Unarchive atpgwlib.zip .
+
+- Creat dimesion related files.
+
+   C> vardim20.bat
+
+By the above command, dimdef.f and newmods.f are created.
+
+- At first, set environment variable COMPTACS as "MAKE", and run.
+
+C> SET COMPTACS=MAKE
+C> del comtac.o
+C> runtpgw datafile
+
+- Then, the following three files are created. codetacs.inc decktac1.inc
+decktac2.inc. It is better to include "SINGLE STEP IF MAKE" in data
+files. By this command, tpbig stops immediately after creating the
+above three files. Without this command, tpbig doesn't stop until the
+simulation reaches tmax. The above three files are included by comtac.f
+module. The new tpbig.exe is created by compiling comtac.f and linking
+with other modules.
+
+C> make -f atp.mak
+
+- Then, set environment variable COMPTACS as "USE", and run the new
+tpbig.exe.
+
+C> SET COMPTACS=USE
+C> TPBIG DISK datafile. s -r
+C> SET COMPTACS=
+
+- The original tpbig.exe in the distribution was compiled with the
+following three files whose sizes are 0. 
+  codetacs.inc
+  decktac1.inc
+  decktac2.inc.
+
+-  comtac1.bat comtac2.bat ---- used for compiled TACS.
+     - comtac1.bat is used for generating source code for compiled
+       TACS.  For data.dat data case, invoke the following;
+        C> comtac1 data
+     - For compiling, invoke the following command;
+        C> make -f atp.mak
+     - comtac2.bat is used for running the newly compiled
+       TPBIG.exe .
+        C> comtac2 data
+
+- Some tips for the correct operating of compiled TACS
+     - Some varible names should not be used; I, IA, T, ...
+     - The integer number should not be used as a denominator;
+         1/2 should be 1.D0/2.D0 , .....
+     - Logical expression should be changed by hand;
+        For example,
+          SIGAP   = .NOT. SIGA
+        This code should be changed like as follows;
+         IF ( SIGA .GT. 0.0 ) then
+          SIGAP = 0.0
+         ELSE
+          SIGAP = 1.0
+         ENDIF
+
+        Other example,
+         SIGNLC  = SIGN( ERRORC ) * ( ABS( ERRORC ) .GT. DELTAI )
+        This code should be changed like as follows;
+         IF ( DABS( ERRORC ) .GT. DELTAI ) THEN
+          SIGNLC  = SIGNZ( ERRORC ) * 1.0D0
+         ELSE
+          SIGNLC = 0.D0
+         ENDIF
+
+<<Compiled MODELS>>
+  FOREIGN MODEL can be used by editing and modifying FGNMOD.F .
+Please refer to the MODELS USERS GUIDE and the comments in 
+FGNMODS.F.
+
+
+<<Feedback>>
+If you find any problems, please report bugs or findings. The problem
+which was reported and the remedy are as follows.
+
+1. The program may be aborted when you stack several data cases in
+   one data file. It is recommended to divide each data cases in
+   separate files.
+2. Problem:
+   After running successfully for several months, he started 
+   getting the error shown below, and now we can not get TPBIG to run. 
+   We have reinstalled from the original zip file and have replaced 
+   CRTDLL.DLL, all with no success. The error is the same, whether 
+   TPBIG is started from ATPDraw or from the RUN command under the 
+   Windows Start menu.
+**************************************************************************
+TPBIG caused an invalid page fault in
+module TPBIG.EXE at 0157:00642b15.
+Registers:
+EAX=00000000 CS=0157 EIP=00642b15 EFLGS=00010246
+EBX=00000000 SS=015f ESP=03f3f468 EBP=03f3f5bc
+ECX=ffffffff DS=015f ESI=01e02040 FS=287f
+EDX=00000000 ES=015f EDI=00000000 GS=0000
+Bytes at CS:EIP:
+f2 ae f7 d1 49 83 c4 08 81 f9 ff 00 00 00 76 3f
+Stack dump:
+00000000 03f3f4bc 00000000 03f3f60c 03f3f924 8172ce9c bff7b464 81706000 00000000
+ 8173863c bff7b502 8173863c bff7e117 8173863c 8173863c 03f3f4bc
+**************************************************************************
+  Remedy:
+   Please try to delete files in the Windows Temp directory, or any
+other temporary directory which is assigned to Windows. 
+
+<<Legal status>>
+This software can be freely used and distributed under the terms of
+ATP-Licnese. http://www02.so-net.ne.jp/~m_kan/index2-e.htm#license This
+comes with no warranty.
+
+<<ChangeLog>>
+Please refer to Changelo.txt file.
+
+Enjoy!
+------------------------------------------------------
+99-09-26
+98-01-07
+Masahiro Kan, Surge Arrester Dept.,
+Hamakawasaki-Operations, TOSHIBA Corporation, Japan.
+E-MAIL:"Masahiro Kan at Toshiba"<kan@hama.toshiba.co.jp>
+WWW(JAUG Homepage) :http://www02.so-net.ne.jp/~m_kan/index-e.htm

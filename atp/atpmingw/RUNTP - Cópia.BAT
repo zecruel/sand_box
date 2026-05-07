@@ -1,0 +1,1 @@
+c:\ATP\atpmingw\tpbig.exe DistribuicaoCCC.atp

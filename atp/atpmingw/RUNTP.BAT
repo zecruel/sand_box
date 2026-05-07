@@ -1,0 +1,1 @@
+tpbig.exe disk %1 s -r
