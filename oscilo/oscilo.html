@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>COMTRADE</title>
+</head>
+<body>
+  <h2>Abre arquivos COMTRADE</h2>
+  <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
+  <div id="output"></div>
+
+  <script>
+    // global vars
+    
+    
+    
+    function getFileExtension(filename) {
+      if (typeof filename !== 'string') {
+          throw new TypeError('Filename must be a string');
+      }
+
+      // Extract the last part after the last dot
+      const lastDotIndex = filename.lastIndexOf('.');
+
+      // No dot found or dot is the first character (hidden files like .gitignore)
+      if (lastDotIndex <= 0 || lastDotIndex === filename.length - 1) {
+          return null;
+      }
+
+      return filename.slice(lastDotIndex + 1).toLowerCase();
+    }
+    
+    function check_cfg(file) {
+      return getFileExtension(file.name) === 'cfg'
+    }
+    function check_dat(file) {
+      return getFileExtension(file.name) === 'dat'
+    }
+    
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+
+        reader.readAsText(file);
+      });
+    }
+    
+    function readFileAsBinary(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    
+    async function read_osc(osc_obj) {
+      const cfg_c = await readFileAsText(osc_obj.cfg_f);
+      const lines = cfg_c.split(/\r?\n/); // Split file content into lines
+      if (lines.length < 9) return; //error
+        
+      const ident = lines[0].split(','); // Read the first line
+      if (ident.length < 2) return; //error
+      osc_obj.id = ident[0];
+      if (ident.length > 2) osc_obj.ver = parseInt(ident[2]);
+      else osc_obj.ver = 1991;
+      
+      const chanels = lines[1].split(',');
+      if (chanels.length < 3) return; //error
+      let n_ch = parseInt(chanels[0]);
+      let n_chA = parseInt(chanels[1]);
+      let n_chD = parseInt(chanels[2]);
+      
+      if (n_chA + n_chD != n_ch) return; //error
+      if (lines.length < 8 + n_ch) return; //error
+      
+      osc_obj.chanels_A = n_chA;
+      osc_obj.chanels_D = n_chD;
+      osc_obj.chanels = [];
+      let line = 2;
+      
+      for (let i = 0; i < n_chA; i++){
+        const ch_info = lines[line].split(',');
+        ch = {type: "A"};
+        ch.idx = parseInt(ch_info[0]);
+        ch.id = ch_info[1];
+        ch.ph = ch_info[2];
+        ch.c = ch_info[3];
+        ch.un = ch_info[4];
+        ch.a = parseFloat(ch_info[5]);
+        ch.b = parseFloat(ch_info[6]);
+        ch.sk = parseInt(ch_info[7]);
+        ch.min = parseInt(ch_info[8]);
+        ch.max = parseInt(ch_info[9]);
+        
+        osc_obj.chanels.push(ch);
+        line++;
+      }
+      for (let i = 0; i < n_chD; i++){
+        const ch_info = lines[line].split(',');
+        ch = {type: "D"};
+        ch.idx = parseInt(ch_info[0]);
+        ch.id = ch_info[1];
+        ch.st = parseInt(ch_info[ch_info.length - 1]);
+        
+        osc_obj.chanels.push(ch);
+        line++;
+      }
+      osc_obj.freq = parseInt(lines[line]);
+      line++;
+      osc_obj.n_sr = parseInt(lines[line]);
+      line++;
+      osc_obj.sr = [];
+      osc_obj.n_smp = 0;
+      for (let i = 0; i < osc_obj.n_sr; i++){
+        const sr_info = lines[line].split(',');
+        sr = {};
+        sr.freq = parseFloat(sr_info[0]);
+        sr.n_smp = parseInt(sr_info[1]);
+        osc_obj.n_smp += sr.n_smp;
+        osc_obj.sr.push(sr);
+        line++;
+      }
+      const first = lines[line].split(',');
+      osc_obj.first = {date: {}, time: {}};
+      let date = first[0].split('/');
+      osc_obj.first.date.d = parseInt(date[0]);
+      osc_obj.first.date.m = parseInt(date[1]);
+      osc_obj.first.date.y = parseInt(date[2]);
+      let time = first[1].split(':');
+      osc_obj.first.time.h = parseInt(time[0]);
+      osc_obj.first.time.m = parseInt(time[1]);
+      osc_obj.first.time.s = parseFloat(time[2]);
+      line++;
+      
+      const start = lines[line].split(',');
+      osc_obj.start = {date: {}, time: {}};
+      date = start[0].split('/');
+      osc_obj.start.date.d = parseInt(date[0]);
+      osc_obj.start.date.m = parseInt(date[1]);
+      osc_obj.start.date.y = parseInt(date[2]);
+      time = start[1].split(':');
+      osc_obj.start.time.h = parseInt(time[0]);
+      osc_obj.start.time.m = parseInt(time[1]);
+      osc_obj.start.time.s = parseFloat(time[2]);
+      line++;
+      
+      let dat_type = lines[line].toLowerCase();
+      
+      
+      if (dat_type === 'binary') {
+        const chD_words = Math.ceil(n_chD/16);
+        const bytes_rec = chD_words*2 + n_chA*2 + 8;
+        const bytes_total = osc_obj.n_smp * bytes_rec;
+        
+        if(osc_obj.dat_f.size < bytes_total) return; //error
+        
+        const dat_c = await readFileAsBinary(osc_obj.dat_f);
+        const view = new DataView(dat_c, 0);
+        
+        osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
+        let offset = 0;
+        for(let i = 0; i < osc_obj.n_smp; i++){
+          osc_obj.data[i] = Array(osc_obj.chanels.length + 2).fill(NaN);
+          for(let j = 0; j < chD_words + n_chA + 2; j++){
+            if (j < 2) {
+              osc_obj.data[i][j] = view.getInt32(offset, true);
+              offset += 4;
+            }
+            else{
+              if (j < n_chA + 2 && osc_obj.chanels[j-2].type == 'A'){
+                osc_obj.data[i][j] = osc_obj.chanels[j-2].a * view.getInt16(offset, true) + osc_obj.chanels[j-2].b
+                offset += 2;
+              }
+              else {
+                const word = view.getInt16(offset);
+                offset += 2;
+              }
+            }
+          }
+        }
+      }
+      else {
+        const dat_c = await readFileAsText(osc_obj.dat_f);
+        const lines = dat_c.split(/\r?\n/); // Split file content into lines
+        if (lines.length < osc_obj.n_smp) console.log('error: '+ lines.length); //error
+        
+        osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
+        let max_lines = lines.length;
+        if (lines.length > osc_obj.n_smp) max_lines = osc_obj.n_smp;
+        for(let i = 0; i < max_lines; i++){
+          osc_obj.data[i] = Array(osc_obj.chanels.length + 2).fill(NaN);
+          const rec = lines[i].split(',');
+          let max_rec = rec.length;
+          if (rec.length > osc_obj.chanels.length + 2) max_rec = osc_obj.chanels.length + 2;
+          for(let j = 0; j < max_rec; j++){
+            if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]);
+            else{
+              if (osc_obj.chanels[j-2].type == 'D')
+                osc_obj.data[i][j] = parseInt(rec[j]);
+              if (osc_obj.chanels[j-2].type == 'A')
+                osc_obj.data[i][j] = osc_obj.chanels[j-2].a * parseInt(rec[j]) + osc_obj.chanels[j-2].b;
+            }
+          }
+        }
+      }
+    }
+    
+  
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const cfgs = Array.from(event.target.files).filter(check_cfg)
+      const dats = Array.from(event.target.files).filter(check_dat)
+      
+      // associate dat files and verify size
+      const osc = {};
+      for(const cfg of cfgs) {
+        let dat_name = cfg.name.slice(0, cfg.name.lastIndexOf('.'));
+        const dat = dats.find(look => look.name.slice(0, look.name.lastIndexOf('.')) === dat_name);
+        if (dat) {
+          if (dat.size < 50 * 1024 * 1024) { // 50 MB limit
+            osc[dat_name] = {cfg_f: cfg, dat_f: dat}
+          }
+        }
+      }
+      
+      to_open = 0;
+      opened = 0;
+      for (const key of Object.keys(osc)) {
+        read_osc(osc[key]);
+        
+      }
+      
+      //while (opened < to_open){
+        //wait all files readed
+      //}
+      
+      for (const key of Object.keys(osc)) {
+        console.log(key + ":");
+        console.log(osc[key]);
+      }
+      
+      const output = document.getElementById('output');
+      output.innerHTML = ''; // Clear previous results
+      output.innerHTML += `<p style="color:red;"> cfgs = ${cfgs.length}, dats = ${dats.length}</p>`;
+      
+      //const file = event.target.files[0];
+      /*
+      for(const file of event.target.files){
+        const output = document.getElementById('output');
+        output.innerHTML = ''; // Clear previous results
+
+        if (!file) {
+          output.textContent = 'No files selected.';
+          return;
+        }
+
+        // Ensure it's not too large for memory
+        if (file.size > 50 * 1024 * 1024) { // 50 MB limit example
+          output.innerHTML += `<p style="color:red;">${file.name} is too large (max 5MB).</p>`;
+          return;
+        }
+
+        const reader = new FileReader();
+
+        // Read file as ArrayBuffer (binary)
+        reader.onload = function(e) {
+          const arrayBuffer = e.target.result;
+          const byteArray = new Uint8Array(arrayBuffer);
+
+          // Show first 20 bytes in hex
+          let hexPreview = Array.from(byteArray.slice(0, 20))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join(' ');
+          
+          output.innerHTML += `<h3>${file.name}</h3><pre>` +
+          `File name: ${file.name}\n` +
+            `Size: ${file.size} bytes\n` +
+            `First 20 bytes (hex): ${hexPreview}` +
+          '</pre>';
+          //document.getElementById('output').textContent =
+          //  `File name: ${file.name}\n` +
+          //  `Size: ${file.size} bytes\n` +
+          //  `First 20 bytes (hex): ${hexPreview}`;
+        };
+
+        reader.onerror = function() {
+          output.textContent = "Error reading file.";
+        };
+
+        reader.readAsArrayBuffer(file);
+      }
+      */
+    });
+  </script>
+</body>
+</html>
