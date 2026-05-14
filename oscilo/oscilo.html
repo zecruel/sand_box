@@ -12,7 +12,24 @@
   <script>
     // global vars
     
-    
+    /**
+     * Get the value of a specific bit in an integer.
+     * @param {number} num - The integer to check.
+     * @param {number} bitPosition - The bit position (0 = least significant bit).
+     * @returns {number} - 0 or 1 depending on the bit value.
+     */
+    function getBit(num, bitPosition) {
+        // Input validation
+        if (!Number.isInteger(num)) {
+            throw new TypeError("First argument must be an integer.");
+        }
+        if (!Number.isInteger(bitPosition) || bitPosition < 0 || bitPosition > 31) {
+            throw new RangeError("Bit position must be an integer between 0 and 31.");
+        }
+
+        // Shift right and mask with 1
+        return (num >> bitPosition) & 1;
+    }
     
     function getFileExtension(filename) {
       if (typeof filename !== 'string') {
@@ -178,7 +195,17 @@
                 offset += 2;
               }
               else {
-                const word = view.getInt16(offset);
+                let w_idx = (j - (n_chA + 2)) * 16;
+                const word = view.getUint16(offset, true);
+                let max_bit = 16;
+                if (n_chD < 16) max_bit = n_chD;
+                else if (w_idx + 16 > n_chD)
+                  max_bit = n_chD - w_idx;
+                
+                w_idx += n_chA + 2;
+                for (let bit = 0; bit < max_bit; bit++){
+                  osc_obj.data[i][w_idx + bit] = (word >> bit) & 1;
+                }
                 offset += 2;
               }
             }
