@@ -3,32 +3,149 @@
 <head>
   <meta charset="UTF-8">
   <title>COMTRADE</title>
+  <link rel="stylesheet" type="text/css" href="/w2ui.min.css">
 </head>
 <body>
-  <h2>Abre arquivos COMTRADE</h2>
-  <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
-  <div id="output"></div>
-
+  <div id="top" style="background-color:powderblue;height:100px">
+    <h2 style="text-align:center;">Abre arquivos COMTRADE</h2>
+    <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
+    <div id="output"></div>
+  </div>
+  <div id="recs" style="background-color:powderblue;height:200px"></div>
+  <div style="position: relative; display: flex; height: 300px;">
+    <div style="background-color:silver;height:300px;width:50%;display:inline-block;">
+      <div id="var" style="height:250px"></div>
+      <br>
+      <button class="w2ui-btn" onclick="b_teste()">>></button>
+    </div>
+    <div style="background-color:tomato;height:300px;width:50%;display:inline-block;">
+      <div id="config" style="height:250px"></div>
+      <br>
+      <button class="w2ui-btn" onclick="setActive('tab4')">Set Tab 4 Active</button>
+    </div>
+  </div>
+  
+  <div id="saida">
+    <h2 style="text-align:center;">saída</h2>
+  </div>
+  <div id="container" style="height: 300px"></div>
+  
+  <script type="text/javascript" src="w2ui.min.js"></script>
+  <script type="text/javascript" src="echarts.min.js"></script>
   <script>
     // global vars
+    osc_idx = 0;
+    ch_idx = 0;
+    let osc = {};
     
-    /**
-     * Get the value of a specific bit in an integer.
-     * @param {number} num - The integer to check.
-     * @param {number} bitPosition - The bit position (0 = least significant bit).
-     * @returns {number} - 0 or 1 depending on the bit value.
-     */
-    function getBit(num, bitPosition) {
-        // Input validation
-        if (!Number.isInteger(num)) {
-            throw new TypeError("First argument must be an integer.");
+    
+    //----------------------------------------------
+    
+    plot_option = { animation: false, grid: {top: 40,left: 50,right: 40,bottom: 50},
+      xAxis: {name: 'x', minorTick: {show: true}, minorSplitLine: {show: true}},
+      yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true}},
+      dataZoom: [{type: 'inside', start: 0,end: 20}, {start: 0,end: 0}],
+      series: [{type: 'line', showSymbol: false, clip: true, data: generateData()}]
+    };
+    
+    function func(x) {
+      x /= 10;
+      return Math.sin(x) * Math.cos(x * 2 + 1) * Math.sin(x * 3 + 2) * 50;
+    }
+    function generateData() {
+      let data = [];
+      for (let i = -200; i <= 200; i += 0.1) {
+        data.push([i, func(i)]);
+      }
+      return data;
+    }
+    
+    function plot(idx){
+      let saida = document.getElementById('saida');
+      saida.innerHTML += '<div id="container_' + idx + '" style="height: 300px"></div>';
+      let dom = document.getElementById('container_' + idx);
+      let myChart = echarts.init(dom, null, {
+        renderer: 'canvas',
+        useDirtyRect: false
+      });
+      myChart.setOption(plot_option);
+      window.addEventListener('resize', myChart.resize);
+    }
+    
+    plot(1);
+    //----------------------------------
+    
+    
+    
+    let recs_grid = new w2grid({
+      name: 'recs',
+      box: '#recs',
+      header: 'Records',
+      show: {
+        header: true,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: false,
+      columns: [
+        { field: 'name', text: 'Name', size: '150px'},
+        { field: 'id', text: 'Ident', size: '30%' },
+        { field: 'an', text: 'An', size: '40px' },
+        { field: 'dig', text: 'Dig', size: '40px' },
+        { field: 'smp', text: 'Samples', size: '70px' },
+        { field: 'trig', text: 'Trigger', size: '120px' },
+        { field: 'start', text: 'Start', size: '120px' },
+        { field: 'freq', text: 'Freq', size: '40px' },
+        { field: 'typ', text: 'Type', size: '70px' },
+        { field: 'ver', text: 'Version', size: '70px' }
+      ],
+      async onSelect(event) {
+        await event.complete;
+        osc_idx = 0;
+        ch_idx = 0;
+        const sel = this.getSelection();
+        if (sel.length > 0) {
+          osc_idx = sel[0];
         }
-        if (!Number.isInteger(bitPosition) || bitPosition < 0 || bitPosition > 31) {
-            throw new RangeError("Bit position must be an integer between 0 and 31.");
-        }
-
-        // Shift right and mask with 1
-        return (num >> bitPosition) & 1;
+        populate_channels(osc_idx);
+      }
+    });
+    
+    let var_grid = new w2grid({
+      name: 'var',
+      box: '#var',
+      header: 'Channels',
+      show: {
+        header: true,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: true,
+      columns: [
+        { field: 'typ', text: 'Typ', size: '40px' },
+        { field: 'un', text: 'Un', size: '40px' },
+        { field: 'id', text: 'Ident', size: '120px' },
+        { field: 'cir', text: 'Cir', size: '120px' },
+        { field: 'ph', text: 'Ph', size: '40px' },
+        { field: 'max', text: 'Max', size: '70px' },
+        { field: 'min', text: 'Min', size: '70px' }
+      ]
+    });
+    
+    let config_grid = new w2grid({
+      name: 'config',
+      box: '#config',
+      //records: teste,
+      columns: [
+        { field: 'fname', text: 'First Name', size: '30%' },
+        { field: 'lname', text: 'Last Name', size: '30%' },
+        { field: 'email', text: 'Email', size: '40%' },
+        { field: 'sdate', text: 'Start Date', size: '120px' }
+      ]
+    });
+    
+    function b_teste () {
+      console.log(recs_grid.getSelection());
     }
     
     function getFileExtension(filename) {
@@ -87,18 +204,18 @@
       if (ident.length > 2) osc_obj.ver = parseInt(ident[2]);
       else osc_obj.ver = 1991;
       
-      const chanels = lines[1].split(',');
-      if (chanels.length < 3) return; //error
-      let n_ch = parseInt(chanels[0]);
-      let n_chA = parseInt(chanels[1]);
-      let n_chD = parseInt(chanels[2]);
+      const channels = lines[1].split(',');
+      if (channels.length < 3) return; //error
+      let n_ch = parseInt(channels[0]);
+      let n_chA = parseInt(channels[1]);
+      let n_chD = parseInt(channels[2]);
       
       if (n_chA + n_chD != n_ch) return; //error
       if (lines.length < 8 + n_ch) return; //error
       
-      osc_obj.chanels_A = n_chA;
-      osc_obj.chanels_D = n_chD;
-      osc_obj.chanels = [];
+      osc_obj.channels_A = n_chA;
+      osc_obj.channels_D = n_chD;
+      osc_obj.channels = [];
       let line = 2;
       
       for (let i = 0; i < n_chA; i++){
@@ -115,7 +232,7 @@
         ch.min = parseInt(ch_info[8]);
         ch.max = parseInt(ch_info[9]);
         
-        osc_obj.chanels.push(ch);
+        osc_obj.channels.push(ch);
         line++;
       }
       for (let i = 0; i < n_chD; i++){
@@ -125,7 +242,7 @@
         ch.id = ch_info[1];
         ch.st = parseInt(ch_info[ch_info.length - 1]);
         
-        osc_obj.chanels.push(ch);
+        osc_obj.channels.push(ch);
         line++;
       }
       osc_obj.freq = parseInt(lines[line]);
@@ -168,7 +285,7 @@
       line++;
       
       let dat_type = lines[line].toLowerCase();
-      
+      osc_obj.dat_type = dat_type;
       
       if (dat_type === 'binary') {
         const chD_words = Math.ceil(n_chD/16);
@@ -183,15 +300,15 @@
         osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
         let offset = 0;
         for(let i = 0; i < osc_obj.n_smp; i++){
-          osc_obj.data[i] = Array(osc_obj.chanels.length + 2).fill(NaN);
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);
           for(let j = 0; j < chD_words + n_chA + 2; j++){
             if (j < 2) {
               osc_obj.data[i][j] = view.getInt32(offset, true);
               offset += 4;
             }
             else{
-              if (j < n_chA + 2 && osc_obj.chanels[j-2].type == 'A'){
-                osc_obj.data[i][j] = osc_obj.chanels[j-2].a * view.getInt16(offset, true) + osc_obj.chanels[j-2].b
+              if (j < n_chA + 2 && osc_obj.channels[j-2].type == 'A'){
+                osc_obj.data[i][j] = osc_obj.channels[j-2].a * view.getInt16(offset, true) + osc_obj.channels[j-2].b
                 offset += 2;
               }
               else {
@@ -212,7 +329,7 @@
           }
         }
       }
-      else {
+      else if (dat_type === 'ascii') {
         const dat_c = await readFileAsText(osc_obj.dat_f);
         const lines = dat_c.split(/\r?\n/); // Split file content into lines
         if (lines.length < osc_obj.n_smp) console.log('error: '+ lines.length); //error
@@ -221,59 +338,114 @@
         let max_lines = lines.length;
         if (lines.length > osc_obj.n_smp) max_lines = osc_obj.n_smp;
         for(let i = 0; i < max_lines; i++){
-          osc_obj.data[i] = Array(osc_obj.chanels.length + 2).fill(NaN);
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);
           const rec = lines[i].split(',');
           let max_rec = rec.length;
-          if (rec.length > osc_obj.chanels.length + 2) max_rec = osc_obj.chanels.length + 2;
+          if (rec.length > osc_obj.channels.length + 2) max_rec = osc_obj.channels.length + 2;
           for(let j = 0; j < max_rec; j++){
             if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]);
             else{
-              if (osc_obj.chanels[j-2].type == 'D')
+              if (osc_obj.channels[j-2].type == 'D')
                 osc_obj.data[i][j] = parseInt(rec[j]);
-              if (osc_obj.chanels[j-2].type == 'A')
-                osc_obj.data[i][j] = osc_obj.chanels[j-2].a * parseInt(rec[j]) + osc_obj.chanels[j-2].b;
+              if (osc_obj.channels[j-2].type == 'A')
+                osc_obj.data[i][j] = osc_obj.channels[j-2].a * parseInt(rec[j]) + osc_obj.channels[j-2].b;
             }
           }
         }
       }
     }
     
+    function populate_channels(idx) {
+      var_grid.clear();
+      const rec = osc[idx];
+      
+      if (!rec) return;
+      
+      const channels = rec.channels;
+      
+      for (let i = 0; i < channels.length; i++) {
+        if (channels[i].type == 'A'){
+          let max = channels[i].a * channels[i].max + channels[i].b;
+          let min = channels[i].a * channels[i].min + channels[i].b;
+          var_grid.add([{
+            'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
+            'un': channels[i].un, 'cir': channels[i].c, 'ph': channels[i].ph,
+            'max': max, 'min': min
+          }]);
+        } else if (channels[i].type == 'D'){
+          var_grid.add([{
+            'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
+            'un': 'B', 'cir': '-', 'ph': '-', 'max': '1', 'min': '0'
+          }]);
+        }
+      }
+      
+      /*{ field: 'typ', text: 'Typ', size: '40px' },
+        { field: 'un', text: 'Un', size: '40px' },
+        { field: 'id', text: 'Ident', size: '120px' },
+        { field: 'cir', text: 'Cir', size: '120px' },
+        { field: 'ph', text: 'Ph', size: '40px' },
+        { field: 'max', text: 'Max', size: '70px' },
+        { field: 'min', text: 'Min', size: '70px' }*/
+    }
   
     document.getElementById('fileInput').addEventListener('change', function(event) {
       const cfgs = Array.from(event.target.files).filter(check_cfg)
       const dats = Array.from(event.target.files).filter(check_dat)
       
       // associate dat files and verify size
-      const osc = {};
+      osc = {};
+      let recid = 0;
       for(const cfg of cfgs) {
         let dat_name = cfg.name.slice(0, cfg.name.lastIndexOf('.'));
         const dat = dats.find(look => look.name.slice(0, look.name.lastIndexOf('.')) === dat_name);
         if (dat) {
           if (dat.size < 50 * 1024 * 1024) { // 50 MB limit
-            osc[dat_name] = {cfg_f: cfg, dat_f: dat}
+            recid++;
+            osc[recid] = {name: dat_name, cfg_f: cfg, dat_f: dat}
           }
         }
       }
       
-      to_open = 0;
-      opened = 0;
-      for (const key of Object.keys(osc)) {
-        read_osc(osc[key]);
-        
-      }
       
-      //while (opened < to_open){
-        //wait all files readed
-      //}
+      recs_grid.clear();
       
-      for (const key of Object.keys(osc)) {
-        console.log(key + ":");
+      for (let key = 1; key <= recid; key++) {
+        let prom = read_osc(osc[key]);
+        prom.then(
+          function(value) { /* code if success */
+            let start = osc[key].first.date.d + '/';
+            start += osc[key].first.date.m + '/';
+            start += osc[key].first.date.y + '-';
+            start += osc[key].first.time.h + ':';
+            start += osc[key].first.time.m + ':';
+            start += osc[key].first.time.s + ':';
+            let trig = osc[key].start.date.d;
+            trig += osc[key].start.date.m + '/';
+            trig += osc[key].start.date.y + '-';
+            trig += osc[key].start.time.h + ':';
+            trig += osc[key].start.time.m + ':';
+            trig += osc[key].start.time.s;
+            recs_grid.add([{
+              'recid': key, 'name': osc[key].name, 'id': osc[key].id,
+              'an': osc[key].channels_A, 'dig': osc[key].channels_D,
+              'smp': osc[key].n_smp,
+              'trig': trig,
+              'start': start,
+              'freq': osc[key].freq,
+              'typ': osc[key].dat_type,'ver': osc[key].ver
+            }]);
+          },
+          function(value) { /* code if error */ }
+        );
+      
         console.log(osc[key]);
       }
+      //recs_grid.refresh();
       
-      const output = document.getElementById('output');
-      output.innerHTML = ''; // Clear previous results
-      output.innerHTML += `<p style="color:red;"> cfgs = ${cfgs.length}, dats = ${dats.length}</p>`;
+      //const output = document.getElementById('output');
+      //output.innerHTML = ''; // Clear previous results
+      //output.innerHTML += `<p style="color:red;"> cfgs = ${cfgs.length}, dats = ${dats.length}</p>`;
       
       //const file = event.target.files[0];
       /*
