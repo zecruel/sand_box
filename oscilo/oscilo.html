@@ -14,68 +14,35 @@
   <div id="recs" style="background-color:powderblue;height:200px"></div>
   <div style="position: relative; display: flex; height: 300px;">
     <div style="background-color:silver;height:300px;width:50%;display:inline-block;">
-      <div id="var" style="height:250px"></div>
+      <div id="channels" style="height:250px"></div>
       <br>
-      <button class="w2ui-btn" onclick="b_teste()">>></button>
+      <button class="w2ui-btn" onclick="plot_output.clear()">Clear</button>
+      <button class="w2ui-btn" onclick="b_plot_channels()">Plot selected</button>
+      <button class="w2ui-btn" onclick="b_composer()">To composer</button>
     </div>
     <div style="background-color:tomato;height:300px;width:50%;display:inline-block;">
-      <div id="config" style="height:250px"></div>
+      <div id="composer" style="height:250px"></div>
       <br>
       <button class="w2ui-btn" onclick="setActive('tab4')">Set Tab 4 Active</button>
     </div>
   </div>
   
-  <div id="saida">
-    <h2 style="text-align:center;">saída</h2>
-  </div>
-  <div id="container" style="height: 300px"></div>
+  <div id="plot_out"><h2 style="text-align:center;">Output</h2></div>
+  
+  <div id="plot_container" style="height: 10000px"></div>
   
   <script type="text/javascript" src="w2ui.min.js"></script>
   <script type="text/javascript" src="echarts.min.js"></script>
   <script>
     // global vars
-    osc_idx = 0;
-    ch_idx = 0;
+    let osc_idx = 0;
+    let ch_idx = 0;
     let osc = {};
     
+    let plot_output = echarts.init(document.getElementById('plot_container'), 
+      null, {renderer: 'canvas', useDirtyRect: false});
     
-    //----------------------------------------------
-    
-    plot_option = { animation: false, grid: {top: 40,left: 50,right: 40,bottom: 50},
-      xAxis: {name: 'x', minorTick: {show: true}, minorSplitLine: {show: true}},
-      yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true}},
-      dataZoom: [{type: 'inside', start: 0,end: 20}, {start: 0,end: 0}],
-      series: [{type: 'line', showSymbol: false, clip: true, data: generateData()}]
-    };
-    
-    function func(x) {
-      x /= 10;
-      return Math.sin(x) * Math.cos(x * 2 + 1) * Math.sin(x * 3 + 2) * 50;
-    }
-    function generateData() {
-      let data = [];
-      for (let i = -200; i <= 200; i += 0.1) {
-        data.push([i, func(i)]);
-      }
-      return data;
-    }
-    
-    function plot(idx){
-      let saida = document.getElementById('saida');
-      saida.innerHTML += '<div id="container_' + idx + '" style="height: 300px"></div>';
-      let dom = document.getElementById('container_' + idx);
-      let myChart = echarts.init(dom, null, {
-        renderer: 'canvas',
-        useDirtyRect: false
-      });
-      myChart.setOption(plot_option);
-      window.addEventListener('resize', myChart.resize);
-    }
-    
-    plot(1);
-    //----------------------------------
-    
-    
+    window.addEventListener('resize', plot_output.resize);
     
     let recs_grid = new w2grid({
       name: 'recs',
@@ -111,9 +78,9 @@
       }
     });
     
-    let var_grid = new w2grid({
-      name: 'var',
-      box: '#var',
+    let channels_grid = new w2grid({
+      name: 'channels',
+      box: '#channels',
       header: 'Channels',
       show: {
         header: true,
@@ -132,9 +99,9 @@
       ]
     });
     
-    let config_grid = new w2grid({
-      name: 'config',
-      box: '#config',
+    let composer_grid = new w2grid({
+      name: 'composer',
+      box: '#composer',
       //records: teste,
       columns: [
         { field: 'fname', text: 'First Name', size: '30%' },
@@ -144,8 +111,52 @@
       ]
     });
     
-    function b_teste () {
-      console.log(recs_grid.getSelection());
+    function b_plot_channels () {
+      const grids = [];
+      const xAxes = [];
+      const yAxes = [];
+      const series = [];
+      const titles = [];
+      
+      let top = 0;
+      let count = 0;
+      
+      const channels = channels_grid.getSelection();
+      const rec = osc[osc_idx];
+      for (let i = 0; i < channels.length; i++){
+        const ch = rec.channels[channels[i]-1];
+        if (ch.type === 'A') {
+          let data = [];
+          for (let j = 0; j < rec.data.length; j++){
+            data.push([rec.data[j][1], rec.data[j][ch.idx + 1]]);
+          }
+          let name = ch.id + ':' + ch.c  + ':' + ch.ph;
+          grids.push({top: top,left: 60, height: 300});
+          titles.push({top: top, left: 'center', text: name,
+            textStyle: { fontSize: 12, fontWeight: 'normal'}});
+          xAxes.push({gridIndex: count, name: 't', minorTick: {show: true}, minorSplitLine: {show: true}});
+          yAxes.push({gridIndex: count, name: ch.un, minorTick: {show: true}, minorSplitLine: {show: true}});
+          series.push({//name: name, 
+            xAxisIndex: count, yAxisIndex: count,
+            type: 'line', showSymbol: false, clip: true, data: data});
+          top += 360;
+          count++;
+        }
+      }
+      let container = document.getElementById('plot_container');
+      container.style.height = top +50;
+      
+      plot_output.clear();
+      let plot_option = { animation: false,
+        grid: grids,
+        xAxis: xAxes,
+        yAxis: yAxes,
+        series: series,
+        title: titles,
+        dataZoom: [{type: 'slider', xAxisIndex: 'all', top: top},{type: 'inside', xAxisIndex: 'all'}],
+        tooltip: {trigger: 'axis'},
+      };
+      plot_output.setOption(plot_option);
     }
     
     function getFileExtension(filename) {
@@ -302,8 +313,12 @@
         for(let i = 0; i < osc_obj.n_smp; i++){
           osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);
           for(let j = 0; j < chD_words + n_chA + 2; j++){
-            if (j < 2) {
-              osc_obj.data[i][j] = view.getInt32(offset, true);
+            if (j < 1) {
+              osc_obj.data[i][j] = view.getInt32(offset, true); // index
+              offset += 4;
+            }
+            else if (j < 2) {
+              osc_obj.data[i][j] = view.getInt32(offset, true) * 1e-6; // convert microssecond to s
               offset += 4;
             }
             else{
@@ -343,7 +358,8 @@
           let max_rec = rec.length;
           if (rec.length > osc_obj.channels.length + 2) max_rec = osc_obj.channels.length + 2;
           for(let j = 0; j < max_rec; j++){
-            if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]);
+            if (j < 1) osc_obj.data[i][j] = parseInt(rec[j]); // index
+            else if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]) * 1e-6; // convert microssecond to s
             else{
               if (osc_obj.channels[j-2].type == 'D')
                 osc_obj.data[i][j] = parseInt(rec[j]);
@@ -356,37 +372,32 @@
     }
     
     function populate_channels(idx) {
-      var_grid.clear();
+      channels_grid.clear();
       const rec = osc[idx];
       
       if (!rec) return;
       
       const channels = rec.channels;
       
+      const table = [];
+      
       for (let i = 0; i < channels.length; i++) {
         if (channels[i].type == 'A'){
           let max = channels[i].a * channels[i].max + channels[i].b;
           let min = channels[i].a * channels[i].min + channels[i].b;
-          var_grid.add([{
+          table.push({
             'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
             'un': channels[i].un, 'cir': channels[i].c, 'ph': channels[i].ph,
             'max': max, 'min': min
-          }]);
+          });
         } else if (channels[i].type == 'D'){
-          var_grid.add([{
+          table.push({
             'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
             'un': 'B', 'cir': '-', 'ph': '-', 'max': '1', 'min': '0'
-          }]);
+          });
         }
       }
-      
-      /*{ field: 'typ', text: 'Typ', size: '40px' },
-        { field: 'un', text: 'Un', size: '40px' },
-        { field: 'id', text: 'Ident', size: '120px' },
-        { field: 'cir', text: 'Cir', size: '120px' },
-        { field: 'ph', text: 'Ph', size: '40px' },
-        { field: 'max', text: 'Max', size: '70px' },
-        { field: 'min', text: 'Min', size: '70px' }*/
+      channels_grid.add(table);
     }
   
     document.getElementById('fileInput').addEventListener('change', function(event) {
