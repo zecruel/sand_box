@@ -16,20 +16,20 @@
     <div style="background-color:silver;height:300px;width:50%;display:inline-block;">
       <div id="channels" style="height:250px"></div>
       <br>
-      <button class="w2ui-btn" onclick="plot_output.clear()">Clear</button>
+      <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
       <button class="w2ui-btn" onclick="b_plot_channels()">Plot selected</button>
       <button class="w2ui-btn" onclick="b_composer()">To composer</button>
     </div>
     <div style="background-color:tomato;height:300px;width:50%;display:inline-block;">
       <div id="composer" style="height:250px"></div>
       <br>
-      <button class="w2ui-btn" onclick="setActive('tab4')">Set Tab 4 Active</button>
+      <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
     </div>
   </div>
   
   <div id="plot_out"><h2 style="text-align:center;">Output</h2></div>
   
-  <div id="plot_container" style="height: 10000px"></div>
+  <div id="plot_container"></div>
   
   <script type="text/javascript" src="w2ui.min.js"></script>
   <script type="text/javascript" src="echarts.min.js"></script>
@@ -89,10 +89,10 @@
       },
       multiSelect: true,
       columns: [
-        { field: 'typ', text: 'Typ', size: '40px' },
+        { field: 'typ', text: 'T', size: '30px' },
         { field: 'un', text: 'Un', size: '40px' },
         { field: 'id', text: 'Ident', size: '120px' },
-        { field: 'cir', text: 'Cir', size: '120px' },
+        { field: 'cir', text: 'Cir', size: '80px' },
         { field: 'ph', text: 'Ph', size: '40px' },
         { field: 'max', text: 'Max', size: '70px' },
         { field: 'min', text: 'Min', size: '70px' }
@@ -102,14 +102,30 @@
     let composer_grid = new w2grid({
       name: 'composer',
       box: '#composer',
-      //records: teste,
+      header: 'Composer',
+      show: {
+        header: true,
+        toolbar: true,
+        footer: true,
+        toolbarReload: false,
+        toolbarSearch: false,
+        toolbarDelete: true,
+        toolbarEdit: true
+      },
+      multiSelect: true,
       columns: [
-        { field: 'fname', text: 'First Name', size: '30%' },
-        { field: 'lname', text: 'Last Name', size: '30%' },
-        { field: 'email', text: 'Email', size: '40%' },
-        { field: 'sdate', text: 'Start Date', size: '120px' }
+        { field: 'color', text: 'Color', size: '60px', editable: { type: 'color' } },
+        { field: 'var', text: 'Var', size: '120px', editable: { type: 'text' } },
+        { field: 'tit', text: 'Title', size: '120px', editable: { type: 'text' } },
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} },
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} }
       ]
     });
+    
+    function plot_clear() {
+      plot_output.clear();
+      plot_output.resize({height: 50});
+    }
     
     function b_plot_channels () {
       const grids = [];
@@ -131,22 +147,43 @@
             data.push([rec.data[j][1], rec.data[j][ch.idx + 1]]);
           }
           let name = ch.id + ':' + ch.c  + ':' + ch.ph;
-          grids.push({top: top,left: 60, height: 300});
-          titles.push({top: top, left: 'center', text: name,
+          grids.push({top: top,left: 60, height: 200});
+          titles.push({top: top, left: 80, text: name,
             textStyle: { fontSize: 12, fontWeight: 'normal'}});
-          xAxes.push({gridIndex: count, name: 't', minorTick: {show: true}, minorSplitLine: {show: true}});
+          xAxes.push({gridIndex: count, name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}});
           yAxes.push({gridIndex: count, name: ch.un, minorTick: {show: true}, minorSplitLine: {show: true}});
           series.push({//name: name, 
             xAxisIndex: count, yAxisIndex: count,
+            markLine: {symbol: ['none', 'pin'],label: { show: false },
+              data: [{ xAxis: rec.trig }]},
             type: 'line', showSymbol: false, clip: true, data: data});
-          top += 360;
+          top += 260;
+          count++;
+        }
+        if (ch.type === 'D') {
+          let data = [];
+          for (let j = 0; j < rec.data.length; j++){
+            data.push([rec.data[j][1], rec.data[j][ch.idx + rec.channels_A + 1]]);
+          }
+          let name = ch.id;
+          grids.push({top: top,left: 60, height: 30});
+          titles.push({top: top, left: 80, text: name,
+            textStyle: { fontSize: 12, fontWeight: 'normal'}});
+          xAxes.push({gridIndex: count, name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}});
+          yAxes.push({type: 'value', show: false, min: 0, max: 1, gridIndex: count});
+          series.push({//name: name, 
+            xAxisIndex: count, yAxisIndex: count,
+            markLine: {symbol: ['none', 'pin'],label: { show: false },
+              data: [{ xAxis: rec.trig }]},
+            type: 'line', areaStyle: {}, showSymbol: false, clip: true, data: data});
+          top += 60;
           count++;
         }
       }
-      let container = document.getElementById('plot_container');
-      container.style.height = top +50;
-      
       plot_output.clear();
+      
+      plot_output.resize({height: top + 50});
+      
       let plot_option = { animation: false,
         grid: grids,
         xAxis: xAxes,
@@ -283,6 +320,13 @@
       osc_obj.first.time.s = parseFloat(time[2]);
       line++;
       
+      const first_d = new Date(osc_obj.first.date.y, 
+        osc_obj.first.date.m,
+        osc_obj.first.date.d,
+        osc_obj.first.time.h,
+        osc_obj.first.time.m,
+        Math.trunc(osc_obj.first.time.s));
+      
       const start = lines[line].split(',');
       osc_obj.start = {date: {}, time: {}};
       date = start[0].split('/');
@@ -294,6 +338,17 @@
       osc_obj.start.time.m = parseInt(time[1]);
       osc_obj.start.time.s = parseFloat(time[2]);
       line++;
+      
+      const start_d = new Date(osc_obj.start.date.y, 
+        osc_obj.start.date.m,
+        osc_obj.start.date.d,
+        osc_obj.start.time.h,
+        osc_obj.start.time.m,
+        Math.trunc(osc_obj.start.time.s));
+      const d_dif = (start_d - first_d)/1000;
+      
+      osc_obj.trig = Math.abs((osc_obj.start.time.s % 1) - (osc_obj.first.time.s % 1) + d_dif);
+      console.log(osc_obj.trig);
       
       let dat_type = lines[line].toLowerCase();
       osc_obj.dat_type = dat_type;
@@ -401,6 +456,8 @@
     }
   
     document.getElementById('fileInput').addEventListener('change', function(event) {
+      channels_grid.clear();
+      
       const cfgs = Array.from(event.target.files).filter(check_cfg)
       const dats = Array.from(event.target.files).filter(check_dat)
       
@@ -430,8 +487,8 @@
             start += osc[key].first.date.y + '-';
             start += osc[key].first.time.h + ':';
             start += osc[key].first.time.m + ':';
-            start += osc[key].first.time.s + ':';
-            let trig = osc[key].start.date.d;
+            start += osc[key].first.time.s;
+            let trig = osc[key].start.date.d + '/';
             trig += osc[key].start.date.m + '/';
             trig += osc[key].start.date.y + '-';
             trig += osc[key].start.time.h + ':';
@@ -441,7 +498,7 @@
               'recid': key, 'name': osc[key].name, 'id': osc[key].id,
               'an': osc[key].channels_A, 'dig': osc[key].channels_D,
               'smp': osc[key].n_smp,
-              'trig': trig,
+              'trig': osc[key].trig,
               'start': start,
               'freq': osc[key].freq,
               'typ': osc[key].dat_type,'ver': osc[key].ver
@@ -451,6 +508,7 @@
         );
       
         console.log(osc[key]);
+          
       }
       //recs_grid.refresh();
       
