@@ -1,3 +1,8 @@
+<!--
+	Read and plot COMTRADE files
+  Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
+  MIT licence
+-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,38 +11,43 @@
   <link rel="stylesheet" type="text/css" href="/w2ui.min.css">
 </head>
 <body>
-  <div id="top" style="background-color:powderblue;height:100px">
-    <h2 style="text-align:center;">Abre arquivos COMTRADE</h2>
-    <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
-    <div id="output"></div>
+  <div id="top" style="background-color:darkseagreen;height:110px">
+    <h3 style="text-align:center;">Read and plot COMTRADE files</h3>
+    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence</h4>
+    <div style="display: flex;justify-content: center;align-items: center;">
+      <label for="fileInput">Load files:</label>
+      <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
+    </div>
   </div>
-  <div id="recs" style="background-color:powderblue;height:200px"></div>
+  <div id="recs" style="background-color:darkseagreen;height:180px"></div>
   <div style="position: relative; display: flex; height: 300px;">
-    <div style="background-color:silver;height:300px;width:50%;display:inline-block;">
+    <div style="background-color:lightsteelblue;height:285px;width:50%;display:inline-block;">
       <div id="channels" style="height:250px"></div>
-      <br>
       <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
       <button class="w2ui-btn" onclick="b_plot_channels()">Plot selected</button>
       <button class="w2ui-btn" onclick="b_composer()">To composer</button>
     </div>
-    <div style="background-color:tomato;height:300px;width:50%;display:inline-block;">
-      <div id="composer" style="height:250px"></div>
-      <br>
+    <div style="background-color:burlywood;height:285px;width:50%;display:inline-block;">
+      <div id="composer" style="height:230px"></div>
+      <div id="calc_msg" style="text-align:center;height:20px;color:red;font-size:12px;"></div>
       <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
+      <button class="w2ui-btn" onclick="b_plot_comp()">Plot comp</button>
     </div>
   </div>
   
-  <div id="plot_out"><h2 style="text-align:center;">Output</h2></div>
+  <div id="plot_out"><h3 style="text-align:center;">Output</h3></div>
   
   <div id="plot_container"></div>
   
   <script type="text/javascript" src="w2ui.min.js"></script>
   <script type="text/javascript" src="echarts.min.js"></script>
+  <script src="fparser.umd.cjs"></script>
   <script>
     // global vars
     let osc_idx = 0;
     let ch_idx = 0;
     let osc = {};
+    let comp_idx = 1;
     
     let plot_output = echarts.init(document.getElementById('plot_container'), 
       null, {renderer: 'canvas', useDirtyRect: false});
@@ -47,6 +57,7 @@
     let recs_grid = new w2grid({
       name: 'recs',
       box: '#recs',
+      style: 'border: 3px solid darkseagreen',
       header: 'Records',
       show: {
         header: true,
@@ -81,6 +92,7 @@
     let channels_grid = new w2grid({
       name: 'channels',
       box: '#channels',
+      style: 'border: 3px solid lightsteelblue',
       header: 'Channels',
       show: {
         header: true,
@@ -102,24 +114,62 @@
     let composer_grid = new w2grid({
       name: 'composer',
       box: '#composer',
+      style: 'border: 3px solid burlywood',
       header: 'Composer',
       show: {
         header: true,
         toolbar: true,
-        footer: true,
+        //footer: true,
+        selectColumn: true,
+        lineNumbers: true,
         toolbarReload: false,
         toolbarSearch: false,
+        toolbarAdd: true,
         toolbarDelete: true,
-        toolbarEdit: true
+        toolbarEdit: false
       },
       multiSelect: true,
       columns: [
-        { field: 'color', text: 'Color', size: '60px', editable: { type: 'color' } },
-        { field: 'var', text: 'Var', size: '120px', editable: { type: 'text' } },
+        //{ field: 'color', text: 'Color', size: '60px', editable: { type: 'color' } },
+        { field: 'calc', text: 'Calc', size: '120px', editable: { type: 'text' } },
         { field: 'tit', text: 'Title', size: '120px', editable: { type: 'text' } },
         { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} },
         { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} }
-      ]
+      ],
+      toolbar: {
+        onClick(event) {
+          //console.log(event.target);
+          if (event.target == 'w2ui-add') {
+            this.owner.add({recid: comp_idx,
+              'tit': 'Var ' + comp_idx,
+              'scale': 1.0,
+              'ofs': 0.0
+              });
+            this.owner.scrollIntoView(comp_idx);
+            this.owner.editField(comp_idx, 0);
+            comp_idx++;
+          }
+        }
+      },
+      async onChange(event) {
+        await event.complete;
+        const recid = event.detail.recid;
+        const rec = this.get(recid)
+        const changes = rec.w2ui.changes;
+        const message = document.getElementById("calc_msg");
+        message.innerHTML = "";
+        if (Object.keys(changes).includes('calc')){
+          try {
+            validade_calc_expr(changes.calc);
+            this.mergeChanges();
+          } catch(err) {
+            message.innerHTML = err.message;
+            this.editField(recid, 0);
+          }
+        }
+        this.mergeChanges();
+        //console.log(Object.keys(rec));
+      }
     });
     
     function plot_clear() {
@@ -194,6 +244,99 @@
         tooltip: {trigger: 'axis'},
       };
       plot_output.setOption(plot_option);
+    }
+    
+    function b_composer(){
+      const channels = channels_grid.getSelection();
+      const rec = osc[osc_idx];
+      for (let i = 0; i < channels.length; i++){
+        const ch = rec.channels[channels[i]-1];
+        let name = ch.id
+        if (ch.c) name += ':' + ch.c;
+        if (ch.ph) name += ':' + ch.ph;
+        
+        composer_grid.add({recid: comp_idx,
+          'calc': 'v' + channels[i],
+          'tit': name,
+          'scale': 1.0,
+          'ofs': 0.0
+        });
+        
+        comp_idx++;
+      }
+        //composer_grid.scrollIntoView(comp_idx);
+        //composer_grid.editField(comp_idx, 0)
+    }
+    
+    function validade_calc_expr(expr){
+      const tokens = expr.match(/v\d+/g);
+      const var_idx = [];
+      if(!tokens) throw new Error("No variables");
+      if(tokens.length < 1) throw new Error("No variables");
+      for (let i = 0; i < tokens.length; i++){
+        const recid = parseInt(tokens[i].slice(1));
+        const ch = channels_grid.get(recid);
+        if (!ch) throw new Error("No Channel");
+      }
+      const fObj = new Formula(expr);
+      vars = fObj.getVariables();
+      for (let i = 0; i < vars.length; i++){
+        const tok = vars[i].match(/v\d+/g);
+        if (tok) var_idx.push(parseInt(tok[0].slice(1)));
+      }
+      return {formula: fObj, var_idx: var_idx };
+    }
+    
+    function b_plot_comp() {
+      const series = [];
+      
+      let top = 0;
+      let count = 0;
+      
+      const channels = composer_grid.getSelection();
+      const rec = osc[osc_idx];
+      for (let i = 0; i < channels.length; i++){
+        const ch = composer_grid.get(channels[i]);
+        try {
+          let calc = validade_calc_expr(ch.calc);
+          let v = {}
+          let data = [];
+          for (let j = 0; j < rec.data.length; j++){
+            for (let k = 0; k < calc.var_idx.length; k++){
+              let idx = calc.var_idx[k];
+              v['v'+idx] = rec.data[j][idx+1];
+            }
+            let value = calc.formula.evaluate(v) * ch.scale + ch.ofs;
+            data.push([rec.data[j][1], value]);
+          }
+          let name = ch.tit;
+          series.push({name: name, 
+            //markLine: {symbol: ['none', 'pin'],label: { show: false },
+            //  data: [{ xAxis: rec.trig }]},
+            type: 'line', showSymbol: false, clip: true, data: data});
+      
+          
+        } catch(err) {
+          console.log('fail', ch.calc, err.message);
+          //message.innerHTML = err.message;
+        }
+        
+      }
+      plot_output.clear();
+      
+      plot_output.resize({height: 600});
+      
+      let plot_option = { animation: false,
+        grid: {top: 0,left: 60, height: 500},
+        xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}},
+        yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true}},
+        series: series,
+        dataZoom: [{type: 'slider', xAxisIndex: 'all', top: 550},{type: 'inside', xAxisIndex: 'all'}],
+        tooltip: {trigger: 'axis'},
+      };
+      plot_output.setOption(plot_option);
+      
+      
     }
     
     function getFileExtension(filename) {
@@ -348,7 +491,7 @@
       const d_dif = (start_d - first_d)/1000;
       
       osc_obj.trig = Math.abs((osc_obj.start.time.s % 1) - (osc_obj.first.time.s % 1) + d_dif);
-      console.log(osc_obj.trig);
+      //console.log(osc_obj.trig);
       
       let dat_type = lines[line].toLowerCase();
       osc_obj.dat_type = dat_type;
@@ -428,6 +571,8 @@
     
     function populate_channels(idx) {
       channels_grid.clear();
+      composer_grid.clear();
+      comp_idx = 1;
       const rec = osc[idx];
       
       if (!rec) return;
@@ -457,7 +602,8 @@
   
     document.getElementById('fileInput').addEventListener('change', function(event) {
       channels_grid.clear();
-      
+      composer_grid.clear();
+      comp_idx = 1;
       const cfgs = Array.from(event.target.files).filter(check_cfg)
       const dats = Array.from(event.target.files).filter(check_dat)
       
@@ -507,63 +653,13 @@
           function(value) { /* code if error */ }
         );
       
-        console.log(osc[key]);
+        //console.log(osc[key]);
           
       }
-      //recs_grid.refresh();
+     
       
-      //const output = document.getElementById('output');
-      //output.innerHTML = ''; // Clear previous results
-      //output.innerHTML += `<p style="color:red;"> cfgs = ${cfgs.length}, dats = ${dats.length}</p>`;
-      
-      //const file = event.target.files[0];
-      /*
-      for(const file of event.target.files){
-        const output = document.getElementById('output');
-        output.innerHTML = ''; // Clear previous results
-
-        if (!file) {
-          output.textContent = 'No files selected.';
-          return;
-        }
-
-        // Ensure it's not too large for memory
-        if (file.size > 50 * 1024 * 1024) { // 50 MB limit example
-          output.innerHTML += `<p style="color:red;">${file.name} is too large (max 5MB).</p>`;
-          return;
-        }
-
-        const reader = new FileReader();
-
-        // Read file as ArrayBuffer (binary)
-        reader.onload = function(e) {
-          const arrayBuffer = e.target.result;
-          const byteArray = new Uint8Array(arrayBuffer);
-
-          // Show first 20 bytes in hex
-          let hexPreview = Array.from(byteArray.slice(0, 20))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join(' ');
-          
-          output.innerHTML += `<h3>${file.name}</h3><pre>` +
-          `File name: ${file.name}\n` +
-            `Size: ${file.size} bytes\n` +
-            `First 20 bytes (hex): ${hexPreview}` +
-          '</pre>';
-          //document.getElementById('output').textContent =
-          //  `File name: ${file.name}\n` +
-          //  `Size: ${file.size} bytes\n` +
-          //  `First 20 bytes (hex): ${hexPreview}`;
-        };
-
-        reader.onerror = function() {
-          output.textContent = "Error reading file.";
-        };
-
-        reader.readAsArrayBuffer(file);
-      }
-      */
     });
+    
   </script>
 </body>
 </html>
