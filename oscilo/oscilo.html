@@ -1,5 +1,5 @@
 <!--
-	Read and plot COMTRADE files
+	Read and plot COMTRADE (IEEE C37.111) files
   Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
   MIT licence
 -->
@@ -12,8 +12,8 @@
 </head>
 <body>
   <div id="top" style="background-color:darkseagreen;height:110px">
-    <h3 style="text-align:center;">Read and plot COMTRADE files</h3>
-    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence</h4>
+    <h3 style="text-align:center;">Read and plot COMTRADE (IEEE C37.111) files</h3>
+    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence - 2026</h4>
     <div style="display: flex;justify-content: center;align-items: center;">
       <label for="fileInput">Load files:</label>
       <input type="file" id="fileInput" accept=".cfg,.dat" multiple>
@@ -43,17 +43,32 @@
   <script type="text/javascript" src="echarts.min.js"></script>
   <script src="fparser.umd.cjs"></script>
   <script>
-    // global vars
-    let osc_idx = 0;
-    let ch_idx = 0;
-    let osc = {};
-    let comp_idx = 1;
+    /* ----------------------------------------------------------------------
+    Read and plot COMTRADE (IEEE C37.111) files
+    Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
+    MIT licence
     
+    Used libraries:
+    
+    * w2ui - https://github.com/vitmalina/w2ui - for GUI features (grid, buttons)
+    * echarts - https://github.com/apache/echarts - for interactives plot charts
+    * fparse - https://github.com/bylexus/fparse - for math expressions evaluation
+    
+    ------------------------------------------------------------------------- */
+  
+    // ------- global vars ---------------------
+    
+    let osc_idx = 0; // current file record index
+    let ch_idx = 0; // current channel index
+    let osc = {}; // main record object
+    let comp_idx = 1; // id for composed calc
+    
+    // init plot chart object
     let plot_output = echarts.init(document.getElementById('plot_container'), 
       null, {renderer: 'canvas', useDirtyRect: false});
-    
     window.addEventListener('resize', plot_output.resize);
     
+    // GUI grid to list loaded record files and its parameters
     let recs_grid = new w2grid({
       name: 'recs',
       box: '#recs',
@@ -64,20 +79,21 @@
         selectColumn: true,
         lineNumbers: true
       },
-      multiSelect: false,
+      multiSelect: false, // allow only one file selection - current record
       columns: [
-        { field: 'name', text: 'Name', size: '150px'},
-        { field: 'id', text: 'Ident', size: '30%' },
-        { field: 'an', text: 'An', size: '40px' },
-        { field: 'dig', text: 'Dig', size: '40px' },
-        { field: 'smp', text: 'Samples', size: '70px' },
-        { field: 'trig', text: 'Trigger', size: '120px' },
-        { field: 'start', text: 'Start', size: '120px' },
-        { field: 'freq', text: 'Freq', size: '40px' },
-        { field: 'typ', text: 'Type', size: '70px' },
-        { field: 'ver', text: 'Version', size: '70px' }
+        { field: 'name', text: 'Name', size: '150px'}, // file name
+        { field: 'id', text: 'Ident', size: '30%' }, // Record identification
+        { field: 'an', text: 'An', size: '40px' }, // Total analog channels
+        { field: 'dig', text: 'Dig', size: '40px' }, // total digital channels
+        { field: 'smp', text: 'Samples', size: '70px' }, // total samples
+        { field: 'start', text: 'Start', size: '120px' }, // date/time stamp of first sample
+        { field: 'trig', text: 'Trigger', size: '70px' }, // trigger relative time
+        { field: 'freq', text: 'Freq', size: '40px' }, // power system frequency
+        { field: 'typ', text: 'Type', size: '70px' }, // type of DAT file (ascii, binary)
+        { field: 'ver', text: 'Version', size: '70px' } // std version
       ],
       async onSelect(event) {
+        // when one file is selected, update list of channels available
         await event.complete;
         osc_idx = 0;
         ch_idx = 0;
@@ -89,6 +105,7 @@
       }
     });
     
+    // GUI grid to list available channels in record and its parameters
     let channels_grid = new w2grid({
       name: 'channels',
       box: '#channels',
@@ -101,16 +118,17 @@
       },
       multiSelect: true,
       columns: [
-        { field: 'typ', text: 'T', size: '30px' },
-        { field: 'un', text: 'Un', size: '40px' },
-        { field: 'id', text: 'Ident', size: '120px' },
-        { field: 'cir', text: 'Cir', size: '80px' },
-        { field: 'ph', text: 'Ph', size: '40px' },
-        { field: 'max', text: 'Max', size: '70px' },
-        { field: 'min', text: 'Min', size: '70px' }
+        { field: 'typ', text: 'T', size: '30px' }, // channel type (analog, digital)
+        { field: 'un', text: 'Un', size: '40px' }, // analog unit
+        { field: 'id', text: 'Ident', size: '120px' }, // channel id
+        { field: 'cir', text: 'Cir', size: '80px' }, // circuit or component description
+        { field: 'ph', text: 'Ph', size: '40px' }, // sequence or phase description
+        { field: 'max', text: 'Max', size: '70px' }, // analog max value
+        { field: 'min', text: 'Min', size: '70px' }  // analog min value
       ]
     });
     
+    // GUI grid to compose single plot, allowing combine and calc
     let composer_grid = new w2grid({
       name: 'composer',
       box: '#composer',
@@ -131,15 +149,15 @@
       multiSelect: true,
       columns: [
         //{ field: 'color', text: 'Color', size: '60px', editable: { type: 'color' } },
-        { field: 'calc', text: 'Calc', size: '120px', editable: { type: 'text' } },
-        { field: 'tit', text: 'Title', size: '120px', editable: { type: 'text' } },
-        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} },
-        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} }
+        { field: 'calc', text: 'Calc', size: '120px', editable: { type: 'text' } }, // calc expression
+        { field: 'tit', text: 'Title', size: '120px', editable: { type: 'text' } }, // title or description
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
       ],
       toolbar: {
         onClick(event) {
-          //console.log(event.target);
           if (event.target == 'w2ui-add') {
+            // add new calc
             this.owner.add({recid: comp_idx,
               'tit': 'Var ' + comp_idx,
               'scale': 1.0,
@@ -147,36 +165,44 @@
               });
             this.owner.scrollIntoView(comp_idx);
             this.owner.editField(comp_idx, 0);
-            comp_idx++;
+            comp_idx++; // update unique id
           }
         }
       },
-      async onChange(event) {
+      async onChange(event) { // when a calc is edited
         await event.complete;
         const recid = event.detail.recid;
-        const rec = this.get(recid)
+        const rec = this.get(recid);
         const changes = rec.w2ui.changes;
         const message = document.getElementById("calc_msg");
-        message.innerHTML = "";
+        message.innerHTML = ""; // clear error message
+        
         if (Object.keys(changes).includes('calc')){
+          // when expression field is changed,
+          // verify if expression is valid
           try {
             validade_calc_expr(changes.calc);
-            this.mergeChanges();
+            // valid expression
+            this.mergeChanges(); // accept changes
           } catch(err) {
-            message.innerHTML = err.message;
-            this.editField(recid, 0);
+            // invalid expression
+            message.innerHTML = err.message; // show error message
+            this.editField(recid, 0); // insists on editing
           }
         }
-        this.mergeChanges();
-        //console.log(Object.keys(rec));
+        else this.mergeChanges(); // accept changes in other fields
       }
     });
     
+    //---------------------------------------- end of globals
+    
+    // clear all plots
     function plot_clear() {
       plot_output.clear();
       plot_output.resize({height: 50});
     }
     
+    // plot selected channels, one chart per each
     function b_plot_channels () {
       const grids = [];
       const xAxes = [];
@@ -184,79 +210,97 @@
       const series = [];
       const titles = [];
       
-      let top = 0;
+      let top = 0; // chart vertical position
       let count = 0;
       
-      const channels = channels_grid.getSelection();
-      const rec = osc[osc_idx];
-      for (let i = 0; i < channels.length; i++){
-        const ch = rec.channels[channels[i]-1];
-        if (ch.type === 'A') {
+      const channels = channels_grid.getSelection(); // get selected channels indexes
+      const rec = osc[osc_idx]; // get current record
+      
+      for (let i = 0; i < channels.length; i++){ // iterate over channels
+        const ch = rec.channels[channels[i]-1]; // current channel
+        if (ch.type === 'A') { // analog channel
+          // sets up the data matrix for chart
           let data = [];
           for (let j = 0; j < rec.data.length; j++){
+            // index '1' is always the time axis, in seconds
             data.push([rec.data[j][1], rec.data[j][ch.idx + 1]]);
           }
-          let name = ch.id + ':' + ch.c  + ':' + ch.ph;
-          grids.push({top: top,left: 60, height: 200});
+          // configure current chart parameters
+          let name = ch.id + ':' + ch.c  + ':' + ch.ph; // complete channel description
+          grids.push({top: top,left: 60, height: 200}); // big chart
           titles.push({top: top, left: 80, text: name,
             textStyle: { fontSize: 12, fontWeight: 'normal'}});
+                // time axis
           xAxes.push({gridIndex: count, name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}});
+                // y axis - show channel unit and values marks
           yAxes.push({gridIndex: count, name: ch.un, minorTick: {show: true}, minorSplitLine: {show: true}});
           series.push({//name: name, 
             xAxisIndex: count, yAxisIndex: count,
+                // mark trigger time
             markLine: {symbol: ['none', 'pin'],label: { show: false },
               data: [{ xAxis: rec.trig }]},
-            type: 'line', showSymbol: false, clip: true, data: data});
+            type: 'line', showSymbol: false, clip: true, data: data}); // thin line
+          // update parameters for next chart
           top += 260;
           count++;
         }
-        if (ch.type === 'D') {
+        else if (ch.type === 'D') { // digital channel
+          // sets up the data matrix for chart
           let data = [];
           for (let j = 0; j < rec.data.length; j++){
+            // index '1' is always the time axis, in seconds
             data.push([rec.data[j][1], rec.data[j][ch.idx + rec.channels_A + 1]]);
           }
-          let name = ch.id;
-          grids.push({top: top,left: 60, height: 30});
+          // configure current chart parameters
+          let name = ch.id; // digital channel haves only id as description
+          grids.push({top: top,left: 60, height: 30}); // small chart
           titles.push({top: top, left: 80, text: name,
             textStyle: { fontSize: 12, fontWeight: 'normal'}});
+                // time axis
           xAxes.push({gridIndex: count, name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}});
+                // y axis - simplified
           yAxes.push({type: 'value', show: false, min: 0, max: 1, gridIndex: count});
           series.push({//name: name, 
             xAxisIndex: count, yAxisIndex: count,
+                // mark trigger time
             markLine: {symbol: ['none', 'pin'],label: { show: false },
               data: [{ xAxis: rec.trig }]},
-            type: 'line', areaStyle: {}, showSymbol: false, clip: true, data: data});
+            type: 'line', areaStyle: {}, showSymbol: false, clip: true, data: data}); // area line
+          // update parameters for next chart
           top += 60;
           count++;
         }
       }
+      
+      // make the whole chart object
       plot_output.clear();
-      
       plot_output.resize({height: top + 50});
-      
       let plot_option = { animation: false,
         grid: grids,
         xAxis: xAxes,
         yAxis: yAxes,
         series: series,
         title: titles,
+            // zoom feature with slider - resize all charts simultaneously
         dataZoom: [{type: 'slider', xAxisIndex: 'all', top: top},{type: 'inside', xAxisIndex: 'all'}],
         tooltip: {trigger: 'axis'},
       };
       plot_output.setOption(plot_option);
     }
     
+    // pass selected channels to composer plot dialog
     function b_composer(){
-      const channels = channels_grid.getSelection();
-      const rec = osc[osc_idx];
-      for (let i = 0; i < channels.length; i++){
-        const ch = rec.channels[channels[i]-1];
+      const channels = channels_grid.getSelection(); // get selected channels indexes
+      const rec = osc[osc_idx]; // get current record
+      for (let i = 0; i < channels.length; i++){ // iterate over channels
+        const ch = rec.channels[channels[i]-1]; // current channel
+        // get channel description
         let name = ch.id
         if (ch.c) name += ':' + ch.c;
         if (ch.ph) name += ':' + ch.ph;
-        
+        // add to composer grid, with default parameters
         composer_grid.add({recid: comp_idx,
-          'calc': 'v' + channels[i],
+          'calc': 'v' + channels[i], // var name = 'v' + channel index
           'tit': name,
           'scale': 1.0,
           'ofs': 0.0
@@ -268,16 +312,23 @@
         //composer_grid.editField(comp_idx, 0)
     }
     
+    // Validate math expression in composer
+    // return the formula object and list of channels indexes to evaluate calc values
     function validade_calc_expr(expr){
-      const tokens = expr.match(/v\d+/g);
-      const var_idx = [];
+      const tokens = expr.match(/v\d+/g); // look for variables
       if(!tokens) throw new Error("No variables");
       if(tokens.length < 1) throw new Error("No variables");
+      // Verify if channels indexes are valid
+      const var_idx = [];
       for (let i = 0; i < tokens.length; i++){
         const recid = parseInt(tokens[i].slice(1));
         const ch = channels_grid.get(recid);
         if (!ch) throw new Error("No Channel");
       }
+      // validation OK
+      
+      // return the formula object and list of channels indexes
+      // to evaluate calc values
       const fObj = new Formula(expr);
       vars = fObj.getVariables();
       for (let i = 0; i < vars.length; i++){
@@ -287,28 +338,30 @@
       return {formula: fObj, var_idx: var_idx };
     }
     
+    // plot evaluated calc result and combinations from composer
     function b_plot_comp() {
       const series = [];
       
-      let top = 0;
+      let top = 0;  // chart vertical position
       let count = 0;
       
-      const channels = composer_grid.getSelection();
-      const rec = osc[osc_idx];
-      for (let i = 0; i < channels.length; i++){
+      const channels = composer_grid.getSelection(); // get composer elements indexes
+      const rec = osc[osc_idx]; // current record
+      for (let i = 0; i < channels.length; i++){ // iterate over elements
         const ch = composer_grid.get(channels[i]);
         try {
-          let calc = validade_calc_expr(ch.calc);
+          let calc = validade_calc_expr(ch.calc); // get object to evaluate
           let v = {}
           let data = [];
-          for (let j = 0; j < rec.data.length; j++){
-            for (let k = 0; k < calc.var_idx.length; k++){
+          for (let j = 0; j < rec.data.length; j++){ // evaluate each value in time vector
+            for (let k = 0; k < calc.var_idx.length; k++){ // get original value of each channel in var list
               let idx = calc.var_idx[k];
-              v['v'+idx] = rec.data[j][idx+1];
+              v['v'+idx] = rec.data[j][idx+1]; 
             }
-            let value = calc.formula.evaluate(v) * ch.scale + ch.ofs;
-            data.push([rec.data[j][1], value]);
+            let value = calc.formula.evaluate(v) * ch.scale + ch.ofs; // evaluate expr - apply scale and offset too
+            data.push([rec.data[j][1], value]); // set up data mtrix for chart, with t and evaluated value
           }
+          // finish current series config in chart
           let name = ch.tit;
           series.push({name: name, 
             //markLine: {symbol: ['none', 'pin'],label: { show: false },
@@ -316,27 +369,29 @@
             type: 'line', showSymbol: false, clip: true, data: data});
       
           
-        } catch(err) {
+        } catch(err) { // error in evaluation
           console.log('fail', ch.calc, err.message);
           //message.innerHTML = err.message;
         }
         
       }
-      plot_output.clear();
       
+      // make the whole chart object
+      plot_output.clear();
       plot_output.resize({height: 600});
       
       let plot_option = { animation: false,
-        grid: {top: 0,left: 60, height: 500},
+        grid: {top: 0,left: 60, height: 500}, // huge chart
+            // time axis
         xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}},
+            // y axis 
         yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true}},
-        series: series,
+        series: series, // combine all series in one chart
+            // zoom feature in chart
         dataZoom: [{type: 'slider', xAxisIndex: 'all', top: 550},{type: 'inside', xAxisIndex: 'all'}],
         tooltip: {trigger: 'axis'},
       };
       plot_output.setOption(plot_option);
-      
-      
     }
     
     function getFileExtension(filename) {
