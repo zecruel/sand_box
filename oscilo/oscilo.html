@@ -394,11 +394,11 @@
       plot_output.setOption(plot_option);
     }
     
+    // auxiliary function - get file ext
     function getFileExtension(filename) {
       if (typeof filename !== 'string') {
           throw new TypeError('Filename must be a string');
       }
-
       // Extract the last part after the last dot
       const lastDotIndex = filename.lastIndexOf('.');
 
@@ -406,10 +406,10 @@
       if (lastDotIndex <= 0 || lastDotIndex === filename.length - 1) {
           return null;
       }
-
       return filename.slice(lastDotIndex + 1).toLowerCase();
     }
     
+    // auxiliary functions for array filtering
     function check_cfg(file) {
       return getFileExtension(file.name) === 'cfg'
     }
@@ -417,6 +417,7 @@
       return getFileExtension(file.name) === 'dat'
     }
     
+    // auxiliary functions - read local files
     function readFileAsText(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -427,7 +428,6 @@
         reader.readAsText(file);
       });
     }
-    
     function readFileAsBinary(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -439,73 +439,83 @@
       });
     }
     
+    // read transient (or recorded fault) data from CFG and DAT files
+    // according COMTRADE (IEEE C37.111) standard
     async function read_osc(osc_obj) {
+      // first open CFG file as text (always) to get general parameters of record
       const cfg_c = await readFileAsText(osc_obj.cfg_f);
       const lines = cfg_c.split(/\r?\n/); // Split file content into lines
       if (lines.length < 9) return; //error
         
       const ident = lines[0].split(','); // Read the first line
       if (ident.length < 2) return; //error
+      // get header identification and standard version
       osc_obj.id = ident[0];
       if (ident.length > 2) osc_obj.ver = parseInt(ident[2]);
       else osc_obj.ver = 1991;
       
+      // get number of total channels, analog and digital channels
       const channels = lines[1].split(',');
       if (channels.length < 3) return; //error
       let n_ch = parseInt(channels[0]);
       let n_chA = parseInt(channels[1]);
       let n_chD = parseInt(channels[2]);
-      
       if (n_chA + n_chD != n_ch) return; //error
+      
       if (lines.length < 8 + n_ch) return; //error
       
       osc_obj.channels_A = n_chA;
       osc_obj.channels_D = n_chD;
       osc_obj.channels = [];
-      let line = 2;
       
-      for (let i = 0; i < n_chA; i++){
+      // sweep list of channels, get each parameters
+      let line = 2;
+      for (let i = 0; i < n_chA; i++){ // analog channels first
         const ch_info = lines[line].split(',');
         ch = {type: "A"};
-        ch.idx = parseInt(ch_info[0]);
-        ch.id = ch_info[1];
-        ch.ph = ch_info[2];
-        ch.c = ch_info[3];
-        ch.un = ch_info[4];
+        ch.idx = parseInt(ch_info[0]); // channel index, starts in 1
+        ch.id = ch_info[1]; // main identification
+        ch.ph = ch_info[2]; // phase id
+        ch.c = ch_info[3]; // component or circuit id
+        ch.un = ch_info[4]; // unit of measure
+        // a and b factor, value = a * dat + b
         ch.a = parseFloat(ch_info[5]);
         ch.b = parseFloat(ch_info[6]);
-        ch.sk = parseInt(ch_info[7]);
+        ch.sk = parseInt(ch_info[7]); // skew
+        // min and max numeric values in dat
         ch.min = parseInt(ch_info[8]);
         ch.max = parseInt(ch_info[9]);
         
         osc_obj.channels.push(ch);
         line++;
       }
-      for (let i = 0; i < n_chD; i++){
+      for (let i = 0; i < n_chD; i++){ // digital channels
         const ch_info = lines[line].split(',');
         ch = {type: "D"};
-        ch.idx = parseInt(ch_info[0]);
-        ch.id = ch_info[1];
-        ch.st = parseInt(ch_info[ch_info.length - 1]);
+        ch.idx = parseInt(ch_info[0]); // channel index, starts in 1, not continues from analog
+        ch.id = ch_info[1]; // main identification
+        ch.st = parseInt(ch_info[ch_info.length - 1]); // standard value for channel (0 or 1)
         
         osc_obj.channels.push(ch);
         line++;
       }
-      osc_obj.freq = parseInt(lines[line]);
+      osc_obj.freq = parseInt(lines[line]); // power frequency
       line++;
-      osc_obj.n_sr = parseInt(lines[line]);
+      osc_obj.n_sr = parseInt(lines[line]); // number of sample rate frequencies
       line++;
       osc_obj.sr = [];
       osc_obj.n_smp = 0;
-      for (let i = 0; i < osc_obj.n_sr; i++){
+      for (let i = 0; i < osc_obj.n_sr; i++){ // sweep sample rate frequencies
         const sr_info = lines[line].split(',');
         sr = {};
-        sr.freq = parseFloat(sr_info[0]);
-        sr.n_smp = parseInt(sr_info[1]);
+        sr.freq = parseFloat(sr_info[0]); // sample rate frequency
+        sr.n_smp = parseInt(sr_info[1]); // number of samples in frequency
         osc_obj.n_smp += sr.n_smp;
         osc_obj.sr.push(sr);
         line++;
       }
+      
+      // date/time stamp of first sample in record
       const first = lines[line].split(',');
       osc_obj.first = {date: {}, time: {}};
       let date = first[0].split('/');
@@ -517,7 +527,6 @@
       osc_obj.first.time.m = parseInt(time[1]);
       osc_obj.first.time.s = parseFloat(time[2]);
       line++;
-      
       const first_d = new Date(osc_obj.first.date.y, 
         osc_obj.first.date.m,
         osc_obj.first.date.d,
@@ -525,6 +534,7 @@
         osc_obj.first.time.m,
         Math.trunc(osc_obj.first.time.s));
       
+      // date/time stamp of start (trigger)
       const start = lines[line].split(',');
       osc_obj.start = {date: {}, time: {}};
       date = start[0].split('/');
@@ -536,25 +546,35 @@
       osc_obj.start.time.m = parseInt(time[1]);
       osc_obj.start.time.s = parseFloat(time[2]);
       line++;
-      
       const start_d = new Date(osc_obj.start.date.y, 
         osc_obj.start.date.m,
         osc_obj.start.date.d,
         osc_obj.start.time.h,
         osc_obj.start.time.m,
         Math.trunc(osc_obj.start.time.s));
+      // calc trigger "delay" from first sample
       const d_dif = (start_d - first_d)/1000;
-      
       osc_obj.trig = Math.abs((osc_obj.start.time.s % 1) - (osc_obj.first.time.s % 1) + d_dif);
-      //console.log(osc_obj.trig);
       
+      // get type of DAT file
       let dat_type = lines[line].toLowerCase();
       osc_obj.dat_type = dat_type;
       
-      if (dat_type === 'binary') {
+      // -------- Read the DAT file contents ------
+      
+      if (dat_type === 'binary' || dat_type === 'binary32' || dat_type === 'float32') { // DAT file is binary
+        // 'binary' type - analog values are stored as 16 bit integer
+        // 'binary32' type - analog values are stored as 32 bit integer
+        // 'float' type - analog values are stored as 32 bit float
+        
+        let an_len = 2; // analog data length in bytes
+        if ( dat_type === 'binary32' || dat_type === 'float32') an_len = 4;
+        let float_dat = 0;
+        if ( dat_type === 'float32') float_dat = 1;
+        
         const chD_words = Math.ceil(n_chD/16);
-        const bytes_rec = chD_words*2 + n_chA*2 + 8;
-        const bytes_total = osc_obj.n_smp * bytes_rec;
+        const bytes_rec = chD_words * 2 + n_chA * an_len + 8; // total size of each sample in bytes
+        const bytes_total = osc_obj.n_smp * bytes_rec; // total file size
         
         if(osc_obj.dat_f.size < bytes_total) return; //error
         
@@ -563,33 +583,50 @@
         
         osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
         let offset = 0;
-        for(let i = 0; i < osc_obj.n_smp; i++){
-          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);
-          for(let j = 0; j < chD_words + n_chA + 2; j++){
-            if (j < 1) {
+        for(let i = 0; i < osc_obj.n_smp; i++){ // sweep samples
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN); // init output vector
+          for(let j = 0; j < chD_words + n_chA + 2; j++){ // sweep "words" in sample data
+            if (j < 1) { // first word is sample index, starting in 1
               osc_obj.data[i][j] = view.getInt32(offset, true); // index
-              offset += 4;
+              offset += 4; // word len
             }
-            else if (j < 2) {
-              osc_obj.data[i][j] = view.getInt32(offset, true) * 1e-6; // convert microssecond to s
-              offset += 4;
+            else if (j < 2) { // second word is time in microssecond
+              let value = view.getInt32(offset, true);
+              if (value == 0xffffffff) value = NaN; // verify if is valid
+              
+              osc_obj.data[i][j] = value * 1e-6; // convert microssecond to s
+              offset += 4; // word len
             }
             else{
-              if (j < n_chA + 2 && osc_obj.channels[j-2].type == 'A'){
-                osc_obj.data[i][j] = osc_obj.channels[j-2].a * view.getInt16(offset, true) + osc_obj.channels[j-2].b
-                offset += 2;
+              if (j < n_chA + 2 && osc_obj.channels[j-2].type == 'A'){ // get analog value
+                // convert, apply factors and store in output matrix
+                let value = NaN;
+                if (an_len < 3) {
+                  value = view.getInt16(offset, true); // 'binary' type
+                  if (value == -0x7fff) value = NaN; // verify if is valid
+                } else {
+                  value = view.getInt32(offset, true); // 'binary32' type
+                  if (value == -0x7fffffff) value = NaN; // verify if is valid
+                  else if (float_dat) value = view.getFloat32(offset, true);  // 'float32' type
+                }
+                  
+                osc_obj.data[i][j] = osc_obj.channels[j-2].a * value + osc_obj.channels[j-2].b
+                offset += an_len;
               }
-              else {
+              else { // get digital channels, bundled in 16 bit word, one bit per channel
                 let w_idx = (j - (n_chA + 2)) * 16;
                 const word = view.getUint16(offset, true);
+                
+                // calc max bit position, to ignore pad fill
                 let max_bit = 16;
                 if (n_chD < 16) max_bit = n_chD;
                 else if (w_idx + 16 > n_chD)
                   max_bit = n_chD - w_idx;
                 
-                w_idx += n_chA + 2;
-                for (let bit = 0; bit < max_bit; bit++){
-                  osc_obj.data[i][w_idx + bit] = (word >> bit) & 1;
+                w_idx += n_chA + 2; // position in output matrix
+                
+                for (let bit = 0; bit < max_bit; bit++){ // sweep bits
+                  osc_obj.data[i][w_idx + bit] = (word >> bit) & 1; // store in output matrix
                 }
                 offset += 2;
               }
@@ -597,26 +634,29 @@
           }
         }
       }
-      else if (dat_type === 'ascii') {
+      else if (dat_type === 'ascii') { // DAT file is in text format
         const dat_c = await readFileAsText(osc_obj.dat_f);
         const lines = dat_c.split(/\r?\n/); // Split file content into lines
         if (lines.length < osc_obj.n_smp) console.log('error: '+ lines.length); //error
         
-        osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
+        osc_obj.data = Array(osc_obj.n_smp).fill(NaN); // init output vector
         let max_lines = lines.length;
-        if (lines.length > osc_obj.n_smp) max_lines = osc_obj.n_smp;
-        for(let i = 0; i < max_lines; i++){
-          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);
-          const rec = lines[i].split(',');
+        if (lines.length > osc_obj.n_smp) max_lines = osc_obj.n_smp; // avoid to read blank lines at end
+        
+        for(let i = 0; i < max_lines; i++){ // parse line by line
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);  // init output vector
+          const rec = lines[i].split(','); // split in fields
           let max_rec = rec.length;
           if (rec.length > osc_obj.channels.length + 2) max_rec = osc_obj.channels.length + 2;
-          for(let j = 0; j < max_rec; j++){
-            if (j < 1) osc_obj.data[i][j] = parseInt(rec[j]); // index
+          for(let j = 0; j < max_rec; j++){ // sweep fields
+            if (j < 1) osc_obj.data[i][j] = parseInt(rec[j]); // sample index, start in 1
+            // sample time stamp in microsseconds
             else if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]) * 1e-6; // convert microssecond to s
             else{
-              if (osc_obj.channels[j-2].type == 'D')
-                osc_obj.data[i][j] = parseInt(rec[j]);
-              if (osc_obj.channels[j-2].type == 'A')
+              if (osc_obj.channels[j-2].type == 'D') // digital channel
+                osc_obj.data[i][j] = parseInt(rec[j]); // direct store in output matrix
+              else if (osc_obj.channels[j-2].type == 'A') // analog channel
+                // convert, apply factors and store in output matrix
                 osc_obj.data[i][j] = osc_obj.channels[j-2].a * parseInt(rec[j]) + osc_obj.channels[j-2].b;
             }
           }
@@ -624,11 +664,12 @@
       }
     }
     
+    // populate list of channels, when one record is selected
     function populate_channels(idx) {
-      channels_grid.clear();
-      composer_grid.clear();
+      channels_grid.clear(); // clear previous
+      composer_grid.clear(); // clean composer too
       comp_idx = 1;
-      const rec = osc[idx];
+      const rec = osc[idx]; // current record
       
       if (!rec) return;
       
@@ -636,8 +677,8 @@
       
       const table = [];
       
-      for (let i = 0; i < channels.length; i++) {
-        if (channels[i].type == 'A'){
+      for (let i = 0; i < channels.length; i++) { // sweep list
+        if (channels[i].type == 'A'){ // add analog channels
           let max = channels[i].a * channels[i].max + channels[i].b;
           let min = channels[i].a * channels[i].min + channels[i].b;
           table.push({
@@ -645,44 +686,47 @@
             'un': channels[i].un, 'cir': channels[i].c, 'ph': channels[i].ph,
             'max': max, 'min': min
           });
-        } else if (channels[i].type == 'D'){
+        } else if (channels[i].type == 'D'){ // add digital channels
           table.push({
             'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
             'un': 'B', 'cir': '-', 'ph': '-', 'max': '1', 'min': '0'
           });
         }
       }
-      channels_grid.add(table);
+      channels_grid.add(table); // update grid once (faster)
     }
   
+    
+    
+    // Load local files selected by user
     document.getElementById('fileInput').addEventListener('change', function(event) {
       channels_grid.clear();
       composer_grid.clear();
       comp_idx = 1;
-      const cfgs = Array.from(event.target.files).filter(check_cfg)
-      const dats = Array.from(event.target.files).filter(check_dat)
+      const cfgs = Array.from(event.target.files).filter(check_cfg) // get CFG files
+      const dats = Array.from(event.target.files).filter(check_dat) // det DAT files
       
-      // associate dat files and verify size
+      // associate CFG and DAT files
       osc = {};
       let recid = 0;
       for(const cfg of cfgs) {
-        let dat_name = cfg.name.slice(0, cfg.name.lastIndexOf('.'));
+        let dat_name = cfg.name.slice(0, cfg.name.lastIndexOf('.')); // common name
         const dat = dats.find(look => look.name.slice(0, look.name.lastIndexOf('.')) === dat_name);
         if (dat) {
-          if (dat.size < 50 * 1024 * 1024) { // 50 MB limit
+          if (dat.size < 50 * 1024 * 1024) { // verify size - 50 MB limit
             recid++;
-            osc[recid] = {name: dat_name, cfg_f: cfg, dat_f: dat}
+            osc[recid] = {name: dat_name, cfg_f: cfg, dat_f: dat}; // combo success - add to list
           }
         }
       }
       
-      
       recs_grid.clear();
       
       for (let key = 1; key <= recid; key++) {
-        let prom = read_osc(osc[key]);
+        let prom = read_osc(osc[key]); // parse files
         prom.then(
-          function(value) { /* code if success */
+          function(value) { /*  parse success */
+            // convert date/time info to string
             let start = osc[key].first.date.d + '/';
             start += osc[key].first.date.m + '/';
             start += osc[key].first.date.y + '-';
@@ -695,7 +739,7 @@
             trig += osc[key].start.time.h + ':';
             trig += osc[key].start.time.m + ':';
             trig += osc[key].start.time.s;
-            recs_grid.add([{
+            recs_grid.add([{ // add to grid
               'recid': key, 'name': osc[key].name, 'id': osc[key].id,
               'an': osc[key].channels_A, 'dig': osc[key].channels_D,
               'smp': osc[key].n_smp,
