@@ -1,0 +1,117 @@
+<!--
+	THIS EXAMPLE WAS DOWNLOADED FROM https://echarts.apache.org/examples/en/editor.html?c=line-polar&code=rVPNbtswDL73KXhTs7mJ06IF5rQFssOwwzYUS9FLkYNsq4lQWwok5m9B7nuMPdueZNSfvQHDsA292CL1kfz4kdIrlFrBDRxOAFBiIwp_JEPssAB2v9XwwJu1OJvuhAWp4E433DDCHCGjbyMWQtUpajTC_YpyMFsZ3TTMIQC0kUK5bBthUFY8-Y1cLMk9zoOJelXAeTRKjajb3paVVpTBiApdcVeq5sgLeGQbzjK2KdnckXLolaNIlLyBWjcoKXPHkMouBN0zvpM2UnHHOy0VuouApNDQC7VibSjqMwI8adNy9Nintaq8hqcrbnhrM5KxehaYAfXZlLx6HnT5qAWLcAArSBD7ibcig40TN4OWm2dhSNMbCHkmMSb-jMC1UQn2OrnZdXnLyBTVkhu0w0BsKFSla_H-_uOH077WgHDselTeXpcGRi4sJvlDtGf3mM-HqN_JnahPz32W71-_uarhdtzfjgeDSaIW9Eoj4WrRiCmJ3O1X0NaniDOwSCymDlhAnDqtVnRcXEVXK2kP0pnv_E2qYngt1_bnMh7Rz8iXo4FEOb05JAy8gvEwz8eTjnDQjdbLp-knqE0tFUcx21sUtJ_ML1vsAECR0OR8mHae2GgjVeqTHg0ZM9z71wZbWeOygMu0XG5H7VJvZ_u21A2x540V6cp650x-odD0NEimdrXktu867Gi1JgcLjYT17RYYID6eg5egeMyzfJ7F7BSkNLHtsNR_hI0vs6tfgNwYvWXJ8VkjSVPA2UUOR_ccu4L_LODb3wv40sr9pwx59uYvZOhFoO_85Dj5AQ&enc=deflate
+	⚠ Please be aware that this chart is not an official demo of Apache ECharts but is made by user-generated code.
+-->
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+  <meta charset="utf-8">
+</head>
+<body style="height: 100%; margin: 0">
+  <div id="container" style="height: 100%"></div>
+
+  
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  
+  <!-- Uncomment this line if you want to dataTool extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5/dist/extension/dataTool.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use gl extension
+  <script type="text/javascript" src="https://echarts.apache.org/en/js/vendors/echarts-gl/dist/echarts-gl.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to echarts-stat extension
+  <script type="text/javascript" src="https://echarts.apache.org/en/js/vendors/echarts-stat/dist/ecStat.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to echarts-graph-modularity extension
+  <script type="text/javascript" src="https://echarts.apache.org/en/js/vendors/echarts-graph-modularity/dist/echarts-graph-modularity.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use map
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js"></script>
+  -->
+  <!-- Uncomment these two lines if you want to use bmap extension
+  <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_API_KEY"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5/dist/extension/bmap.min.js"></script>
+  -->
+
+  <script type="text/javascript">
+    var dom = document.getElementById('container');
+    var myChart = echarts.init(dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    var app = {};
+    
+    var option;
+
+    option = {
+  title: {
+    text: 'Two Value-Axes in Polar'
+  } ,
+  legend: {
+    //type: 'scroll',
+    orient: 'vertical',
+    right: 10,
+    top: 20,
+    bottom: 20,
+    icon: 'rect'
+    //data: ['va','vb']
+  },
+  polar: {},
+  tooltip: {
+    //trigger: 'axis',
+    axisPointer: {
+      type: 'cross'
+    },
+    formatter: function (params, ticket, callback) {
+      const { seriesName, value, marker } = params;
+      
+      return marker + 
+      '<b>' + echarts.format.encodeHTML(seriesName) + '</b><br />' +
+       echarts.format.encodeHTML(value[0].toFixed(2) + '∠' + value[1].toFixed(1)); 
+      
+    }
+  },
+  angleAxis: {
+    type: 'value',
+    startAngle: 0,
+    endAngle: 360,
+    min: 0,
+    max: 360
+  },
+  radiusAxis: {
+    max: function (value) {return value.max * 1.001;}
+  },
+  series: [
+    {
+      coordinateSystem: 'polar',
+      name: 'VA',
+      type: 'line',
+      lineStyle: { width: 5 },
+      //showSymbol: false,
+      symbolSize: 20,
+      emphasis: {
+        focus: 'series'
+      },
+      data: [{value:[0,0], symbol: 'none'},
+        {value:[15,60], symbol: 'arrow', symbolRotate: -30 }]
+    },
+    {
+      coordinateSystem: 'polar',
+      name: 'VB',
+      type: 'line',lineStyle: { width: 5 },
+      //showSymbol: false,
+      symbolSize: 20,
+      data: [{value:[0,0], symbol: 'none'},
+        {value:[10,90], symbol: 'arrow', symbolRotate: 0 }]
+    }
+  ]
+};
+
+    if (option && typeof option === 'object') {
+      myChart.setOption(option);
+    }
+
+    window.addEventListener('resize', myChart.resize);
+  </script>
+</body>
+</html>
