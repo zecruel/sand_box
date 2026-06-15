@@ -1,0 +1,50 @@
+<!--
+	Read and plot COMTRADE (IEEE C37.111) files
+  Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
+  MIT licence
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Emb Server</title>
+  <link rel="stylesheet" type="text/css" href="w2ui.min.css">
+</head>
+<body>
+  <div id="top" style="background-color:darkseagreen;height:110px">
+    <h3 style="text-align:center;">Embeded C server test</h3>
+    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence - 2026</h4>
+    <button class="w2ui-btn" onclick="loadData()">Load</button>
+    <button class="w2ui-btn" onclick="clearInterval(intervalo)">Stop</button>
+  </div>
+  
+  <script type="text/javascript" src="w2ui.min.js"></script>
+  <script>
+    async function loadData() {
+      const input = {
+          username: "john_doe",
+          email: "john@example.com",
+          age: 25
+      };
+    
+      let response = await fetch("/postresponse", {method: "POST",
+            //headers: {"Content-Type": "application/json",},
+            //body: JSON.stringify(input),
+            body: "teste",
+      });
+
+    if (!response.ok) {
+      console.log("HTTP Error:", response.status);
+      return;
+    }
+
+    let data = await response.json();
+    console.log(data);
+    }
+    
+    
+    // Executa a função a cada 1 segundo (1000ms)
+    const intervalo = setInterval(loadData, 1000);
+  </script>
+</body>
+</html>
