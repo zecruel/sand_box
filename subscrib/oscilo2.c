@@ -30,7 +30,7 @@
 #include "lualib.h"
 
 #define MAX_SV 100
-
+#define MAX_DS 20
 
 
 void set_nonblocking(int non) {
@@ -47,7 +47,7 @@ void set_nonblocking(int non) {
 struct Buffer{
   int AppId;
   int ds_size;
-  int *ds_idx;
+  int ds_idx[MAX_DS];
   int payload_size;
   int smp_max;
   int buf_max;
@@ -257,10 +257,14 @@ gooseListener(GooseSubscriber subscriber, void* parameter)
     printf("  trig: %s\n", buffer); */
   }
 }
+/* Aux function for qsort */
+int comp_asc(const void *a, const void *b) {
+    int val_a = *(int *)a;
+    int val_b = *(int *)b;
+    return (val_a > val_b) - (val_a < val_b); /* avoid overflow */
+}
 
-int
-main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   SVReceiver SV_receiver = SVReceiver_create();
 
   GooseReceiver receiver = GooseReceiver_create();
@@ -348,12 +352,17 @@ main(int argc, char** argv)
           lua_pushnil(L);  /* first key */
 		      while (lua_next(L, -2) != 0) { /* table index are shifted*/
 			      /* uses 'key' (at index -2) and 'value' (at index -1) */
-            if (lua_isinteger(L, -1)){
-              int idx = lua_tointeger(L, -1);
-              if (idx >= 0) {
-                max = (idx > max)? idx : max;
-                ds_size++;
+            if (lua_istable(L, -1)){
+              lua_getfield(L, -1, "idx");
+              if (lua_isinteger(L, -1)){
+                int idx = lua_tointeger(L, -1);
+                if (idx >= 0 && ds_size < MAX_DS-1) {
+                  max = (idx > max)? idx : max;
+                  streams[streams_len].ds_idx[ds_size] = idx * 8;
+                  ds_size++;
+                }
               }
+              lua_pop(L, 1);
             }
             /* removes 'value'; keeps 'key' for next iteration */
 			      lua_pop(L, 1);
@@ -361,6 +370,7 @@ main(int argc, char** argv)
           lua_pop(L, 1);
           if (ds_size == 0) ok = 0;
           else {
+            qsort(streams[streams_len].ds_idx, ds_size, sizeof(int), comp_asc);
             streams[streams_len].ds_size = ds_size;
             streams[streams_len].payload_size = max * 8 + 8;
           }
@@ -370,10 +380,33 @@ main(int argc, char** argv)
 
 
         if (ok) {
-          printf("stream name: %s\n", lua_tostring(L, -2));
+          streams[streams_len].lock = 0;
+          
           printf("ds size: %d\n", streams[streams_len].ds_size);
           printf("payload: %d\n", streams[streams_len].payload_size);
 
+          /* shared memory */
+          int oflags = O_RDWR | O_CREAT;  //O_RDONLY
+	        int length = (1 + streams[streams_len].buf_max * streams[streams_len].ds_size) * sizeof(int32_t);
+	        char name[40] = "/sv_subscriber.";
+          strncat(name, lua_tostring(L, -2), 25);
+	        int fd = shm_open(name, oflags, 0644 );
+          if (fd < 1) return 1; /* error */
+	        ftruncate(fd, length);
+          int32_t *ptr = (int32_t *) mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+          memset(ptr, 0, length); /* init all with 0 */
+          streams[streams_len].pos = &ptr[0];
+          streams[streams_len].data = &ptr[1];
+
+
+          printf("stream name: %s\n", name);
+
+
+          subs[streams_len] = SVSubscriber_create(NULL, streams[streams_len].AppId);
+
+          SVSubscriber_setListener(subs[streams_len], svUpdateListener, &streams[streams_len]);
+
+          SVReceiver_addSubscriber(SV_receiver, subs[streams_len]);
           streams_len++;
 			  }
       }
@@ -387,12 +420,12 @@ main(int argc, char** argv)
   }
 	lua_pop(L, 1);
   lua_close(L);
-  struct Buffer buf_stream1;
+  /* struct Buffer buf_stream1;
 
   buf_stream1.AppId = 0x5402;
   buf_stream1.ds_size = 8; /* 4 currents and 4 voltages */
-  buf_stream1.ds_idx = (int[]){0, 8, 16, 24, 32, 40, 48, 56}; /* index of each channel in dataSet */ 
-  buf_stream1.payload_size = 64;
+  /*buf_stream1.ds_idx = (int[]){0, 8, 16, 24, 32, 40, 48, 56}; /* index of each channel in dataSet */ 
+  /*buf_stream1.payload_size = 64;
   buf_stream1.smp_max = 4800;
   buf_stream1.buf_max = 9600;
   //buf_stream1.data = calloc(buf_stream1.buf_max * buf_stream1.ds_size, sizeof(int32_t));
@@ -400,15 +433,15 @@ main(int argc, char** argv)
   buf_stream1.lock = 0;
   
   /* shared memory */
-  int oflags = O_RDWR | O_CREAT;  //O_RDONLY
+  /*int oflags = O_RDWR | O_CREAT;  //O_RDONLY
 	int length = (1 + buf_stream1.buf_max * buf_stream1.ds_size) * sizeof(int32_t);
 	char *name = "/sv_subscriber_stream1";
 	int fd = shm_open(name, oflags, 0644 );
   if (fd < 1) return 1; /* error */
-	ftruncate(fd, length);
+	/*ftruncate(fd, length);
   int32_t *ptr = (int32_t *) mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
   memset(ptr, 0, length); /* init all with 0 */
-  buf_stream1.pos = &ptr[0];
+  /*buf_stream1.pos = &ptr[0];
   buf_stream1.data = &ptr[1];
   /*
   memset(buf_vm.data, 0, MAX_BUF*sizeof(int32_t));
@@ -424,7 +457,7 @@ main(int argc, char** argv)
   */
 
   /* Create a subscriber listening to SV messages with APPID 4000h */
-  SVSubscriber subs_stream1 = SVSubscriber_create(NULL, buf_stream1.AppId);
+  //SVSubscriber subs_stream1 = SVSubscriber_create(NULL, buf_stream1.AppId);
   /*SVSubscriber subs_az = SVSubscriber_create(NULL, 0x540b);
   SVSubscriber subs_br = SVSubscriber_create(NULL, 0x540d);
   SVSubscriber subs_r = SVSubscriber_create(NULL, 0x540f);
@@ -435,14 +468,14 @@ main(int argc, char** argv)
   buf_r.AppId = 0x540f;
   */
   /* Install a callback handler for the subscriber */
-  SVSubscriber_setListener(subs_stream1, svUpdateListener, &buf_stream1);
+  //SVSubscriber_setListener(subs_stream1, svUpdateListener, &buf_stream1);
   /*
   SVSubscriber_setListener(subs_az, svUpdateListener, &buf_az);
   SVSubscriber_setListener(subs_br, svUpdateListener, &buf_br);
   SVSubscriber_setListener(subs_r, svUpdateListener, &buf_r);
   */
   /* Connect the subscriber to the receiver */
-  SVReceiver_addSubscriber(SV_receiver, subs_stream1);
+ // SVReceiver_addSubscriber(SV_receiver, subs_stream1);
   /*
   SVReceiver_addSubscriber(SV_receiver, subs_az);
   SVReceiver_addSubscriber(SV_receiver, subs_br);
@@ -545,9 +578,9 @@ main(int argc, char** argv)
   /* Cleanup and free resources */
   SVReceiver_destroy(SV_receiver);
   //free(buf_stream1.data);
-  munmap(ptr, length); // needed ?
-  close(fd);
-  shm_unlink(name); //needed ?
+  //munmap(ptr, length); // needed ?
+  //close(fd);
+  //shm_unlink(name); //needed ?
 
   return 0;
 }
