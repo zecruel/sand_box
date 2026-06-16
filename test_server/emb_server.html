@@ -17,9 +17,57 @@
     <button class="w2ui-btn" onclick="loadData()">Load</button>
     <button class="w2ui-btn" onclick="clearInterval(intervalo)">Stop</button>
   </div>
+  <div id="plot_out"><h3 style="text-align:center;">Output</h3></div>
+  
+  <div id="plot_container"></div>
   
   <script type="text/javascript" src="w2ui.min.js"></script>
+  <script type="text/javascript" src="echarts.min.js"></script>
   <script>
+    const metricPrefixes = {
+      "-24": "y", "-21": "z", "-18": "a", "-15": "f", "-12": "p",
+      "-9": "n", "-6": "µ", "-3": "m", "0": "",
+      "3": "k", "6": "M", "9": "G", "12": "T",
+      "15": "P", "18": "E", "21": "Z", "24": "Y"
+    };
+    
+    // init plot chart object
+    let plot_output = echarts.init(document.getElementById('plot_container'), 
+      null, {renderer: 'canvas', useDirtyRect: false});
+    window.addEventListener('resize', plot_output.resize);
+    // make the whole chart object
+    plot_output.clear();
+    plot_output.resize({height: 600});
+    
+    let plot_option = { animation: false,
+      grid: {top: 0,left: 60, height: 500}, // huge chart
+          // time axis
+      xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}},
+          // y axis 
+      yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true},
+          // engineering format
+          axisLabel: { formatter: function (value) {
+            const digits = 3;
+            if (value === 0) return "0";
+            const exponent = Math.floor(Math.log10(Math.abs(value)) / 3) * 3;
+            const mantissa = value / Math.pow(10, exponent);
+            const mantissaStr = mantissa.toPrecision(digits);
+            const prefix = metricPrefixes[exponent] ?? `e${exponent}`;
+            return `${mantissaStr}${prefix}`.trim();
+          }}
+          },
+      series: [{name: "teste", 
+            //markLine: {symbol: ['none', 'pin'],label: { show: false },
+            //  data: [{ xAxis: rec.trig }]},
+            emphasis: { focus: 'series' },
+            type: 'line', showSymbol: false, clip: true, data: []}], // combine all series in one chart
+          // zoom feature in chart
+      dataZoom: [{type: 'slider', xAxisIndex: 'all', top: 550},{type: 'inside', xAxisIndex: 'all'}],
+      tooltip: {trigger: 'axis'},
+    };
+    plot_output.setOption(plot_option);
+  
+  
     async function loadData() {
       const input = {
           username: "john_doe",
@@ -30,7 +78,7 @@
       let response = await fetch("/postresponse", {method: "POST",
             //headers: {"Content-Type": "application/json",},
             //body: JSON.stringify(input),
-            body: "teste",
+            body: Math.floor(Math.random() * 10),
       });
 
     if (!response.ok) {
@@ -38,13 +86,15 @@
       return;
     }
 
-    let data = await response.json();
-    console.log(data);
+      let data = await response.json();
+      //let data = await response.text();
+      //console.log(data);
+      plot_output.setOption({series: [{data: data}]});
     }
     
     
     // Executa a função a cada 1 segundo (1000ms)
-    const intervalo = setInterval(loadData, 1000);
+    const intervalo = setInterval(loadData, 200);
   </script>
 </body>
 </html>

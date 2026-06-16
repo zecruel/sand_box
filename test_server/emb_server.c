@@ -22,6 +22,7 @@ compile - gcc emb_server.c civetweb.c -I. -DNO_SSL -lws2_32 -o emb_server.exe
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "civetweb.h"
 
@@ -34,9 +35,7 @@ volatile int exitNow = 0;
 
 
 
-int
-ExitHandler(struct mg_connection *conn, void *cbdata)
-{
+int ExitHandler(struct mg_connection *conn, void *cbdata) {
 	mg_printf(conn,
 	          "HTTP/1.1 200 OK\r\nContent-Type: "
 	          "text/plain\r\nConnection: close\r\n\r\n");
@@ -46,27 +45,7 @@ ExitHandler(struct mg_connection *conn, void *cbdata)
 	return 1;
 }
 
-
-int
-BXHandler(struct mg_connection *conn, void *cbdata)
-{
-	/* Handler may access the request info using mg_get_request_info */
-	const struct mg_request_info *req_info = mg_get_request_info(conn);
-	const char *text = (const char *)cbdata;
-
-	mg_printf(conn,
-	          "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: "
-	          "close\r\n\r\n");
-	mg_printf(conn, "<html><body>");
-	mg_printf(conn, "<h2>This is the BX handler with argument %s.</h2>", text);
-	mg_printf(conn, "<p>The actual uri is %s</p>", req_info->local_uri);
-	mg_printf(conn, "</body></html>\n");
-	return 1;
-}
-
-int
-FileHandler(struct mg_connection *conn, void *cbdata)
-{
+int FileHandler(struct mg_connection *conn, void *cbdata) {
 	/* In this handler, we ignore the req_info and send the file "fileName". */
 	const char *fileName = (const char *)cbdata;
 
@@ -74,9 +53,7 @@ FileHandler(struct mg_connection *conn, void *cbdata)
 	return 1;
 }
 
-int
-PostResponser(struct mg_connection *conn, void *cbdata)
-{
+int PostResponser(struct mg_connection *conn, void *cbdata) {
 	long long r_total = 0;
 	int r, s;
 
@@ -105,57 +82,51 @@ PostResponser(struct mg_connection *conn, void *cbdata)
 
 	if (ri->content_length >= 0) {
 		/* We know the content length in advance */
+    //printf ("ri->content_length=%d\n", ri->content_length);
 	} else {
 		/* We must read until we find the end (chunked encoding
 		 * or connection close), indicated my mg_read returning 0 */
 	}
-
-	mg_printf(conn,
-	          "HTTP/1.1 200 OK\r\n");
-	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
-	mg_printf(conn, "[1.0,");
-	mg_printf(conn, "2.2]\r\n");
   
 	r = mg_read(conn, buf, sizeof(buf));
+  int pass = 0;
+  if (r > 0) pass = atoi(buf);
+  
+  /*
 	while (r > 0) {
 		r_total += r;
-		//s = mg_send_chunk(conn, buf, r);
-		//if (s <= 0) {
-			/* Send error */
-		//	break;
-		//}
+		
     printf("%s\n", buf);
 		r = mg_read(conn, buf, sizeof(buf));
 	}
-	//mg_printf(conn, "0\r\n");
-
+	*/
+  
+  mg_printf(conn, "HTTP/1.1 200 OK\r\n");
+	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
+	mg_printf(conn, "[");
+  mg_printf(conn, "[%g,%g]", 0, 114000.0 * sin ( pass*0.157));
+  for (int i = 1; i < 240; i++){
+    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 114000.0 * sin (0.07854*i + pass*0.157));
+  }
+	mg_printf(conn, "]\r\n");
+  
 	return 1;
 }
 
 
-int
-log_message(const struct mg_connection *conn, const char *message)
-{
+int log_message(const struct mg_connection *conn, const char *message) {
 	puts(message);
 	return 1;
 }
 
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	const char *options[] = {
-		"document_root",
-		DOCUMENT_ROOT,
-		"listening_ports",
-		PORT,
-		"request_timeout_ms",
-		"10000",
-		"error_log_file",
-		"error.log",
-
-		"enable_auth_domain_check",
-		"no",
+		"document_root", DOCUMENT_ROOT,
+		"listening_ports", PORT,
+		"request_timeout_ms", "10000",
+		"error_log_file", "error.log",
+		"enable_auth_domain_check", "no",
 		0
 	};
 	struct mg_callbacks callbacks;
@@ -177,18 +148,7 @@ main(int argc, char *argv[])
 
 	mg_set_request_handler(ctx, EXIT_URI, ExitHandler, 0);
 
-
-	/* Add handler for /B, /B/A, /B/B but not for /B* */
-	mg_set_request_handler(ctx, "/B$", BXHandler, (void *)"ze");
-	mg_set_request_handler(ctx, "/B/A$", BXHandler, (void *)"cruel");
-	mg_set_request_handler(ctx, "/B/B$", BXHandler, (void *)"gamma");
-
-
-	mg_set_request_handler(ctx,
-	                       "/plot",
-	                       FileHandler,
-	                       (void *)"./teste_plot.html");
-
+	mg_set_request_handler(ctx, "/plot", FileHandler, (void *)"./teste_plot.html");
 
 	/* Add handler for /postresponse example */
 	mg_set_request_handler(ctx, "/postresponse", PostResponser, 0);
