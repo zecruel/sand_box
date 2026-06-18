@@ -1,7 +1,7 @@
 /*
 
-compile - gcc emb_server.c civetweb.c -I. -DNO_SSL -lws2_32 -o emb_server.exe
-
+compile:
+gcc emb_server.c civetweb.c -I. -Iinclude -Llib -DNO_SSL -llua -lm -o emb_server
  * Copyright (c) 2013-2021 the CivetWeb developers
  * Copyright (c) 2013 No Face Press, LLC
  * License http://opensource.org/licenses/mit-license.php MIT License
@@ -23,6 +23,8 @@ compile - gcc emb_server.c civetweb.c -I. -DNO_SSL -lws2_32 -o emb_server.exe
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "civetweb.h"
 
@@ -32,6 +34,31 @@ compile - gcc emb_server.c civetweb.c -I. -DNO_SSL -lws2_32 -o emb_server.exe
 #define EXIT_URI "/exit"
 
 volatile int exitNow = 0;
+/* shared memory */
+#include <sys/mman.h>
+
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+
+#define MAX_SV 100
+#define MAX_DS 20
+
+
+struct SV_stream{
+  int AppId;
+  int ds_size;
+  int ds_idx[MAX_DS];
+  int payload_size;
+  int smp_max;
+  int buf_max;
+  int32_t *data;
+  int32_t *pos;
+  int lock;
+};
+
+int streams_len = 0;
+struct SV_stream streams[MAX_SV];
 
 
 
@@ -56,6 +83,18 @@ int FileHandler(struct mg_connection *conn, void *cbdata) {
 int PostResponser(struct mg_connection *conn, void *cbdata) {
 	long long r_total = 0;
 	int r, s;
+
+  int32_t data[240];
+  int32_t pos = *(streams[0].pos);
+
+  for(int i = 0; i < 240; i++){
+    int buf_pos = pos + i - 300;
+    if (buf_pos < 0) pos += streams[0].buf_max;
+    if (!(buf_pos < streams[0].buf_max)) pos -= streams[0].buf_max;
+    int ch_idx = 0;
+    int idx = buf_pos * streams[0].ds_size + ch_idx;
+    data[i] = streams[0].data[idx];
+  }
 
 	char buf[2048];
   memset(buf, 0, 2048);
@@ -104,9 +143,35 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
   mg_printf(conn, "HTTP/1.1 200 OK\r\n");
 	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
 	mg_printf(conn, "[");
-  mg_printf(conn, "[%g,%g]", 0, 114000.0 * sin ( pass*0.157));
+  mg_printf(conn, "[%g,%g]", 0.0, 0.01 * data[0]);
   for (int i = 1; i < 240; i++){
-    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 114000.0 * sin (0.07854*i + pass*0.157));
+    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 0.01 * data[i]);
+  }
+	mg_printf(conn, "]\r\n");
+  
+	return 1;
+}
+
+int get_ch_data(struct mg_connection *conn, void *cbdata) {
+
+  int32_t data[240];
+  int32_t pos = *(streams[0].pos);
+
+  for(int i = 0; i < 240; i++){
+    int buf_pos = pos + i - 300;
+    if (buf_pos < 0) pos += streams[0].buf_max;
+    if (!(buf_pos < streams[0].buf_max)) pos -= streams[0].buf_max;
+    int ch_idx = 0;
+    int idx = buf_pos * streams[0].ds_size + ch_idx;
+    data[i] = streams[0].data[idx];
+  }
+
+	  mg_printf(conn, "HTTP/1.1 200 OK\r\n");
+	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
+	mg_printf(conn, "[");
+  mg_printf(conn, "[%g,%g]", 0.0, 0.01 * data[0]);
+  for (int i = 1; i < 240; i++){
+    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 0.01 * data[i]);
   }
 	mg_printf(conn, "]\r\n");
   
@@ -119,8 +184,131 @@ int log_message(const struct mg_connection *conn, const char *message) {
 	return 1;
 }
 
+/* Aux function for qsort */
+int comp_asc(const void *a, const void *b) {
+    int val_a = *(int *)a;
+    int val_b = *(int *)b;
+    return (val_a > val_b) - (val_a < val_b); /* avoid overflow */
+}
 
 int main(int argc, char *argv[]) {
+  char *config_file;
+  
+  if (argc > 1) {
+    printf("Config file: %s\n", argv[1]);
+    config_file = argv[1];
+  }
+  else {
+    printf("Using default config file - sv_config.lua\n");
+    config_file = "sv_config.lua";
+  }
+ 
+  /* Read config file with Lua interpreter */
+  lua_State *L = luaL_newstate(); /* opens Lua */
+  luaL_openlibs(L); /* opens the standard libraries */
+  /* execute Lua config file */
+  if (luaL_loadfile(L, config_file) || lua_pcall(L, 0, 0, 0)){
+    printf("cannot run config. file: %s", lua_tostring(L, -1));
+    return 1; /* error */
+  }
+  /* -------------------- parse config file  -------------------*/
+	lua_getglobal(L, "sampled_values");
+	if (lua_istable(L, -1)){
+		
+		/* iterate over table */
+		lua_pushnil(L);  /* first key */
+		while (lua_next(L, -2) != 0) { /* table index are shifted*/
+			/* uses 'key' (at index -2) and 'value' (at index -1) */
+			
+			if (lua_istable(L, -1) && streams_len < MAX_SV - 1){
+        int ok = 1;
+        lua_getfield(L, -1, "AppId");
+        if (lua_isinteger(L, -1)){
+          streams[streams_len].AppId = lua_tointeger(L, -1);
+          ok &= 1;
+        } else ok = 0;
+        lua_pop(L, 1);
+
+        lua_getfield(L, -1, "samples_sec");
+        if (lua_isinteger(L, -1)){
+          streams[streams_len].smp_max = lua_tointeger(L, -1);
+        } else streams[streams_len].smp_max = 4800;
+        lua_pop(L, 1);
+        
+        lua_getfield(L, -1, "seconds");
+        if (lua_isinteger(L, -1)){
+          streams[streams_len].buf_max = lua_tointeger(L, -1) *
+            streams[streams_len].smp_max;
+        } else streams[streams_len].buf_max =
+           2 * streams[streams_len].smp_max;
+        lua_pop(L, 1);
+        
+        lua_getfield(L, -1, "dataset");
+        if (lua_istable(L, -1)){
+          int ds_size = 0, max = 0;
+		      /* iterate over table */
+          lua_pushnil(L);  /* first key */
+		      while (lua_next(L, -2) != 0) { /* table index are shifted*/
+			      /* uses 'key' (at index -2) and 'value' (at index -1) */
+            if (lua_istable(L, -1)){
+              lua_getfield(L, -1, "idx");
+              if (lua_isinteger(L, -1)){
+                int idx = lua_tointeger(L, -1);
+                if (idx >= 0 && ds_size < MAX_DS-1) {
+                  max = (idx > max)? idx : max;
+                  streams[streams_len].ds_idx[ds_size] = idx * 8;
+                  ds_size++;
+                }
+              }
+              lua_pop(L, 1);
+            }
+            /* removes 'value'; keeps 'key' for next iteration */
+			      lua_pop(L, 1);
+		      }
+          lua_pop(L, 1);
+          if (ds_size == 0) ok = 0;
+          else {
+            qsort(streams[streams_len].ds_idx, ds_size, sizeof(int), comp_asc);
+            streams[streams_len].ds_size = ds_size;
+            streams[streams_len].payload_size = max * 8 + 8;
+          }
+        } else ok = 0;
+        //lua_pop(L, 1);
+        
+        if (ok) {
+          streams[streams_len].lock = 0;
+          
+          /* shared memory config */
+          int oflags = O_RDONLY;
+	        int length = (1 + streams[streams_len].buf_max * streams[streams_len].ds_size) * sizeof(int32_t);
+	        char name[40] = "/sv_subscriber.";
+          strncat(name, lua_tostring(L, -2), 25);
+	        int fd = shm_open(name, oflags, 0644 );
+          if (fd < 1) return 1; /* error */
+          int32_t *ptr = (int32_t *) mmap(NULL, length, PROT_READ, MAP_SHARED, fd, 0);
+          streams[streams_len].pos = &ptr[0];
+          streams[streams_len].data = &ptr[1];
+
+          printf("stream name: %s, dataSet size: %d\n", name, streams[streams_len].ds_size);
+          
+          streams_len++;
+			  }
+      }
+			/* removes 'value'; keeps 'key' for next iteration */
+			lua_pop(L, 1);
+		}
+	}
+  else {
+    printf("Error in config. file: missing 'sampled_values' table");
+    return 1; /* error */
+  }
+	lua_pop(L, 1);
+  lua_close(L);
+
+
+
+
+
 	const char *options[] = {
 		"document_root", DOCUMENT_ROOT,
 		"listening_ports", PORT,
@@ -152,6 +340,7 @@ int main(int argc, char *argv[]) {
 
 	/* Add handler for /postresponse example */
 	mg_set_request_handler(ctx, "/postresponse", PostResponser, 0);
+	mg_set_request_handler(ctx, "/getchdata", get_ch_data, 0);
 
 	
 	/* List all listening ports */
