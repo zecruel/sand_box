@@ -26,6 +26,16 @@ static int running = 0;
 static int smp_cnt = 0;
 static int sync = 0;
 
+int voltageA[80];
+int voltageB[80];
+int voltageC[80];
+int voltageN[80];
+int currentA[80];
+int currentB[80];
+int currentC[80];
+int currentN[80];
+int noise[13];
+
 struct sv_param {
   char *interface;
   char *asdu_name;
@@ -58,12 +68,18 @@ void * pthread_ptp(void * argument) {
         if (packet_size > 57) {
           if (buffer[14] == 0x00 || buffer[14] == 0x08){
             uint64_t corr_ns = 0;
-            corr_ns = buffer[27] | buffer[26]<<8 | buffer[25]<<16 |
-              buffer[24] << 24 | buffer[23]<<32 | buffer[22] << 48;
+            int i;
+            for (i = 0; i < 6; i++){
+              corr_ns = corr_ns << 8 | buffer[22 + i];
+            }
             uint64_t sec = 0;
-            sec = buffer[53] | buffer[52]<<8 | buffer[51]<<16 |
-              buffer[50] << 24 | buffer[49]<<32 | buffer[48] << 48;
-            uint32_t ns = buffer[57] | buffer[56]<<8 | buffer[55]<<16 | buffer[54] << 24;
+            for (i = 0; i < 6; i++){
+              sec = sec << 8 | buffer[48 + i];
+            }
+            uint32_t ns = 0;
+            for (i = 0; i < 4; i++){
+              ns = ns << 8 | buffer[54 + i];
+            }
             if (sec > 0){
               //ns += corr_ns;
               //printf("%fs ",(float) ns/1000000000);
@@ -148,18 +164,31 @@ void * pthread_task(void * argument) {
   int corr_cnt;
   float phaseAngle = 0.15f;
 
-  int voltageA;
-  int voltageB;
-  int voltageC;
-  int voltageN;
-  int currentA;
-  int currentB;
-  int currentC;
-  int currentN;
+  for(int i = 0; i < 80; i++){
+    double angleA = (2 * M_PI / 80) * i;
+    double angleB = (2 * M_PI / 80) * i - ( 2 * M_PI / 3);
+    double angleC = (2 * M_PI / 80) * i - ( 4 * M_PI / 3);
 
+    voltageA[i] = (vol * sin(angleA)) * 100;
+    voltageB[i] = (vol * sin(angleB)) * 100;
+    voltageC[i] = (vol * sin(angleC)) * 100;
+    voltageN[i] = voltageA[i] + voltageB[i] + voltageC[i];
+
+    currentA[i] = (amp * sin(angleA - phaseAngle)) * 1000;
+    currentB[i] = (amp * sin(angleB - phaseAngle)) * 1000;
+    currentC[i] = (amp * sin(angleC - phaseAngle)) * 1000;
+    currentN[i] = currentA[i] + currentB[i] + currentC[i];
+  }
+  // Seed the random number generator with current time 
+  srand(time(0));
+  // Fill the array with random numbers in range [-10, 10]
+  for (int i = 0; i < 13; i++) {
+    noise[i] = ((rand() % 20) - 10) * 1000;
+  }
   sleep_ms( 3000);
 
   int sampleCount = smp_cnt;
+  int np1 = 0, np2 = 2, np3 = 1, np4 = 3;
 
   while (running) {
     if (sync){
@@ -179,41 +208,28 @@ void * pthread_task(void * argument) {
     /* update measurement values */
     int samplePoint = sampleCount % 80;
 
-    double angleA = (2 * M_PI / 80) * samplePoint;
-    double angleB = (2 * M_PI / 80) * samplePoint - ( 2 * M_PI / 3);
-    double angleC = (2 * M_PI / 80) * samplePoint - ( 4 * M_PI / 3);
-
-    voltageA = (vol * sin(angleA)) * 100;
-    voltageB = (vol * sin(angleB)) * 100;
-    voltageC = (vol * sin(angleC)) * 100;
-    voltageN = voltageA + voltageB + voltageC;
-
-    currentA = (amp * sin(angleA - phaseAngle)) * 1000;
-    currentB = (amp * sin(angleB - phaseAngle)) * 1000;
-    currentC = (amp * sin(angleC - phaseAngle)) * 1000;
-    currentN = currentA + currentB + currentC;
 
     // -----------------------------------------------------------------------------------------
     // Perform whatever action you want here at this fixed interval.
     // -----------------------------------------------------------------------------------------
 
 
-    SVPublisher_ASDU_setINT32(asdu, amp1, currentA);
+    SVPublisher_ASDU_setINT32(asdu, amp1, currentA[samplePoint] + noise[np2]);
     SVPublisher_ASDU_setQuality(asdu, amp1q, q);
-    SVPublisher_ASDU_setINT32(asdu, amp2, currentB);
+    SVPublisher_ASDU_setINT32(asdu, amp2, currentB[samplePoint] + noise[np3]);
     SVPublisher_ASDU_setQuality(asdu, amp2q, q);
-    SVPublisher_ASDU_setINT32(asdu, amp3, currentC);
+    SVPublisher_ASDU_setINT32(asdu, amp3, currentC[samplePoint] + noise[np1]);
     SVPublisher_ASDU_setQuality(asdu, amp3q, q);
-    SVPublisher_ASDU_setINT32(asdu, amp4, currentN);
+    SVPublisher_ASDU_setINT32(asdu, amp4, currentN[samplePoint]);
     SVPublisher_ASDU_setQuality(asdu, amp4q, q);
 
-    SVPublisher_ASDU_setINT32(asdu, vol1, voltageA);
+    SVPublisher_ASDU_setINT32(asdu, vol1, voltageA[samplePoint] + 10*noise[np4]);
     SVPublisher_ASDU_setQuality(asdu, vol1q, q);
-    SVPublisher_ASDU_setINT32(asdu, vol2, voltageB);
+    SVPublisher_ASDU_setINT32(asdu, vol2, voltageB[samplePoint] - 10*noise[np1]);
     SVPublisher_ASDU_setQuality(asdu, vol2q, q);
-    SVPublisher_ASDU_setINT32(asdu, vol3, voltageC);
+    SVPublisher_ASDU_setINT32(asdu, vol3, voltageC[samplePoint] - 10*noise[np2]);
     SVPublisher_ASDU_setQuality(asdu, vol3q, q);
-    SVPublisher_ASDU_setINT32(asdu, vol4, voltageN);
+    SVPublisher_ASDU_setINT32(asdu, vol4, voltageN[samplePoint]);
     SVPublisher_ASDU_setQuality(asdu, vol4q, q);
 
     //SVPublisher_ASDU_setRefrTmNs(asdu, Hal_getTimeInNs());
@@ -225,6 +241,10 @@ void * pthread_task(void * argument) {
     SVPublisher_publish(svPublisher);
 
     sampleCount = ((sampleCount + 1) % 4800);
+    np1 = (np1 +1) % 13;
+    np2 = (np2 +1) % 13;
+    np3 = (np3 +1) % 13;
+    np4 = (np4 +1) % 13;
 
   }
   SVPublisher_destroy(svPublisher);
