@@ -46,6 +46,7 @@ volatile int exitNow = 0;
 
 
 struct SV_stream{
+  char name[25];
   int AppId;
   int ds_size;
   int ds_idx[MAX_DS];
@@ -60,7 +61,7 @@ struct SV_stream{
 int streams_len = 0;
 struct SV_stream streams[MAX_SV];
 
-
+lua_State *L;
 
 int ExitHandler(struct mg_connection *conn, void *cbdata) {
 	mg_printf(conn,
@@ -152,6 +153,25 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
 	return 1;
 }
 
+int get_config(struct mg_connection *conn, void *cbdata) {
+  lua_getglobal(L, "get_streams");
+  lua_newtable(L);
+  for(int i = 0; i < streams_len; i++){
+    lua_pushstring(L, streams[i].name);
+    lua_rawseti(L, -2, i+1);
+  }
+  int r = lua_pcall(L, 1, 1, 0);
+  if (r == LUA_OK) {
+	  mg_printf(conn, "HTTP/1.1 200 OK\r\n");
+    mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
+    mg_printf(conn, "%s", lua_tostring(L, -1));
+    mg_printf(conn, "\r\n");
+    lua_pop(L, 1);
+  }
+  
+	return 1;
+}
+
 int get_ch_data(struct mg_connection *conn, void *cbdata) {
 
   int32_t data[240];
@@ -203,15 +223,36 @@ int main(int argc, char *argv[]) {
     config_file = "sv_config.lua";
   }
  
-  /* Read config file with Lua interpreter */
-  lua_State *L = luaL_newstate(); /* opens Lua */
+  /* Start Lua interpreter */
+  L = luaL_newstate(); /* opens Lua */
   luaL_openlibs(L); /* opens the standard libraries */
+  const char *lfuncs =
+    "function table_to_json(tbl)\n"
+    "  local result = {}\n"
+    "  for key, value in pairs(tbl) do\n"
+    "    local formatted_value = type(value) == 'table' and "
+    "table_to_json(value) or string.format('\\\"%s\\\"', tostring(value))\n"
+    "    table.insert(result, string.format('\\\"%s\\\":%s', key, formatted_value))\n"
+    "  end\n"
+    "  return '{' .. table.concat(result, ',') .. '}'\n"
+    "end\n"
+
+    "function get_streams (tbl)\n"
+    "  local result = {}\n"
+    "  for key, value in pairs(tbl) do\n"
+    "    result[value] = sampled_values[value]\n"
+    "  end\n"
+    "  return table_to_json(result)\n"
+    "end\n";
+		luaL_dostring(L, lfuncs);
+  
+
+  /* -------------------- parse config file  -------------------*/
   /* execute Lua config file */
   if (luaL_loadfile(L, config_file) || lua_pcall(L, 0, 0, 0)){
     printf("cannot run config. file: %s", lua_tostring(L, -1));
     return 1; /* error */
   }
-  /* -------------------- parse config file  -------------------*/
 	lua_getglobal(L, "sampled_values");
 	if (lua_istable(L, -1)){
 		
@@ -282,16 +323,19 @@ int main(int argc, char *argv[]) {
           int oflags = O_RDONLY;
 	        int length = (1 + streams[streams_len].buf_max * streams[streams_len].ds_size) * sizeof(int32_t);
 	        char name[40] = "/sv_subscriber.";
-          strncat(name, lua_tostring(L, -2), 25);
+          memset(streams[streams_len].name, 0, 25);
+          strncpy(streams[streams_len].name, lua_tostring(L, -2), 25);
+          strncat(name, streams[streams_len].name, 25);
 	        int fd = shm_open(name, oflags, 0644 );
-          if (fd < 1) return 1; /* error */
-          int32_t *ptr = (int32_t *) mmap(NULL, length, PROT_READ, MAP_SHARED, fd, 0);
-          streams[streams_len].pos = &ptr[0];
-          streams[streams_len].data = &ptr[1];
+          if (fd >= 0) {
+            int32_t *ptr = (int32_t *) mmap(NULL, length, PROT_READ, MAP_SHARED, fd, 0);
+            streams[streams_len].pos = &ptr[0];
+            streams[streams_len].data = &ptr[1];
 
-          printf("stream name: %s, dataSet size: %d\n", name, streams[streams_len].ds_size);
-          
-          streams_len++;
+            printf("stream name: %s, dataSet size: %d\n", name, streams[streams_len].ds_size);
+            
+            streams_len++;
+          }
 			  }
       }
 			/* removes 'value'; keeps 'key' for next iteration */
@@ -303,7 +347,7 @@ int main(int argc, char *argv[]) {
     return 1; /* error */
   }
 	lua_pop(L, 1);
-  lua_close(L);
+  printf("top stack = %d\n", lua_gettop(L));
 
 
 
@@ -341,6 +385,7 @@ int main(int argc, char *argv[]) {
 	/* Add handler for /postresponse example */
 	mg_set_request_handler(ctx, "/postresponse", PostResponser, 0);
 	mg_set_request_handler(ctx, "/getchdata", get_ch_data, 0);
+	mg_set_request_handler(ctx, "/getconfig", get_config, 0);
 
 	
 	/* List all listening ports */
@@ -375,6 +420,7 @@ int main(int argc, char *argv[]) {
 
 	/* Stop the server */
 	mg_stop(ctx);
+  lua_close(L);
 	printf("Server stopped.\n");
 	printf("Bye!\n");
 
