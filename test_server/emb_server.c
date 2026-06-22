@@ -84,18 +84,8 @@ int FileHandler(struct mg_connection *conn, void *cbdata) {
 int PostResponser(struct mg_connection *conn, void *cbdata) {
 	long long r_total = 0;
 	int r, s;
-
-  int32_t data[240];
-  int32_t pos = *(streams[0].pos);
-
-  for(int i = 0; i < 240; i++){
-    int buf_pos = pos + i - 300;
-    if (buf_pos < 0) pos += streams[0].buf_max;
-    if (!(buf_pos < streams[0].buf_max)) pos -= streams[0].buf_max;
-    int ch_idx = 0;
-    int idx = buf_pos * streams[0].ds_size + ch_idx;
-    data[i] = streams[0].data[idx];
-  }
+  int sel_streams[MAX_SV], sel_str_n = 0;
+  int ds_idx[MAX_SV][MAX_DS], ds_idx_n[MAX_SV];
 
 	char buf[2048];
   memset(buf, 0, 2048);
@@ -129,9 +119,6 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
 	}
   
 	r = mg_read(conn, buf, sizeof(buf));
-  int pass = 0;
-  if (r > 0) pass = atoi(buf);
-  
   /*
 	while (r > 0) {
 		r_total += r;
@@ -140,16 +127,73 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
 		r = mg_read(conn, buf, sizeof(buf));
 	}
 	*/
+	luaL_dostring(L, buf);
+	lua_getglobal(L, "sel_channels");
+	if (lua_istable(L, -1)){
+		
+		/* iterate over table */
+		lua_pushnil(L);  /* first key */
+		while (lua_next(L, -2) != 0) { /* table index are shifted*/
+			/* uses 'key' (at index -2) and 'value' (at index -1) */
+      const char *str_name = lua_tostring(L, -2);
+      int str_idx = -1;
+			for(int i = 0; i < streams_len; i++){
+        if(strcmp(str_name, streams[i].name) == 0 && sel_str_n < MAX_SV - 1) {
+          sel_streams[sel_str_n] = i;
+          ds_idx_n[sel_str_n] = 0;
+          str_idx = sel_str_n;
+          sel_str_n++;
+          break;
+        }
+      }
+      if (str_idx > -1) {
+			  if (lua_istable(L, -1) && sel_str_n < MAX_SV){
+          int len = lua_rawlen(L, -1);
+          ds_idx_n[str_idx] = len;
+          for(int i = 0; i < len; i++){
+            lua_rawgeti(L, -1, i + 1);
+            ds_idx[str_idx][i] = lua_tointeger(L, -1);
+            lua_pop(L, 1);
+          }
+        }
+      }
+    lua_pop(L, 1);
+    }
+  }
+  lua_pop(L, 1);
+ 
+
   
   mg_printf(conn, "HTTP/1.1 200 OK\r\n");
 	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
-	mg_printf(conn, "[");
-  mg_printf(conn, "[%g,%g]", 0.0, 0.01 * data[0]);
-  for (int i = 1; i < 240; i++){
-    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 0.01 * data[i]);
-  }
-	mg_printf(conn, "]\r\n");
+	mg_printf(conn, "{");
+
   
+	for(int i = 0; i < sel_str_n; i++){
+	  if(i > 0) mg_printf(conn, ",");
+    int32_t pos = *(streams[i].pos);
+	  mg_printf(conn, "\"%s\":[", streams[i].name);
+		for(int j = 0; j < ds_idx_n[i]; j++){
+	    if(j > 0) mg_printf(conn, ",");
+	    mg_printf(conn, "[");
+      for(int k = 0; k < 240; k++){
+	      if(k > 0) mg_printf(conn, ",");
+        int buf_pos = pos + k - 300;
+        if (buf_pos < 0) pos += streams[i].buf_max;
+        if (!(buf_pos < streams[i].buf_max)) pos -= streams[i].buf_max;
+        int idx = buf_pos * streams[i].ds_size + ds_idx[i][j];
+        int32_t data = streams[i].data[idx];
+        mg_printf(conn, "%d", data);
+      }
+
+
+	    mg_printf(conn, "]");
+    }
+    
+	  mg_printf(conn, "]");
+  }
+	mg_printf(conn, "}\r\n");
+
 	return 1;
 }
 

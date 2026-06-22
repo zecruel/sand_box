@@ -12,15 +12,17 @@
 </head>
 <body>
   <div id="top" style="background-color:darkseagreen;height:110px">
-    <h3 style="text-align:center;">Embeded C server test</h3>
-    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence - 2026</h4>
+    <p style="text-align:center;">Sampled Values Oscilloscope</p>
+    <p style="text-align:center;font-size:12px;color:navy;">by Zecruel - MIT licence - 2026</p>
     <button class="w2ui-btn" onclick="get_config()">Load</button>
     
-    <button class="w2ui-btn" onclick="interval = setInterval(loadData, 200);">Run</button>
+    <button class="w2ui-btn" onclick="run_acquire()">Run</button>
     <button class="w2ui-btn" onclick="clearInterval(interval)">Stop</button>
   </div>
-  <div id="channels1" style="background-color:lightsteelblue;height:180px"></div>
-  <div id="plot_out"><h3 style="text-align:center;">Output</h3></div>
+  <a style="font-size: 10px;background-color:lightsteelblue;height:18px">Channels 1</a>
+  <div id="channels1" style="background-color:lightsteelblue;height:140px"></div>
+  <a style="font-size: 10px;background-color:tomato;height:18px">Channels 2</a>
+  <div id="channels2" style="background-color:tomato;height:140px"></div>
   
   <div id="plot_container"></div>
   
@@ -29,6 +31,10 @@
   <script>
     let config = {};
     let interval = {};
+    let ch_indexes = {};
+    let chs1_sel = [];
+    let chs2_sel = [];
+
     const metricPrefixes = {
       "-24": "y", "-21": "z", "-18": "a", "-15": "f", "-12": "p",
       "-9": "n", "-6": "µ", "-3": "m", "0": "",
@@ -40,9 +46,8 @@
       name: 'chs1',
       box: '#channels1',
       style: 'border: 3px solid lightsteelblue',
-      header: 'Channels 1',
       show: {
-        header: true,
+        header: false,
         selectColumn: true,
         lineNumbers: true
       },
@@ -57,7 +62,27 @@
         { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
         { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
       ],
-     
+    });
+    let chs2_grid = new w2grid({
+      name: 'chs2',
+      box: '#channels2',
+      style: 'border: 3px solid tomato',
+      show: {
+        header: false,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: true, // allow only one file selection - current record
+      columns: [
+        { field: 'str', text: 'Stream', size: '150px'}, // 
+        { field: 'appid', text: 'AppId', size: '70px' }, // Record identification
+        { field: 'ch', text: 'Channel', size: '30%' }, // Total analog channels
+        { field: 'idx', text: 'Idx', size: '40px' }, // total digital channels
+        { field: 'mult', text: 'Mult', size: '70px' }, // total samples
+        { field: 'un', text: 'Un', size: '40px' }, // date/time stamp of first sample
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
+      ],
     });
 
     // init plot chart object
@@ -67,11 +92,15 @@
     // make the whole chart object
     plot_output.clear();
     plot_output.resize({height: 600});
-    
+    let x_data = [];
+    let dt = 1.0/4800.0;
+    for(let i = 0; i < 240; i++){
+      x_data.push(i * dt);
+    }
     let plot_option = { animation: false,
       grid: {top: 0,left: 60, height: 500}, // huge chart
           // time axis
-      xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}},
+      xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}, data: x_data},
           // y axis 
       yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true},
           // engineering format
@@ -85,13 +114,7 @@
             return `${mantissaStr}${prefix}`.trim();
           }}
           },
-      series: [{name: "teste", 
-            //markLine: {symbol: ['none', 'pin'],label: { show: false },
-            //  data: [{ xAxis: rec.trig }]},
-            emphasis: { focus: 'series' },
-            type: 'line', showSymbol: false, clip: true, data: []}], // combine all series in one chart
-          // zoom feature in chart
-      dataZoom: [{type: 'slider', xAxisIndex: 'all', top: 550},{type: 'inside', xAxisIndex: 'all'}],
+      series: [],
       tooltip: {trigger: 'axis'},
     };
     plot_output.setOption(plot_option);
@@ -100,6 +123,7 @@
     async function get_config() {
       clearInterval(interval); //stop aquisition
       chs1_grid.clear();
+      chs2_grid.clear();
        
       let response = await fetch("/getconfig");
       if (!response.ok) {
@@ -109,8 +133,8 @@
       let config = await response.json();
       //console.log(config);
       let recid = 1;
-      const records = [];
       Object.keys(config).forEach(str_id => {
+        const records = [];
         const stream = config[str_id];
         const ds = stream.dataset;
         Object.keys(ds).forEach(ch_id => {
@@ -125,23 +149,61 @@
           });
           recid++;
         });
+        records.sort((a, b) => a.idx - b.idx);
+        chs1_grid.add(records);
+        chs2_grid.add(records);
       });
-      chs1_grid.add(records);
     }
-  
+    async function run_acquire() {
+      ch_indexes = {};
+      chs1_sel = chs1_grid.getSelection();
+      for (let i = 0; i < chs1_sel.length; i++){ // iterate over channels
+        let rec = chs1_grid.get(chs1_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+        //if (!(stream in ch1_idx)) ch1_idx[stream] = [];
+        //if(ch1_idx[stream].indexOf(idx) === -1) ch1_idx[stream].push(idx);
+        if (!(stream in ch_indexes)) ch_indexes[stream] = [];
+        if(ch_indexes[stream].indexOf(idx) === -1) ch_indexes[stream].push(idx);
+
+
+        
+
+
+
+
+      }
+      chs2_sel = chs2_grid.getSelection();
+      for (let i = 0; i < chs2_sel.length; i++){ // iterate over channels
+        let rec = chs2_grid.get(chs2_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+        //if (!(stream in ch2_idx)) ch2_idx[stream] = [];
+        //if(ch2_idx[stream].indexOf(idx) === -1) ch2_idx[stream].push(idx);
+        if (!(stream in ch_indexes)) ch_indexes[stream] = [];
+        if(ch_indexes[stream].indexOf(idx) === -1) ch_indexes[stream].push(idx);
+      }
+      interval = setInterval(loadData, 200);
+    }
     async function loadData() {
-      const input = {
-          username: "john_doe",
-          email: "john@example.com",
-          age: 25
-      };
+      let input = 'sel_channels = {';
+      Object.keys(ch_indexes).forEach(str_id => {
+        input += str_id + '={';
+        idxs = ch_indexes[str_id];
+        for (let i = 0; i < idxs.length; i++){
+          input += idxs[i] + ',';
+        }
+        input += '},';
+      });
+      input += '}';
+      //console.log(input);
     
-     // let response = await fetch("/postresponse", {method: "POST",
+     let response = await fetch("/postresponse", {method: "POST",
             //headers: {"Content-Type": "application/json",},
-            //body: JSON.stringify(input),
+            body: input,
       //      body: Math.floor(Math.random() * 10),
-     // });
-    let response = await fetch("/getchdata");
+     });
+    //let response = await fetch("/getchdata");
     if (!response.ok) {
       console.log("HTTP Error:", response.status);
       return;
@@ -149,8 +211,23 @@
 
       let data = await response.json();
       //let data = await response.text();
-      //console.log(data);
-      plot_output.setOption({series: [{data: data}]});
+      //console.log(data)
+
+      let chs1_series = [];
+      let chs2_series = [];
+      for (let i = 0; i < chs1_sel.length; i++){ // iterate over channels
+        let rec = chs1_grid.get(chs1_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+
+
+        chs1_series.push({name: rec.str + ":" + rec.ch, 
+            //markLine: {symbol: ['none', 'pin'],label: { show: false },
+            //  data: [{ xAxis: rec.trig }]},
+            emphasis: { focus: 'series' },
+            type: 'line', showSymbol: false, clip: true, data: data[rec.str][i]});
+      }
+      plot_output.setOption({series: chs1_series});
     }
     
     
