@@ -172,13 +172,14 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
 	for(int i = 0; i < sel_str_n; i++){
 	  if(i > 0) mg_printf(conn, ",");
     int32_t pos = *(streams[i].pos);
+    int rem = pos % 80;
 	  mg_printf(conn, "\"%s\":[", streams[i].name);
 		for(int j = 0; j < ds_idx_n[i]; j++){
 	    if(j > 0) mg_printf(conn, ",");
 	    mg_printf(conn, "[");
-      for(int k = 0; k < 240; k++){
+      for(int k = 0; k <= 240; k++){
 	      if(k > 0) mg_printf(conn, ",");
-        int buf_pos = pos + k - 300;
+        int buf_pos = pos + k - 300 - rem;
         if (buf_pos < 0) pos += streams[i].buf_max;
         if (!(buf_pos < streams[i].buf_max)) pos -= streams[i].buf_max;
         int idx = buf_pos * streams[i].ds_size + ds_idx[i][j];
