@@ -1,0 +1,239 @@
+<!--
+	Read and plot COMTRADE (IEEE C37.111) files
+  Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
+  MIT licence
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Emb Server</title>
+  <link rel="stylesheet" type="text/css" href="w2ui.min.css">
+</head>
+<body>
+  <div id="top" style="background-color:darkseagreen;height:110px">
+    <p style="text-align:center;">Sampled Values Oscilloscope</p>
+    <p style="text-align:center;font-size:12px;color:navy;">by Zecruel - MIT licence - 2026</p>
+    <button class="w2ui-btn" onclick="get_config()">Load</button>
+    
+    <button class="w2ui-btn" onclick="run_acquire()">Run</button>
+    <button class="w2ui-btn" onclick="clearInterval(interval)">Stop</button>
+  </div>
+  <a style="font-size: 10px;background-color:lightsteelblue;height:18px">Channels 1</a>
+  <div id="channels1" style="background-color:lightsteelblue;height:140px"></div>
+  <a style="font-size: 10px;background-color:tomato;height:18px">Channels 2</a>
+  <div id="channels2" style="background-color:tomato;height:140px"></div>
+  
+  <div id="plot_container"></div>
+  
+  <script type="text/javascript" src="w2ui.min.js"></script>
+  <script type="text/javascript" src="echarts.min.js"></script>
+  <script>
+    let config = {};
+    let interval = {};
+    let ch_indexes = {};
+    let chs1_sel = [];
+    let chs2_sel = [];
+
+    const metricPrefixes = {
+      "-24": "y", "-21": "z", "-18": "a", "-15": "f", "-12": "p",
+      "-9": "n", "-6": "µ", "-3": "m", "0": "",
+      "3": "k", "6": "M", "9": "G", "12": "T",
+      "15": "P", "18": "E", "21": "Z", "24": "Y"
+    };
+    // GUI grid to list loaded record files and its parameters
+    let chs1_grid = new w2grid({
+      name: 'chs1',
+      box: '#channels1',
+      style: 'border: 3px solid lightsteelblue',
+      show: {
+        header: false,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: true, // allow only one file selection - current record
+      columns: [
+        { field: 'str', text: 'Stream', size: '150px'}, // 
+        { field: 'appid', text: 'AppId', size: '70px' }, // Record identification
+        { field: 'ch', text: 'Channel', size: '30%' }, // Total analog channels
+        { field: 'idx', text: 'Idx', size: '40px' }, // total digital channels
+        { field: 'mult', text: 'Mult', size: '70px' }, // total samples
+        { field: 'un', text: 'Un', size: '40px' }, // date/time stamp of first sample
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
+      ],
+    });
+    let chs2_grid = new w2grid({
+      name: 'chs2',
+      box: '#channels2',
+      style: 'border: 3px solid tomato',
+      show: {
+        header: false,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: true, // allow only one file selection - current record
+      columns: [
+        { field: 'str', text: 'Stream', size: '150px'}, // 
+        { field: 'appid', text: 'AppId', size: '70px' }, // Record identification
+        { field: 'ch', text: 'Channel', size: '30%' }, // Total analog channels
+        { field: 'idx', text: 'Idx', size: '40px' }, // total digital channels
+        { field: 'mult', text: 'Mult', size: '70px' }, // total samples
+        { field: 'un', text: 'Un', size: '40px' }, // date/time stamp of first sample
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
+      ],
+    });
+
+    // init plot chart object
+    let plot_output = echarts.init(document.getElementById('plot_container'), 
+      null, {renderer: 'canvas', useDirtyRect: false});
+    window.addEventListener('resize', plot_output.resize);
+    // make the whole chart object
+    plot_output.clear();
+    plot_output.resize({height: 600});
+    let x_data = [];
+    let dt = 1.0/4800.0;
+    for(let i = 0; i < 240; i++){
+      x_data.push(i * dt);
+    }
+    let plot_option = { animation: false,
+      grid: {top: 0,left: 60, height: 500}, // huge chart
+          // time axis
+      xAxis: {name: 't(s)', minorTick: {show: true}, minorSplitLine: {show: true}, data: x_data},
+          // y axis 
+      yAxis: {name: 'y', minorTick: {show: true}, minorSplitLine: {show: true},
+          // engineering format
+          axisLabel: { formatter: function (value) {
+            const digits = 3;
+            if (value === 0) return "0";
+            const exponent = Math.floor(Math.log10(Math.abs(value)) / 3) * 3;
+            const mantissa = value / Math.pow(10, exponent);
+            const mantissaStr = mantissa.toPrecision(digits);
+            const prefix = metricPrefixes[exponent] ?? `e${exponent}`;
+            return `${mantissaStr}${prefix}`.trim();
+          }}
+          },
+      series: [],
+      tooltip: {trigger: 'axis'},
+    };
+    plot_output.setOption(plot_option);
+  
+  
+    async function get_config() {
+      clearInterval(interval); //stop aquisition
+      chs1_grid.clear();
+      chs2_grid.clear();
+       
+      let response = await fetch("/getconfig");
+      if (!response.ok) {
+        console.log("HTTP Error:", response.status);
+        return;
+      }
+      let config = await response.json();
+      //console.log(config);
+      let recid = 1;
+      Object.keys(config).forEach(str_id => {
+        const records = [];
+        const stream = config[str_id];
+        const ds = stream.dataset;
+        Object.keys(ds).forEach(ch_id => {
+          const ch = ds[ch_id];
+          records.push({
+            recid: recid,
+            str: str_id, appid: stream.AppId,
+            ch: ch_id, idx: ch.idx,
+            mult: ch.hasOwnProperty("mult") ? ch.mult : "1000",
+            un: ch.hasOwnProperty("unit") ? ch.unit : "?",
+            scale: "1.0", ofs: "0.0"
+          });
+          recid++;
+        });
+        records.sort((a, b) => a.idx - b.idx);
+        chs1_grid.add(records);
+        chs2_grid.add(records);
+      });
+    }
+    async function run_acquire() {
+      ch_indexes = {};
+      chs1_sel = chs1_grid.getSelection();
+      for (let i = 0; i < chs1_sel.length; i++){ // iterate over channels
+        let rec = chs1_grid.get(chs1_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+        //if (!(stream in ch1_idx)) ch1_idx[stream] = [];
+        //if(ch1_idx[stream].indexOf(idx) === -1) ch1_idx[stream].push(idx);
+        if (!(stream in ch_indexes)) ch_indexes[stream] = [];
+        if(ch_indexes[stream].indexOf(idx) === -1) ch_indexes[stream].push(idx);
+
+
+        
+
+
+
+
+      }
+      chs2_sel = chs2_grid.getSelection();
+      for (let i = 0; i < chs2_sel.length; i++){ // iterate over channels
+        let rec = chs2_grid.get(chs2_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+        //if (!(stream in ch2_idx)) ch2_idx[stream] = [];
+        //if(ch2_idx[stream].indexOf(idx) === -1) ch2_idx[stream].push(idx);
+        if (!(stream in ch_indexes)) ch_indexes[stream] = [];
+        if(ch_indexes[stream].indexOf(idx) === -1) ch_indexes[stream].push(idx);
+      }
+      interval = setInterval(loadData, 200);
+    }
+    async function loadData() {
+      let input = 'sel_channels = {';
+      Object.keys(ch_indexes).forEach(str_id => {
+        input += str_id + '={';
+        idxs = ch_indexes[str_id];
+        for (let i = 0; i < idxs.length; i++){
+          input += idxs[i] + ',';
+        }
+        input += '},';
+      });
+      input += '}';
+      //console.log(input);
+    
+     let response = await fetch("/postresponse", {method: "POST",
+            //headers: {"Content-Type": "application/json",},
+            body: input,
+      //      body: Math.floor(Math.random() * 10),
+     });
+    //let response = await fetch("/getchdata");
+    if (!response.ok) {
+      console.log("HTTP Error:", response.status);
+      return;
+    }
+
+      let data = await response.json();
+      //let data = await response.text();
+      //console.log(data)
+
+      let chs1_series = [];
+      let chs2_series = [];
+      for (let i = 0; i < chs1_sel.length; i++){ // iterate over channels
+        let rec = chs1_grid.get(chs1_sel[i]);
+        let stream = rec.str;
+        let idx = rec.idx;
+
+
+        chs1_series.push({name: rec.str + ":" + rec.ch, 
+            //markLine: {symbol: ['none', 'pin'],label: { show: false },
+            //  data: [{ xAxis: rec.trig }]},
+            emphasis: { focus: 'series' },
+            type: 'line', showSymbol: false, clip: true, data: data[rec.str][i]});
+      }
+      plot_output.setOption({series: chs1_series});
+    }
+    
+    
+    // Executa a função a cada 1 segundo (1000ms)
+    //interval = setInterval(loadData, 200);
+    get_config();
+  </script>
+</body>
+</html>
