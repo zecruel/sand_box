@@ -81,6 +81,39 @@ int FileHandler(struct mg_connection *conn, void *cbdata) {
 	return 1;
 }
 
+int save_capture(struct mg_connection *conn, void *cbdata) {
+
+  
+  mg_printf(conn, "HTTP/1.1 200 OK\r\n");
+	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
+	mg_printf(conn, "{");
+
+	for(int i = 0; i < streams_len; i++){
+	  if(i > 0) mg_printf(conn, ",");
+    int32_t pos = *(streams[i].pos);
+	  mg_printf(conn, "\"%s\":{\"pos\": %d, \"data\":[", streams[i].name, pos);
+		for(int j = 0; j < streams[i].ds_size; j++){
+	    if(j > 0) mg_printf(conn, ",");
+	    mg_printf(conn, "[");
+      for(int k = 0; k < streams[i].buf_max; k++){
+	      if(k > 0) mg_printf(conn, ",");
+        int idx = k * streams[i].ds_size + j;
+        int32_t data = streams[i].data[idx];
+        mg_printf(conn, "%d", data);
+      }
+
+
+	    mg_printf(conn, "]");
+    }
+    
+	  mg_printf(conn, "]}");
+  }
+	mg_printf(conn, "}\r\n");
+
+	return 1;
+}
+
+
 int PostResponser(struct mg_connection *conn, void *cbdata) {
 	long long r_total = 0;
 	int r, s;
@@ -170,20 +203,21 @@ int PostResponser(struct mg_connection *conn, void *cbdata) {
 
   
 	for(int i = 0; i < sel_str_n; i++){
+    int sel = sel_streams[i];
 	  if(i > 0) mg_printf(conn, ",");
-    int32_t pos = *(streams[i].pos);
+    int32_t pos = *(streams[sel].pos);
     int rem = pos % 80;
-	  mg_printf(conn, "\"%s\":[", streams[i].name);
+	  mg_printf(conn, "\"%s\":[", streams[sel].name);
 		for(int j = 0; j < ds_idx_n[i]; j++){
 	    if(j > 0) mg_printf(conn, ",");
 	    mg_printf(conn, "[");
       for(int k = 0; k <= 240; k++){
 	      if(k > 0) mg_printf(conn, ",");
         int buf_pos = pos + k - 300 - rem;
-        if (buf_pos < 0) pos += streams[i].buf_max;
-        if (!(buf_pos < streams[i].buf_max)) pos -= streams[i].buf_max;
-        int idx = buf_pos * streams[i].ds_size + ds_idx[i][j];
-        int32_t data = streams[i].data[idx];
+        if (buf_pos < 0) buf_pos += streams[sel].buf_max;
+        if (!(buf_pos < streams[sel].buf_max)) buf_pos -= streams[sel].buf_max;
+        int idx = buf_pos * streams[sel].ds_size + ds_idx[i][j];
+        int32_t data = streams[sel].data[idx];
         mg_printf(conn, "%d", data);
       }
 
@@ -216,33 +250,6 @@ int get_config(struct mg_connection *conn, void *cbdata) {
   
 	return 1;
 }
-
-int get_ch_data(struct mg_connection *conn, void *cbdata) {
-
-  int32_t data[240];
-  int32_t pos = *(streams[0].pos);
-
-  for(int i = 0; i < 240; i++){
-    int buf_pos = pos + i - 300;
-    if (buf_pos < 0) pos += streams[0].buf_max;
-    if (!(buf_pos < streams[0].buf_max)) pos -= streams[0].buf_max;
-    int ch_idx = 0;
-    int idx = buf_pos * streams[0].ds_size + ch_idx;
-    data[i] = streams[0].data[idx];
-  }
-
-	  mg_printf(conn, "HTTP/1.1 200 OK\r\n");
-	mg_printf(conn, "Content-Type: Content-Type: application/json\r\n\r\n");
-	mg_printf(conn, "[");
-  mg_printf(conn, "[%g,%g]", 0.0, 0.01 * data[0]);
-  for (int i = 1; i < 240; i++){
-    mg_printf(conn, ",[%g,%g]", i * 0.00020833, 0.01 * data[i]);
-  }
-	mg_printf(conn, "]\r\n");
-  
-	return 1;
-}
-
 
 int log_message(const struct mg_connection *conn, const char *message) {
 	puts(message);
@@ -429,8 +436,8 @@ int main(int argc, char *argv[]) {
 
 	/* Add handler for /postresponse example */
 	mg_set_request_handler(ctx, "/postresponse", PostResponser, 0);
-	mg_set_request_handler(ctx, "/getchdata", get_ch_data, 0);
 	mg_set_request_handler(ctx, "/getconfig", get_config, 0);
+	mg_set_request_handler(ctx, "/savecapture", save_capture, 0);
 
 	
 	/* List all listening ports */
