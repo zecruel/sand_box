@@ -25,6 +25,7 @@
 static int running = 0;
 static int smp_cnt = 0;
 static int sync = 0;
+static int ptp_2_steps = 0;
 
 int voltageA[80];
 int voltageB[80];
@@ -56,7 +57,9 @@ void * pthread_ptp(void * argument) {
 
   EthernetHandleSet hs = EthernetHandleSet_new();
   EthernetHandleSet_addSocket(hs, sock);
-  uint8_t buffer[1518];
+  uint8_t buffer[1518], msg_type = 2;
+  struct timespec ts;
+  uint64_t sync_ns;
 
   while (running){
     switch (EthernetHandleSet_waitReady(hs, 100)){
@@ -66,7 +69,16 @@ void * pthread_ptp(void * argument) {
         int packet_size = Ethernet_receivePacket(sock, buffer, 1518);
         //printf("%d\n", packet_size);
         if (packet_size > 57) {
-          if (buffer[14] == 0x00 || buffer[14] == 0x08){
+          if (buffer[20] & 2) ptp_2_steps = 1;
+          msg_type = buffer[14];
+          if(msg_type == 0 && ptp_2_steps){ //sync message
+            if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0){
+              sync_ns = SEC_TO_NS(ts.tv_sec) + ts.tv_nsec; 
+            }
+          }
+
+          if((msg_type == 0 && !ptp_2_steps) || (msg_type == 0x08)){ // get global time
+          //if (buffer[14] == 0x00){// || buffer[14] == 0x08){
             uint64_t corr_ns = 0;
             int i;
             for (i = 0; i < 6; i++){
@@ -76,18 +88,27 @@ void * pthread_ptp(void * argument) {
             for (i = 0; i < 6; i++){
               sec = sec << 8 | buffer[48 + i];
             }
-            uint32_t ns = 0;
+            uint64_t ns = 0;
             for (i = 0; i < 4; i++){
               ns = ns << 8 | buffer[54 + i];
             }
-            if (sec > 0){
-              //ns += corr_ns;
-              //printf("%fs ",(float) ns/1000000000);
-              smp_cnt = 4800 * (float) ns/1000000000;
-              //printf("smpCnt = %d\n", smp_cnt);
-              //printf("corr_ns=%llu\tsec=%llu\tns=%llu\tsmp=%d\n", corr_ns, sec, ns, sync);
-              sync = 1;
+            //ns += corr_ns;
+            //printf("sync (ns)= %d ", ns);
+            ns += SEC_TO_NS(sec % 10);
+            if(ptp_2_steps) {
+              if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0){
+                uint64_t delay = SEC_TO_NS(ts.tv_sec) + ts.tv_nsec; 
+                //printf("delay=%d\n", delay - sync_ns);
+                ns += delay - sync_ns;
+              }
             }
+            //printf("sync (total)= %lld ", ns);
+            //printf("sync (s)= %d\n", sec);
+            double i_part;
+            smp_cnt = (4800.0 * modf((float) ns / NS_PER_SEC, &i_part)) + 0.5;
+            //printf("smpCnt = %d\n", smp_cnt);
+            //printf("corr_ns=%llu\tsec=%llu\tns=%llu\tsmp=%d\n", corr_ns, sec, ns, sync);
+            sync = 1;
           }
         }
       }
@@ -101,10 +122,10 @@ void * pthread_task(void * argument) {
   if (!argument) return (void*)"Error in param";
 
   CommParameters parameters = {
-    .vlanPriority = 5,
-    .vlanId = 176,
-    .appId = 0x5402,
-    .dstAddress = {0x01, 0x0c, 0xcd, 0x04, 0x09, 0x82}
+    .vlanPriority = 4,
+    .vlanId = 0,
+    .appId = 0x4000,
+    .dstAddress = {0x01, 0x0c, 0xcd, 0x04, 0x00, 0x00}
   };
 
   SVPublisher svPublisher = SVPublisher_create(&parameters, param->interface);
@@ -195,14 +216,18 @@ void * pthread_task(void * argument) {
       sync = 0;
       corr_cnt = sampleCount - smp_cnt;
       if (corr_cnt != 0){
-        printf("smp_int = %d, smp_ptp = %d \n", sampleCount, smp_cnt);
-        if (abs(corr_cnt) > 5) sampleCount = smp_cnt;
+        printf("Internal smpCnt=%d, From PTP=%d\n", sampleCount, smp_cnt);
+        if (abs(corr_cnt) > 5) {
+          sampleCount = smp_cnt;
+          corr_cnt = 0;
+          printf("Force correction\n");
+        }
       }
     }
     // Wait for the next cycle.
 
     //sleep_until_us(&last_wake_time_us, PERIOD_US);
-    sleep_until_ns(&last_wake_time_ns, 208343 + (corr_cnt * 20));
+    sleep_until_ns(&last_wake_time_ns, 208334 + (corr_cnt * 20));
 
 
     /* update measurement values */
