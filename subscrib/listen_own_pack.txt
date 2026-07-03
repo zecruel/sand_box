@@ -1,0 +1,113 @@
+Yes — on Linux, you can see your own sent packets with raw sockets, but there are some important details and limitations depending on the socket type and protocol.
+
+1. Understanding Raw Sockets
+Linux supports two main low-level socket families for packet capture/transmission:
+
+
+
+Socket Type
+Purpose
+Can See Own Sent Packets?
+
+
+
+
+AF_INET, SOCK_RAW
+Works at the IP layer (no Ethernet header).
+Usually no — unless you enable IP_HDRINCL and use SO_BINDTODEVICE carefully.
+
+
+AF_PACKET, SOCK_RAW
+Works at the link layer (includes Ethernet header).
+Yes, if you set PACKET_LOOPBACK or use PACKET_OUTGOING filter.
+
+
+
+
+2. Why You Might Not See Your Own Packets
+By default, AF_PACKET sockets in PACKET_OTHERHOST mode only capture packets destined for your host.
+To see your own outgoing packets, you must:
+
+Use AF_PACKET with SOCK_RAW or SOCK_DGRAM.
+Bind to the correct network interface.
+Enable capture of PACKET_OUTGOING packets.
+
+
+3. Minimal Example: Capture Own Sent Packets
+Here’s a runnable C example that captures both incoming and outgoing packets on a given interface:
+C#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <sys/socket.h>
+#include <linux/if_packet.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <interface>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    // Create raw socket at the link layer
+    int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    if (sockfd < 0) {
+        perror("socket");
+        return EXIT_FAILURE;
+    }
+
+    // Bind to the specified interface
+    struct sockaddr_ll sll = {0};
+    sll.sll_family = AF_PACKET;
+    sll.sll_protocol = htons(ETH_P_ALL);
+    sll.sll_ifindex = if_nametoindex(argv[1]);
+    if (sll.sll_ifindex == 0) {
+        perror("if_nametoindex");
+        close(sockfd);
+        return EXIT_FAILURE;
+    }
+    if (bind(sockfd, (struct sockaddr *)&sll, sizeof(sll)) < 0) {
+        perror("bind");
+        close(sockfd);
+        return EXIT_FAILURE;
+    }
+
+    printf("Capturing packets on interface: %s (including outgoing)\n", argv[1]);
+
+    unsigned char buffer[65536];
+    while (1) {
+        ssize_t len = recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL);
+        if (len < 0) {
+            perror("recvfrom");
+            break;
+        }
+        struct ethhdr *eth = (struct ethhdr *)buffer;
+        printf("Packet: EtherType=0x%04x, Length=%zd bytes\n", ntohs(eth->h_proto), len);
+    }
+
+    close(sockfd);
+    return EXIT_SUCCESS;
+}
+
+Compile & Run:
+Bashgcc raw_capture.c -o raw_capture
+sudo ./raw_capture eth0
+
+
+4. Key Notes
+
+Root privileges are required for raw sockets.
+This captures both incoming and outgoing packets because AF_PACKET at ETH_P_ALL sees the link-layer traffic, including loopback of your own sends.
+If you only want outgoing packets, you can use a BPF filter to match PACKET_OUTGOING.
+On loopback (lo), Linux always shows your own packets.
+
+
+✅ Recommendation:
+If your goal is full visibility of your own sent packets, use AF_PACKET raw sockets bound to the interface, not AF_INET raw sockets.
+
+If you want, I can give you a filtered version of this code that only prints your own outgoing packets without the incoming ones.
+Do you want me to prepare that?
