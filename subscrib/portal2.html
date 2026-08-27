@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Portal Corporativo</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Segoe UI, Arial;
+}
+
+body{
+  display:flex;
+  height:100vh;
+}
+
+#menu{
+  width:250px;
+  background:#1f2937;
+  color:white;
+  overflow:auto;
+}
+
+#menu h2{
+  padding:15px;
+  border-bottom:1px solid #374151;
+}
+
+#appContainer{
+  padding:10px;
+}
+
+#menu button{
+
+  width:100%;
+  margin-bottom:8px;
+  padding:10px;
+
+  border:none;
+  border-radius:4px;
+
+  background:#374151;
+  color:white;
+  cursor:pointer;
+  text-align:left;
+}
+
+#menu button:hover{
+  background:#4b5563;
+}
+
+#main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+#tabs{
+
+  height:42px;
+  display:flex;
+  overflow-x:auto;
+
+  background:#e5e7eb;
+  border-bottom:1px solid #ccc;
+}
+
+.tab{
+
+  display:flex;
+  align-items:center;
+
+  padding:10px;
+  cursor:pointer;
+
+  background:#d1d5db;
+  margin-right:2px;
+}
+
+.tab.active{
+  background:white;
+  border-top:3px solid #2563eb;
+}
+
+.tab-close{
+  margin-left:10px;
+  color:red;
+  font-weight:bold;
+}
+
+#content{
+  flex:1;
+  position:relative;
+}
+
+.frame{
+
+  position:absolute;
+  width:100%;
+  height:100%;
+
+  border:none;
+  display:none;
+}
+
+.frame.active{
+  display:block;
+}
+
+#toolbar{
+  padding:8px;
+  border-bottom:1px solid #ddd;
+  background:#f9fafb;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="menu">
+
+  <h2>Aplicações</h2>
+
+  <div id="appContainer"></div>
+
+</div>
+
+<div id="main">
+
+  <div id="toolbar">
+
+    <button onclick="novaURL()">
+      Nova URL
+    </button>
+
+    <button onclick="limparSessao()">
+      Limpar Sessão
+    </button>
+
+  </div>
+
+  <div id="tabs"></div>
+
+  <div id="content"></div>
+
+</div>
+
+<script>
+
+let contador = 0;
+
+const STORAGE_ABAS = "portal_abas";
+const STORAGE_ATIVA = "portal_ativa";
+
+function salvarSessao(){
+  const abas = [];
+  document
+    .querySelectorAll(".frame")
+    .forEach(frame=>{
+
+      abas.push({
+        id: frame.id,
+        titulo: frame.dataset.titulo,
+        url: frame.src
+      });
+
+    });
+
+  localStorage.setItem(
+    STORAGE_ABAS,
+    JSON.stringify(abas)
+  );
+
+}
+
+function salvarAbaAtiva(id){
+
+  localStorage.setItem(
+    STORAGE_ATIVA,
+    id
+  );
+}
+
+function ativarAba(id){
+
+  document
+    .querySelectorAll(".tab")
+    .forEach(t=>t.classList.remove("active"));
+
+  document
+    .querySelectorAll(".frame")
+    .forEach(f=>f.classList.remove("active"));
+
+  const tab =
+    document.getElementById("btn_" + id);
+
+  const frame =
+    document.getElementById(id);
+
+  if(tab) tab.classList.add("active");
+  if(frame) frame.classList.add("active");
+
+  salvarAbaAtiva(id);
+}
+
+function novaAba(titulo,url,idSalvo){
+
+  const id =
+    idSalvo || ("tab_" + (++contador));
+
+  const existe =
+    document.getElementById(id);
+
+  if(existe){
+    ativarAba(id);
+    return;
+  }
+
+  const tab =
+    document.createElement("div");
+
+  tab.className = "tab";
+  tab.id = "btn_" + id;
+
+  tab.innerHTML = `
+    <span>${titulo}</span>
+    <span class="tab-close">×</span>
+  `;
+
+  tab.onclick = ()=> ativarAba(id);
+
+  tab.querySelector(".tab-close")
+    .onclick = (e)=>{
+
+    e.stopPropagation();
+
+    fecharAba(id);
+  };
+
+  document
+    .getElementById("tabs")
+    .appendChild(tab);
+
+  const frame =
+    document.createElement("iframe");
+
+  frame.className = "frame";
+  frame.id = id;
+  frame.src = url;
+
+  frame.dataset.titulo = titulo;
+
+  document
+    .getElementById("content")
+    .appendChild(frame);
+
+  ativarAba(id);
+
+  salvarSessao();
+}
+
+function fecharAba(id){
+
+  const frame =
+    document.getElementById(id);
+
+  const tab =
+    document.getElementById("btn_" + id);
+
+  if(frame) frame.remove();
+  if(tab) tab.remove();
+
+  const ultima =
+    document.querySelector(".tab:last-child");
+
+  if(ultima){
+
+    ativarAba(
+      ultima.id.replace("btn_","")
+    );
+  }
+
+  salvarSessao();
+}
+
+async function carregarAplicacoes(){
+
+  /*
+  const resp = await fetch("apps.json");
+  const apps = await resp.json();
+  */
+  
+  const orig = window.location.origin + '/';
+  const apps = [
+    {id: 'comtrade', titulo: 'Comtrade', url: orig + 'main.html'},
+    {id: 'scl', titulo: 'SCL', url: orig + 'scl.html'},
+    {id: 'plot', titulo: 'Plot', url: orig + 'teste_plot.html'},
+    {titulo: 'Polar', url: orig + 'line-polar.html'},
+    {id: 'form', titulo: 'form', url: orig + 'form.html'}
+  ];
+
+  const container = document.getElementById("appContainer");
+
+  apps.forEach(app=>{
+    const btn = document.createElement("button");
+    btn.textContent = app.titulo;
+    btn.onclick = ()=>{
+      novaAba(app.titulo, app.url, app.id);
+    };
+    container.appendChild(btn);
+  });
+
+}
+
+function restaurarSessao(){
+
+  const abas =
+    JSON.parse(
+      localStorage.getItem(STORAGE_ABAS)
+    ) || [];
+
+  abas.forEach(aba=>{
+
+    novaAba(
+      aba.titulo,
+      aba.url,
+      aba.id
+    );
+  });
+
+  const ativa =
+    localStorage.getItem(
+      STORAGE_ATIVA
+    );
+
+  if(ativa){
+
+    setTimeout(
+      ()=> ativarAba(ativa),
+      100
+    );
+  }
+}
+
+function novaURL(){
+
+  const url =
+    prompt("Informe a URL");
+
+  if(!url) return;
+
+  novaAba(url,url);
+}
+
+function limparSessao(){
+
+  localStorage.removeItem(
+    STORAGE_ABAS
+  );
+
+  localStorage.removeItem(
+    STORAGE_ATIVA
+  );
+
+  location.reload();
+}
+
+carregarAplicacoes()
+  .then(restaurarSessao);
+
+</script>
+
+</body>
+</html>

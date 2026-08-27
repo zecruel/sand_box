@@ -1,0 +1,867 @@
+<!--
+	Read SCL (System Configuration description Language - IEC-61850) files
+  Author: Ezequiel Rabelo de Aguiar - 08/2026 - https://github.com/zecruel/
+  MIT licence
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SCL</title>
+  <link rel="stylesheet" type="text/css" href="w2ui.min.css">
+</head>
+<body>
+  <div id="top" style="background-color:darkseagreen;height:110px">
+    <h3 style="text-align:center;">Read IEC-61850 SCL files</h3>
+    <h4 style="text-align:center;color:navy">by Zecruel - MIT licence - 2026</h4>
+    <div style="display: flex;justify-content: center;align-items: center;">
+      <label for="fileInput">Load files:</label>
+      <input type="file" id="fileInput" accept=".ssd,.icd,.scd,.cid,.xml" multiple>
+    </div>
+  </div>
+  <div id="recs" style="background-color:darkseagreen;height:180px"></div>
+  <div style="position: relative; display: flex; height: 300px;">
+    <div style="background-color:lightsteelblue;height:285px;width:50%;display:inline-block;">
+      <div id="channels" style="height:250px"></div>
+      <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
+      <button class="w2ui-btn" onclick="b_plot_channels()">Plot selected</button>
+      <button class="w2ui-btn" onclick="b_composer()">To composer</button>
+    </div>
+    <div style="background-color:burlywood;height:285px;width:50%;display:inline-block;">
+      <div id="composer" style="height:230px"></div>
+      <div id="calc_msg" style="text-align:center;height:20px;color:red;font-size:12px;"></div>
+      <button class="w2ui-btn" onclick="plot_clear()">Clear</button>
+      <button class="w2ui-btn" onclick="b_plot_comp()">Plot comp</button>
+    </div>
+  </div>
+  <!--
+  <div id="plot_out"><h3 style="text-align:center;">Output</h3></div>
+  
+  <div id="plot_container"></div>
+  <div id="plot_container2"></div>
+  
+  
+  <script type="text/javascript" src="echarts.min.js"></script>
+  <script src="fparser.umd.cjs"></script>
+  -->
+  
+  <script type="text/javascript" src="w2ui.min.js"></script>
+  <script>
+    /* ----------------------------------------------------------------------
+    Read SCL (System Configuration description Language - IEC-61850) files
+    Author: Ezequiel Rabelo de Aguiar - 05/2026 - https://github.com/zecruel/
+    MIT licence
+    
+    Used libraries:
+    
+    * w2ui - https://github.com/vitmalina/w2ui - for GUI features (grid, buttons)
+    * echarts - https://github.com/apache/echarts - for interactives plot charts
+    * fparse - https://github.com/bylexus/fparse - for math expressions evaluation
+    
+    ------------------------------------------------------------------------- */
+  
+    // ------- global vars ---------------------
+    
+    let scl_idx = 0; // current file record index
+    let ch_idx = 0; // current channel index
+    let scl = {}; // main record object
+    let comp_idx = 1; // id for composed calc
+    let comp_series = []; //series for plot composer
+    
+    const xml_parser = new DOMParser();
+    
+    const metricPrefixes = {
+      "-24": "y", "-21": "z", "-18": "a", "-15": "f", "-12": "p",
+      "-9": "n", "-6": "µ", "-3": "m", "0": "",
+      "3": "k", "6": "M", "9": "G", "12": "T",
+      "15": "P", "18": "E", "21": "Z", "24": "Y"
+    };
+    //---------------------------------------- end of globals
+    
+    // GUI grid to list loaded record files and its parameters
+    let recs_grid = new w2grid({
+      name: 'recs',
+      box: '#recs',
+      style: 'border: 3px solid darkseagreen',
+      header: 'Records',
+      show: {
+        header: true,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: false, // allow only one file selection - current record
+      columns: [
+        { field: 'name', text: 'Name', size: '150px'}, // file name
+        { field: 'id', text: 'Ident', size: '30%' }, // Record identification
+        { field: 'an', text: 'An', size: '40px' }, // Total analog channels
+        { field: 'dig', text: 'Dig', size: '40px' }, // total digital channels
+        { field: 'smp', text: 'Samples', size: '70px' }, // total samples
+        { field: 'start', text: 'Start', size: '120px' }, // date/time stamp of first sample
+        { field: 'trig', text: 'Trigger', size: '70px' }, // trigger relative time
+        { field: 'freq', text: 'Freq', size: '40px' }, // power system frequency
+        { field: 'typ', text: 'Type', size: '70px' }, // type of DAT file (ascii, binary)
+        { field: 'ver', text: 'Version', size: '70px' } // std version
+      ],
+      async onSelect(event) {
+        // when one file is selected, update list of channels available
+        await event.complete;
+        scl_idx = 0;
+        ch_idx = 0;
+        const sel = this.getSelection();
+        if (sel.length > 0) {
+          scl_idx = sel[0];
+        }
+        populate_channels(scl_idx);
+      }
+    });
+    
+    // GUI grid to list available channels in record and its parameters
+    let channels_grid = new w2grid({
+      name: 'channels',
+      box: '#channels',
+      style: 'border: 3px solid lightsteelblue',
+      header: 'Channels',
+      show: {
+        header: true,
+        selectColumn: true,
+        lineNumbers: true
+      },
+      multiSelect: true,
+      columns: [
+        { field: 'typ', text: 'T', size: '30px' }, // channel type (analog, digital)
+        { field: 'un', text: 'Un', size: '40px' }, // analog unit
+        { field: 'id', text: 'Ident', size: '120px' }, // channel id
+        { field: 'cir', text: 'Cir', size: '80px' }, // circuit or component description
+        { field: 'ph', text: 'Ph', size: '40px' }, // sequence or phase description
+        { field: 'max', text: 'Max', size: '70px' }, // analog max value
+        { field: 'min', text: 'Min', size: '70px' }  // analog min value
+      ]
+    });
+    
+    // GUI grid to compose single plot, allowing combine and calc
+    let composer_grid = new w2grid({
+      name: 'composer',
+      box: '#composer',
+      style: 'border: 3px solid burlywood',
+      header: 'Composer',
+      show: {
+        header: true,
+        toolbar: true,
+        //footer: true,
+        selectColumn: true,
+        lineNumbers: true,
+        toolbarReload: false,
+        toolbarSearch: false,
+        toolbarAdd: true,
+        toolbarDelete: true,
+        toolbarEdit: false
+      },
+      multiSelect: true,
+      columns: [
+        //{ field: 'color', text: 'Color', size: '60px', editable: { type: 'color' } },
+        { field: 'calc', text: 'Calc', size: '120px', editable: { type: 'text' } }, // calc expression
+        { field: 'tit', text: 'Title', size: '120px', editable: { type: 'text' } }, // title or description
+        { field: 'scale', text: 'Scale', size: '90px', editable: { type: 'float'} }, // multiplier factor
+        { field: 'ofs', text: 'Offset', size: '90px', editable: { type: 'float'} } // axis offset/bias
+      ],
+      toolbar: {
+        onClick(event) {
+          if (event.target == 'w2ui-add') {
+            // add new calc
+            this.owner.add({recid: comp_idx,
+              'tit': 'Var ' + comp_idx,
+              'scale': 1.0,
+              'ofs': 0.0
+              });
+            this.owner.scrollIntoView(comp_idx);
+            this.owner.editField(comp_idx, 0);
+            comp_idx++; // update unique id
+          }
+        }
+      },
+      async onChange(event) { // when a calc is edited
+        await event.complete;
+        const recid = event.detail.recid;
+        const rec = this.get(recid);
+        const changes = rec.w2ui.changes;
+        const message = document.getElementById("calc_msg");
+        message.innerHTML = ""; // clear error message
+        
+        if (Object.keys(changes).includes('calc')){
+          // when expression field is changed,
+          // verify if expression is valid
+          try {
+            validade_calc_expr(changes.calc);
+            // valid expression
+            this.mergeChanges(); // accept changes
+          } catch(err) {
+            // invalid expression
+            message.innerHTML = err.message; // show error message
+            this.editField(recid, 0); // insists on editing
+          }
+        }
+        else this.mergeChanges(); // accept changes in other fields
+      }
+    });
+    
+    
+    // pass selected channels to composer plot dialog
+    function b_composer(){
+      const channels = channels_grid.getSelection(); // get selected channels indexes
+      const rec = scl[scl_idx]; // get current record
+      for (let i = 0; i < channels.length; i++){ // iterate over channels
+        const ch = rec.channels[channels[i]-1]; // current channel
+        // get channel description
+        let name = ch.id
+        if (ch.c) name += ':' + ch.c;
+        if (ch.ph) name += ':' + ch.ph;
+        // add to composer grid, with default parameters
+        composer_grid.add({recid: comp_idx,
+          'calc': 'v' + channels[i], // var name = 'v' + channel index
+          'tit': name,
+          'scale': 1.0,
+          'ofs': 0.0
+        });
+        
+        comp_idx++;
+      }
+        //composer_grid.scrollIntoView(comp_idx);
+        //composer_grid.editField(comp_idx, 0)
+    }
+    
+    
+    
+    // auxiliary function - get file ext
+    function getFileExtension(filename) {
+      if (typeof filename !== 'string') {
+          throw new TypeError('Filename must be a string');
+      }
+      // Extract the last part after the last dot
+      const lastDotIndex = filename.lastIndexOf('.');
+
+      // No dot found or dot is the first character (hidden files like .gitignore)
+      if (lastDotIndex <= 0 || lastDotIndex === filename.length - 1) {
+          return null;
+      }
+      return filename.slice(lastDotIndex + 1).toLowerCase();
+    }
+    
+    // auxiliary functions for array filtering
+    function check_cfg(file) {
+      return getFileExtension(file.name) === 'cfg'
+    }
+    function check_dat(file) {
+      return getFileExtension(file.name) === 'dat'
+    }
+    function check_pl4(file) {
+      return getFileExtension(file.name) === 'pl4'
+    }
+    
+    // auxiliary functions - read local files
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+
+        reader.readAsText(file);
+      });
+    }
+    function readFileAsBinary(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    
+    // read transient (or recorded fault) data from CFG and DAT files
+    // according COMTRADE (IEEE C37.111) standard
+    async function read_osc(osc_obj) {
+      // first open CFG file as text (always) to get general parameters of record
+      const cfg_c = await readFileAsText(osc_obj.cfg_f);
+      const lines = cfg_c.split(/\r?\n/); // Split file content into lines
+      if (lines.length < 9) throw new Error('Fail'); //error
+        
+      const ident = lines[0].split(','); // Read the first line
+      if (ident.length < 2) throw new Error('Fail'); //error
+      // get header identification and standard version
+      osc_obj.id = ident[0].trim();
+      if (ident.length > 2) osc_obj.ver = parseInt(ident[2]);
+      else osc_obj.ver = 1991;
+      
+      // get number of total channels, analog and digital channels
+      const channels = lines[1].split(',');
+      if (channels.length < 3) throw new Error('Fail'); //error
+      let n_ch = parseInt(channels[0]);
+      let n_chA = parseInt(channels[1]);
+      let n_chD = parseInt(channels[2]);
+      if (n_chA + n_chD != n_ch) throw new Error('Fail'); //error
+      
+      if (lines.length < 8 + n_ch) throw new Error('Fail'); //error
+      
+      osc_obj.channels_A = n_chA;
+      osc_obj.channels_D = n_chD;
+      osc_obj.channels = [];
+      
+      // sweep list of channels, get each parameters
+      let line = 2;
+      for (let i = 0; i < n_chA; i++){ // analog channels first
+        const ch_info = lines[line].split(',');
+        ch = {type: "A"};
+        ch.idx = parseInt(ch_info[0]); // channel index, starts in 1
+        ch.id = ch_info[1].trim(); // main identification
+        ch.ph = ch_info[2].trim(); // phase id
+        ch.c = ch_info[3].trim(); // component or circuit id
+        ch.un = ch_info[4].trim(); // unit of measure
+        // a and b factor, value = a * dat + b
+        ch.a = parseFloat(ch_info[5]);
+        ch.b = parseFloat(ch_info[6]);
+        ch.sk = parseInt(ch_info[7]); // skew
+        // min and max numeric values in dat
+        ch.min = parseInt(ch_info[8]);
+        ch.max = parseInt(ch_info[9]);
+        
+        osc_obj.channels.push(ch);
+        line++;
+      }
+      for (let i = 0; i < n_chD; i++){ // digital channels
+        const ch_info = lines[line].split(',');
+        ch = {type: "D"};
+        ch.idx = parseInt(ch_info[0]); // channel index, starts in 1, not continues from analog
+        ch.id = ch_info[1].trim(); // main identification
+        ch.st = parseInt(ch_info[ch_info.length - 1]); // standard value for channel (0 or 1)
+        
+        osc_obj.channels.push(ch);
+        line++;
+      }
+      osc_obj.freq = parseInt(lines[line]); // power frequency
+      line++;
+      osc_obj.n_sr = parseInt(lines[line]); // number of sample rate frequencies
+      line++;
+      osc_obj.sr = [];
+      osc_obj.n_smp = 0;
+      for (let i = 0; i < osc_obj.n_sr; i++){ // sweep sample rate frequencies
+        const sr_info = lines[line].split(',');
+        sr = {};
+        sr.freq = parseFloat(sr_info[0]); // sample rate frequency
+        sr.n_smp = parseInt(sr_info[1]); // number of samples in frequency
+        osc_obj.n_smp += sr.n_smp;
+        osc_obj.sr.push(sr);
+        line++;
+      }
+      
+      // date/time stamp of first sample in record
+      const first = lines[line].split(',');
+      osc_obj.first = {date: {}, time: {}};
+      let date = first[0].split('/');
+      osc_obj.first.date.d = parseInt(date[0]);
+      osc_obj.first.date.m = parseInt(date[1]);
+      osc_obj.first.date.y = parseInt(date[2]);
+      let time = first[1].split(':');
+      osc_obj.first.time.h = parseInt(time[0]);
+      osc_obj.first.time.m = parseInt(time[1]);
+      osc_obj.first.time.s = parseFloat(time[2]);
+      line++;
+      const first_d = new Date(osc_obj.first.date.y, 
+        osc_obj.first.date.m,
+        osc_obj.first.date.d,
+        osc_obj.first.time.h,
+        osc_obj.first.time.m,
+        Math.trunc(osc_obj.first.time.s));
+      
+      // date/time stamp of start (trigger)
+      const start = lines[line].split(',');
+      osc_obj.start = {date: {}, time: {}};
+      date = start[0].split('/');
+      osc_obj.start.date.d = parseInt(date[0]);
+      osc_obj.start.date.m = parseInt(date[1]);
+      osc_obj.start.date.y = parseInt(date[2]);
+      time = start[1].split(':');
+      osc_obj.start.time.h = parseInt(time[0]);
+      osc_obj.start.time.m = parseInt(time[1]);
+      osc_obj.start.time.s = parseFloat(time[2]);
+      line++;
+      const start_d = new Date(osc_obj.start.date.y, 
+        osc_obj.start.date.m,
+        osc_obj.start.date.d,
+        osc_obj.start.time.h,
+        osc_obj.start.time.m,
+        Math.trunc(osc_obj.start.time.s));
+      // calc trigger "delay" from first sample
+      const d_dif = (start_d - first_d)/1000;
+      osc_obj.trig = Math.abs((osc_obj.start.time.s % 1) - (osc_obj.first.time.s % 1) + d_dif);
+      
+      // get type of DAT file
+      let dat_type = lines[line].toLowerCase().trim();
+      osc_obj.dat_type = dat_type;
+      
+      // -------- Read the DAT file contents ------
+      
+      if (dat_type === 'binary' || dat_type === 'binary32' || dat_type === 'float32') { // DAT file is binary
+        // 'binary' type - analog values are stored as 16 bit integer
+        // 'binary32' type - analog values are stored as 32 bit integer
+        // 'float' type - analog values are stored as 32 bit float
+        
+        let an_len = 2; // analog data length in bytes
+        if ( dat_type === 'binary32' || dat_type === 'float32') an_len = 4;
+        let float_dat = 0;
+        if ( dat_type === 'float32') float_dat = 1;
+        
+        const chD_words = Math.ceil(n_chD/16);
+        const bytes_rec = chD_words * 2 + n_chA * an_len + 8; // total size of each sample in bytes
+        const bytes_total = osc_obj.n_smp * bytes_rec; // total file size
+        
+        if(osc_obj.dat_f.size < bytes_total) throw new Error('Fail'); //error
+        
+        const dat_c = await readFileAsBinary(osc_obj.dat_f);
+        const view = new DataView(dat_c, 0);
+        
+        osc_obj.data = Array(osc_obj.n_smp).fill(NaN);
+        let offset = 0;
+        for(let i = 0; i < osc_obj.n_smp; i++){ // sweep samples
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN); // init output vector
+          for(let j = 0; j < chD_words + n_chA + 2; j++){ // sweep "words" in sample data
+            if (j < 1) { // first word is sample index, starting in 1
+              osc_obj.data[i][j] = view.getInt32(offset, true); // index
+              offset += 4; // word len
+            }
+            else if (j < 2) { // second word is time in microssecond
+              let value = view.getInt32(offset, true);
+              if (value == 0xffffffff) value = NaN; // verify if is valid
+              
+              osc_obj.data[i][j] = value * 1e-6; // convert microssecond to s
+              offset += 4; // word len
+            }
+            else{
+              if (j < n_chA + 2 && osc_obj.channels[j-2].type == 'A'){ // get analog value
+                // convert, apply factors and store in output matrix
+                let value = NaN;
+                if (an_len < 3) {
+                  value = view.getInt16(offset, true); // 'binary' type
+                  //if (value == -0x7fff) value = NaN; // verify if is valid
+                } else {
+                  value = view.getInt32(offset, true); // 'binary32' type
+                  //if (value == -0x7fffffff) value = NaN; // verify if is valid
+                  //else 
+					if (float_dat) value = view.getFloat32(offset, true);  // 'float32' type
+                }
+                  
+                osc_obj.data[i][j] = osc_obj.channels[j-2].a * value + osc_obj.channels[j-2].b
+                offset += an_len;
+              }
+              else { // get digital channels, bundled in 16 bit word, one bit per channel
+                let w_idx = (j - (n_chA + 2)) * 16;
+                const word = view.getUint16(offset, true);
+                
+                // calc max bit position, to ignore pad fill
+                let max_bit = 16;
+                if (n_chD < 16) max_bit = n_chD;
+                else if (w_idx + 16 > n_chD)
+                  max_bit = n_chD - w_idx;
+                
+                w_idx += n_chA + 2; // position in output matrix
+                
+                for (let bit = 0; bit < max_bit; bit++){ // sweep bits
+                  osc_obj.data[i][w_idx + bit] = (word >> bit) & 1; // store in output matrix
+                }
+                offset += 2;
+              }
+            }
+          }
+        }
+      }
+      else if (dat_type === 'ascii') { // DAT file is in text format
+        const dat_c = await readFileAsText(osc_obj.dat_f);
+        const lines = dat_c.split(/\r?\n/); // Split file content into lines
+        if (lines.length < osc_obj.n_smp) console.log('error: '+ lines.length); //error
+        
+        osc_obj.data = Array(osc_obj.n_smp).fill(NaN); // init output vector
+        let max_lines = lines.length;
+        if (lines.length > osc_obj.n_smp) max_lines = osc_obj.n_smp; // avoid to read blank lines at end
+        
+        for(let i = 0; i < max_lines; i++){ // parse line by line
+          osc_obj.data[i] = Array(osc_obj.channels.length + 2).fill(NaN);  // init output vector
+          const rec = lines[i].split(','); // split in fields
+          let max_rec = rec.length;
+          if (rec.length > osc_obj.channels.length + 2) max_rec = osc_obj.channels.length + 2;
+          for(let j = 0; j < max_rec; j++){ // sweep fields
+            if (j < 1) osc_obj.data[i][j] = parseInt(rec[j]); // sample index, start in 1
+            // sample time stamp in microsseconds
+            else if (j < 2) osc_obj.data[i][j] = parseInt(rec[j]) * 1e-6; // convert microssecond to s
+            else{
+              if (osc_obj.channels[j-2].type == 'D') // digital channel
+                osc_obj.data[i][j] = parseInt(rec[j]); // direct store in output matrix
+              else if (osc_obj.channels[j-2].type == 'A') // analog channel
+                // convert, apply factors and store in output matrix
+                osc_obj.data[i][j] = osc_obj.channels[j-2].a * parseInt(rec[j]) + osc_obj.channels[j-2].b;
+            }
+          }
+        }
+      }
+      return osc_obj;
+    }
+    
+ 
+    // read SCL files
+    // 
+    async function read_scl(scl_obj) {
+      if(scl_obj.file.size < 112) throw new Error('Fail'); // 7 rows of 16 bytes - error
+      
+      const dat_c = await readFileAsText(scl_obj.file);
+      const xml_doc = xml_parser.parseFromString(dat_c, "application/xml");
+      
+      const main = xml_doc.getElementsByTagName("SCL");
+      if(main.length <= 0) throw new Error('Fail'); // 7 rows of 16 bytes - error
+      
+      const header = main[0].getElementsByTagName("Header");
+      const subs = main[0].getElementsByTagName("Substation");
+      const com = main[0].getElementsByTagName("Communication");
+      const ieds_xml = main[0].getElementsByTagName("IED");
+      const templ = main[0].getElementsByTagName("DataTypeTemplates");
+      
+      //console.log(header.length);
+      //console.log(subs.length);
+      //console.log(com.length);
+      //console.log(ieds_xml.length);
+      //console.log(templ.length);
+      
+      if (ieds_xml.length < 1) return;
+      
+      if (com.length < 1) return;
+      const nets = com[0].getElementsByTagName("SubNetwork");
+      if (nets.length < 1) return;
+      
+      caps = [];
+      for(const net of nets){
+        const net_name = net.getAttribute('name');
+        const cap_objs = net.getElementsByTagName("ConnectedAP");
+        for (cap_obj of cap_objs) {
+          caps.push({net: net_name, obj: cap_obj});
+        }
+      }
+      if (caps.length < 1) return;
+      
+      const ieds = [];
+      let channels = [];
+      let channels_A = 0;
+      let channels_D = 0;
+      
+      for (const ied of ieds_xml){
+        curr_ied = {};
+        curr_ied.obj = ied;
+        curr_ied.name = ied.getAttribute('name');
+        curr_ied.desc = ied.getAttribute('desc');
+        curr_ied.typ = ied.getAttribute('type');
+        curr_ied.man = ied.getAttribute('manufacturer');
+        
+        const svcs = ied.getElementsByTagName("SampledValueControl");
+        const gses = ied.getElementsByTagName("GSEControl");
+        const dsets = ied.getElementsByTagName("DataSet");
+        
+        const sv = [];
+        const goose = [];
+        const gse_cbs = [];
+        const sv_cbs = [];
+        
+        for (const cap of caps){
+          if (cap.obj.getAttribute('iedName') === curr_ied.name) {
+            let cbs = cap.obj.getElementsByTagName('GSE');
+            for (const cb of cbs){
+              gse_cbs.push({net: cap.net, obj: cb});
+            }
+            cbs = cap.obj.getElementsByTagName('SMV');
+            for (const cb of cbs){
+              sv_cbs.push({net: cap.net, obj: cb});
+            }
+          }
+        }
+        
+        //console.log(sv_cbs.length, gse_cbs.length);
+        
+        for (const svc of svcs){
+          const name = svc.getAttribute('name');
+          const dset_name = svc.getAttribute('datSet');
+          let dset_obj;
+          let mac = '01-0C-CD-04-00-00';
+          let vlan = '000';
+          let pri = '5';
+          let appid = '0000';
+          let net = '';
+          
+          const dset = [];
+          
+          for (const ds of dsets){
+            if (ds.getAttribute('name') === dset_name) {
+              const fcdas = ds.getElementsByTagName('FCDA');
+              let i = 0;
+              for (const fcda of fcdas) {
+                const ld = fcda.getAttribute('ldInst');
+                const pre = fcda.getAttribute('prefix');
+                const ln = fcda.getAttribute('lnClass');
+                const inst = fcda.getAttribute('lnInst');
+                const do_nam = fcda.getAttribute('doName');
+                const da_nam = fcda.getAttribute('daName');
+                
+                if (da_nam === "instMag.i"){
+                  let entry = '';
+                  //entry = entry + curr_ied.name;
+                  //entry = entry + '.' + ld;
+                  entry = entry + ld;
+                  entry = entry + '.' + pre;
+                  entry = entry + '.' + ln;
+                  entry = entry + '.' + inst;
+                  entry = entry + '.' + do_nam;
+                  
+                  let scale = 1;
+                  let un = '';
+                  
+                  if (do_nam === "AmpSv") {
+                    scale = 0.001;
+                    un = 'A';
+                  }
+                  else if (do_nam === "VolSv") {
+                    scale = 0.01;
+                    un = 'V';
+                  }
+                  dset.push({idx: Math.trunc(i/2),
+                    name: entry, un: un, scale: scale});
+                  //console.log (entry);
+                }
+                i++;
+              }
+              
+              dset_obj = ds;
+              break;
+            }
+          }
+          
+          for (const cb of sv_cbs){
+            if (cb.obj.getAttribute('cbName') === name){
+              const addr = cb.obj.getElementsByTagName('Address');
+              net = cb.net;
+              if(addr.length > 0) {
+                const params = addr[0].getElementsByTagName('P');
+                for (const p of params){
+                  if (p.getAttribute('type') === 'MAC-Address') {
+                    mac = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'VLAN-ID') {
+                    vlan = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'VLAN-PRIORITY') {
+                    pri = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'APPID') {
+                    appid = p.textContent;
+                  }
+                }
+              }
+              break;
+            }
+          }
+          
+          
+          
+          channels_A++;
+          channels.push({type: 'A', id: curr_ied.name,
+            un: 'SV', c: name, ph: dset_name, data: dset_obj});
+          sv.push({name: name, 
+            mac: mac, vlan: vlan, pri: pri, appid: appid, net: net,
+            data_set: {name: dset_name, items: dset, obj: dset_obj}});
+        }
+        for (const gse of gses){
+          
+          const name = gse.getAttribute('name');
+          const dset_name = gse.getAttribute('datSet');
+          let dset_obj;
+          let mac = '01-0C-CD-01-00-00';
+          let vlan = '000';
+          let pri = '4';
+          let appid = '0000';
+          let net = '';
+          
+          const dset = [];
+          
+          for (const ds of dsets){
+            if (ds.getAttribute('name') === dset_name) {
+              const fcdas = ds.getElementsByTagName('FCDA');
+              let i = 0;
+              for (const fcda of fcdas) {
+                const ld = fcda.getAttribute('ldInst');
+                const pre = fcda.getAttribute('prefix');
+                const ln = fcda.getAttribute('lnClass');
+                const inst = fcda.getAttribute('lnInst');
+                const do_nam = fcda.getAttribute('doName');
+                const da_nam = fcda.getAttribute('daName');
+                
+                if (da_nam === "stVal" | da_nam === "general" | da_nam === "neut" | 
+                  da_nam === "phsA" | da_nam === "phsB" | da_nam === "phsC"){
+                  let entry = '';
+                  //entry = entry + curr_ied.name;
+                  //entry = entry + '.' + ld;
+                  entry = entry + ld;
+                  entry = entry + '.' + pre;
+                  entry = entry + '.' + ln;
+                  entry = entry + '.' + inst;
+                  entry = entry + '.' + do_nam;
+                  entry = entry + '.' + da_nam;
+                  
+                  let scale = 1;
+                  let un = '';
+                  
+                  
+                  dset.push({idx: Math.trunc(i/2),
+                    name: entry});
+                  //console.log (entry);
+                }
+                i++;
+              }
+              
+              
+              dset_obj = ds;
+              break;
+            }
+          }
+          
+          for (const cb of gse_cbs){
+            if (cb.obj.getAttribute('cbName') === name){
+              const addr = cb.obj.getElementsByTagName('Address');
+              net = cb.net;
+              if(addr.length > 0) {
+                const params = addr[0].getElementsByTagName('P');
+                for (const p of params){
+                  if (p.getAttribute('type') === 'MAC-Address') {
+                    mac = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'VLAN-ID') {
+                    vlan = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'VLAN-PRIORITY') {
+                    pri = p.textContent;
+                  }
+                  if (p.getAttribute('type') === 'APPID') {
+                    appid = p.textContent;
+                  }
+                }
+              }
+              break;
+            }
+          }
+          
+          channels_D++;
+          channels.push({type: 'D', id: curr_ied.name,
+            un: 'GSE', c: name, ph: dset_name, data: dset_obj});
+          goose.push({name: name, 
+            mac: mac, vlan: vlan, pri: pri, appid: appid, net: net,
+            data_set: {name: dset_name, items: dset, obj: dset_obj}});
+        }
+        
+        curr_ied.sv = sv;
+        curr_ied.goose = goose;
+        
+        ieds.push(curr_ied);
+      }
+      
+      
+      
+      scl_obj.channels = channels;
+      scl_obj.channels_A = channels_A;
+      scl_obj.channels_D = channels_D;
+      scl_obj.xml = xml_doc;
+      
+      
+      if (header.length > 0) scl_obj.header = header[0];
+      if (subs.length > 0) scl_obj.subs = subs[0];
+      if (com.length > 0) scl_obj.com = com[0];
+      if (templ.length > 0) scl_obj.templ = templ[0];
+      scl_obj.ieds = ieds;
+      
+      return scl_obj;
+    }
+    
+    // populate list of channels, when one record is selected
+    function populate_channels(idx) {
+      channels_grid.clear(); // clear previous
+      composer_grid.clear(); // clean composer too
+      comp_idx = 1;
+      const rec = scl[idx]; // current record
+      
+      if (!rec) return;
+      
+      const channels = rec.channels;
+      
+      const table = [];
+      
+      for (let i = 0; i < channels.length; i++) { // sweep list
+        if (channels[i].type == 'A'){ // add analog channels
+          //let max = channels[i].a * channels[i].max + channels[i].b;
+          //let min = channels[i].a * channels[i].min + channels[i].b;
+          table.push({
+            'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
+            'un': channels[i].un, 'cir': channels[i].c, 'ph': channels[i].ph //,
+            //'max': max, 'min': min
+          });
+        } else if (channels[i].type == 'D'){ // add digital channels
+          table.push({
+            'recid': i + 1, 'typ': channels[i].type, 'id': channels[i].id,
+            'un': 'B', 'cir': channels[i].c, 'ph': channels[i].p, 'max': '1', 'min': '0'
+          });
+        }
+      }
+      channels_grid.add(table); // update grid once (faster)
+    }
+  
+    
+    
+    // Load local files selected by user
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      channels_grid.clear();
+      composer_grid.clear();
+      recs_grid.clear();
+      comp_idx = 1;
+      //const cfgs = Array.from(event.target.files).filter(check_cfg) // get CFG files
+      //const dats = Array.from(event.target.files).filter(check_dat) // get DAT files
+      //const pl4s = Array.from(event.target.files).filter(check_pl4) // get DAT files
+      
+      scl = {};
+      let recid = 0;
+      
+      //for(const pl4 of pl4s) {
+      for(const file of event.target.files) {
+        let file_name = file.name.slice(0, file.name.lastIndexOf('.'));
+        let file_type = getFileExtension(file.name);
+        if (file.size < 50 * 1024 * 1024) { // verify size - 50 MB limit
+          recid++;
+          scl[recid] = {recid: recid, name: file_name, file: file}; // add to list
+          let prom = read_scl(scl[recid]); // parse file
+          prom.then(
+            function(value) { /*  parse success */
+              recs_grid.add([{ // add to grid
+                'recid': value.recid, 'name': value.name, //'id': value.id,
+                'an': value.channels_A, 'dig': value.channels_D,
+                //'smp': value.n_smp,
+                'trig': '-',
+                'start': '-',
+                'freq': '-',
+                'typ': file_type,'ver': 'scl'
+              }]);
+              console.log(value);
+            },
+            function(value) { /* code if error */ }
+          );
+          
+        }
+        
+      }
+     
+      
+    });
+    
+  </script>
+</body>
+</html>
