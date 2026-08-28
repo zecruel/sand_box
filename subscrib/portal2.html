@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Portal Corporativo</title>
+<title>PB Toys</title>
 
 <style>
 
@@ -129,7 +129,7 @@ body{
 
 <div id="menu">
 
-  <h2>Aplicações</h2>
+  <h2>PB Toys</h2>
 
   <div id="appContainer"></div>
 
@@ -139,12 +139,8 @@ body{
 
   <div id="toolbar">
 
-    <button onclick="novaURL()">
-      Nova URL
-    </button>
-
-    <button onclick="limparSessao()">
-      Limpar Sessão
+    <button onclick="clear_session()">
+      Clear session
     </button>
 
   </div>
@@ -157,42 +153,34 @@ body{
 
 <script>
 
-let contador = 0;
+let counter = 0;
 
-const STORAGE_ABAS = "portal_abas";
-const STORAGE_ATIVA = "portal_ativa";
+const STORAGE_TABS = "portal_tabs";
+const STORAGE_ACTIVE = "portal_active";
 
-function salvarSessao(){
-  const abas = [];
+function save_session(){
+  const tabs = [];
   document
     .querySelectorAll(".frame")
     .forEach(frame=>{
 
-      abas.push({
+      tabs.push({
         id: frame.id,
-        titulo: frame.dataset.titulo,
+        title: frame.dataset.title,
         url: frame.src
       });
 
     });
 
-  localStorage.setItem(
-    STORAGE_ABAS,
-    JSON.stringify(abas)
-  );
+  localStorage.setItem(STORAGE_TABS, JSON.stringify(tabs));
 
 }
 
-function salvarAbaAtiva(id){
-
-  localStorage.setItem(
-    STORAGE_ATIVA,
-    id
-  );
+function save_actv_tab(id){
+  localStorage.setItem(STORAGE_ACTIVE, id);
 }
 
-function ativarAba(id){
-
+function activate_tab(id){
   document
     .querySelectorAll(".tab")
     .forEach(t=>t.classList.remove("active"));
@@ -201,99 +189,81 @@ function ativarAba(id){
     .querySelectorAll(".frame")
     .forEach(f=>f.classList.remove("active"));
 
-  const tab =
-    document.getElementById("btn_" + id);
-
-  const frame =
-    document.getElementById(id);
+  const tab = document.getElementById("btn_" + id);
+  const frame = document.getElementById(id);
 
   if(tab) tab.classList.add("active");
   if(frame) frame.classList.add("active");
 
-  salvarAbaAtiva(id);
+  save_actv_tab(id);
 }
 
-function novaAba(titulo,url,idSalvo){
+function new_tab(title, url, sav_id){
+  const id = sav_id || ("tab_" + (++counter));
+  const exists = document.getElementById(id);
 
-  const id =
-    idSalvo || ("tab_" + (++contador));
-
-  const existe =
-    document.getElementById(id);
-
-  if(existe){
-    ativarAba(id);
+  if(exists){
+    activate_tab(id);
     return;
   }
 
-  const tab =
-    document.createElement("div");
+  const tab = document.createElement("div");
 
   tab.className = "tab";
   tab.id = "btn_" + id;
 
   tab.innerHTML = `
-    <span>${titulo}</span>
+    <span>${title}</span>
     <span class="tab-close">×</span>
   `;
 
-  tab.onclick = ()=> ativarAba(id);
+  tab.onclick = ()=> activate_tab(id);
 
   tab.querySelector(".tab-close")
     .onclick = (e)=>{
 
     e.stopPropagation();
 
-    fecharAba(id);
+    close_tab(id);
   };
 
   document
     .getElementById("tabs")
     .appendChild(tab);
 
-  const frame =
-    document.createElement("iframe");
+  const frame = document.createElement("iframe");
 
   frame.className = "frame";
   frame.id = id;
   frame.src = url;
 
-  frame.dataset.titulo = titulo;
+  frame.dataset.title = title;
 
   document
     .getElementById("content")
     .appendChild(frame);
 
-  ativarAba(id);
-
-  salvarSessao();
+  activate_tab(id);
+  save_session();
 }
 
-function fecharAba(id){
-
-  const frame =
-    document.getElementById(id);
-
-  const tab =
-    document.getElementById("btn_" + id);
+function close_tab(id){
+  const frame = document.getElementById(id);
+  const tab = document.getElementById("btn_" + id);
 
   if(frame) frame.remove();
   if(tab) tab.remove();
 
-  const ultima =
-    document.querySelector(".tab:last-child");
+  const last_tab = document.querySelector(".tab:last-child");
 
-  if(ultima){
-
-    ativarAba(
-      ultima.id.replace("btn_","")
-    );
+  if(last_tab){
+    activate_tab(last_tab.id.replace("btn_",""));
   }
 
-  salvarSessao();
+  save_session();
 }
 
-async function carregarAplicacoes(){
+async function load_apps(){
 
   /*
   const resp = await fetch("apps.json");
@@ -302,81 +272,55 @@ async function carregarAplicacoes(){
   
   const orig = window.location.origin + '/';
   const apps = [
-    {id: 'comtrade', titulo: 'Comtrade', url: orig + 'main.html'},
-    {id: 'scl', titulo: 'SCL', url: orig + 'scl.html'},
-    {id: 'plot', titulo: 'Plot', url: orig + 'teste_plot.html'},
-    {titulo: 'Polar', url: orig + 'line-polar.html'},
-    {id: 'form', titulo: 'form', url: orig + 'form.html'}
+    {id: 'sv_subscr', title: 'SV subscriber', url: orig + 'scl.html'},
+    {id: 'sv_oscilo', title: 'SV oscilloscope', url: orig + 'emb_server.html'},
+    {id: 'goose_subs', title: 'Goose  subscriber', url: orig + 'teste_plot.html'},
+    {id: 'config_fr', title: 'Config FR', url: orig + 'line-polar.html'},
+    {id: 'records', title: 'Fault records', url: orig + 'main.html'},
+    {id: 'sv_gen', title: 'SV Generator', url: orig + 'form.html'}
   ];
 
   const container = document.getElementById("appContainer");
 
   apps.forEach(app=>{
     const btn = document.createElement("button");
-    btn.textContent = app.titulo;
+    btn.textContent = app.title;
     btn.onclick = ()=>{
-      novaAba(app.titulo, app.url, app.id);
+      new_tab(app.title, app.url, app.id);
     };
     container.appendChild(btn);
   });
 
 }
 
-function restaurarSessao(){
-
-  const abas =
-    JSON.parse(
-      localStorage.getItem(STORAGE_ABAS)
-    ) || [];
-
-  abas.forEach(aba=>{
-
-    novaAba(
-      aba.titulo,
-      aba.url,
-      aba.id
-    );
+function delay(milliseconds) {
+  return new Promise(resolve => {
+    setTimeout(resolve, milliseconds);
   });
+}
 
-  const ativa =
-    localStorage.getItem(
-      STORAGE_ATIVA
-    );
+async function restore_session(){
+  const tabs = JSON.parse(localStorage.getItem(STORAGE_TABS)) || [];
+  
+  for (const tab of tabs){
+    new_tab(tab.title, tab.url, tab.id);
+    await delay(100);
+  }
 
-  if(ativa){
+  const active = localStorage.getItem(STORAGE_ACTIVE);
 
-    setTimeout(
-      ()=> ativarAba(ativa),
-      100
-    );
+  if(active){
+    setTimeout(()=> activate_tab(active),100);
   }
 }
 
-function novaURL(){
-
-  const url =
-    prompt("Informe a URL");
-
-  if(!url) return;
-
-  novaAba(url,url);
-}
-
-function limparSessao(){
-
-  localStorage.removeItem(
-    STORAGE_ABAS
-  );
-
-  localStorage.removeItem(
-    STORAGE_ATIVA
-  );
-
+function clear_session(){
+  localStorage.removeItem(STORAGE_TABS);
+  localStorage.removeItem(STORAGE_ACTIVE);
   location.reload();
 }
 
-carregarAplicacoes()
-  .then(restaurarSessao);
+load_apps().then(restore_session);
 
 </script>
 

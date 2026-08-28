@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Arquivos TXT</title>
+
+<style>
+body{
+    font-family:Arial;
+    margin:20px;
+}
+
+#container{
+    display:flex;
+    gap:20px;
+}
+
+#lista{
+    width:350px;
+    border:1px solid #ccc;
+    padding:10px;
+}
+
+#conteudo{
+    flex:1;
+    border:1px solid #ccc;
+    padding:10px;
+    white-space:pre-wrap;
+    overflow:auto;
+    height:600px;
+}
+
+.linha{
+    display:flex;
+    justify-content:space-between;
+    padding:6px;
+    border-bottom:1px solid #eee;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Arquivos TXT</h2>
+
+<div id="container">
+    <div id="lista"></div>
+    <div id="conteudo">Selecione um arquivo</div>
+</div>
+
+<script>
+
+async function carregarArquivos()
+{
+    const resp =
+        await fetch('/api/files');
+
+    const files =
+        await resp.json();
+
+    const lista =
+        document.getElementById('lista');
+
+    lista.innerHTML = '';
+
+    files.forEach(file =>
+    {
+        const row =
+            document.createElement('div');
+
+        row.className = 'linha';
+
+        row.innerHTML =
+            `
+            <span>${file}</span>
+            <span>
+                <button onclick="ver('${file}')">
+                    Ver
+                </button>
+
+                <button onclick="baixar('${file}')">
+                    Download
+                </button>
+            </span>
+            `;
+
+        lista.appendChild(row);
+    });
+}
+
+async function ver(nome)
+{
+    const texto =
+        await fetch('/api/view/' +
+        encodeURIComponent(nome));
+
+    document.getElementById('conteudo')
+        .textContent =
+        await texto.text();
+}
+
+function baixar(nome)
+{
+    window.location =
+        '/api/download/' +
+        encodeURIComponent(nome);
+}
+
+carregarArquivos();
+
+</script>
+
+</body>
+</html>
