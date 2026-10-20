@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Processo</title>
+<title>Dispara Goose</title>
 
 <style>
 body {
@@ -46,11 +46,12 @@ button {
 <body>
 
 <div class="container">
-    <h2>Controle de Processo</h2>
+    <h2>Controla Goose</h2>
 
-    <button class="start" onclick="startProcess()">Iniciar</button>
-    <button class="stop" onclick="stopProcess()">Parar</button>
-    <button onclick="getStatus()">Atualizar Status</button>
+    <!-- <button class="start" onclick="startProcess()">Iniciar</button> -->
+    <button class="start" onclick="pulso()">Pulso</button>
+    <button class="stop" onclick="seq()">Sequencia</button>
+    <button onclick="alterna()">Alterna</button>
 
     <div id="status">Status: desconhecido</div>
 </div>
@@ -93,7 +94,31 @@ async function getStatus()
         "Status: " + result.status;
 }
 
-getStatus();
+//getStatus();
+async function alterna()
+{
+    const response = await fetch("/toggle");
+    const result = await response.json();
+
+    console.log(result);
+    document.getElementById("status").innerHTML =
+        "Status Bin1: " + result.bin1;
+}
+async function pulso()
+{
+    const response = await fetch("/pulse");
+    const result = await response.json();
+
+    document.getElementById("status").innerHTML =
+        "Status: " + result.status;
+}
+async function seq()
+{
+    const response = await fetch("/seq");
+    const result = await response.json();
+    document.getElementById("status").innerHTML =
+        "Status: " + result.status;
+}
 
 </script>
 
