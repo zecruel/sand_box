@@ -106,6 +106,54 @@ function baixar(nome)
         encodeURIComponent(nome);
 }
 
+async function carregarArquivoBinario() {
+    const hexView = document.getElementById('conteudo');
+    
+    try {
+        // 1. Faz a requisição configurando o tipo de resposta para 'arrayBuffer'
+        const response = await fetch(FILE_URL);
+        
+        if (!response.ok) {
+            throw new Error(`Erro no servidor: ${response.status} ${response.statusText}`);
+        }
+
+        const buffer = await response.arrayBuffer();
+        
+        // 2. Processa o buffer binário
+        const view = new DataView(buffer);
+        let hexOutput = '';
+        let asciiOutput = '';
+        let resultadoFinal = '';
+
+        // Exibe em blocos de 16 bytes (padrão Hex Viewer)
+        for (let i = 0; i < view.byteLength; i++) {
+            const byte = view.getUint8(i);
+            
+            // Converte para hexadecimal com 2 dígitos
+            hexOutput += byte.toString(16).padStart(2, '0') + ' ';
+            
+            // Cria uma representação ASCII legível (pontos para caracteres não imprimíveis)
+            asciiOutput += (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : '.';
+
+            // Quebra a linha a cada 16 bytes
+            if ((i + 1) % 16 === 0 || i === view.byteLength - 1) {
+                // Alinha o último bloco se ele não tiver 16 bytes
+                if ((i + 1) % 16 !== 0) {
+                    const espacosFaltando = 16 - ((i + 1) % 16);
+                    hexOutput += '   '.repeat(espacosFaltando);
+                }
+                resultadoFinal += `${hexOutput} | ${asciiOutput}\n`;
+                hexOutput = '';
+                asciiOutput = '';
+            }
+        }
+
+        hexView.textContent = resultadoFinal || '[Arquivo Vazio]';
+
+    } catch (erro) {
+        hexView.innerHTML = `<span style="color: #f48771;">Erro ao carregar: ${erro.message}</span>`;
+    }
+}
 carregarArquivos();
 
 </script>
